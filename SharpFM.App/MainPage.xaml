@@ -12,10 +12,9 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
-        <Button Content="Write Clip" Click="Button_Click_1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="165,10,0,0" Height="44" Width="128"/>
 
         <controls:MasterDetailsView ItemsSource="{Binding Keys}"
-                                    NoSelectionContent="Select an item to view"
+                                    NoSelectionContent="No Clip Selected"
                                     CompactModeThresholdWidth="720" 
                                     HorizontalAlignment="Stretch" 
                                     Margin="0,77,0,0" 
@@ -24,7 +23,10 @@
 
             <controls:MasterDetailsView.ItemTemplate>
                 <DataTemplate>
-                    <TextBox x:Name="stackSnipName" Text="{Binding Name, Mode=TwoWay}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="stackSnipName" Text="{Binding Name, Mode=TwoWay}" />
+                        <TextBlock x:Name="stackFormat" Text="{Binding ClipboardFormat, Mode=TwoWay}" />
+                    </StackPanel>
                 </DataTemplate>
             </controls:MasterDetailsView.ItemTemplate>
             
@@ -35,17 +37,49 @@
                                        Text="{ Binding XmlData, Mode=TwoWay}" />
                 </DataTemplate>
             </controls:MasterDetailsView.DetailsTemplate>
+            
+            <controls:MasterDetailsView.NoSelectionContentTemplate>
+                <DataTemplate>
+                    <StackPanel HorizontalAlignment="Center" 
+                                VerticalAlignment="Center">
+                        <SymbolIcon Symbol="Admin" 
+                                    RenderTransformOrigin=".5,.5">
+                            <SymbolIcon.RenderTransform>
+                                <CompositeTransform 
+                                  ScaleX="2" 
+                                  ScaleY="2"/>
+                            </SymbolIcon.RenderTransform>
+                        </SymbolIcon>
+                        <TextBlock Text="{Binding}" 
+                                   FontSize="24" 
+                                   Margin="0,12"/>
+                    </StackPanel>
+                </DataTemplate>
+            </controls:MasterDetailsView.NoSelectionContentTemplate>
 
             <controls:MasterDetailsView.MasterCommandBar>
                 <CommandBar>
+                    <AppBarButton Icon="NewWindow" Label="New Script" Name="masterNewScript" Click="masterNewScript_Click"/>
+                    <!--
+                    <AppBarButton Icon="Forward" Label="Forward"/>-->
+
                     <CommandBar.Content>
                         <TextBlock Margin="12,14">
-                            <Run Text="Keys: " />
+                            <Run Text="Clips: " />
                             <Run Text="{Binding Keys.Count}" />
                         </TextBlock>
                     </CommandBar.Content>
                 </CommandBar>
             </controls:MasterDetailsView.MasterCommandBar>
+
+            <controls:MasterDetailsView.DetailsCommandBar>
+                <CommandBar>
+                    <AppBarButton Icon="Save" Label="Write To Clip" Click="Button_Click_1" />
+                    <!--<AppBarButton Icon="MailReplyAll" Label="Reply All" />
+                    <AppBarButton Icon="MailForward" Label="Forward" />-->
+                </CommandBar>
+            </controls:MasterDetailsView.DetailsCommandBar>
+            
 
         </controls:MasterDetailsView>
     </Grid>

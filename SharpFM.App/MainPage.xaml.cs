@@ -19,9 +19,10 @@ namespace SharpFM.App
 {
     public class FileMakerClip
     {
-        public FileMakerClip(string name, byte[] data)
+        public FileMakerClip(string name, string format, byte[] data)
         {
             Name = name;
+            ClipboardFormat = format;
             XmlData = ClipBytesToPrettyXml(data.Skip(4));
 
             // try to show better "name" if possible
@@ -32,6 +33,8 @@ namespace SharpFM.App
                 Name = containerName;
             }
         }
+
+        public string ClipboardFormat { get; set; }
 
         public string Name { get; set; }
 
@@ -53,7 +56,11 @@ namespace SharpFM.App
         public static string ClipBytesToPrettyXml(IEnumerable<byte> clipData)
         {
             var xmlComments = Encoding.UTF8.GetString(clipData.ToArray());
-
+            if (string.IsNullOrEmpty(xmlComments))
+            {
+                // dont try to prettify if we don't have content
+                return xmlComments;
+            }
             return PrettyXml(xmlComments);
         }
 
@@ -132,7 +139,7 @@ namespace SharpFM.App
                 await stream.ReadAsync(buff, (uint)dataObj.Size, InputStreamOptions.None);
                 var buffArray = buff.ToArray();
 
-                var fmclip = new FileMakerClip(format, buffArray);
+                var fmclip = new FileMakerClip("new-clip", format, buffArray);
 
                 // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
                 // this is not the most efficient method to detect it, but it works well enough for now
@@ -163,10 +170,15 @@ namespace SharpFM.App
             //byte[] intBytes = BitConverter.GetBytes(bl);
 
             //dp.SetData("Mac-XMSS", intBytes.Concat(byteList).ToArray().AsBuffer().AsStream().AsRandomAccessStream());
-            dp.SetData("Mac-XMSS", data.RawData.AsBuffer().AsStream().AsRandomAccessStream());
+            dp.SetData(data.ClipboardFormat, data.RawData.AsBuffer().AsStream().AsRandomAccessStream());
 
             Clipboard.SetContent(dp);
             Clipboard.Flush();
+        }
+
+        private void masterNewScript_Click(object sender, RoutedEventArgs e)
+        {
+            Keys.Add(new FileMakerClip("", "Mac-XMSS", new byte[] { }));
         }
     }
 }
