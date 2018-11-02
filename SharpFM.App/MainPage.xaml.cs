@@ -1,0 +1,172 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage.Streams;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
+
+// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+
+namespace SharpFM.App
+{
+    public class FileMakerClip
+    {
+        public FileMakerClip(string name, byte[] data)
+        {
+            Name = name;
+            XmlData = ClipBytesToPrettyXml(data.Skip(4));
+
+            // try to show better "name" if possible
+            var xdoc = XDocument.Load(new StringReader(XmlData));
+            var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value;
+            if (!string.IsNullOrEmpty(containerName))
+            {
+                Name = containerName;
+            }
+        }
+
+        public string Name { get; set; }
+
+        public byte[] RawData
+        {
+            get
+            {
+                // recalculate the length of the original text and make sure that is the first four bytes in the stream
+                byte[] byteList = Encoding.UTF8.GetBytes(XmlData);
+                int bl = byteList.Length;
+                byte[] intBytes = BitConverter.GetBytes(bl);
+                return intBytes.Concat(byteList).ToArray();
+            }
+        }
+
+        public string XmlData { get; set; }
+
+
+        public static string ClipBytesToPrettyXml(IEnumerable<byte> clipData)
+        {
+            var xmlComments = Encoding.UTF8.GetString(clipData.ToArray());
+
+            return PrettyXml(xmlComments);
+        }
+
+        private static string PrettyXml(string xml)
+        {
+            var stringBuilder = new StringBuilder();
+
+            var element = XElement.Parse(xml);
+
+            var settings = new XmlWriterSettings
+            {
+                OmitXmlDeclaration = true,
+                Indent = true,
+                NewLineOnAttributes = false
+            };
+
+            using (var xmlWriter = XmlWriter.Create(stringBuilder, settings))
+            {
+                element.Save(xmlWriter);
+            }
+
+            return stringBuilder.ToString();
+        }
+    }
+
+
+    /// <summary>
+    /// An empty page that can be used on its own or navigated to within a Frame.
+    /// </summary>
+    public sealed partial class MainPage : Page
+    {
+        public ObservableCollection<FileMakerClip> Keys { get; set; }
+
+        public MainPage()
+        {
+            InitializeComponent();
+
+            Keys = new ObservableCollection<FileMakerClip>();
+
+            Clipboard.ContentChanged += Clipboard_ContentChanged;
+        }
+
+        private async void Clipboard_ContentChanged(object sender, object e)
+        {
+            var clip = Clipboard.GetContent();
+
+            var formats = clip.AvailableFormats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct();
+
+            Debug.WriteLine($"Formats: {formats.Count()}");
+
+            foreach (var format in formats)
+            {
+                object clipData = null;
+
+                try
+                {
+                    if (format.Equals("bitmap", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        clipData = await clip.GetBitmapAsync();
+                    }
+                    clipData = await clip.GetDataAsync(format);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+
+                if (!(clipData is IRandomAccessStream dataObj))
+                {
+                    // this is some type of clipboard data this program can't handle
+                    continue;
+                }
+
+                var stream = dataObj.GetInputStreamAt(0);
+                IBuffer buff = new Windows.Storage.Streams.Buffer((uint)dataObj.Size);
+                await stream.ReadAsync(buff, (uint)dataObj.Size, InputStreamOptions.None);
+                var buffArray = buff.ToArray();
+
+                var fmclip = new FileMakerClip(format, buffArray);
+
+                // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
+                // this is not the most efficient method to detect it, but it works well enough for now
+                if (Keys.Any(k => k.XmlData == fmclip.XmlData))
+                {
+                    continue;
+                }
+
+                Keys.Add(fmclip);
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            var dp = new DataPackage();
+
+            var data = mdv.SelectedItem as FileMakerClip;
+
+            if(data == null)
+            {
+                return; // no data
+            }
+
+            // recalculate the length of the original text and make sure that is the first four bytes in the stream
+            //var code = data.RawData;// XamlCodeRenderer.Text;
+            //byte[] byteList = Encoding.UTF8.GetBytes(code);
+            //int bl = byteList.Length;
+            //byte[] intBytes = BitConverter.GetBytes(bl);
+
+            //dp.SetData("Mac-XMSS", intBytes.Concat(byteList).ToArray().AsBuffer().AsStream().AsRandomAccessStream());
+            dp.SetData("Mac-XMSS", data.RawData.AsBuffer().AsStream().AsRandomAccessStream());
+
+            Clipboard.SetContent(dp);
+            Clipboard.Flush();
+        }
+    }
+}
