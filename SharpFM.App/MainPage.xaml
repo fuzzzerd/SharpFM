@@ -8,7 +8,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    
+    Name="mp"
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -21,9 +21,16 @@
 
             <controls:MasterDetailsView.ItemTemplate>
                 <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock x:Name="stackSnipName" Text="{Binding Name, Mode=TwoWay}" />
-                        <TextBlock x:Name="stackFormat" Text="{Binding ClipboardFormat, Mode=TwoWay}" />
+                    <StackPanel Margin="0,8">
+                        <TextBox Text="{Binding Name, Mode=TwoWay}" Margin="0" />
+                        <ComboBox 
+                            ItemsSource="{Binding ClipTypes}"
+                            SelectedValuePath="Key"
+                            DisplayMemberPath="Value"
+                            SelectedValue="{Binding ClipboardFormat, Mode=TwoWay}">
+                        </ComboBox>
+                        <TextBlock Text="{Binding ClipboardFormat}" 
+                                   MaxLines="1"/>
                     </StackPanel>
                 </DataTemplate>
             </controls:MasterDetailsView.ItemTemplate>

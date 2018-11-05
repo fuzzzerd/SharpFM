@@ -150,6 +150,12 @@
   <ItemGroup>
     <None Include="SharpFM.App_TemporaryKey.pfx" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SharpFM.Core\SharpFM.Core.csproj">
+      <Project>{a4b965d1-9011-4074-a2ba-d5532462defb}</Project>
+      <Name>SharpFM.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
