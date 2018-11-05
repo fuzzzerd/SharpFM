@@ -8,6 +8,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -16,10 +17,7 @@
         <controls:MasterDetailsView ItemsSource="{Binding Keys}"
                                     NoSelectionContent="No Clip Selected"
                                     CompactModeThresholdWidth="720" 
-                                    HorizontalAlignment="Stretch" 
-                                    Margin="0,77,0,0" 
-                                    Name="mdv"
-                                    VerticalAlignment="Stretch">
+                                    Name="mdv" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
             <controls:MasterDetailsView.ItemTemplate>
                 <DataTemplate>
@@ -29,7 +27,7 @@
                     </StackPanel>
                 </DataTemplate>
             </controls:MasterDetailsView.ItemTemplate>
-            
+
             <controls:MasterDetailsView.DetailsTemplate>
                 <DataTemplate>
                     <monaco:CodeEditor x:Name="XamlCodeRenderer"
@@ -37,7 +35,7 @@
                                        Text="{ Binding XmlData, Mode=TwoWay}" />
                 </DataTemplate>
             </controls:MasterDetailsView.DetailsTemplate>
-            
+
             <controls:MasterDetailsView.NoSelectionContentTemplate>
                 <DataTemplate>
                     <StackPanel HorizontalAlignment="Center" 
@@ -79,8 +77,8 @@
                     <AppBarButton Icon="MailForward" Label="Forward" />-->
                 </CommandBar>
             </controls:MasterDetailsView.DetailsCommandBar>
-            
 
         </controls:MasterDetailsView>
+
     </Grid>
 </Page>

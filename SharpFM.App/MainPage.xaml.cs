@@ -25,6 +25,8 @@ namespace SharpFM.App
             ClipboardFormat = format;
             XmlData = ClipBytesToPrettyXml(data.Skip(4));
 
+            if (string.IsNullOrEmpty(XmlData)) { return; }
+
             // try to show better "name" if possible
             var xdoc = XDocument.Load(new StringReader(XmlData));
             var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value;
