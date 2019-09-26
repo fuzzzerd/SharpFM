@@ -76,6 +76,48 @@ namespace SharpFM.Core
         /// </summary>
         public string XmlData { get; set; }
 
+
+
+        /// <summary>
+        /// The fields exposed through this FileMaker Clip (if its a table or a layout).
+        /// </summary>
+        public IEnumerable<FileMakerField> Fields
+        {
+            get
+            {
+                var xdoc = XDocument.Parse(XmlData);
+
+                switch (ClipTypes[ClipboardFormat])
+                {
+                    case "Table": // When we have a table, we can get rich metadata from the clipboard data.
+                        return xdoc
+                            .Descendants("BaseTable")
+                            .Elements("Field")
+                            .Select(x => new FileMakerField
+                            {
+                                FileMakerFieldId = int.Parse(x.Attribute("id").Value),
+                                Name = x.Attribute("name").Value,
+                                DataType = x.Attribute("dataType").Value,
+                                FieldType = x.Attribute("fieldType").Value,
+                                NotEmpty = bool.Parse(x.Element("Validation")?.Element("NotEmpty")?.Attribute("value").Value ?? "false"),
+                                Unique = bool.Parse(x.Element("Validation")?.Element("Unique")?.Attribute("value").Value ?? "false"),
+                                Comment = x.Element("Comment")?.Value,
+                            });
+
+                    case "Layout": // on a layout we only have the field name (TABLE::FIELD) to go on, so we do that.
+                        return xdoc
+                            .Descendants("Object")
+                            .Where(x => x.Attribute("type").Value == "Field")
+                            .Descendants("FieldObj")
+                            .Elements("Name")
+                            .Select(x => new FileMakerField { Name = x.Value });
+                }
+
+                // return emptyl ist of we don't have a matching type
+                return new List<FileMakerField>();
+            }
+        }
+
         /// <summary>
         /// Utility method for prettifying the Xml for a user to read.
         /// </summary>

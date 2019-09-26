@@ -26,8 +26,6 @@ namespace SharpFM.App
         {
             InitializeComponent();
 
-            
-
             Keys = new ObservableCollection<FileMakerClip>();
 
             Clipboard.ContentChanged += Clipboard_ContentChanged;
@@ -109,6 +107,14 @@ namespace SharpFM.App
         private void masterNewScript_Click(object sender, RoutedEventArgs e)
         {
             Keys.Add(new FileMakerClip("", "Mac-XMSS", new byte[] { }));
+        }
+
+        private void layoutAsModelAppBarButton_Click(object sender, RoutedEventArgs e)
+        {
+            var data = mdv.SelectedItem as FileMakerClip;
+            var lam = new LayoutAsFMDataModel(data);
+            var classString = lam.CreateClass();
+            Console.WriteLine(classString);
         }
     }
 }

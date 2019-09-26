@@ -79,6 +79,7 @@
 
             <controls:MasterDetailsView.DetailsCommandBar>
                 <CommandBar>
+                    <AppBarButton Icon="Copy" x:Name="layoutAsModelAppBarButton" Label="Layout as Model" Click="layoutAsModelAppBarButton_Click" />
                     <AppBarButton Icon="Save" Label="Write To Clip" Click="Button_Click_1" />
                     <!--<AppBarButton Icon="MailReplyAll" Label="Reply All" />
                     <AppBarButton Icon="MailForward" Label="Forward" />-->
