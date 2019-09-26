@@ -14,7 +14,7 @@ namespace SharpFM.Core
         {
             { "Mac-XMSS", "ScriptSteps" },
             { "Mac-XML2", "Layout" },
-            { "Mac-XMTD", "Table" },
+            { "Mac-XMTB", "Table" },
             { "Mac-XMFD", "Field" },
             { "Mac-XMSC", "Script" }
         };
