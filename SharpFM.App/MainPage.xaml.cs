@@ -1,6 +1,5 @@
 ﻿using SharpFM.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -20,7 +19,7 @@ namespace SharpFM.App
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        public ObservableCollection<FileMakerClip> Keys { get; set; }
+        public ObservableCollection<FileMakerClip> Keys { get; }
 
         public MainPage()
         {
@@ -51,7 +50,9 @@ namespace SharpFM.App
                     }
                     clipData = await clip.GetDataAsync(format);
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     Debug.WriteLine(ex.Message);
                 }
@@ -84,9 +85,7 @@ namespace SharpFM.App
         {
             var dp = new DataPackage();
 
-            var data = mdv.SelectedItem as FileMakerClip;
-
-            if(data == null)
+            if (!(mdv.SelectedItem is FileMakerClip data))
             {
                 return; // no data
             }
@@ -106,15 +105,18 @@ namespace SharpFM.App
 
         private void masterNewScript_Click(object sender, RoutedEventArgs e)
         {
-            Keys.Add(new FileMakerClip("", "Mac-XMSS", new byte[] { }));
+            Keys.Add(new FileMakerClip("", "Mac-XMSS", Array.Empty<byte>()));
         }
 
-        private void layoutAsModelAppBarButton_Click(object sender, RoutedEventArgs e)
+        private void asModelAppBarButton_Click(object sender, RoutedEventArgs e)
         {
             var data = mdv.SelectedItem as FileMakerClip;
-            var lam = new LayoutAsFMDataModel(data);
-            var classString = lam.CreateClass();
-            Console.WriteLine(classString);
+            var classString = data.CreateClass();
+
+            var dp = new DataPackage();
+            dp.SetText(classString);
+            Clipboard.SetContent(dp);
+            Clipboard.Flush();
         }
     }
 }

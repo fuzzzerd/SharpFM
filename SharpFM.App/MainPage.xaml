@@ -17,7 +17,7 @@
         <controls:MasterDetailsView ItemsSource="{Binding Keys}"
                                     NoSelectionContent="No Clip Selected"
                                     CompactModeThresholdWidth="720" 
-                                    Name="mdv" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    x:Name="mdv" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
             <controls:MasterDetailsView.ItemTemplate>
                 <DataTemplate>
@@ -79,7 +79,7 @@
 
             <controls:MasterDetailsView.DetailsCommandBar>
                 <CommandBar>
-                    <AppBarButton Icon="Copy" x:Name="layoutAsModelAppBarButton" Label="Layout as Model" Click="layoutAsModelAppBarButton_Click" />
+                    <AppBarButton Icon="Copy" x:Name="asModelAppBarButton" Label="Copy as FMData as Model" Click="asModelAppBarButton_Click" />
                     <AppBarButton Icon="Save" Label="Write To Clip" Click="Button_Click_1" />
                     <!--<AppBarButton Icon="MailReplyAll" Label="Reply All" />
                     <AppBarButton Icon="MailForward" Label="Forward" />-->

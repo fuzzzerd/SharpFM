@@ -4,23 +4,36 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace SharpFM.Core
 {
-    public class LayoutAsFMDataModel
+    public static class FileMakerClipExtensions
     {
-        private readonly FileMakerClip _clip;
-
-        public LayoutAsFMDataModel(FileMakerClip clip)
+        /// <summary>
+        /// Create a class from scratch.
+        /// </summary>
+        public static string CreateClass(this FileMakerClip _clip, FileMakerClip fieldProjectionLayout = null)
         {
-            _clip = clip;
+            var fieldProjectionList = new List<string>();
+            if (fieldProjectionLayout != null && fieldProjectionLayout.ClipboardFormat == "Layout")
+            {
+                // a clip that is of type layout, only has name attribute (since the rest isn't available)
+                // and we only need the name to skip it down below
+                fieldProjectionList.AddRange(fieldProjectionLayout.Fields.Select(f => f.Name));
+            }
+            else
+            {
+                // otherwise include all fields
+                fieldProjectionList.AddRange(_clip.Fields.Select(f => f.Name));
+            }
+
+            return _clip.CreateClass(fieldProjectionList);
         }
 
         /// <summary>
         /// Create a class from scratch.
         /// </summary>
-        public string CreateClass()
+        public static string CreateClass(this FileMakerClip _clip, IEnumerable<string> fieldProjectionList)
         {
             // Create a namespace: (namespace CodeGenerationSample)
             var @namespace = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName("SharpFM.CodeGen")).NormalizeWhitespace();
@@ -36,7 +49,8 @@ namespace SharpFM.Core
 
             // add each field from the underling _clip as a public property with the data member attribute
             List<PropertyDeclarationSyntax> fieldsToBeAddedAsProperties = new List<PropertyDeclarationSyntax>(_clip.Fields.Count());
-            foreach(var field in _clip.Fields)
+            // include the field projection
+            foreach (var field in _clip.Fields.Where(fmF => fieldProjectionList.Contains(fmF.Name)))
             {
                 // filemaker to C# data type mapping
                 var propertyTypeCSharp = field.DataType
