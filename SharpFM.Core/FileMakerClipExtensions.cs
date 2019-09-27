@@ -15,7 +15,7 @@ namespace SharpFM.Core
         public static string CreateClass(this FileMakerClip _clip, FileMakerClip fieldProjectionLayout = null)
         {
             var fieldProjectionList = new List<string>();
-            if (fieldProjectionLayout != null && fieldProjectionLayout.ClipboardFormat == "Layout")
+            if (fieldProjectionLayout != null && FileMakerClip.ClipTypes[fieldProjectionLayout.ClipboardFormat] == "Layout")
             {
                 // a clip that is of type layout, only has name attribute (since the rest isn't available)
                 // and we only need the name to skip it down below

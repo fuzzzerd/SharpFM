@@ -5,8 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Streams;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
@@ -20,6 +22,13 @@ namespace SharpFM.App
     public sealed partial class MainPage : Page
     {
         public ObservableCollection<FileMakerClip> Keys { get; }
+        public ObservableCollection<FileMakerClip> Layouts
+        {
+            get
+            {
+                return new ObservableCollection<FileMakerClip>(Keys.Where(k => FileMakerClip.ClipTypes[k.ClipboardFormat] == "Layout"));
+            }
+        }
 
         public MainPage()
         {
@@ -108,15 +117,43 @@ namespace SharpFM.App
             Keys.Add(new FileMakerClip("", "Mac-XMSS", Array.Empty<byte>()));
         }
 
-        private void asModelAppBarButton_Click(object sender, RoutedEventArgs e)
+        private async void asModelAppBarButton_Click(object sender, RoutedEventArgs e)
         {
-            var data = mdv.SelectedItem as FileMakerClip;
-            var classString = data.CreateClass();
+            // TODO: improve the UX of this whole thing. This works as a hack for proving the concept, but it could be so much better.
 
-            var dp = new DataPackage();
-            dp.SetText(classString);
-            Clipboard.SetContent(dp);
-            Clipboard.Flush();
+            var data = mdv.SelectedItem as FileMakerClip;
+
+            var md = new MessageDialog("Do you want to use a layout to limit the number of fields in the generated model?", "Use Layout Projection?");
+            // setup the command that will show the Layout picker and generate content that way
+            md.Commands.Add(new UICommand("Pick a Layout", new UICommandInvokedHandler(async uic =>
+            {
+                var picker = new LayoutClipPicker
+                {
+                    DataContext = this.DataContext
+                };
+                var pickerResult = await picker.ShowAsync(ContentDialogPlacement.InPlace);
+                if (pickerResult == ContentDialogResult.Primary)
+                {
+                    // regenerate using the layout picker
+                    var classString = data.CreateClass(picker.DialogResult);
+                    var dp = new DataPackage();
+                    dp.SetText(classString);
+                    Clipboard.SetContent(dp);
+                    Clipboard.Flush();
+                }
+            })));
+
+            // setup the command that will generate the full model
+            md.Commands.Add(new UICommand("No Projection", new UICommandInvokedHandler(uic =>
+            {
+                var classString = data.CreateClass();
+                var dp = new DataPackage();
+                dp.SetText(classString);
+                Clipboard.SetContent(dp);
+                Clipboard.Flush();
+            })));
+
+            var result = await md.ShowAsync();
         }
     }
 }

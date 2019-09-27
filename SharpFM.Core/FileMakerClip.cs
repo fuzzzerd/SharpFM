@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -110,7 +111,7 @@ namespace SharpFM.Core
                             .Where(x => x.Attribute("type").Value == "Field")
                             .Descendants("FieldObj")
                             .Elements("Name")
-                            .Select(x => new FileMakerField { Name = x.Value });
+                            .Select(x => new FileMakerField { Name = Regex.Split(x.Value, "::")[1]});
                 }
 
                 // return emptyl ist of we don't have a matching type
