@@ -14,6 +14,8 @@ namespace SharpFM.Core
         /// </summary>
         public static string CreateClass(this FileMakerClip _clip, FileMakerClip fieldProjectionLayout = null)
         {
+            if(_clip == null) { return string.Empty; }
+
             var fieldProjectionList = new List<string>();
             if (fieldProjectionLayout != null && FileMakerClip.ClipTypes[fieldProjectionLayout.ClipboardFormat] == "Layout")
             {

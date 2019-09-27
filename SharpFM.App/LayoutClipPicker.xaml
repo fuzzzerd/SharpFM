@@ -13,6 +13,6 @@
     SecondaryButtonClick="ContentDialog_SecondaryButtonClick">
 
     <Grid>
-        <ComboBox x:Name="LayoutPickerCombo" HorizontalAlignment="Stretch" Margin="0,0,10,0" ItemsSource="{Binding Layouts}" DisplayMemberPath="Name" />
+        <ComboBox x:Name="LayoutPickerCombo" HorizontalAlignment="Stretch" ItemsSource="{Binding Layouts}" DisplayMemberPath="Name" Height="45" VerticalAlignment="Center" />
     </Grid>
 </ContentDialog>

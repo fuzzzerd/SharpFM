@@ -12,12 +12,22 @@
     DataContext="{Binding RelativeSource={RelativeSource Self}}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
+    <Grid DataContext="{Binding}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="350" />
+        </Grid.ColumnDefinitions>
 
-        <controls:MasterDetailsView ItemsSource="{Binding Keys}"
-                                    NoSelectionContent="No Clip Selected"
-                                    CompactModeThresholdWidth="720" 
-                                    x:Name="mdv" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <controls:MasterDetailsView 
+            x:Name="mdv"
+            Grid.Column="0"
+            ItemsSource="{Binding Keys}"
+            SelectedItem="{Binding Path=SelectedClip}"
+            AllowFocusOnInteraction="True"
+            NoSelectionContent="No Clip Selected"
+            CompactModeThresholdWidth="720" 
+            HorizontalAlignment="Stretch" 
+            VerticalAlignment="Stretch">
 
             <controls:MasterDetailsView.ItemTemplate>
                 <DataTemplate>
@@ -37,9 +47,12 @@
 
             <controls:MasterDetailsView.DetailsTemplate>
                 <DataTemplate>
-                    <monaco:CodeEditor x:Name="XamlCodeRenderer"
-                                       CodeLanguage="xml" 
-                                       Text="{ Binding XmlData, Mode=TwoWay}" />
+                    
+
+                        <monaco:CodeEditor x:Name="XamlCodeRenderer"
+                                           CodeLanguage="xml" 
+                                           Text="{ Binding XmlData, Mode=TwoWay}" />
+
                 </DataTemplate>
             </controls:MasterDetailsView.DetailsTemplate>
 
@@ -87,6 +100,26 @@
             </controls:MasterDetailsView.DetailsCommandBar>
 
         </controls:MasterDetailsView>
+
+        <StackPanel Grid.Column="1" Width="350" Height="Auto" DataContext="{Binding}">
+            <ComboBox x:Name="LayoutPickerComboBox"
+                        HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding Layouts}"
+                        SelectedItem="{Binding SelectedLayout}"
+                        DisplayMemberPath="Name"
+                        Height="45"
+                        VerticalAlignment="Center" />
+
+            <TextBlock>
+                <Run Text="Clip Name: " />
+                <Run Text="{Binding Path=SelectedLayout.Name}" />
+            </TextBlock>
+
+
+            <!--<monaco:CodeEditor x:Name="XamlCodeRendererCsharp"
+                                CodeLanguage="csharp" 
+                                Text="{ Binding SelectedClip.XmlData, Mode=OneWay}" />-->
+        </StackPanel>
 
     </Grid>
 </Page>

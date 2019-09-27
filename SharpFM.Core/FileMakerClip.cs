@@ -77,8 +77,6 @@ namespace SharpFM.Core
         /// </summary>
         public string XmlData { get; set; }
 
-
-
         /// <summary>
         /// The fields exposed through this FileMaker Clip (if its a table or a layout).
         /// </summary>

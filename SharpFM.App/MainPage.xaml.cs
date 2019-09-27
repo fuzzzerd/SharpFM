@@ -11,6 +11,8 @@ using Windows.Storage.Streams;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Data;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -22,19 +24,29 @@ namespace SharpFM.App
     public sealed partial class MainPage : Page
     {
         public ObservableCollection<FileMakerClip> Keys { get; }
-        public ObservableCollection<FileMakerClip> Layouts
-        {
-            get
-            {
-                return new ObservableCollection<FileMakerClip>(Keys.Where(k => FileMakerClip.ClipTypes[k.ClipboardFormat] == "Layout"));
-            }
-        }
+
+        public ObservableCollection<FileMakerClip> Layouts { get; }
+
+        public FileMakerClip SelectedLayout { get; set; }
+        public FileMakerClip SelectedClip { get; set; }
+
+        public string SelectedClipAsCsharp { get; set; }
 
         public MainPage()
         {
             InitializeComponent();
 
             Keys = new ObservableCollection<FileMakerClip>();
+            Layouts = new ObservableCollection<FileMakerClip>();
+
+            Keys.CollectionChanged += (sender, e) =>
+            {
+                Layouts.Clear();
+                foreach (var layout in Keys.Where(k => FileMakerClip.ClipTypes[k.ClipboardFormat] == "Layout"))
+                {
+                    Layouts.Add(layout);
+                }
+            };
 
             Clipboard.ContentChanged += Clipboard_ContentChanged;
         }
@@ -120,12 +132,11 @@ namespace SharpFM.App
         private async void asModelAppBarButton_Click(object sender, RoutedEventArgs e)
         {
             // TODO: improve the UX of this whole thing. This works as a hack for proving the concept, but it could be so much better.
-
             var data = mdv.SelectedItem as FileMakerClip;
 
             var md = new MessageDialog("Do you want to use a layout to limit the number of fields in the generated model?", "Use Layout Projection?");
             // setup the command that will show the Layout picker and generate content that way
-            md.Commands.Add(new UICommand("Pick a Layout", new UICommandInvokedHandler(async uic =>
+            md.Commands.Add(new UICommand("Use Layout", new UICommandInvokedHandler(async uic =>
             {
                 var picker = new LayoutClipPicker
                 {
@@ -135,7 +146,7 @@ namespace SharpFM.App
                 if (pickerResult == ContentDialogResult.Primary)
                 {
                     // regenerate using the layout picker
-                    var classString = data.CreateClass(picker.DialogResult);
+                    var classString = data.CreateClass(SelectedLayout);
                     var dp = new DataPackage();
                     dp.SetText(classString);
                     Clipboard.SetContent(dp);
@@ -155,5 +166,10 @@ namespace SharpFM.App
 
             var result = await md.ShowAsync();
         }
+
+        //private void LayoutPickerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    SelectedLayout = ((ComboBox)sender).SelectedItem as FileMakerClip;
+        //}
     }
 }
