@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SharpFM.Core
 {
@@ -42,26 +43,54 @@ namespace SharpFM.Core
 
             // Add System using statement: (using System)
             @namespace = @namespace.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")));
+            @namespace = @namespace.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Runtime.Serialization")));
+
+            var dataContractAttribute = SyntaxFactory.Attribute(SyntaxFactory.ParseName("DataContract"));
 
             //  Create a class: (class [_clip.Name])
             var classDeclaration = SyntaxFactory.ClassDeclaration(_clip.Name);
 
             // Add the public modifier: (public class [_clip.Name])
             classDeclaration = classDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
+            classDeclaration = classDeclaration.AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataContractAttribute)));
 
             // add each field from the underling _clip as a public property with the data member attribute
-            List<PropertyDeclarationSyntax> fieldsToBeAddedAsProperties = new List<PropertyDeclarationSyntax>(_clip.Fields.Count());
+            List <PropertyDeclarationSyntax> fieldsToBeAddedAsProperties = new List<PropertyDeclarationSyntax>(_clip.Fields.Count());
             // include the field projection
             foreach (var field in _clip.Fields.Where(fmF => fieldProjectionList.Contains(fmF.Name)))
             {
                 // filemaker to C# data type mapping
-                var propertyTypeCSharp = field.DataType
-                    .Replace("Text", "string")
-                    .Replace("Number", "int")
-                    .Replace("Binary", "byte[]")
-                    .Replace("Date", "DateTime")
-                    .Replace("Time", "TimeStamp")
-                    .Replace("TimeStamp", "DateTime");
+                var propertyTypeCSharp = string.Empty;
+
+                switch (field.DataType)
+                {
+                    case "Text":
+                        propertyTypeCSharp = "string";
+                        break;
+                    case "Number":
+                        propertyTypeCSharp = "int";
+                        break;
+                    case "Binary":
+                        propertyTypeCSharp = "byte[]";
+                        break;
+                    case "Date":
+                        propertyTypeCSharp = "DateTime";
+                        break;
+                    case "Time":
+                        propertyTypeCSharp = "TimeSpan";
+                        break;
+                    case "TimeStamp":
+                        propertyTypeCSharp = "DateTime";
+                        break;
+                    default:
+                        propertyTypeCSharp = "string";
+                        break;
+                }
+
+                if(field.NotEmpty == false && propertyTypeCSharp != "string")
+                {
+                    propertyTypeCSharp += "?";
+                }
 
                 var propertyTypeSyntax = SyntaxFactory.ParseTypeName(propertyTypeCSharp);
 
@@ -72,8 +101,9 @@ namespace SharpFM.Core
                 .AddAccessorListAccessors(
                     SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
                     SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))
-                .NormalizeWhitespace()
-                .AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataMemberAttribute)));
+                    .NormalizeWhitespace(indentation: "", eol: " ")
+                .AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataMemberAttribute)))
+                .NormalizeWhitespace();
 
                 fieldsToBeAddedAsProperties.Add(propertyDeclaration);
             }
@@ -85,10 +115,26 @@ namespace SharpFM.Core
             @namespace = @namespace.AddMembers(classDeclaration);
 
             // Normalize and get code as string.
-            var code = @namespace.NormalizeWhitespace().ToFullString();
+            var code = @namespace.NormalizeWhitespace().ToFullString().FormatAutoPropertiesOnOneLine();
 
             // Output new code to the console.
             return code;
+        }
+
+
+        /// <summary>
+        /// https://stackoverflow.com/a/52339795/86860
+        /// </summary>
+        private static readonly Regex AutoPropRegex = new Regex(@"\s*\{\s*get;\s*set;\s*}\s");
+
+        /// <summary>
+        /// https://stackoverflow.com/a/52339795/86860
+        /// </summary>
+        /// <param name="str">Code string to format.</param>
+        /// <returns>The code string with auto properties formatted to a single line</returns>
+        private static string FormatAutoPropertiesOnOneLine(this string str)
+        {
+            return AutoPropRegex.Replace(str, " { get; set; }");
         }
     }
 }

@@ -15,7 +15,6 @@
     <Grid DataContext="{Binding}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="350" />
         </Grid.ColumnDefinitions>
 
         <controls:MasterDetailsView 
@@ -101,7 +100,7 @@
 
         </controls:MasterDetailsView>
 
-        <StackPanel Grid.Column="1" Width="350" Height="Auto" DataContext="{Binding}">
+        <!--<StackPanel Grid.Column="1" Width="350" Height="Auto" DataContext="{Binding}">
             <ComboBox x:Name="LayoutPickerComboBox"
                         HorizontalAlignment="Stretch"
                         ItemsSource="{Binding Layouts}"
@@ -116,10 +115,10 @@
             </TextBlock>
 
 
-            <!--<monaco:CodeEditor x:Name="XamlCodeRendererCsharp"
+            --><!--<monaco:CodeEditor x:Name="XamlCodeRendererCsharp"
                                 CodeLanguage="csharp" 
-                                Text="{ Binding SelectedClip.XmlData, Mode=OneWay}" />-->
-        </StackPanel>
+                                Text="{ Binding SelectedClip.XmlData, Mode=OneWay}" />--><!--
+        </StackPanel>-->
 
     </Grid>
 </Page>

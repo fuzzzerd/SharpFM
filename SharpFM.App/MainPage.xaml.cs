@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Streams;
+using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -32,9 +33,14 @@ namespace SharpFM.App
 
         public string SelectedClipAsCsharp { get; set; }
 
+        CoreWindow window;
+
         public MainPage()
         {
             InitializeComponent();
+
+            window = CoreWindow.GetForCurrentThread();
+            window.Activated += Window_Activated;
 
             Keys = new ObservableCollection<FileMakerClip>();
             Layouts = new ObservableCollection<FileMakerClip>();
@@ -51,55 +57,73 @@ namespace SharpFM.App
             Clipboard.ContentChanged += Clipboard_ContentChanged;
         }
 
-        private async void Clipboard_ContentChanged(object sender, object e)
+        private async Task ProcessClipboard()
         {
-            var clip = Clipboard.GetContent();
-
-            var formats = clip.AvailableFormats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct();
-
-            Debug.WriteLine($"Formats: {formats.Count()}");
-
-            foreach (var format in formats)
+            try
             {
-                object clipData = null;
+                var clip = Clipboard.GetContent();
 
-                try
+                var formats = clip.AvailableFormats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct();
+
+                Debug.WriteLine($"Formats: {formats.Count()}");
+
+                foreach (var format in formats)
                 {
-                    if (format.Equals("bitmap", StringComparison.CurrentCultureIgnoreCase))
+                    object clipData = null;
+
+                    try
                     {
-                        clipData = await clip.GetBitmapAsync();
+                        if (format.Equals("bitmap", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            clipData = await clip.GetBitmapAsync();
+                        }
+                        clipData = await clip.GetDataAsync(format);
                     }
-                    clipData = await clip.GetDataAsync(format);
-                }
 #pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception ex)
+                    catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
-                {
-                    Debug.WriteLine(ex.Message);
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
+
+                    if (!(clipData is IRandomAccessStream dataObj))
+                    {
+                        // this is some type of clipboard data this program can't handle
+                        continue;
+                    }
+
+                    var stream = dataObj.GetInputStreamAt(0);
+                    IBuffer buff = new Windows.Storage.Streams.Buffer((uint)dataObj.Size);
+                    await stream.ReadAsync(buff, (uint)dataObj.Size, InputStreamOptions.None);
+                    var buffArray = buff.ToArray();
+
+                    var fmclip = new FileMakerClip("new-clip", format, buffArray);
+
+                    // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
+                    // this is not the most efficient method to detect it, but it works well enough for now
+                    if (Keys.Any(k => k.XmlData == fmclip.XmlData))
+                    {
+                        continue;
+                    }
+
+                    Keys.Add(fmclip);
                 }
-
-                if (!(clipData is IRandomAccessStream dataObj))
-                {
-                    // this is some type of clipboard data this program can't handle
-                    continue;
-                }
-
-                var stream = dataObj.GetInputStreamAt(0);
-                IBuffer buff = new Windows.Storage.Streams.Buffer((uint)dataObj.Size);
-                await stream.ReadAsync(buff, (uint)dataObj.Size, InputStreamOptions.None);
-                var buffArray = buff.ToArray();
-
-                var fmclip = new FileMakerClip("new-clip", format, buffArray);
-
-                // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
-                // this is not the most efficient method to detect it, but it works well enough for now
-                if (Keys.Any(k => k.XmlData == fmclip.XmlData))
-                {
-                    continue;
-                }
-
-                Keys.Add(fmclip);
             }
+            catch (Exception ex)
+            {
+                var md = new MessageDialog(ex.Message + "\r\n" + ex.StackTrace);
+                await md.ShowAsync();
+            }
+        }
+
+        private async void Window_Activated(CoreWindow sender, WindowActivatedEventArgs args)
+        {
+            await ProcessClipboard();
+        }
+
+        private void Clipboard_ContentChanged(object sender, object e)
+        {
+            window.Activate();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -146,6 +170,8 @@ namespace SharpFM.App
                 if (pickerResult == ContentDialogResult.Primary)
                 {
                     // regenerate using the layout picker
+                    SelectedLayout = picker.DialogResult;
+
                     var classString = data.CreateClass(SelectedLayout);
                     var dp = new DataPackage();
                     dp.SetText(classString);
