@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "C#: SharpFM.App",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}\\SharpFM.App\\SharpFM.App.csproj",
+            "launchConfigurationId": "TargetFramework=;SharpFM.App"
+        }
+    ]
+}

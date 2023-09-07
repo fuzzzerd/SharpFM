@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SharpFM.App.ViewModels"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    x:DataType="vm:MainWindowViewModel"
+    x:Class="SharpFM.App.MainWindow"
+    Title="SharpFM">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100" />
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Button Grid.Column="0" Command="{Binding PasteTextCommand}">Click me</Button>
+        <ListBox
+            Grid.Column="1"
+            ItemsSource="{Binding Keys}"
+            SelectedItem="{Binding SelectedClip}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="0,8">
+                        <TextBox Text="{Binding Name, Mode=TwoWay}" Margin="0" />
+                        <ComboBox
+                            ItemsSource="{Binding ClipTypes}"
+                            SelectedValue="{Binding ClipboardFormat, Mode=TwoWay}">
+                        </ComboBox>
+                        <TextBlock Text="{Binding ClipboardFormat}"
+                            MaxLines="1" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBox
+            Grid.Column="2"
+            Text="{Binding SelectedClip.XmlData}" />
+    </Grid>
+</Window>
