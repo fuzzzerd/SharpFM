@@ -21,6 +21,20 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string? _text;
 
     [RelayCommand]
+    private void NewEmptyItem()
+    {
+        ErrorMessages?.Clear();
+        try
+        {
+            Keys.Add(new FileMakerClip("New", "", Array.Empty<byte>()));
+        }
+        catch (Exception e)
+        {
+            ErrorMessages?.Add(e.Message);
+        }
+    }
+
+    [RelayCommand]
     private async Task PasteText(CancellationToken token)
     {
         ErrorMessages?.Clear();
@@ -62,7 +76,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             var clip = new FileMakerClip("new-clip", format, dataObj);
 
-            if(clip is null) { continue; }
+            if (clip is null) { continue; }
 
             // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
             // this is not the most efficient method to detect it, but it works well enough for now
@@ -85,4 +99,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private FileMakerClip? _selectedClip;
+
+    public string SelectedXml
+    {
+        get => SelectedClip?.XmlData ?? "";
+        set => SelectedClip!.XmlData = value;
+    }
 }
