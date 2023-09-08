@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -53,7 +52,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             if (string.IsNullOrEmpty(format)) { continue; }
 
-            object clipData = await provider.GetDataAsync(format);
+            object? clipData = await provider.GetDataAsync(format);
 
             if (!(clipData is byte[] dataObj))
             {
@@ -62,6 +61,8 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             var clip = new FileMakerClip("new-clip", format, dataObj);
+
+            if(clip is null) { continue; }
 
             // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
             // this is not the most efficient method to detect it, but it works well enough for now
@@ -75,7 +76,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private ObservableCollection<FileMakerClip>? _keys;
+    private ObservableCollection<FileMakerClip> _keys;
 
     //public ObservableCollection<FileMakerClip> Layouts { get; }
 

@@ -3,7 +3,8 @@
     xmlns:vm="using:SharpFM.App.ViewModels"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="500"
     x:DataType="vm:MainWindowViewModel"
     x:Class="SharpFM.App.MainWindow"
     Title="SharpFM">
@@ -11,10 +12,16 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="100" />
             <ColumnDefinition Width="200" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="300" />
         </Grid.ColumnDefinitions>
 
-        <Button Grid.Column="0" Command="{Binding PasteTextCommand}">Click me</Button>
+        <Button 
+            Grid.Column="0" 
+            Command="{Binding PasteTextCommand}">
+            Paste
+        </Button>
+
         <ListBox
             Grid.Column="1"
             ItemsSource="{Binding Keys}"
@@ -34,8 +41,18 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <TextBox
-            Grid.Column="2"
-            Text="{Binding SelectedClip.XmlData}" />
+        <StackPanel Grid.Column="2"
+            Grid.ColumnSpan="2">
+
+            <TextBox
+                Height="250"
+                Text="{Binding SelectedClip.XmlData}" />
+
+            <AvaloniaEdit:TextEditor
+                Height="250"
+                x:Name="avaloniaEditor"
+                ShowLineNumbers="True"
+                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"/>
+        </StackPanel>
     </Grid>
 </Window>

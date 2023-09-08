@@ -13,7 +13,7 @@ namespace SharpFM.Core
         /// <summary>
         /// Create a class from scratch.
         /// </summary>
-        public static string CreateClass(this FileMakerClip _clip, FileMakerClip fieldProjectionLayout = null)
+        public static string CreateClass(this FileMakerClip _clip, FileMakerClip? fieldProjectionLayout = null)
         {
             if(_clip == null) { return string.Empty; }
 
