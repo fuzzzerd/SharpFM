@@ -25,6 +25,10 @@
         <Button Command="{Binding PasteTextCommand}">
             Paste
         </Button>
+
+        <Button Command="{Binding CopySelectedToClipCommand}">
+            Copy
+        </Button>
       </StackPanel>
         <ListBox
             Grid.Column="1"

@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FluentAvalonia.UI.Data;
 using SharpFM.Core;
 
 namespace SharpFM.App.ViewModels;
@@ -41,6 +42,41 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             await DoGetClipboardDataAsync();
+        }
+        catch (Exception e)
+        {
+            ErrorMessages?.Add(e.Message);
+        }
+    }
+    [RelayCommand]
+    private async Task CopySelectedToClip(CancellationToken token)
+    {
+        ErrorMessages?.Clear();
+        try
+        {
+            // See DepInject project for a sample of how to accomplish this.
+            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
+                desktop.MainWindow?.Clipboard is not { } provider)
+                throw new NullReferenceException("Missing Clipboard instance.");
+
+
+            var dp = new DataPackage();
+
+            if (!(SelectedClip is FileMakerClip data))
+            {
+                return; // no data
+            }
+
+            // recalculate the length of the original text and make sure that is the first four bytes in the stream
+            //var code = data.RawData;// XamlCodeRenderer.Text;
+            //byte[] byteList = Encoding.UTF8.GetBytes(code);
+            //int bl = byteList.Length;
+            //byte[] intBytes = BitConverter.GetBytes(bl);
+
+            //dp.SetData("Mac-XMSS", intBytes.Concat(byteList).ToArray().AsBuffer().AsStream().AsRandomAccessStream());
+            dp.SetData(data.ClipboardFormat, data.RawData);
+
+            await provider.SetDataObjectAsync(dp);
         }
         catch (Exception e)
         {
