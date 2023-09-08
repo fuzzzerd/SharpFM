@@ -99,10 +99,4 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private FileMakerClip? _selectedClip;
-
-    public string SelectedXml
-    {
-        get => SelectedClip?.XmlData ?? "";
-        set => SelectedClip!.XmlData = value;
-    }
 }
