@@ -10,28 +10,30 @@
     x:DataType="vm:MainWindowViewModel"
     x:Class="SharpFM.App.MainWindow"
     Title="SharpFM">
-    <Grid>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+        <MenuItem Header="_File">
+            <MenuItem Header="_New" 
+            Command="{Binding NewEmptyItemCommand}"/>
+            <Separator/>
+            <MenuItem Header="_Exit"/>
+        </MenuItem>
+        <MenuItem Header="_Edit">
+            <MenuItem Header="Copy" 
+            Command="{Binding CopySelectedToClipCommand}"/>
+            <MenuItem Header="Paste"
+            Command="{Binding PasteTextCommand}"/>
+        </MenuItem>
+        </Menu>
+        <TextBlock/>
+        <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100" />
-            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="225" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-      <StackPanel Grid.Column="0" >
-        <Button Command="{Binding NewEmptyItemCommand}">
-          New
-        </Button>
-
-        <Button Command="{Binding PasteTextCommand}">
-            Paste
-        </Button>
-
-        <Button Command="{Binding CopySelectedToClipCommand}">
-            Copy
-        </Button>
-      </StackPanel>
         <ListBox
-            Grid.Column="1"
+            Grid.Column="0"
             ItemsSource="{Binding Keys}"
             SelectedItem="{Binding SelectedClip}">
             <ListBox.ItemTemplate>
@@ -52,7 +54,7 @@
         </ListBox>
 
         <AvaloniaEdit:TextEditor
-            Grid.Column="2"
+            Grid.Column="1"
             x:Name="avaloniaEditor"
             SyntaxHighlighting="Xml"
             WordWrap="False"
@@ -64,4 +66,6 @@
         </AvaloniaEdit:TextEditor>
 
     </Grid>
+    </DockPanel>
+    
 </Window>
