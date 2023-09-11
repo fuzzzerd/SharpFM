@@ -41,7 +41,7 @@ public class DocumentTextBindingBehavior : Behavior<TextEditor>
         }
     }
 
-    private void TextChanged(object sender, EventArgs eventArgs)
+    private void TextChanged(object? sender, EventArgs eventArgs)
     {
         if (_textEditor != null && _textEditor.Document != null)
         {

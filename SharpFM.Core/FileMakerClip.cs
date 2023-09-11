@@ -28,8 +28,6 @@ public class FileMakerClip
     /// <param name="data">Data containing the clip.</param>
     public FileMakerClip(string name, string format, byte[] data)
     {
-        // pull in the name
-        Name = name;
         // load the format
         ClipboardFormat = format;
         // skip the first four bytes, as this is a length check
@@ -40,11 +38,10 @@ public class FileMakerClip
 
         // try to show better "name" if possible
         var xdoc = XDocument.Load(new StringReader(XmlData));
-        var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value;
-        if (!string.IsNullOrEmpty(containerName))
-        {
-            Name = containerName;
-        }
+        var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value ?? "";
+
+        // set the name from the xml data if possible and fall back to constructor parameter
+        Name = containerName ?? name ?? "new-clip";
     }
 
     /// <summary>
@@ -55,7 +52,7 @@ public class FileMakerClip
     /// <summary>
     /// Name of Clip
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// Raw data that can be put back onto the Clipboard in FileMaker structure.
@@ -94,19 +91,19 @@ public class FileMakerClip
                         .Elements("Field")
                         .Select(x => new FileMakerField
                         {
-                            FileMakerFieldId = int.Parse(x.Attribute("id").Value),
-                            Name = x.Attribute("name").Value,
-                            DataType = x.Attribute("dataType").Value,
-                            FieldType = x.Attribute("fieldType").Value,
-                            NotEmpty = bool.Parse(x.Element("Validation")?.Element("NotEmpty")?.Attribute("value").Value ?? "false"),
-                            Unique = bool.Parse(x.Element("Validation")?.Element("Unique")?.Attribute("value").Value ?? "false"),
+                            FileMakerFieldId = int.Parse(x.Attribute("id")?.Value ?? ""),
+                            Name = x.Attribute("name")?.Value ?? "",
+                            DataType = x.Attribute("dataType")?.Value ?? "",
+                            FieldType = x.Attribute("fieldType")?.Value ?? "",
+                            NotEmpty = bool.Parse(x.Element("Validation")?.Element("NotEmpty")?.Attribute("value")?.Value ?? "false"),
+                            Unique = bool.Parse(x.Element("Validation")?.Element("Unique")?.Attribute("value")?.Value ?? "false"),
                             Comment = x.Element("Comment")?.Value,
                         });
 
                 case "Layout": // on a layout we only have the field name (TABLE::FIELD) to go on, so we do that.
                     return xdoc
                         .Descendants("Object")
-                        .Where(x => x.Attribute("type").Value == "Field")
+                        .Where(x => x.Attribute("type")?.Value == "Field")
                         .Descendants("FieldObj")
                         .Elements("Name")
                         .Select(x => new FileMakerField { Name = Regex.Split(x.Value, "::")[1] });
