@@ -92,7 +92,7 @@ public class FileMakerClip
 
             var clipType = ClipTypes.SingleOrDefault(ct => ct.KeyId == ClipboardFormat);
 
-            switch (clipType.DisplayName)
+            switch (clipType?.DisplayName)
             {
                 case "Table": // When we have a table, we can get rich metadata from the clipboard data.
                     return xdoc
