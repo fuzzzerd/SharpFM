@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SharpFM.App.ViewModels"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="500"
+    xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
+    xmlns:behaviors="clr-namespace:SharpFM.App.Behaviors;assembly=SharpFM.App"
+    x:DataType="vm:MainWindowViewModel"
+    x:Class="SharpFM.App.MainWindow"
+    Title="SharpFM">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+        <MenuItem Header="_File">
+            <MenuItem Header="_New" 
+            Command="{Binding NewEmptyItemCommand}"/>
+            <Separator/>
+            <MenuItem Header="_Exit"/>
+        </MenuItem>
+        <MenuItem Header="_Edit">
+            <MenuItem Header="Copy" 
+            Command="{Binding CopySelectedToClipCommand}"/>
+            <MenuItem Header="Paste"
+            Command="{Binding PasteTextCommand}"/>
+        </MenuItem>
+        </Menu>
+        <TextBlock/>
+        <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="225" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <ListBox
+            Grid.Column="0"
+            ItemsSource="{Binding Keys}"
+            SelectedItem="{Binding SelectedClip}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="0,8">
+                        <TextBox Text="{Binding Name, Mode=TwoWay}" Margin="0" />
+                        <ComboBox
+                            ItemsSource="{Binding ClipTypes}"
+                            SelectedValue="{Binding ClipboardFormat, Mode=TwoWay}"
+                            SelectedValueBinding="{Binding KeyId}"
+                            DisplayMemberBinding="{Binding DisplayName}"
+                            >
+                        </ComboBox>
+                        <TextBlock Text="{Binding ClipboardFormat}" MaxLines="1" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <AvaloniaEdit:TextEditor
+            Grid.Column="1"
+            x:Name="avaloniaEditor"
+            SyntaxHighlighting="Xml"
+            WordWrap="False"
+            ShowLineNumbers="True"
+            FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
+          <i:Interaction.Behaviors>
+            <behaviors:DocumentTextBindingBehavior Text="{Binding SelectedClip.XmlData, Mode=TwoWay}"/>
+          </i:Interaction.Behaviors>
+        </AvaloniaEdit:TextEditor>
+
+    </Grid>
+    </DockPanel>
+    
+</Window>

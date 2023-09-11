@@ -8,13 +8,13 @@ namespace SharpFM.Core
     {
         public int FileMakerFieldId { get; set; }
 
-        public string Name { get; set; }
-        
-        public string DataType { get; set; }
+        public string Name { get; set; } = null!;
 
-        public string FieldType { get; set; }
+        public string DataType { get; set; } = null!;
 
-        public string Comment { get; set; }
+        public string FieldType { get; set; } = null!;
+
+        public string? Comment { get; set; }
 
         public bool NotEmpty { get; set; }
 

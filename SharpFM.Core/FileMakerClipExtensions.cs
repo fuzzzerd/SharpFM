@@ -13,12 +13,12 @@ namespace SharpFM.Core
         /// <summary>
         /// Create a class from scratch.
         /// </summary>
-        public static string CreateClass(this FileMakerClip _clip, FileMakerClip fieldProjectionLayout = null)
+        public static string CreateClass(this FileMakerClip _clip, FileMakerClip? fieldProjectionLayout = null)
         {
-            if(_clip == null) { return string.Empty; }
+            if (_clip == null) { return string.Empty; }
 
             var fieldProjectionList = new List<string>();
-            if (fieldProjectionLayout != null && FileMakerClip.ClipTypes[fieldProjectionLayout.ClipboardFormat] == "Layout")
+            if (fieldProjectionLayout != null && FileMakerClip.ClipTypes.Single(ct => ct.KeyId == fieldProjectionLayout.ClipboardFormat).DisplayName == "Layout")
             {
                 // a clip that is of type layout, only has name attribute (since the rest isn't available)
                 // and we only need the name to skip it down below
@@ -55,7 +55,7 @@ namespace SharpFM.Core
             classDeclaration = classDeclaration.AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataContractAttribute)));
 
             // add each field from the underling _clip as a public property with the data member attribute
-            List <PropertyDeclarationSyntax> fieldsToBeAddedAsProperties = new List<PropertyDeclarationSyntax>(_clip.Fields.Count());
+            List<PropertyDeclarationSyntax> fieldsToBeAddedAsProperties = new List<PropertyDeclarationSyntax>(_clip.Fields.Count());
             // include the field projection
             foreach (var field in _clip.Fields.Where(fmF => fieldProjectionList.Contains(fmF.Name)))
             {
@@ -87,7 +87,7 @@ namespace SharpFM.Core
                         break;
                 }
 
-                if(field.NotEmpty == false && propertyTypeCSharp != "string")
+                if (field.NotEmpty == false && propertyTypeCSharp != "string")
                 {
                     propertyTypeCSharp += "?";
                 }
