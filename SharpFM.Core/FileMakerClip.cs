@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,14 +12,20 @@ namespace SharpFM.Core;
 
 public class FileMakerClip
 {
-    public static Dictionary<string, string> ClipTypes { get; set; } = new Dictionary<string, string>
-        {
-            { "Mac-XMSS", "ScriptSteps" },
-            { "Mac-XML2", "Layout" },
-            { "Mac-XMTB", "Table" },
-            { "Mac-XMFD", "Field" },
-            { "Mac-XMSC", "Script" }
-        };
+    public class ClipFormat
+    {
+        public string KeyId { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    public static List<ClipFormat> ClipTypes { get; set; } = new List<ClipFormat>
+    {
+        new ClipFormat() { KeyId = "Mac-XMSS", DisplayName = "ScriptSteps" },
+        new ClipFormat() { KeyId = "Mac-XML2", DisplayName = "Layout" },
+        new ClipFormat() { KeyId = "Mac-XMTB", DisplayName = "Table" },
+        new ClipFormat() { KeyId = "Mac-XMFD", DisplayName = "Field" },
+        new ClipFormat() { KeyId = "Mac-XMSC", DisplayName = "Script" }
+    };
 
     /// <summary>
     /// Constructor taking in the raw data byte array.
@@ -83,7 +90,9 @@ public class FileMakerClip
         {
             var xdoc = XDocument.Parse(XmlData);
 
-            switch (ClipTypes[ClipboardFormat])
+            var clipType = ClipTypes.SingleOrDefault(ct => ct.KeyId == ClipboardFormat);
+
+            switch (clipType.DisplayName)
             {
                 case "Table": // When we have a table, we can get rich metadata from the clipboard data.
                     return xdoc

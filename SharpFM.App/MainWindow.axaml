@@ -40,10 +40,12 @@
                         <TextBox Text="{Binding Name, Mode=TwoWay}" Margin="0" />
                         <ComboBox
                             ItemsSource="{Binding ClipTypes}"
-                            SelectedValue="{Binding ClipboardFormat, Mode=TwoWay}">
+                            SelectedValue="{Binding ClipboardFormat, Mode=TwoWay}"
+                            SelectedValueBinding="{Binding KeyId}"
+                            DisplayMemberBinding="{Binding DisplayName}"
+                            >
                         </ComboBox>
-                        <TextBlock Text="{Binding ClipboardFormat}"
-                            MaxLines="1" />
+                        <TextBlock Text="{Binding ClipboardFormat}" MaxLines="1" />
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
