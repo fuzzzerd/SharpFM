@@ -1,0 +1,19 @@
+version: 2
+updates:
+- package-ecosystem: "nuget"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  groups:
+    NLog:
+      patterns:
+        - "NLog*"
+    Avalonia:
+      patterns:
+        - "Avalonia*"
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    # Check for updates to GitHub Actions every weekday
+    interval: "daily"
+    timezone: America/Chicago
