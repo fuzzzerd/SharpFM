@@ -16,7 +16,7 @@
             <MenuItem Header="_New" 
             Command="{Binding NewEmptyItemCommand}"/>
             <Separator/>
-            <MenuItem Header="_Exit"/>
+            <MenuItem Header="_Exit" Command="{Binding ExitApplicationCommand}" />
         </MenuItem>
         <MenuItem Header="_Edit">
             <MenuItem Header="Copy" 

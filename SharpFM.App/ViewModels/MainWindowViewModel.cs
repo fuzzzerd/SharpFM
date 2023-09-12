@@ -22,6 +22,15 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string? _text;
 
     [RelayCommand]
+    private void ExitApplication()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
+        {
+            desktopApp.Shutdown();
+        }
+    }
+
+    [RelayCommand]
     private void NewEmptyItem()
     {
         ErrorMessages?.Clear();
