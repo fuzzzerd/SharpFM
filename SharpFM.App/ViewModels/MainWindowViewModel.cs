@@ -45,6 +45,33 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void CopyAsClass()
+    {
+        ErrorMessages?.Clear();
+        try
+        {
+            if (SelectedClip == null)
+            {
+                // no clip selected;
+                return;
+            }
+
+            // TODO: improve the UX of this whole thing. This works as a hack for proving the concept, but it could be so much better.
+            // See DepInject project for a sample of how to accomplish this.
+            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
+                desktop.MainWindow?.Clipboard is not { } provider)
+                throw new NullReferenceException("Missing Clipboard instance.");
+
+            var classString = SelectedClip.CreateClass();
+            provider.SetTextAsync(classString);
+        }
+        catch (Exception e)
+        {
+            ErrorMessages?.Add(e.Message);
+        }
+    }
+
+    [RelayCommand]
     private async Task PasteText(CancellationToken token)
     {
         ErrorMessages?.Clear();
@@ -57,6 +84,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ErrorMessages?.Add(e.Message);
         }
     }
+
     [RelayCommand]
     private async Task CopySelectedToClip(CancellationToken token)
     {
@@ -67,7 +95,6 @@ public partial class MainWindowViewModel : ViewModelBase
             if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
                 desktop.MainWindow?.Clipboard is not { } provider)
                 throw new NullReferenceException("Missing Clipboard instance.");
-
 
             var dp = new DataPackage();
 

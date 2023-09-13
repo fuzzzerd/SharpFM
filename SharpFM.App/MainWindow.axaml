@@ -5,6 +5,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="500"
+    Width="700" Height="500"
     xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
     xmlns:behaviors="clr-namespace:SharpFM.App.Behaviors;assembly=SharpFM.App"
     x:DataType="vm:MainWindowViewModel"
@@ -12,18 +13,23 @@
     Title="SharpFM">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
-        <MenuItem Header="_File">
-            <MenuItem Header="_New" 
-            Command="{Binding NewEmptyItemCommand}"/>
-            <Separator/>
-            <MenuItem Header="_Exit" Command="{Binding ExitApplicationCommand}" />
-        </MenuItem>
-        <MenuItem Header="_Edit">
-            <MenuItem Header="Copy" 
-            Command="{Binding CopySelectedToClipCommand}"/>
-            <MenuItem Header="Paste"
-            Command="{Binding PasteTextCommand}"/>
-        </MenuItem>
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" 
+                Command="{Binding NewEmptyItemCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Exit" Command="{Binding ExitApplicationCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem 
+                    Header="Copy"
+                    Command="{Binding CopySelectedToClipCommand}"/>
+                <MenuItem 
+                    Header="Paste"
+                    Command="{Binding PasteTextCommand}"/>
+            </MenuItem>
+            <MenuItem Header="Transform">
+                <MenuItem Header="Copy as C# Class" Command="{Binding CopyAsClassCommand}"/>
+            </MenuItem>
         </Menu>
         <TextBlock/>
         <Grid>
