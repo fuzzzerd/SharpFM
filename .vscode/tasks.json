@@ -36,6 +36,12 @@
                 "${workspaceFolder}/SharpFM.sln"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "xstyler",
+            "type": "shell",
+            "command": "dotnet xstyler -f ${file} --ignore",
+            "problemMatcher": []
         }
     ]
 }
