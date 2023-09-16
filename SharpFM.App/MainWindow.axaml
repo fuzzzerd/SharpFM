@@ -18,16 +18,16 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Command="{Binding NewEmptyItemCommand}" Header="_New" />
+                <MenuItem Command="{Binding NewEmptyItem}" Header="_New" />
                 <Separator />
-                <MenuItem Command="{Binding ExitApplicationCommand}" Header="_Exit" />
+                <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Command="{Binding CopySelectedToClipCommand}" Header="Copy" />
-                <MenuItem Command="{Binding PasteTextCommand}" Header="Paste" />
+                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy" />
+                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste" />
             </MenuItem>
             <MenuItem Header="Transform">
-                <MenuItem Command="{Binding CopyAsClassCommand}" Header="Copy as C# Class" />
+                <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
         </Menu>
         <TextBlock />

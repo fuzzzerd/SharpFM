@@ -35,6 +35,8 @@ public class FileMakerClip
     /// <param name="data">Data containing the clip.</param>
     public FileMakerClip(string name, string format, byte[] data)
     {
+        // grab the input clip name
+        Name = name;
         // load the format
         ClipboardFormat = format;
         // skip the first four bytes, as this is a length check
@@ -45,10 +47,10 @@ public class FileMakerClip
 
         // try to show better "name" if possible
         var xdoc = XDocument.Load(new StringReader(XmlData));
-        var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value ?? "";
+        var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value ?? "new-clip";
 
         // set the name from the xml data if possible and fall back to constructor parameter
-        Name = containerName ?? name ?? "new-clip";
+        Name = containerName ?? name;
     }
 
     /// <summary>
