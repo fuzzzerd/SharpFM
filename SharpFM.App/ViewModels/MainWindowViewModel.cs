@@ -140,6 +140,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public string Version
+    {
+        get
+        {
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var version = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion;
+            return version ?? "v?.?.?";
+        }
+    }
+
     public ObservableCollection<ClipViewModel> Keys { get; set; }
 
     private ClipViewModel? _selectedClip;
