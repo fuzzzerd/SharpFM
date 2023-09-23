@@ -8,6 +8,7 @@
     xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:SharpFM.App.ViewModels"
+    Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
     Title="SharpFM"
     Width="700"
     Height="500"
@@ -29,6 +30,7 @@
             <MenuItem Header="Transform">
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
+            <MenuItem Header="{Binding Version}" />
         </Menu>
         <TextBlock />
         <Grid>
