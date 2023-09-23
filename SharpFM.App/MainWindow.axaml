@@ -47,10 +47,10 @@
                             <TextBox Margin="0" Text="{Binding Name, Mode=TwoWay}" />
                             <ComboBox
                                 DisplayMemberBinding="{Binding DisplayName}"
-                                ItemsSource="{Binding ClipTypes}"
-                                SelectedValue="{Binding ClipboardFormat, Mode=TwoWay}"
+                                ItemsSource="{Binding Clip.ClipTypes}"
+                                SelectedValue="{Binding ClipType, Mode=TwoWay}"
                                 SelectedValueBinding="{Binding KeyId}" />
-                            <TextBlock MaxLines="1" Text="{Binding ClipboardFormat}" />
+                            <TextBlock MaxLines="1" Text="{Binding ClipType}" />
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -64,7 +64,7 @@
                 SyntaxHighlighting="Xml"
                 WordWrap="False">
                 <i:Interaction.Behaviors>
-                    <behaviors:DocumentTextBindingBehavior Text="{Binding SelectedClip.XmlData, Mode=TwoWay}" />
+                    <behaviors:DocumentTextBindingBehavior Text="{Binding SelectedClip.ClipXml, Mode=TwoWay}" />
                 </i:Interaction.Behaviors>
             </AvaloniaEdit:TextEditor>
 

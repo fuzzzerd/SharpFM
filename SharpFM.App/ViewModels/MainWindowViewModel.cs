@@ -23,7 +23,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public MainWindowViewModel()
     {
-        Keys = new ObservableCollection<FileMakerClip>();
+        Keys = new ObservableCollection<ClipViewModel>();
     }
 
     public void ExitApplication()
@@ -38,7 +38,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         try
         {
-            Keys.Add(new FileMakerClip("New", FileMakerClip.ClipTypes.First()?.KeyId ?? "", Array.Empty<byte>()));
+            var clip = new FileMakerClip("New", FileMakerClip.ClipTypes.First()?.KeyId ?? "", Array.Empty<byte>());
+            var clipVm = new ClipViewModel(clip);
+
+            Keys.Add(clipVm);
         }
         catch (Exception e)
         {
@@ -62,7 +65,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 desktop.MainWindow?.Clipboard is not { } provider)
                 throw new NullReferenceException("Missing Clipboard instance.");
 
-            var classString = SelectedClip.CreateClass();
+            var classString = SelectedClip.Clip.CreateClass();
             provider.SetTextAsync(classString);
         }
         catch (Exception e)
@@ -99,12 +102,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
                 // this is not the most efficient method to detect it, but it works well enough for now
-                if (Keys.Any(k => k.XmlData == clip.XmlData))
+                if (Keys.Any(k => k.ClipXml == clip.XmlData))
                 {
                     continue;
                 }
 
-                Keys.Add(clip);
+                Keys.Add(new ClipViewModel(clip));
             }
         }
         catch (Exception e)
@@ -123,12 +126,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
             var dp = new DataPackage();
 
-            if (SelectedClip is not FileMakerClip data)
+            if (SelectedClip is not ClipViewModel data)
             {
                 return; // no data
             }
 
-            dp.SetData(data.ClipboardFormat, data.RawData);
+            dp.SetData(data.ClipType, data.Clip.RawData);
 
             await provider.SetDataObjectAsync(dp);
         }
@@ -137,10 +140,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public ObservableCollection<FileMakerClip> Keys { get; set; }
+    public ObservableCollection<ClipViewModel> Keys { get; set; }
 
-    private FileMakerClip? _selectedClip;
-    public FileMakerClip? SelectedClip
+    private ClipViewModel? _selectedClip;
+    public ClipViewModel? SelectedClip
     {
         get => _selectedClip;
         set
