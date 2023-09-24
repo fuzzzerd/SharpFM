@@ -14,6 +14,8 @@ namespace SharpFM.App.ViewModels;
 
 public partial class MainWindowViewModel : INotifyPropertyChanged
 {
+    public ClipDbContext _context;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
@@ -23,7 +25,53 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public MainWindowViewModel()
     {
+        _context = new ClipDbContext();
+        _context.Database.EnsureCreated();
+
+        Console.WriteLine($"Database path: {_context.DbPath}.");
+
         Keys = new ObservableCollection<ClipViewModel>();
+
+        foreach (var clip in _context.Clips)
+        {
+            Keys.Add(new ClipViewModel(
+                    new FileMakerClip(
+                        clip.ClipName,
+                        clip.ClipType,
+                        clip.ClipXml
+                    )
+                )
+            );
+        }
+    }
+
+    public void SaveToDb()
+    {
+        var dbClips = _context.Clips.ToList();
+
+        foreach (var clip in Keys)
+        {
+            _context.Clips.Add(new Clip()
+            {
+                ClipName = clip.Name,
+                ClipType = clip.ClipType,
+                ClipXml = clip.ClipXml
+            });
+        }
+
+        _context.SaveChanges();
+    }
+
+    public void ClearDb()
+    {
+        var clips = _context.Clips.ToList();
+
+        foreach (var clip in clips)
+        {
+            _context.Clips.Remove(clip);
+        }
+
+        _context.SaveChanges();
     }
 
     public void ExitApplication()
