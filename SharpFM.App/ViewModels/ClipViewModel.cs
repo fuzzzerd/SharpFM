@@ -15,9 +15,23 @@ public partial class ClipViewModel : INotifyPropertyChanged
 
     public FileMakerClip Clip { get; set; }
 
-    public ClipViewModel(FileMakerClip clip)
+    public ClipViewModel(FileMakerClip clip) : this(clip, null) { }
+
+    public ClipViewModel(FileMakerClip clip, int? clipId)
     {
         Clip = clip;
+        ClipId = clipId;
+    }
+
+    private int? _clipId;
+    public int? ClipId
+    {
+        get => _clipId;
+        set
+        {
+            _clipId = value;
+            NotifyPropertyChanged();
+        }
     }
 
     public string ClipType

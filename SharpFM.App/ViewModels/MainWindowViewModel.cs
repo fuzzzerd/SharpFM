@@ -31,16 +31,17 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         Console.WriteLine($"Database path: {_context.DbPath}.");
 
-        Keys = new ObservableCollection<ClipViewModel>();
+        FileMakerClips = new ObservableCollection<ClipViewModel>();
 
         foreach (var clip in _context.Clips)
         {
-            Keys.Add(new ClipViewModel(
+            FileMakerClips.Add(new ClipViewModel(
                     new FileMakerClip(
                         clip.ClipName,
                         clip.ClipType,
                         clip.ClipXml
-                    )
+                    ),
+                    clip.ClipId
                 )
             );
         }
@@ -50,11 +51,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         var dbClips = _context.Clips.ToList();
 
-        foreach (var clip in Keys)
+        foreach (var clip in FileMakerClips)
         {
-            if (dbClips.Any(dbc => dbc.ClipName == clip.Name))
+            var dbClip = dbClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+
+            if (dbClip is not null)
             {
-                var dbClip = dbClips.First(dbc => dbc.ClipName == clip.Name);
                 dbClip.ClipType = clip.ClipType;
                 dbClip.ClipXml = clip.ClipXml;
             }
@@ -99,7 +101,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             var clip = new FileMakerClip("New", FileMakerClip.ClipTypes.First()?.KeyId ?? "", Array.Empty<byte>());
             var clipVm = new ClipViewModel(clip);
 
-            Keys.Add(clipVm);
+            FileMakerClips.Add(clipVm);
         }
         catch (Exception e)
         {
@@ -160,12 +162,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
                 // this is not the most efficient method to detect it, but it works well enough for now
-                if (Keys.Any(k => k.ClipXml == clip.XmlData))
+                if (FileMakerClips.Any(k => k.ClipXml == clip.XmlData))
                 {
                     continue;
                 }
 
-                Keys.Add(new ClipViewModel(clip));
+                FileMakerClips.Add(new ClipViewModel(clip));
             }
         }
         catch (Exception e)
@@ -198,6 +200,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// SharpFM Version.
+    /// </summary>
     public string Version
     {
         get
@@ -208,7 +213,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public ObservableCollection<ClipViewModel> Keys { get; set; }
+    public ObservableCollection<ClipViewModel> FileMakerClips { get; set; }
 
     private ClipViewModel? _selectedClip;
     public ClipViewModel? SelectedClip
