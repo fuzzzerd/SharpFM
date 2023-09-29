@@ -131,7 +131,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public async Task PasteFileMakerClipData(CancellationToken token)
+    public async Task PasteFileMakerClipData()
     {
         try
         {
@@ -173,7 +173,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public async Task CopySelectedToClip(CancellationToken token)
+    public async Task CopySelectedToClip()
     {
         try
         {
