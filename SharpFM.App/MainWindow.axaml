@@ -46,7 +46,7 @@
 
             <ListBox
                 Grid.Column="0"
-                ItemsSource="{Binding Keys}"
+                ItemsSource="{Binding FileMakerClips}"
                 SelectedItem="{Binding SelectedClip}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
