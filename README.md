@@ -7,7 +7,7 @@ SharpFM is a cross platform (Mac, Windows, Linux) FileMaker Pro Developer Utilit
 - [x] Copy FileMaker Scripts, Tables, or Layouts From FileMaker Pro to their XML representation.
 - [x] Edit raw FileMaker XML code (scripts, layouts, tables) with ability to paste changes back into FileMaker.
 - [x] Use AvaloniaEdit for XML editing with syntax highlighting.
-- [ ] Persist FileMaker clips between SharpFM runs.
+- [x] Persist FileMaker clips between SharpFM runs.
 - [ ] Better UI tools to mutate the Raw XML.
 
 ## App Icon
