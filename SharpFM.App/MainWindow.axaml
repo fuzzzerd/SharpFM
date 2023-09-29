@@ -21,14 +21,19 @@
             <MenuItem Header="_File">
                 <MenuItem Command="{Binding NewEmptyItem}" Header="_New" />
                 <Separator />
+                <MenuItem Command="{Binding SaveToDb}" Header="Save All" />
+                <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy" />
-                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste" />
+                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy as FileMaker Blob" />
+                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste From FileMaker Blob" />
             </MenuItem>
             <MenuItem Header="Transform">
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
+            </MenuItem>
+            <MenuItem Header="Storage">
+                <MenuItem Command="{Binding ClearDb}" Header="Clear Db" />
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
@@ -41,7 +46,7 @@
 
             <ListBox
                 Grid.Column="0"
-                ItemsSource="{Binding Keys}"
+                ItemsSource="{Binding FileMakerClips}"
                 SelectedItem="{Binding SelectedClip}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>

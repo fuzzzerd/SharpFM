@@ -8,12 +8,15 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using FluentAvalonia.UI.Data;
+using SharpFM.App.Models;
 using SharpFM.Core;
 
 namespace SharpFM.App.ViewModels;
 
 public partial class MainWindowViewModel : INotifyPropertyChanged
 {
+    public ClipDbContext _context;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
@@ -23,7 +26,64 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public MainWindowViewModel()
     {
-        Keys = new ObservableCollection<ClipViewModel>();
+        _context = new ClipDbContext();
+        _context.Database.EnsureCreated();
+
+        Console.WriteLine($"Database path: {_context.DbPath}.");
+
+        FileMakerClips = new ObservableCollection<ClipViewModel>();
+
+        foreach (var clip in _context.Clips)
+        {
+            FileMakerClips.Add(new ClipViewModel(
+                    new FileMakerClip(
+                        clip.ClipName,
+                        clip.ClipType,
+                        clip.ClipXml
+                    ),
+                    clip.ClipId
+                )
+            );
+        }
+    }
+
+    public void SaveToDb()
+    {
+        var dbClips = _context.Clips.ToList();
+
+        foreach (var clip in FileMakerClips)
+        {
+            var dbClip = dbClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+
+            if (dbClip is not null)
+            {
+                dbClip.ClipType = clip.ClipType;
+                dbClip.ClipXml = clip.ClipXml;
+            }
+            else
+            {
+                _context.Clips.Add(new Clip()
+                {
+                    ClipName = clip.Name,
+                    ClipType = clip.ClipType,
+                    ClipXml = clip.ClipXml
+                });
+            }
+        }
+
+        _context.SaveChanges();
+    }
+
+    public void ClearDb()
+    {
+        var clips = _context.Clips.ToList();
+
+        foreach (var clip in clips)
+        {
+            _context.Clips.Remove(clip);
+        }
+
+        _context.SaveChanges();
     }
 
     public void ExitApplication()
@@ -41,7 +101,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             var clip = new FileMakerClip("New", FileMakerClip.ClipTypes.First()?.KeyId ?? "", Array.Empty<byte>());
             var clipVm = new ClipViewModel(clip);
 
-            Keys.Add(clipVm);
+            FileMakerClips.Add(clipVm);
         }
         catch (Exception e)
         {
@@ -73,7 +133,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public async Task PasteFileMakerClipData(CancellationToken token)
+    public async Task PasteFileMakerClipData()
     {
         try
         {
@@ -102,12 +162,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
                 // this is not the most efficient method to detect it, but it works well enough for now
-                if (Keys.Any(k => k.ClipXml == clip.XmlData))
+                if (FileMakerClips.Any(k => k.ClipXml == clip.XmlData))
                 {
                     continue;
                 }
 
-                Keys.Add(new ClipViewModel(clip));
+                FileMakerClips.Add(new ClipViewModel(clip));
             }
         }
         catch (Exception e)
@@ -115,7 +175,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public async Task CopySelectedToClip(CancellationToken token)
+    public async Task CopySelectedToClip()
     {
         try
         {
@@ -140,6 +200,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// SharpFM Version.
+    /// </summary>
     public string Version
     {
         get
@@ -150,7 +213,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public ObservableCollection<ClipViewModel> Keys { get; set; }
+    public ObservableCollection<ClipViewModel> FileMakerClips { get; set; }
 
     private ClipViewModel? _selectedClip;
     public ClipViewModel? SelectedClip

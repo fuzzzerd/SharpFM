@@ -27,6 +27,24 @@ public class FileMakerClip
         new ClipFormat() { KeyId = "Mac-XMSC", DisplayName = "Script" }
     };
 
+    public FileMakerClip(string name, string format, string xml)
+    {
+        // grab the input clip name
+        Name = name;
+
+        // load the format
+        ClipboardFormat = format;
+
+        try
+        {
+            XmlData = PrettyXml(xml);
+        }
+        catch
+        {
+            XmlData = xml;
+        }
+    }
+
     /// <summary>
     /// Constructor taking in the raw data byte array.
     /// </summary>
