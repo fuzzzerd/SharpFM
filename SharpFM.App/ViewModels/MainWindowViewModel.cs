@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using FluentAvalonia.UI.Data;
+using SharpFM.App.Models;
 using SharpFM.Core;
 
 namespace SharpFM.App.ViewModels;
