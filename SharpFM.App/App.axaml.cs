@@ -2,11 +2,15 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using SharpFM.App.ViewModels;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
 
 namespace SharpFM.App;
 
 public partial class App : Application
 {
+    ILogger logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<MainWindow>();
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -18,7 +22,7 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel()
+                DataContext = new MainWindowViewModel(logger)
             };
         }
 

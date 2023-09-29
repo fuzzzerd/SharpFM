@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using FluentAvalonia.UI.Data;
+using Microsoft.Extensions.Logging;
 using SharpFM.App.Models;
 using SharpFM.Core;
 
@@ -14,7 +15,9 @@ namespace SharpFM.App.ViewModels;
 
 public partial class MainWindowViewModel : INotifyPropertyChanged
 {
-    public ClipDbContext _context;
+    private readonly ILogger _logger;
+
+    public readonly ClipDbContext _context;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -23,12 +26,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(ILogger logger)
     {
+        _logger = logger;
+
         _context = new ClipDbContext();
         _context.Database.EnsureCreated();
 
-        Console.WriteLine($"Database path: {_context.DbPath}.");
+        _logger.LogInformation($"Database path: {_context.DbPath}.");
 
         FileMakerClips = new ObservableCollection<ClipViewModel>();
 
@@ -104,6 +109,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
+            _logger.LogCritical("Error creating new Clip.", e);
         }
     }
 
@@ -129,6 +135,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
+            _logger.LogCritical("Error Copying as Class.", e);
         }
     }
 
@@ -171,6 +178,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
+            _logger.LogCritical("Error translating FileMaker blob to Xml.", e);
         }
     }
 
@@ -196,6 +204,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
+            _logger.LogCritical("Error returning the selected Clip FileMaker blob format.", e);
         }
     }
 
