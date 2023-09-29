@@ -1,9 +1,7 @@
 using System;
-using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
-using SharpFM.Core;
 using TextMateSharp.Grammars;
 
 namespace SharpFM.App;

@@ -11,6 +11,9 @@ updates:
     Avalonia:
       patterns:
         - "Avalonia*"
+    MicrosoftCodeAnalysis:
+      patterns:
+        - "Microsoft.CodeAnalysis.*"
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
