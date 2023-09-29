@@ -51,12 +51,21 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         foreach (var clip in Keys)
         {
-            _context.Clips.Add(new Clip()
+            if (dbClips.Any(dbc => dbc.ClipName == clip.Name))
             {
-                ClipName = clip.Name,
-                ClipType = clip.ClipType,
-                ClipXml = clip.ClipXml
-            });
+                var dbClip = dbClips.First(dbc => dbc.ClipName == clip.Name);
+                dbClip.ClipType = clip.ClipType;
+                dbClip.ClipXml = clip.ClipXml;
+            }
+            else
+            {
+                _context.Clips.Add(new Clip()
+                {
+                    ClipName = clip.Name,
+                    ClipType = clip.ClipType,
+                    ClipXml = clip.ClipXml
+                });
+            }
         }
 
         _context.SaveChanges();
