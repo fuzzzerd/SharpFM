@@ -43,6 +43,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    
+    <PackageReference Include="NLog" Version="5.2.4" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.4" />
+
+    <None Update="nlog.config" CopyToOutputDirectory="Always" />
 
     <ProjectReference Include="..\SharpFM.Core\SharpFM.Core.csproj" />
   </ItemGroup>
