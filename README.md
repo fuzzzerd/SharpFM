@@ -6,9 +6,10 @@ SharpFM is a cross-platform (Mac, Windows, Linux) FileMaker Pro Developer Utilit
 
 Note: SharpFM and FileMaker must be running on the same computer. In order to share or move a clip across machine barriers, you must share the text based XML version.
 
+- Head over to [Releases](https://github.com/fuzzzerd/SharpFM/releases)
+
 ### Clipping from FileMaker
 
-- Head over to [Releases](https://github.com/fuzzzerd/SharpFM/releases)
 - Download the latest version (or a past version if you need)
 - Run the application.
 - Switch over to FileMaker.
@@ -17,7 +18,7 @@ Note: SharpFM and FileMaker must be running on the same computer. In order to sh
 - Use the Edit menu to "Paste from FileMaker Blob".
 - See your object(s) in the clips list with the Xml editor on the side.
 
-### Clipping from SharmFM to FileMaker
+### Clipping from SharpFM to FileMaker
 
 - Ensure you have a clip in SharpFM
 - Select the clip in the list
