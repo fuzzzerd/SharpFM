@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using NLog;
 using System;
 
 namespace SharpFM.App;
@@ -11,7 +12,16 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        var logger = LogManager
+            .Setup()
+            .LoadConfigurationFromFile("nlog.config")
+            .GetCurrentClassLogger();
+
+        logger.Info("SharpFM has started up.");
+
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+        logger.Info("SharpFM has shut down.");
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
