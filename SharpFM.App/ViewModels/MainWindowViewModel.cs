@@ -17,8 +17,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly ILogger _logger;
 
-    public readonly ClipDbContext _context;
-
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
@@ -30,14 +28,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         _logger = logger;
 
-        _context = new ClipDbContext();
-        _context.Database.EnsureCreated();
+        using var clipContext = new ClipDbContext();
+        clipContext.Database.EnsureCreated();
 
-        _logger.LogInformation($"Database path: {_context.DbPath}.");
+        _logger.LogInformation($"Database path: {clipContext.DbPath}.");
 
         FileMakerClips = new ObservableCollection<ClipViewModel>();
 
-        foreach (var clip in _context.Clips)
+        foreach (var clip in clipContext.Clips)
         {
             FileMakerClips.Add(new ClipViewModel(
                     new FileMakerClip(
@@ -53,7 +51,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public void SaveToDb()
     {
-        var dbClips = _context.Clips.ToList();
+        using var clipContext = new ClipDbContext();
+
+        var dbClips = clipContext.Clips.ToList();
 
         foreach (var clip in FileMakerClips)
         {
@@ -66,7 +66,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             }
             else
             {
-                _context.Clips.Add(new Clip()
+                clipContext.Clips.Add(new Clip()
                 {
                     ClipName = clip.Name,
                     ClipType = clip.ClipType,
@@ -75,19 +75,21 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             }
         }
 
-        _context.SaveChanges();
+        clipContext.SaveChanges();
     }
 
     public void ClearDb()
     {
-        var clips = _context.Clips.ToList();
+        using var clipContext = new ClipDbContext();
+
+        var clips = clipContext.Clips.ToList();
 
         foreach (var clip in clips)
         {
-            _context.Clips.Remove(clip);
+            clipContext.Clips.Remove(clip);
         }
 
-        _context.SaveChanges();
+        clipContext.SaveChanges();
     }
 
     public void ExitApplication()
