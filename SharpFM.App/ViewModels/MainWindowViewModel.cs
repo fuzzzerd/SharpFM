@@ -111,7 +111,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
-            _logger.LogCritical("Error creating new Clip.", e);
+            _logger.LogCritical(e, "Error creating new Clip.");
         }
     }
 
@@ -137,7 +137,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
-            _logger.LogCritical("Error Copying as Class.", e);
+            _logger.LogCritical(e, "Error Copying as Class.");
         }
     }
 
@@ -180,7 +180,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
-            _logger.LogCritical("Error translating FileMaker blob to Xml.", e);
+            _logger.LogCritical(e, "Error translating FileMaker blob to Xml.");
         }
     }
 
@@ -206,7 +206,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
         catch (Exception e)
         {
-            _logger.LogCritical("Error returning the selected Clip FileMaker blob format.", e);
+            _logger.LogCritical(e, "Error returning the selected Clip FileMaker blob format.");
         }
     }
 
