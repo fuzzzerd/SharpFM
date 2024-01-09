@@ -1,11 +1,24 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch SharpFM.App",
-            "type": "dotnet",
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/SharpFM.App/SharpFM.App.csproj",
-            "launchConfigurationId": "TargetFramework=;SharpFM.App"
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/SharpFM.App/bin/Debug/net8.0/win-x64/SharpFM.App.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/SharpFM.App",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
         }
     ]
 }
