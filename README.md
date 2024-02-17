@@ -52,6 +52,6 @@ SharpFM has the option to persist clips between sessions by using the File menu 
 
 ## App Icon
 
-![Sharp FM](SharpFM/Assets/noun-sharp-teeth-monster-4226695.small.png)
+![Sharp FM](Assets/noun-sharp-teeth-monster-4226695.small.png)
 
 sharp teeth monster by Kanyanee Watanajitkasem from [Noun Project](https://thenounproject.com/browse/icons/term/sharp-teeth-monster/) (CC BY 3.0)
