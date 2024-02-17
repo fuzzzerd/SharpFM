@@ -2,7 +2,7 @@
 using NLog;
 using System;
 
-namespace SharpFM.App;
+namespace SharpFM;
 
 class Program
 {

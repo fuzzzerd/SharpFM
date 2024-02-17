@@ -4,7 +4,7 @@ using Avalonia.Xaml.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.Utils;
 
-namespace SharpFM.App.Behaviors;
+namespace SharpFM.Behaviors;
 
 public class DocumentTextBindingBehavior : Behavior<TextEditor>
 {

@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Logging;
 using NLog;
 
-namespace SharpFM.App;
+namespace SharpFM;
 
 /// <summary>
 /// Avalonia Log Sink that writes to NLog Loggers.

@@ -4,7 +4,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 
-namespace SharpFM.App;
+namespace SharpFM;
 
 public partial class MainWindow : Window
 {

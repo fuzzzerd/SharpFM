@@ -48,7 +48,5 @@
     <PackageReference Include="NLog.Extensions.Logging" Version="5.3.8" />
 
     <None Update="nlog.config" CopyToOutputDirectory="Always" />
-
-    <ProjectReference Include="..\SharpFM.Core\SharpFM.Core.csproj" />
   </ItemGroup>
 </Project>

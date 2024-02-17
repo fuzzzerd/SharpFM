@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpFM.App", "SharpFM.App\SharpFM.App.csproj", "{5245F468-DAD7-478C-8E5F-518A03664F71}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpFM.Core", "SharpFM.Core\SharpFM.Core.csproj", "{9E4B6169-0E69-430A-BF6C-184A10C71F9B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpFM", "SharpFM.csproj", "{5245F468-DAD7-478C-8E5F-518A03664F71}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

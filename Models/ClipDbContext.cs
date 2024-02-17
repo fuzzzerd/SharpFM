@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 
 
-namespace SharpFM.App.Models;
+namespace SharpFM.Models;
 
 /// <summary>
 /// Clip Db Context
