@@ -37,4 +37,4 @@ jobs:
         run: dotnet test --no-build 
 
       - name: Publish
-        run: dotnet publish SharpFM/SharpFM.csproj --runtime "${{ matrix.target }}" -c Debug
+        run: dotnet publish SharpFM.csproj --runtime "${{ matrix.target }}" -c Debug
