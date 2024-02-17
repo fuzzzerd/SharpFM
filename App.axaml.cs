@@ -1,11 +1,11 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using SharpFM.App.ViewModels;
+using SharpFM.ViewModels;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 
-namespace SharpFM.App;
+namespace SharpFM;
 
 public partial class App : Application
 {

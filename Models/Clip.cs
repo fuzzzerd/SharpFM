@@ -1,4 +1,4 @@
-namespace SharpFM.App.Models;
+namespace SharpFM.Models;
 
 /// <summary>
 /// Clip Data Model

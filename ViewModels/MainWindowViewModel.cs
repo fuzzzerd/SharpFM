@@ -8,10 +8,9 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using FluentAvalonia.UI.Data;
 using Microsoft.Extensions.Logging;
-using SharpFM.App.Models;
-using SharpFM.Core;
+using SharpFM.Models;
 
-namespace SharpFM.App.ViewModels;
+namespace SharpFM.ViewModels;
 
 public partial class MainWindowViewModel : INotifyPropertyChanged
 {

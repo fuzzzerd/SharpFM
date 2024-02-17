@@ -32,10 +32,10 @@ jobs:
         shell: bash
         run: |
           tag=$(git describe --tags --abbrev=0)
-          release_name="SharpFM.App-$tag-${{ matrix.target }}"
+          release_name="SharpFM-$tag-${{ matrix.target }}"
 
           # Build everything
-          dotnet publish SharpFM.App/SharpFM.App.csproj --runtime "${{ matrix.target }}" -c Release -o "$release_name"
+          dotnet publish SharpFM.csproj --runtime "${{ matrix.target }}" -c Release -o "$release_name"
 
           # Pack files
           if [ "${{ matrix.target }}" == "win-x64" ]; then
@@ -51,6 +51,6 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@v1
         with:
-          files: "SharpFM.App*"
+          files: "SharpFM*"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

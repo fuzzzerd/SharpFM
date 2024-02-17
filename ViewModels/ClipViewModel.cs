@@ -1,8 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using SharpFM.Core;
 
-namespace SharpFM.App.ViewModels;
+namespace SharpFM.ViewModels;
 
 public partial class ClipViewModel : INotifyPropertyChanged
 {

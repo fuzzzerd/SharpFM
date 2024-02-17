@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/SharpFM.App/bin/Debug/net8.0/win-x64/SharpFM.App.dll",
+            "program": "${workspaceFolder}/bin/Debug/net8.0/win-x64/SharpFM.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/SharpFM.App",
+            "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
         },
