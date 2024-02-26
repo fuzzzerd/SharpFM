@@ -21,6 +21,8 @@
             <MenuItem Header="_File">
                 <MenuItem Command="{Binding NewEmptyItem}" Header="_New" />
                 <Separator />
+                <MenuItem Header="Open Folder" />
+                <Separator />
                 <MenuItem Command="{Binding SaveToDb}" Header="Save All" />
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
@@ -31,9 +33,6 @@
             </MenuItem>
             <MenuItem Header="Transform">
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
-            </MenuItem>
-            <MenuItem Header="Storage">
-                <MenuItem Command="{Binding ClearDb}" Header="Clear Db" />
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>

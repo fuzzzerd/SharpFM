@@ -27,12 +27,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         _logger = logger;
 
-        using var clipContext = new ClipDbContext();
-        clipContext.Database.EnsureCreated();
+        var clipContext = new ClipRepository();
+        clipContext.LoadClips();
 
-        _logger.LogInformation($"Database path: {clipContext.DbPath}.");
-
-        FileMakerClips = new ObservableCollection<ClipViewModel>();
+        FileMakerClips = [];
 
         foreach (var clip in clipContext.Clips)
         {
@@ -50,7 +48,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public void SaveToDb()
     {
-        using var clipContext = new ClipDbContext();
+        var clipContext = new ClipRepository();
 
         var dbClips = clipContext.Clips.ToList();
 
@@ -72,20 +70,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                     ClipXml = clip.ClipXml
                 });
             }
-        }
-
-        clipContext.SaveChanges();
-    }
-
-    public void ClearDb()
-    {
-        using var clipContext = new ClipDbContext();
-
-        var clips = clipContext.Clips.ToList();
-
-        foreach (var clip in clips)
-        {
-            clipContext.Clips.Remove(clip);
         }
 
         clipContext.SaveChanges();
@@ -212,7 +196,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     /// <summary>
     /// SharpFM Version.
     /// </summary>
-    public string Version
+    public static string Version
     {
         get
         {
