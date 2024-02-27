@@ -21,9 +21,9 @@
             <MenuItem Header="_File">
                 <MenuItem Command="{Binding NewEmptyItem}" Header="_New" />
                 <Separator />
-                <MenuItem Header="Open Folder" />
+                <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder" />
                 <Separator />
-                <MenuItem Command="{Binding SaveToDb}" Header="Save All" />
+                <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All" />
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
             </MenuItem>
@@ -36,7 +36,6 @@
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
-        <TextBlock />
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="225" />

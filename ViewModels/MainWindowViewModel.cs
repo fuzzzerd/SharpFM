@@ -6,9 +6,12 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using FluentAvalonia.UI.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SharpFM.Models;
+using SharpFM.Services;
 
 namespace SharpFM.ViewModels;
 
@@ -17,6 +20,8 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private readonly ILogger _logger;
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string? CurrentPath = null;
 
     private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
     {
@@ -27,10 +32,17 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         _logger = logger;
 
-        var clipContext = new ClipRepository();
+        FileMakerClips = [];
+
+        LoadClips(CurrentPath);
+    }
+
+    private void LoadClips(string? pathToLoad)
+    {
+        var clipContext = new ClipRepository(pathToLoad);
         clipContext.LoadClips();
 
-        FileMakerClips = [];
+        FileMakerClips.Clear();
 
         foreach (var clip in clipContext.Clips)
         {
@@ -46,9 +58,18 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public void SaveToDb()
+    public async Task OpenFolderPicker()
     {
-        var clipContext = new ClipRepository();
+        var folderService = App.Current?.Services?.GetService<FolderService>();
+
+        CurrentPath = await folderService.GetFolderAsync();
+
+        LoadClips(CurrentPath);
+    }
+
+    public void SaveClipsStorage()
+    {
+        var clipContext = new ClipRepository(CurrentPath);
 
         var dbClips = clipContext.Clips.ToList();
 
