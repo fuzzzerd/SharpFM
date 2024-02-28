@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Platform.Storage;
 using FluentAvalonia.UI.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -51,8 +50,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                         clip.ClipName,
                         clip.ClipType,
                         clip.ClipXml
-                    ),
-                    clip.ClipId
+                    )
                 )
             );
         }
@@ -60,11 +58,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public async Task OpenFolderPicker()
     {
-        var folderService = App.Current?.Services?.GetService<FolderService>();
+        if (App.Current?.Services?.GetService<FolderService>() is FolderService folderService)
+        {
+            CurrentPath = await folderService.GetFolderAsync();
 
-        CurrentPath = await folderService.GetFolderAsync();
-
-        LoadClips(CurrentPath);
+            LoadClips(CurrentPath);
+        }
     }
 
     public void SaveClipsStorage()

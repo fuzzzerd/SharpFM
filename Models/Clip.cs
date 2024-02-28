@@ -6,11 +6,6 @@ namespace SharpFM.Models;
 public class Clip
 {
     /// <summary>
-    /// Database Id
-    /// </summary>
-    public int ClipId { get; set; }
-
-    /// <summary>
     /// Display name for clip may match Name inside the xml data or may not.
     /// </summary>
     public string ClipName { get; set; } = string.Empty;
