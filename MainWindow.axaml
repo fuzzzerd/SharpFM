@@ -19,17 +19,19 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Command="{Binding NewEmptyItem}" Header="_New" />
+                <MenuItem Header="_New">
+                    <MenuItem Command="{Binding NewEmptyItem}" Header="Blank Clip" />
+                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="From Clipboard (copied from FileMaker)" />
+                </MenuItem>
                 <Separator />
                 <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder" />
                 <Separator />
-                <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All" />
+                <MenuItem Header="Save">
+                    <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All To Folder" />
+                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Selected clip to Clipboard (to paste into FileMaker)" />
+                </MenuItem>
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
-            </MenuItem>
-            <MenuItem Header="_Edit">
-                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy as FileMaker Blob" />
-                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste From FileMaker Blob" />
             </MenuItem>
             <MenuItem Header="Transform">
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
@@ -37,12 +39,21 @@
             <MenuItem Header="{Binding Version}" />
         </Menu>
         <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="225" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
+            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8">
+                <TextBox Text="{Binding CurrentPath, Mode=OneWay}" />
+            </StackPanel>
+
             <ListBox
+                Grid.Row="1"
                 Grid.Column="0"
                 ItemsSource="{Binding FileMakerClips}"
                 SelectedItem="{Binding SelectedClip}">
@@ -63,6 +74,7 @@
 
             <AvaloniaEdit:TextEditor
                 x:Name="avaloniaEditor"
+                Grid.Row="1"
                 Grid.Column="1"
                 FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                 ShowLineNumbers="True"

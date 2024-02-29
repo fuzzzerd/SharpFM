@@ -20,8 +20,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string? CurrentPath = null;
-
     private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -238,4 +236,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             NotifyPropertyChanged();
         }
     }
+
+    private string _currentPath;
+    public string CurrentPath
+    {
+        get => _currentPath;
+        set
+        {
+            _currentPath = value;
+            NotifyPropertyChanged();
+        }
+    }
+
 }
