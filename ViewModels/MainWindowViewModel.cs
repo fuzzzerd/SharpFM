@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -28,13 +29,18 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel(ILogger logger)
     {
         _logger = logger;
+        // default to the local app data folder + \SharpFM, otherwise use provided path
+        _currentPath ??= Path.Join(
+            path1: Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            path2: "SharpFM"
+        );
 
         FileMakerClips = [];
 
         LoadClips(CurrentPath);
     }
 
-    private void LoadClips(string? pathToLoad)
+    private void LoadClips(string pathToLoad)
     {
         var clipContext = new ClipRepository(pathToLoad);
         clipContext.LoadClips();

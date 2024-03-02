@@ -22,14 +22,8 @@ public class ClipRepository
     /// <summary>
     /// Constructor.
     /// </summary>
-    public ClipRepository(string? path = null)
+    public ClipRepository(string path)
     {
-        // default to the local app data folder + \SharpFM, otherwise use provided path
-        path ??= Path.Join(
-            path1: Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            path2: "SharpFM"
-        );
-
         // ensure the directory exists
         if (!Directory.Exists(path))
         {
