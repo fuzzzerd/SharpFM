@@ -39,16 +39,20 @@ SharpFM has the option to persist clips between sessions by using the File menu 
 
 ## Features
 
-- [x] Copy FileMaker Scripts, Tables, or Layouts From FileMaker Pro to their XML representation.
+- [x] Copy FileMaker Scripts, Tables, or Layouts From FileMaker Pro to their XML representation and back into FileMaker.
+- [x] Store FileMaker Scripts, Tables, and Layouts to xml files that can be shared via git, email or other text based tools.
 - [x] Edit raw FileMaker XML code (scripts, layouts, tables) with ability to paste changes back into FileMaker.
-- [x] Use AvaloniaEdit for XML editing with syntax highlighting.
-- [x] Persist FileMaker clips between SharpFM runs.
+- [x] Use AvaloniaEdit for XML editing with XML syntax highlighting.
 - [ ] Better UI tools to mutate the Raw XML.
+
+## Troubleshooting
+
+Logs are stored in `${specialfolder:folder=CommonApplicationData}\SharpFM` and are automatically rotated after thirty days.
 
 ## Similar Mac OS / Apple Based Developer Utilities
 
-- Apple Script utility: https://github.com/DanShockley/FmClipTools
-- FileMaker based Generator: https://github.com/proofgeist/generator
+- Apple Script utility: <https://github.com/DanShockley/FmClipTools>
+- FileMaker based Generator: <https://github.com/proofgeist/generator>
 
 ## App Icon
 
