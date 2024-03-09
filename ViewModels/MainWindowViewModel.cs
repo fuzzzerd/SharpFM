@@ -32,7 +32,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         // default to the local app data folder + \SharpFM, otherwise use provided path
         _currentPath ??= Path.Join(
             path1: Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            path2: "SharpFM"
+            path2: Path.Join("SharpFM", "Clips")
         );
 
         FileMakerClips = [];
@@ -74,11 +74,11 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         var clipContext = new ClipRepository(CurrentPath);
 
-        var dbClips = clipContext.Clips.ToList();
+        var fsClips = clipContext.Clips.ToList();
 
         foreach (var clip in FileMakerClips)
         {
-            var dbClip = dbClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+            var dbClip = fsClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
 
             if (dbClip is not null)
             {
@@ -99,6 +99,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         clipContext.SaveChanges();
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound to Xaml Button, throws when static.")]
     public void ExitApplication()
     {
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
