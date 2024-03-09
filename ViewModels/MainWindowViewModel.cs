@@ -1,14 +1,17 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using FluentAvalonia.UI.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SharpFM.Models;
+using SharpFM.Services;
 
 namespace SharpFM.ViewModels;
 
@@ -26,13 +29,23 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel(ILogger logger)
     {
         _logger = logger;
+        // default to the local app data folder + \SharpFM, otherwise use provided path
+        _currentPath ??= Path.Join(
+            path1: Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            path2: Path.Join("SharpFM", "Clips")
+        );
 
-        using var clipContext = new ClipDbContext();
-        clipContext.Database.EnsureCreated();
+        FileMakerClips = [];
 
-        _logger.LogInformation($"Database path: {clipContext.DbPath}.");
+        LoadClips(CurrentPath);
+    }
 
-        FileMakerClips = new ObservableCollection<ClipViewModel>();
+    private void LoadClips(string pathToLoad)
+    {
+        var clipContext = new ClipRepository(pathToLoad);
+        clipContext.LoadClips();
+
+        FileMakerClips.Clear();
 
         foreach (var clip in clipContext.Clips)
         {
@@ -41,22 +54,31 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                         clip.ClipName,
                         clip.ClipType,
                         clip.ClipXml
-                    ),
-                    clip.ClipId
+                    )
                 )
             );
         }
     }
 
-    public void SaveToDb()
+    public async Task OpenFolderPicker()
     {
-        using var clipContext = new ClipDbContext();
+        if (App.Current?.Services?.GetService<FolderService>() is FolderService folderService)
+        {
+            CurrentPath = await folderService.GetFolderAsync();
 
-        var dbClips = clipContext.Clips.ToList();
+            LoadClips(CurrentPath);
+        }
+    }
+
+    public void SaveClipsStorage()
+    {
+        var clipContext = new ClipRepository(CurrentPath);
+
+        var fsClips = clipContext.Clips.ToList();
 
         foreach (var clip in FileMakerClips)
         {
-            var dbClip = dbClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+            var dbClip = fsClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
 
             if (dbClip is not null)
             {
@@ -77,20 +99,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         clipContext.SaveChanges();
     }
 
-    public void ClearDb()
-    {
-        using var clipContext = new ClipDbContext();
-
-        var clips = clipContext.Clips.ToList();
-
-        foreach (var clip in clips)
-        {
-            clipContext.Clips.Remove(clip);
-        }
-
-        clipContext.SaveChanges();
-    }
-
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound to Xaml Button, throws when static.")]
     public void ExitApplication()
     {
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
@@ -212,7 +221,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     /// <summary>
     /// SharpFM Version.
     /// </summary>
-    public string Version
+    public static string Version
     {
         get
         {
@@ -234,4 +243,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             NotifyPropertyChanged();
         }
     }
+
+    private string _currentPath;
+    public string CurrentPath
+    {
+        get => _currentPath;
+        set
+        {
+            _currentPath = value;
+            NotifyPropertyChanged();
+        }
+    }
+
 }
