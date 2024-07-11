@@ -44,14 +44,11 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="225" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <Grid
                 Grid.Row="0"
-                Grid.Column="0"
-                Grid.ColumnSpan="2"
                 Margin="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="75" />
@@ -63,39 +60,46 @@
                 <Button Grid.Column="2" HorizontalAlignment="Right" Command="{Binding OpenFolderPicker}" Content="Browse" />
             </Grid>
 
-            <ListBox
-                Grid.Row="1"
-                Grid.Column="0"
-                ItemsSource="{Binding FileMakerClips}"
-                SelectedItem="{Binding SelectedClip}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="0,8">
-                            <TextBox Margin="0" Text="{Binding Name, Mode=TwoWay}" />
-                            <ComboBox
-                                DisplayMemberBinding="{Binding DisplayName}"
-                                ItemsSource="{Binding Clip.ClipTypes}"
-                                SelectedValue="{Binding ClipType, Mode=TwoWay}"
-                                SelectedValueBinding="{Binding KeyId}" />
-                            <TextBlock MaxLines="1" Text="{Binding ClipType}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <DockPanel Grid.Row="1">
+                <StackPanel
+                    Width="225"
+                    DockPanel.Dock="Left">
+                    <TextBox Margin="8" Watermark="Search" />
+                    <ListBox
+                        ItemsSource="{Binding FileMakerClips}"
+                        SelectedItem="{Binding SelectedClip}">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="8">
+                                    <TextBox Text="{Binding Name, Mode=TwoWay}" />
+                                    <ComboBox
+                                        DisplayMemberBinding="{Binding DisplayName}"
+                                        ItemsSource="{Binding Clip.ClipTypes}"
+                                        SelectedValue="{Binding ClipType, Mode=TwoWay}"
+                                        SelectedValueBinding="{Binding KeyId}" />
+                                    <TextBlock MaxLines="1" Text="{Binding ClipType}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
 
-            <AvaloniaEdit:TextEditor
-                x:Name="avaloniaEditor"
-                Grid.Row="1"
-                Grid.Column="1"
-                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                ShowLineNumbers="True"
-                SyntaxHighlighting="Xml"
-                WordWrap="False">
-                <i:Interaction.Behaviors>
-                    <behaviors:DocumentTextBindingBehavior Text="{Binding SelectedClip.ClipXml, Mode=TwoWay}" />
-                </i:Interaction.Behaviors>
-            </AvaloniaEdit:TextEditor>
-
+                <AvaloniaEdit:TextEditor
+                    x:Name="avaloniaEditor"
+                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                    ShowLineNumbers="True"
+                    SyntaxHighlighting="Xml"
+                    WordWrap="False">
+                    <i:Interaction.Behaviors>
+                        <behaviors:DocumentTextBindingBehavior Text="{Binding SelectedClip.ClipXml, Mode=TwoWay}" />
+                    </i:Interaction.Behaviors>
+                </AvaloniaEdit:TextEditor>
+            </DockPanel>
         </Grid>
     </DockPanel>
 
