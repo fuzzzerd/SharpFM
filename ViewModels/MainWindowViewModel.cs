@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel(ILogger logger)
     {
         _logger = logger;
+
         // default to the local app data folder + \SharpFM, otherwise use provided path
         _currentPath ??= Path.Join(
             path1: Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -36,6 +37,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         );
 
         FileMakerClips = [];
+        FilteredClips = [];
 
         LoadClips(CurrentPath);
     }
@@ -233,6 +235,8 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public ObservableCollection<ClipViewModel> FileMakerClips { get; set; }
 
+    public ObservableCollection<ClipViewModel> FilteredClips { get; set; }
+
     private ClipViewModel? _selectedClip;
     public ClipViewModel? SelectedClip
     {
@@ -240,6 +244,22 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         set
         {
             _selectedClip = value;
+            NotifyPropertyChanged();
+        }
+    }
+
+    private string _searchText = string.Empty;
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            _searchText = value;
+            FilteredClips.Clear();
+            foreach (var c in FileMakerClips.Where(c => c.Name.Contains(_searchText)))
+            {
+                FilteredClips.Add(c);
+            }
             NotifyPropertyChanged();
         }
     }
