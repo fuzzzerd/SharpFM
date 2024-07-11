@@ -64,9 +64,9 @@
                 <StackPanel
                     Width="225"
                     DockPanel.Dock="Left">
-                    <TextBox Margin="8" Watermark="Search" />
+                    <TextBox Margin="8" Watermark="Search" Text="{Binding SearchText}" />
                     <ListBox
-                        ItemsSource="{Binding FileMakerClips}"
+                        ItemsSource="{Binding FilteredClips}"
                         SelectedItem="{Binding SelectedClip}">
                         <ListBox.Styles>
                             <Style Selector="ListBoxItem">
