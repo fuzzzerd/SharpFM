@@ -37,6 +37,13 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         );
 
         FileMakerClips = [];
+        FileMakerClips.CollectionChanged += (sender, e) =>
+        {
+            // reset search text, which will trigger a property notify changed
+            // that will re-run the search with empty value (which shows all)
+            SearchText = string.Empty;
+        };
+
         FilteredClips = [];
 
         LoadClips(CurrentPath);
