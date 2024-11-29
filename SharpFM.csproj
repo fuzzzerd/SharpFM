@@ -40,7 +40,7 @@
     configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics"
       Version="11.2.2" />
-    <PackageReference Include="FluentAvaloniaUI" Version="2.1.0" />
+    <PackageReference Include="FluentAvaloniaUI" Version="2.2.0" />
 
     <PackageReference Include="MinVer" Version="6.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
