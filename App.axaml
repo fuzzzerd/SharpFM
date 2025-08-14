@@ -7,5 +7,110 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+        
+        <!-- Fluent 2 Design System Tokens and Styles -->
+        <Style>
+            <Style.Resources>
+                <!-- Fluent 2 Spacing Tokens -->
+                <x:Double x:Key="Fluent2SpacingXXS">2</x:Double>
+                <x:Double x:Key="Fluent2SpacingXS">4</x:Double>
+                <x:Double x:Key="Fluent2SpacingSM">8</x:Double>
+                <x:Double x:Key="Fluent2SpacingMD">12</x:Double>
+                <x:Double x:Key="Fluent2SpacingLG">16</x:Double>
+                <x:Double x:Key="Fluent2SpacingXL">20</x:Double>
+                <x:Double x:Key="Fluent2SpacingXXL">24</x:Double>
+                <x:Double x:Key="Fluent2SpacingXXXL">32</x:Double>
+                
+                <!-- Fluent 2 Corner Radius Tokens -->
+                <x:Double x:Key="Fluent2CornerRadiusNone">0</x:Double>
+                <x:Double x:Key="Fluent2CornerRadiusXS">2</x:Double>
+                <x:Double x:Key="Fluent2CornerRadiusSM">4</x:Double>
+                <x:Double x:Key="Fluent2CornerRadiusMD">8</x:Double>
+                <x:Double x:Key="Fluent2CornerRadiusLG">12</x:Double>
+                <x:Double x:Key="Fluent2CornerRadiusXL">16</x:Double>
+                <x:Double x:Key="Fluent2CornerRadiusXXL">20</x:Double>
+                
+                <!-- Fluent 2 Typography Tokens -->
+                <x:Double x:Key="Fluent2FontSizeCaption">10</x:Double>
+                <x:Double x:Key="Fluent2FontSizeBody">14</x:Double>
+                <x:Double x:Key="Fluent2FontSizeSubtitle">16</x:Double>
+                <x:Double x:Key="Fluent2FontSizeTitle3">18</x:Double>
+                <x:Double x:Key="Fluent2FontSizeTitle2">20</x:Double>
+                <x:Double x:Key="Fluent2FontSizeTitle1">22</x:Double>
+                
+                <!-- Fluent 2 Shadow Tokens -->
+                <BoxShadows x:Key="Fluent2ShadowElevation2">0 1 2 0 #00000014</BoxShadows>
+                <BoxShadows x:Key="Fluent2ShadowElevation4">0 2 4 0 #00000014</BoxShadows>
+                <BoxShadows x:Key="Fluent2ShadowElevation8">0 4 8 0 #00000014</BoxShadows>
+                <BoxShadows x:Key="Fluent2ShadowElevation16">0 8 16 0 #00000014</BoxShadows>
+            </Style.Resources>
+        </Style>
+
+        <!-- Fluent 2 Component Styles -->
+        <!-- Enhanced Button Style -->
+        <Style Selector="Button.Fluent2Primary">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Medium" />
+        </Style>
+
+        <!-- Enhanced TextBox Style -->
+        <Style Selector="TextBox.Fluent2">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Enhanced ComboBox Style -->
+        <Style Selector="ComboBox.Fluent2">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <!-- Fluent 2 Surface Styles -->
+        <Style Selector="Border.Fluent2Surface">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BoxShadow" Value="0 1 2 0 #00000014" />
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+        </Style>
+
+        <Style Selector="Border.Fluent2SurfaceElevated">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BoxShadow" Value="0 2 4 0 #00000014" />
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
+        </Style>
+
+        <!-- Enhanced ListBox Item Style -->
+        <Style Selector="ListBox.Fluent2">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="ListBox.Fluent2 ListBoxItem">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <!-- Typography Styles -->
+        <Style Selector="TextBlock.Fluent2Caption">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Opacity" Value="0.8" />
+        </Style>
+
+        <Style Selector="TextBlock.Fluent2Body">
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <Style Selector="TextBlock.Fluent2Subtitle">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Medium" />
+        </Style>
     </Application.Styles>
 </Application>
