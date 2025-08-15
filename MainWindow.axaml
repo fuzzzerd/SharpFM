@@ -3,9 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-    xmlns:behaviors="clr-namespace:SharpFM.Behaviors;assembly=SharpFM"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:SharpFM.ViewModels"
     Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
@@ -169,7 +167,7 @@
                                 Text="Clip Content" />
                         </Border>
 
-                        <!-- AvaloniaEdit component (unchanged) -->
+                        <!-- AvaloniaEdit component with Document binding -->
                         <Border 
                             Grid.Row="1"
                             CornerRadius="0,0,8,8"
@@ -179,11 +177,8 @@
                                 FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                                 ShowLineNumbers="True"
                                 SyntaxHighlighting="Xml"
-                                WordWrap="False">
-                                <i:Interaction.Behaviors>
-                                    <behaviors:DocumentTextBindingBehavior Text="{Binding SelectedClip.ClipXml, Mode=TwoWay}" />
-                                </i:Interaction.Behaviors>
-                            </AvaloniaEdit:TextEditor>
+                                WordWrap="False"
+                                Document="{Binding SelectedClip.XmlDocument}" />
                         </Border>
                     </Grid>
                 </Border>
