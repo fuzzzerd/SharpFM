@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using AvaloniaEdit.Document;
 
 namespace SharpFM.ViewModels;
 
@@ -13,6 +14,8 @@ public partial class ClipViewModel : INotifyPropertyChanged
     }
 
     public FileMakerClip Clip { get; set; }
+    
+    private TextDocument? _xmlDocument;
 
     public ClipViewModel(FileMakerClip clip)
     {
@@ -39,13 +42,30 @@ public partial class ClipViewModel : INotifyPropertyChanged
         }
     }
 
+    public TextDocument XmlDocument
+    {
+        get
+        {
+            if (_xmlDocument == null)
+            {
+                _xmlDocument = new TextDocument(Clip.XmlData ?? string.Empty);
+            }
+            return _xmlDocument;
+        }
+    }
+
     public string ClipXml
     {
-        get => Clip.XmlData;
+        get => _xmlDocument?.Text ?? Clip.XmlData;
         set
         {
             Clip.XmlData = value;
+            if (_xmlDocument != null)
+            {
+                _xmlDocument.Text = value ?? string.Empty;
+            }
             NotifyPropertyChanged();
+            NotifyPropertyChanged(nameof(XmlDocument));
         }
     }
 }
