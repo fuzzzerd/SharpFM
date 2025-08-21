@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SharpFM.Views.ApiKeyDialog"
+        Title="Configure Claude API Key"
+        Width="500"
+        Height="300"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" 
+                   Text="Enter your Claude API Key:" 
+                   Margin="0,0,0,10" />
+        
+        <TextBox Grid.Row="1" 
+                 Name="ApiKeyTextBox"
+                 PasswordChar="•"
+                 Watermark="sk-ant-api..." 
+                 Margin="0,0,0,10" />
+        
+        <TextBlock Grid.Row="2" 
+                   Text="You can get your API key from https://console.anthropic.com/settings/keys" 
+                   FontSize="12"
+                   Foreground="Gray"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,15" />
+
+        <TextBlock Grid.Row="3" 
+                   Text="Select Claude Model:" 
+                   Margin="0,0,0,5" />
+        
+        <ComboBox Grid.Row="4" 
+                  Name="ModelComboBox"
+                  Margin="0,0,0,10" />
+        
+        <TextBlock Grid.Row="5" 
+                   Text="Higher-tier models are more capable but cost more. Haiku models are fastest and most affordable." 
+                   FontSize="12"
+                   Foreground="Gray"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,10" />
+
+        <StackPanel Grid.Row="7" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right"
+                    Spacing="10">
+            <Button Name="CancelButton" 
+                    Content="Cancel" 
+                    Click="OnCancelClick" />
+            <Button Name="SaveButton" 
+                    Content="Save" 
+                    Classes="Fluent2Primary"
+                    Click="OnSaveClick" />
+        </StackPanel>
+    </Grid>
+</Window>

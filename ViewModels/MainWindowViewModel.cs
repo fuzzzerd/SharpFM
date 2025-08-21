@@ -18,6 +18,7 @@ namespace SharpFM.ViewModels;
 public partial class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly ILogger _logger;
+    private readonly SettingsService _settingsService;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -29,6 +30,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel(ILogger logger)
     {
         _logger = logger;
+        _settingsService = new SettingsService();
 
         // default to the local app data folder + \SharpFM, otherwise use provided path
         _currentPath ??= Path.Join(
@@ -45,6 +47,15 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         };
 
         FilteredClips = [];
+        
+        ChatPanel = new ChatPanelViewModel();
+        
+        // Load API key and model if they exist
+        if (!string.IsNullOrEmpty(_settingsService.ApiKey))
+        {
+            ChatPanel.SetApiKey(_settingsService.ApiKey);
+        }
+        ChatPanel.SetModel(_settingsService.SelectedModel);
 
         LoadClips(CurrentPath);
     }
@@ -251,6 +262,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         set
         {
             _selectedClip = value;
+            ChatPanel.SetSelectedClip(value);
             NotifyPropertyChanged();
         }
     }
@@ -279,6 +291,62 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             _currentPath = value;
             NotifyPropertyChanged();
+        }
+    }
+
+    public ChatPanelViewModel ChatPanel { get; }
+
+    public void ToggleChatPanel()
+    {
+        ChatPanel.ToggleVisibility();
+    }
+
+    public void SetApiKey(string apiKey)
+    {
+        _settingsService.ApiKey = apiKey;
+        ChatPanel.SetApiKey(apiKey);
+    }
+    
+    public void SetModel(string model)
+    {
+        _settingsService.SelectedModel = model;
+        ChatPanel.SetModel(model);
+    }
+
+    public string? GetApiKey()
+    {
+        return _settingsService.ApiKey;
+    }
+
+    public async Task ShowApiKeyDialog()
+    {
+        try
+        {
+            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
+                desktop.MainWindow is not { } mainWindow)
+                return;
+
+            var dialog = new Views.ApiKeyDialog();
+            dialog.SetCurrentSettings(_settingsService.ApiKey, _settingsService.SelectedModel);
+            
+            var result = await dialog.ShowDialog<bool>(mainWindow);
+            
+            if (result)
+            {
+                if (!string.IsNullOrEmpty(dialog.ApiKey))
+                {
+                    SetApiKey(dialog.ApiKey);
+                }
+                
+                if (!string.IsNullOrEmpty(dialog.SelectedModel))
+                {
+                    SetModel(dialog.SelectedModel);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error showing API key dialog");
         }
     }
 

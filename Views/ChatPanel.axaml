@@ -1,0 +1,116 @@
+<UserControl
+    x:Class="SharpFM.Views.ChatPanel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:SharpFM.ViewModels"
+    x:DataType="vm:ChatPanelViewModel"
+    mc:Ignorable="d">
+    
+    <Border Classes="Fluent2SurfaceElevated">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border 
+                Grid.Row="0"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                CornerRadius="8,8,0,0"
+                Padding="16,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Vertical">
+                        <TextBlock 
+                            Classes="Fluent2Subtitle"
+                            Text="AI Assistant" />
+                        <TextBlock 
+                            Classes="Fluent2Caption"
+                            Text="{Binding HasSelectedClip, Converter={x:Static vm:ClipContextConverter.Instance}}"
+                            Foreground="Gray" />
+                        <TextBlock 
+                            Classes="Fluent2Caption"
+                            Text="{Binding CurrentModelInfo}"
+                            Foreground="Gray" />
+                    </StackPanel>
+                    <Button 
+                        Grid.Column="1"
+                        Classes="Fluent2"
+                        Command="{Binding ToggleVisibility}"
+                        Content="×"
+                        FontSize="20"
+                        Padding="8,4"
+                        MinWidth="30"
+                        ToolTip.Tip="Close chat panel" />
+                </Grid>
+            </Border>
+
+            <!-- Messages area -->
+            <ScrollViewer 
+                Grid.Row="1"
+                Padding="16">
+                <ItemsControl ItemsSource="{Binding Messages}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="12" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border 
+                                CornerRadius="8"
+                                Padding="12"
+                                HorizontalAlignment="{Binding IsUser, Converter={x:Static vm:ChatMessageAlignmentConverter.Instance}}"
+                                Background="{Binding IsUser, Converter={x:Static vm:ChatMessageBrushConverter.Instance}}">
+                                <TextBlock 
+                                    Text="{Binding Content}"
+                                    TextWrapping="Wrap"
+                                    Foreground="{Binding IsUser, Converter={x:Static vm:ChatMessageTextBrushConverter.Instance}}"
+                                    Classes="Fluent2Body" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Input area -->
+            <Border 
+                Grid.Row="2"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                CornerRadius="0,0,8,8"
+                Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox 
+                        Grid.Column="0"
+                        Classes="Fluent2"
+                        Text="{Binding CurrentMessage}"
+                        Watermark="Type your message..."
+                        Margin="0,0,8,0"
+                        IsEnabled="{Binding !IsWaitingForResponse}"
+                        KeyDown="OnMessageTextBoxKeyDown" />
+                    <Button 
+                        Grid.Column="1"
+                        Classes="Fluent2Primary"
+                        Command="{Binding SendMessage}"
+                        IsEnabled="{Binding !IsWaitingForResponse}">
+                        <Panel>
+                            <TextBlock Text="Send" IsVisible="{Binding !IsWaitingForResponse}" />
+                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsWaitingForResponse}" Width="40" Height="2" />
+                        </Panel>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

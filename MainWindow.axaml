@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:SharpFM.ViewModels"
+    xmlns:views="using:SharpFM.Views"
     Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
     Title="SharpFM"
     Width="700"
@@ -33,6 +34,11 @@
             </MenuItem>
             <MenuItem Header="Transform">
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
+            </MenuItem>
+            <MenuItem Header="View">
+                <MenuItem Command="{Binding ToggleChatPanel}" Header="Toggle AI Chat Panel" />
+                <Separator />
+                <MenuItem Command="{Binding ShowApiKeyDialog}" Header="Configure Claude API Key..." />
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
@@ -146,42 +152,66 @@
                     ResizeDirection="Columns"
                     Width="16" />
 
-                <!-- Right panel: Code editor with Fluent 2 surface treatment -->
-                <Border 
-                    Grid.Column="2"
-                    Classes="Fluent2SurfaceElevated">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+                <!-- Right panel: Code editor and chat panel -->
+                <Grid Grid.Column="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                        <!-- Editor header -->
-                        <Border 
-                            Grid.Row="0"
-                            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-                            CornerRadius="8,8,0,0"
-                            Padding="16,12">
-                            <TextBlock 
-                                Classes="Fluent2Subtitle"
-                                Text="Clip Content" />
-                        </Border>
+                    <!-- Code editor with Fluent 2 surface treatment -->
+                    <Border 
+                        Grid.Column="0"
+                        Classes="Fluent2SurfaceElevated">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
 
-                        <!-- AvaloniaEdit component with Document binding -->
-                        <Border 
-                            Grid.Row="1"
-                            CornerRadius="0,0,8,8"
-                            ClipToBounds="True">
-                            <AvaloniaEdit:TextEditor
-                                x:Name="avaloniaEditor"
-                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                ShowLineNumbers="True"
-                                SyntaxHighlighting="Xml"
-                                WordWrap="False"
-                                Document="{Binding SelectedClip.XmlDocument}" />
-                        </Border>
-                    </Grid>
-                </Border>
+                            <!-- Editor header -->
+                            <Border 
+                                Grid.Row="0"
+                                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                CornerRadius="8,8,0,0"
+                                Padding="16,12">
+                                <TextBlock 
+                                    Classes="Fluent2Subtitle"
+                                    Text="Clip Content" />
+                            </Border>
+
+                            <!-- AvaloniaEdit component with Document binding -->
+                            <Border 
+                                Grid.Row="1"
+                                CornerRadius="0,0,8,8"
+                                ClipToBounds="True">
+                                <AvaloniaEdit:TextEditor
+                                    x:Name="avaloniaEditor"
+                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                    ShowLineNumbers="True"
+                                    SyntaxHighlighting="Xml"
+                                    WordWrap="False"
+                                    Document="{Binding SelectedClip.XmlDocument}" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Chat panel splitter -->
+                    <GridSplitter 
+                        Grid.Column="1"
+                        Background="Transparent"
+                        ResizeDirection="Columns"
+                        Width="16"
+                        IsVisible="{Binding ChatPanel.IsVisible}" />
+
+                    <!-- Chat panel -->
+                    <views:ChatPanel 
+                        Grid.Column="2"
+                        DataContext="{Binding ChatPanel}"
+                        Width="350"
+                        IsVisible="{Binding IsVisible}" />
+                </Grid>
             </Grid>
         </Grid>
     </DockPanel>
