@@ -55,26 +55,35 @@
             <!-- Messages area -->
             <ScrollViewer 
                 Grid.Row="1"
-                Padding="16">
-                <ItemsControl ItemsSource="{Binding Messages}">
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Messages}" Margin="12" HorizontalAlignment="Stretch">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Spacing="12" />
+                            <StackPanel Spacing="12" HorizontalAlignment="Stretch" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border 
-                                CornerRadius="8"
-                                Padding="12"
-                                HorizontalAlignment="{Binding IsUser, Converter={x:Static vm:ChatMessageAlignmentConverter.Instance}}"
-                                Background="{Binding IsUser, Converter={x:Static vm:ChatMessageBrushConverter.Instance}}">
-                                <TextBlock 
-                                    Text="{Binding Content}"
-                                    TextWrapping="Wrap"
-                                    Foreground="{Binding IsUser, Converter={x:Static vm:ChatMessageTextBrushConverter.Instance}}"
-                                    Classes="Fluent2Body" />
-                            </Border>
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border 
+                                    Grid.Column="0"
+                                    CornerRadius="8"
+                                    Padding="12"
+                                    Margin="2"
+                                    MaxWidth="450"
+                                    HorizontalAlignment="{Binding IsUser, Converter={x:Static vm:ChatMessageAlignmentConverter.Instance}}"
+                                    Background="{Binding IsUser, Converter={x:Static vm:ChatMessageBrushConverter.Instance}}">
+                                    <TextBlock 
+                                        Text="{Binding Content}"
+                                        TextWrapping="Wrap"
+                                        Foreground="{Binding IsUser, Converter={x:Static vm:ChatMessageTextBrushConverter.Instance}}"
+                                        Classes="Fluent2Body" />
+                                </Border>
+                            </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

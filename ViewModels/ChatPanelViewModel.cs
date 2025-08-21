@@ -32,7 +32,7 @@ public class ChatPanelViewModel : INotifyPropertyChanged
     }
 
     public bool HasSelectedClip => _selectedClip != null;
-    
+
     public string CurrentModelInfo => $"Model: {_claudeApiService.GetCurrentModel().Split('-').LastOrDefault()?.ToUpper() ?? "Unknown"}";
 
     public ObservableCollection<ChatMessage> Messages { get; }
@@ -74,7 +74,7 @@ public class ChatPanelViewModel : INotifyPropertyChanged
     {
         _claudeApiService.SetApiKey(apiKey);
     }
-    
+
     public void SetModel(string model)
     {
         _claudeApiService.SetModel(model);
@@ -99,7 +99,7 @@ public class ChatPanelViewModel : INotifyPropertyChanged
         try
         {
             var conversationHistory = Messages.Take(Messages.Count - 1).ToList();
-            
+
             // Build context message with selected clip if available
             var contextualMessage = userMessage;
             if (_selectedClip != null)
@@ -109,22 +109,22 @@ public class ChatPanelViewModel : INotifyPropertyChanged
                                 $"Type: {_selectedClip.ClipType}\n" +
                                 $"XML Content:\n{_selectedClip.ClipXml}\n\n" +
                                 $"User message: {userMessage}\n\n" +
-                                $"Please help with this FileMaker clip. If you make changes to the XML, " +
-                                $"wrap the updated XML in <CLIP_UPDATE> tags so I can extract and apply the changes.";
+                                $"Please help with this FileMaker clip, or snippet, or object. " +
+                                $"If you make changes to the XML, wrap the updated XML in <CLIP_UPDATE> tags so I can extract and apply the changes.";
                 contextualMessage = clipContext;
             }
 
             var response = await _claudeApiService.SendMessageAsync(contextualMessage, conversationHistory);
-            
+
             // Check if response contains clip updates
             var (displayText, updatedXml) = ExtractClipUpdate(response);
-            
+
             // Apply clip updates if found
             if (!string.IsNullOrEmpty(updatedXml) && _selectedClip != null)
             {
                 _selectedClip.ClipXml = updatedXml;
             }
-            
+
             Messages.Add(new ChatMessage
             {
                 Content = displayText,
@@ -145,18 +145,18 @@ public class ChatPanelViewModel : INotifyPropertyChanged
         }
     }
 
-    private (string displayText, string? updatedXml) ExtractClipUpdate(string response)
+    private static (string displayText, string? updatedXml) ExtractClipUpdate(string response)
     {
         var clipUpdatePattern = @"<CLIP_UPDATE>(.*?)</CLIP_UPDATE>";
         var match = System.Text.RegularExpressions.Regex.Match(response, clipUpdatePattern, System.Text.RegularExpressions.RegexOptions.Singleline);
-        
+
         if (match.Success)
         {
             var updatedXml = match.Groups[1].Value.Trim();
             var displayText = response.Replace(match.Value, "[Clip updated with changes]").Trim();
             return (displayText, updatedXml);
         }
-        
+
         return (response, null);
     }
 

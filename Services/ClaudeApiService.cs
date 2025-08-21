@@ -61,7 +61,7 @@ public class ClaudeApiService
 
     public string GetCurrentModel() => _selectedModel;
 
-    public async Task<string> SendMessageAsync(string message, List<ChatMessage>? conversationHistory = null)
+    public async Task<string> SendMessageAsync(string message, List<ChatMessage>? conversationHistory = null, int? maxTokens = null)
     {
         if (string.IsNullOrEmpty(_apiKey))
         {
@@ -103,7 +103,7 @@ public class ClaudeApiService
             var requestBody = new
             {
                 model = _selectedModel,
-                max_tokens = 1024,
+                max_tokens = maxTokens ?? 8192,
                 messages = messages
             };
 
