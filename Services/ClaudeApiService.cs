@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -21,7 +21,7 @@ public class ClaudeApiService
     private const string ApiBaseUrl = "https://api.anthropic.com/v1/messages";
     private const string ApiVersion = "2023-06-01";
     private string _selectedModel = "claude-3-5-sonnet-20241022";
-    
+
     public static readonly Dictionary<string, string> AvailableModels = new()
     {
         { "claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet (Latest)" },
@@ -36,7 +36,11 @@ public class ClaudeApiService
         _httpClient = new HttpClient();
         _httpClient.Timeout = TimeSpan.FromMinutes(2);
         _httpClient.DefaultRequestHeaders.Add("anthropic-version", ApiVersion);
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "SharpFM/1.0");
+
+        // Get version dynamically from assembly
+        var assembly = Assembly.GetExecutingAssembly();
+        var version = FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion ?? "1.0";
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", $"SharpFM/{version}");
     }
 
     public void SetApiKey(string apiKey)
@@ -45,7 +49,7 @@ public class ClaudeApiService
         _httpClient.DefaultRequestHeaders.Remove("x-api-key");
         _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
     }
-    
+
     public void SetModel(string model)
     {
         if (AvailableModels.ContainsKey(model))
@@ -54,7 +58,7 @@ public class ClaudeApiService
             Logger.Debug($"Model changed to: {model}");
         }
     }
-    
+
     public string GetCurrentModel() => _selectedModel;
 
     public async Task<string> SendMessageAsync(string message, List<ChatMessage>? conversationHistory = null)
@@ -73,9 +77,9 @@ public class ClaudeApiService
                 await Task.Delay(1000 - (int)timeSinceLastRequest.TotalMilliseconds);
             }
             _lastRequestTime = DateTime.Now;
-            
+
             var messages = new List<object>();
-            
+
             if (conversationHistory != null)
             {
                 // Limit conversation history to last 10 messages to avoid hitting token limits
@@ -89,7 +93,7 @@ public class ClaudeApiService
                     });
                 }
             }
-            
+
             messages.Add(new
             {
                 role = "user",
@@ -102,20 +106,20 @@ public class ClaudeApiService
                 max_tokens = 1024,
                 messages = messages
             };
-            
+
             Logger.Debug($"Sending {messages.Count} messages to Claude API");
 
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            
+
             Logger.Debug($"Request payload size: {json.Length} characters");
             var response = await _httpClient.PostAsync(ApiBaseUrl, content);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Logger.Error($"Claude API error: {response.StatusCode} - {errorContent}");
-                
+
                 // Handle specific error types
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
@@ -129,14 +133,14 @@ public class ClaudeApiService
                 {
                     throw new HttpRequestException($"Bad request: {errorContent}");
                 }
-                
+
                 throw new HttpRequestException($"Claude API error ({response.StatusCode}): {errorContent}");
             }
 
             var responseJson = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(responseJson);
-            
-            if (doc.RootElement.TryGetProperty("content", out var contentArray) && 
+
+            if (doc.RootElement.TryGetProperty("content", out var contentArray) &&
                 contentArray.GetArrayLength() > 0)
             {
                 var firstContent = contentArray[0];
