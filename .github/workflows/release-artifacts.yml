@@ -8,8 +8,7 @@ jobs:
   release:
     name: Release
     permissions:
-      contents: read
-      releases: write
+      contents: write
     strategy:
       matrix:
         kind: ['linux', 'windows', 'macOS']
