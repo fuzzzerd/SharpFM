@@ -7,6 +7,9 @@ on:
 jobs:
   release:
     name: Release
+    permissions:
+      contents: read
+      releases: write
     strategy:
       matrix:
         kind: ['linux', 'windows', 'macOS']
