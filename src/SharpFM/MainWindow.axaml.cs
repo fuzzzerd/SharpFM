@@ -9,56 +9,96 @@ namespace SharpFM;
 
 public partial class MainWindow : Window
 {
-    private readonly TextMate.Installation _xmlTextMateInstallation;
-    private readonly TextMate.Installation? _scriptTextMateInstallation;
+    private readonly RegistryOptions _registryOptions;
     private ScriptEditorController? _scriptController;
+    private TextMate.Installation? _xmlTextMateInstallation;
+    private TextMate.Installation? _scriptTextMateInstallation;
+    private Window? _xmlWindow;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        var registryOptions = new RegistryOptions((ThemeName)(int)ThemeName.DarkPlus);
+        _registryOptions = new RegistryOptions((ThemeName)(int)ThemeName.DarkPlus);
 
-        // XML editor: syntax highlighting
-        var xmlEditor = this.FindControl<TextEditor>("avaloniaEditor") ?? throw new Exception("no control");
-        _xmlTextMateInstallation = xmlEditor.InstallTextMate(registryOptions);
-        var xmlLang = registryOptions.GetLanguageByExtension(".xml");
-        _xmlTextMateInstallation.SetGrammar(registryOptions.GetScopeByLanguageId(xmlLang.Id));
-
-        // Script editor: syntax highlighting + controller for validation/completion/tooltips
+        // Script editor: setup on first load (deferred until control is available)
         var scriptEditor = this.FindControl<TextEditor>("scriptEditor");
         if (scriptEditor != null)
         {
-            var fmScriptRegistry = new FmScriptRegistryOptions(registryOptions);
+            var fmScriptRegistry = new FmScriptRegistryOptions(_registryOptions);
             _scriptTextMateInstallation = scriptEditor.InstallTextMate(fmScriptRegistry);
             _scriptTextMateInstallation.SetGrammar(FmScriptRegistryOptions.ScopeName);
-
             _scriptController = new ScriptEditorController(scriptEditor);
         }
 
-        // Tab switch: sync model between Script and XML views
-        var editorTabs = this.FindControl<TabControl>("editorTabs");
-        if (editorTabs != null)
-        {
-            editorTabs.SelectionChanged += (_, _) =>
-            {
-                var vm = (DataContext as SharpFM.ViewModels.MainWindowViewModel)?.SelectedClip;
-                if (vm == null || !vm.IsScriptClip) return;
+        // Fallback XML editor for non-script clips (lightweight — no TextMate needed,
+        // built-in SyntaxHighlighting="Xml" in the XAML handles it)
 
-                if (editorTabs.SelectedIndex == 0)
-                    vm.SyncEditorFromXml();
-                else
-                    vm.SyncModelFromEditor();
+        // "View XML" menu item — opens XML in a separate window on demand
+        var viewXmlItem = this.FindControl<MenuItem>("viewXmlMenuItem");
+        if (viewXmlItem != null)
+        {
+            viewXmlItem.Click += (_, _) => ShowXmlWindow();
+        }
+    }
+
+    private void ShowXmlWindow()
+    {
+        var vm = (DataContext as SharpFM.ViewModels.MainWindowViewModel)?.SelectedClip;
+        if (vm == null)
+            return;
+
+        // Sync model to XML before showing
+        vm.SyncModelFromEditor();
+
+        // Reuse or create the XML window
+        if (_xmlWindow == null || !_xmlWindow.IsVisible)
+        {
+            var xmlEditor = new TextEditor
+            {
+                FontFamily = new Avalonia.Media.FontFamily("Cascadia Code,Consolas,Menlo,Monospace"),
+                ShowLineNumbers = true,
+                WordWrap = false,
+                IsReadOnly = true,
+            };
+
+            // Lazy-load XML TextMate only when first needed
+            if (_xmlTextMateInstallation == null)
+            {
+                _xmlTextMateInstallation = xmlEditor.InstallTextMate(_registryOptions);
+                var xmlLang = _registryOptions.GetLanguageByExtension(".xml");
+                _xmlTextMateInstallation.SetGrammar(_registryOptions.GetScopeByLanguageId(xmlLang.Id));
+            }
+
+            xmlEditor.Document = new AvaloniaEdit.Document.TextDocument(vm.ClipXml ?? "");
+
+            _xmlWindow = new Window
+            {
+                Title = $"XML — {vm.Name}",
+                Width = 600,
+                Height = 500,
+                Content = xmlEditor,
             };
         }
+        else
+        {
+            // Update existing window content
+            if (_xmlWindow.Content is TextEditor existing)
+                existing.Document = new AvaloniaEdit.Document.TextDocument(vm.ClipXml ?? "");
+            _xmlWindow.Title = $"XML — {vm.Name}";
+        }
+
+        _xmlWindow.Show();
+        _xmlWindow.Activate();
     }
 
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
 
+        _xmlWindow?.Close();
         _scriptController?.Dispose();
-        _xmlTextMateInstallation.Dispose();
+        _xmlTextMateInstallation?.Dispose();
         _scriptTextMateInstallation?.Dispose();
     }
 }

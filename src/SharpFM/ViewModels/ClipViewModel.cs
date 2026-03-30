@@ -110,7 +110,8 @@ public partial class ClipViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Rebuild the script editor text from the XML (e.g., after XML tab edit).
+    /// Rebuild the script editor text from the XML.
+    /// Used when XML is edited externally (e.g., View XML window).
     /// </summary>
     public void SyncEditorFromXml()
     {

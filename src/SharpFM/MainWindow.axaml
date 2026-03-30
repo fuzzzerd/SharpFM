@@ -34,6 +34,9 @@
             <MenuItem Header="Transform">
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem x:Name="viewXmlMenuItem" Header="Show XML" />
+            </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
         <Grid>
@@ -147,40 +150,28 @@
                     Width="16" />
 
                 <!-- Right panel: Code editor with Fluent 2 surface treatment -->
-                <Border 
+                <Border
                     Grid.Column="2"
                     Classes="Fluent2SurfaceElevated">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <TabControl
-                            x:Name="editorTabs"
-                            Grid.Row="0"
-                            Grid.RowSpan="2">
-                            <TabItem
-                                Header="Script"
-                                IsVisible="{Binding SelectedClip.IsScriptClip}">
-                                <AvaloniaEdit:TextEditor
-                                    x:Name="scriptEditor"
-                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                    ShowLineNumbers="True"
-                                    WordWrap="False"
-                                    Document="{Binding SelectedClip.ScriptDocument}" />
-                            </TabItem>
-                            <TabItem Header="XML">
-                                <AvaloniaEdit:TextEditor
-                                    x:Name="avaloniaEditor"
-                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                    ShowLineNumbers="True"
-                                    SyntaxHighlighting="Xml"
-                                    WordWrap="False"
-                                    Document="{Binding SelectedClip.XmlDocument}" />
-                            </TabItem>
-                        </TabControl>
-                    </Grid>
+                    <Panel>
+                        <!-- Script editor for script clips -->
+                        <AvaloniaEdit:TextEditor
+                            x:Name="scriptEditor"
+                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                            ShowLineNumbers="True"
+                            WordWrap="False"
+                            IsVisible="{Binding SelectedClip.IsScriptClip}"
+                            Document="{Binding SelectedClip.ScriptDocument}" />
+                        <!-- Fallback XML editor for non-script clips -->
+                        <AvaloniaEdit:TextEditor
+                            x:Name="fallbackXmlEditor"
+                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                            ShowLineNumbers="True"
+                            SyntaxHighlighting="Xml"
+                            WordWrap="False"
+                            IsVisible="{Binding SelectedClip.IsScriptClip, Converter={x:Static BoolConverters.Not}}"
+                            Document="{Binding SelectedClip.XmlDocument}" />
+                    </Panel>
                 </Border>
             </Grid>
         </Grid>
