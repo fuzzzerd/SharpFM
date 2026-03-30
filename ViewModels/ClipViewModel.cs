@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using AvaloniaEdit.Document;
@@ -19,8 +18,7 @@ public partial class ClipViewModel : INotifyPropertyChanged
 
     private TextDocument? _xmlDocument;
     private TextDocument? _scriptDocument;
-    private int _selectedEditorTab;
-    private bool _isSyncing;
+    private FmScript? _script;
 
     public ClipViewModel(FileMakerClip clip)
     {
@@ -29,6 +27,8 @@ public partial class ClipViewModel : INotifyPropertyChanged
 
     public bool IsScriptClip =>
         Clip.ClipboardFormat == "Mac-XMSS" || Clip.ClipboardFormat == "Mac-XMSC";
+
+    public FmScript? Script => _script;
 
     public string ClipType
     {
@@ -56,9 +56,7 @@ public partial class ClipViewModel : INotifyPropertyChanged
         get
         {
             if (_xmlDocument == null)
-            {
                 _xmlDocument = new TextDocument(Clip.XmlData ?? string.Empty);
-            }
             return _xmlDocument;
         }
     }
@@ -69,23 +67,17 @@ public partial class ClipViewModel : INotifyPropertyChanged
         {
             if (_scriptDocument == null)
             {
-                var hr = IsScriptClip ? XmlToHrConverter.Convert(Clip.XmlData ?? "") : "";
-                _scriptDocument = new TextDocument(hr);
+                if (IsScriptClip)
+                {
+                    _script = FmScript.FromXml(Clip.XmlData ?? "");
+                    _scriptDocument = new TextDocument(_script.ToDisplayText());
+                }
+                else
+                {
+                    _scriptDocument = new TextDocument("");
+                }
             }
             return _scriptDocument;
-        }
-    }
-
-    public int SelectedEditorTab
-    {
-        get => _selectedEditorTab;
-        set
-        {
-            if (_selectedEditorTab == value) return;
-            var previousTab = _selectedEditorTab;
-            _selectedEditorTab = value;
-            NotifyPropertyChanged();
-            SyncOnTabSwitch(previousTab, value);
         }
     }
 
@@ -96,44 +88,37 @@ public partial class ClipViewModel : INotifyPropertyChanged
         {
             Clip.XmlData = value;
             if (_xmlDocument != null)
-            {
                 _xmlDocument.Text = value ?? string.Empty;
-            }
             NotifyPropertyChanged();
             NotifyPropertyChanged(nameof(XmlDocument));
         }
     }
 
-    private void SyncOnTabSwitch(int fromTab, int toTab)
+    /// <summary>
+    /// Sync the model from the current script editor text, then update XML.
+    /// Called before save/clipboard operations and on tab switch.
+    /// </summary>
+    public void SyncModelFromEditor()
     {
-        if (_isSyncing || !IsScriptClip) return;
-        _isSyncing = true;
+        if (!IsScriptClip || _scriptDocument == null) return;
 
-        try
-        {
-            if (toTab == 1 && _xmlDocument != null)
-            {
-                // Switching to Script tab: XML → HR
-                var hr = XmlToHrConverter.Convert(_xmlDocument.Text);
-                if (_scriptDocument != null)
-                    _scriptDocument.Text = hr;
-            }
-            else if (fromTab == 1 && _scriptDocument != null)
-            {
-                // Switching away from Script tab: HR → XML
-                var result = HrToXmlConverter.Convert(_scriptDocument.Text);
-                Clip.XmlData = result.Xml;
-                if (_xmlDocument != null)
-                    _xmlDocument.Text = result.Xml;
-            }
-        }
-        catch
-        {
-            // Conversion failed — leave the other document unchanged
-        }
-        finally
-        {
-            _isSyncing = false;
-        }
+        _script = FmScript.FromDisplayText(_scriptDocument.Text);
+        var xml = _script.ToXml();
+        Clip.XmlData = xml;
+        if (_xmlDocument != null)
+            _xmlDocument.Text = xml;
+    }
+
+    /// <summary>
+    /// Rebuild the script editor text from the XML (e.g., after XML tab edit).
+    /// </summary>
+    public void SyncEditorFromXml()
+    {
+        if (!IsScriptClip) return;
+
+        var xmlText = _xmlDocument?.Text ?? Clip.XmlData ?? "";
+        _script = FmScript.FromXml(xmlText);
+        if (_scriptDocument != null)
+            _scriptDocument.Text = _script.ToDisplayText();
     }
 }

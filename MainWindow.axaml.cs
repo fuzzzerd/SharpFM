@@ -74,6 +74,22 @@ public partial class MainWindow : Window
             // Error tooltips on hover
             _scriptEditor.PointerMoved += OnScriptPointerMoved;
         }
+
+        // Tab switch: sync model between Script and XML views
+        var editorTabs = this.FindControl<TabControl>("editorTabs");
+        if (editorTabs != null)
+        {
+            editorTabs.SelectionChanged += (_, _) =>
+            {
+                var vm = (DataContext as SharpFM.ViewModels.MainWindowViewModel)?.SelectedClip;
+                if (vm == null || !vm.IsScriptClip) return;
+
+                if (editorTabs.SelectedIndex == 0)
+                    vm.SyncEditorFromXml();  // switching to Script tab
+                else
+                    vm.SyncModelFromEditor(); // switching to XML tab
+            };
+        }
     }
 
     private void OnScriptPointerMoved(object? sender, PointerEventArgs e)

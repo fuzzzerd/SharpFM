@@ -157,18 +157,9 @@
                         </Grid.RowDefinitions>
 
                         <TabControl
+                            x:Name="editorTabs"
                             Grid.Row="0"
-                            Grid.RowSpan="2"
-                            SelectedIndex="{Binding SelectedClip.SelectedEditorTab}">
-                            <TabItem Header="XML">
-                                <AvaloniaEdit:TextEditor
-                                    x:Name="avaloniaEditor"
-                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                    ShowLineNumbers="True"
-                                    SyntaxHighlighting="Xml"
-                                    WordWrap="False"
-                                    Document="{Binding SelectedClip.XmlDocument}" />
-                            </TabItem>
+                            Grid.RowSpan="2">
                             <TabItem
                                 Header="Script"
                                 IsVisible="{Binding SelectedClip.IsScriptClip}">
@@ -178,6 +169,15 @@
                                     ShowLineNumbers="True"
                                     WordWrap="False"
                                     Document="{Binding SelectedClip.ScriptDocument}" />
+                            </TabItem>
+                            <TabItem Header="XML">
+                                <AvaloniaEdit:TextEditor
+                                    x:Name="avaloniaEditor"
+                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                    ShowLineNumbers="True"
+                                    SyntaxHighlighting="Xml"
+                                    WordWrap="False"
+                                    Document="{Binding SelectedClip.XmlDocument}" />
                             </TabItem>
                         </TabControl>
                     </Grid>
