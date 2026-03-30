@@ -267,6 +267,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         set
         {
             _selectedClip = value;
+            StatusMessage = "";
             NotifyPropertyChanged();
         }
     }
