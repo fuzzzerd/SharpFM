@@ -81,6 +81,10 @@ public static class ScriptLineParser
         return depth > 0;
     }
 
+    // Used by ScriptStep.FromDisplayLine — returns the same data as ParseLine
+    // but avoids coupling ScriptStep to ParsedLine
+    internal static ParsedLine ParseRaw(string line) => ParseLine(line);
+
     public static ParsedLine ParseLine(string line)
     {
         var raw = line;
