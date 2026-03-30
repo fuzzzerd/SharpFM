@@ -28,8 +28,6 @@ public partial class ClipViewModel : INotifyPropertyChanged
     public bool IsScriptClip =>
         Clip.ClipboardFormat == "Mac-XMSS" || Clip.ClipboardFormat == "Mac-XMSC";
 
-    public FmScript? Script => _script;
-
     public string ClipType
     {
         get => Clip.ClipboardFormat;
