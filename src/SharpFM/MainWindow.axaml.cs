@@ -59,7 +59,6 @@ public partial class MainWindow : Window
                 FontFamily = new Avalonia.Media.FontFamily("Cascadia Code,Consolas,Menlo,Monospace"),
                 ShowLineNumbers = true,
                 WordWrap = false,
-                IsReadOnly = true,
             };
 
             // Lazy-load XML TextMate only when first needed
@@ -78,6 +77,20 @@ public partial class MainWindow : Window
                 Width = 600,
                 Height = 500,
                 Content = xmlEditor,
+            };
+
+            // Sync XML edits back to the model when the window closes
+            _xmlWindow.Closing += (_, _) =>
+            {
+                if (_xmlWindow.Content is TextEditor editor)
+                {
+                    var currentVm = (DataContext as SharpFM.ViewModels.MainWindowViewModel)?.SelectedClip;
+                    if (currentVm != null)
+                    {
+                        currentVm.ClipXml = editor.Document.Text;
+                        currentVm.SyncEditorFromXml();
+                    }
+                }
             };
         }
         else
