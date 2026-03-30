@@ -64,17 +64,17 @@ public static class ScriptValidator
             {
                 switch (definition.BlockPair.Role)
                 {
-                    case "open":
+                    case BlockPairRole.Open:
                         blockStack.Push((definition.Name, lineNum));
                         break;
-                    case "middle":
+                    case BlockPairRole.Middle:
                         if (blockStack.Count == 0)
                             diagnostics.Add(new ScriptDiagnostic(
                                 lineNum, indent, indent + definition.Name.Length,
                                 $"'{definition.Name}' without matching opening step",
                                 DiagnosticSeverity.Error));
                         break;
-                    case "close":
+                    case BlockPairRole.Close:
                         if (blockStack.Count == 0)
                             diagnostics.Add(new ScriptDiagnostic(
                                 lineNum, indent, indent + definition.Name.Length,

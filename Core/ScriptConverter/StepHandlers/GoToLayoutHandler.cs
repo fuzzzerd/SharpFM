@@ -10,15 +10,15 @@ internal class GoToLayoutHandler : StepHandlerBase, IStepHandler
 
     public string? ToDisplayLine(ScriptStep step)
     {
-        var dest = step.RawXml?.Element("LayoutDestination")?.Attribute("value")?.Value;
-        var layoutName = step.RawXml?.Element("Layout")?.Attribute("name")?.Value;
-        var animation = step.RawXml?.Element("Animation")?.Attribute("value")?.Value;
+        var dest = step.SourceXml?.Element("LayoutDestination")?.Attribute("value")?.Value;
+        var layoutName = step.SourceXml?.Element("Layout")?.Attribute("name")?.Value;
+        var animation = step.SourceXml?.Element("Animation")?.Attribute("value")?.Value;
 
         string layoutRef = dest switch
         {
             "OriginalLayout" => "original layout",
-            "LayoutNameByCalculation" => step.RawXml?.Element("Calculation")?.Value ?? "original layout",
-            "LayoutNumberByCalculation" => $"Layout Number: {step.RawXml?.Element("Calculation")?.Value ?? ""}",
+            "LayoutNameByCalculation" => step.SourceXml?.Element("Calculation")?.Value ?? "original layout",
+            "LayoutNumberByCalculation" => $"Layout Number: {step.SourceXml?.Element("Calculation")?.Value ?? ""}",
             _ => !string.IsNullOrEmpty(layoutName) ? $"\"{layoutName}\"" : "original layout"
         };
 

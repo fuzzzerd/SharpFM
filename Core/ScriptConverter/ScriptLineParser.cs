@@ -6,14 +6,14 @@ namespace SharpFM.Core.ScriptConverter;
 
 public static class ScriptLineParser
 {
-    public static List<ParsedLine> Parse(string hrText)
+    public static List<ParsedStep> Parse(string hrText)
     {
         if (string.IsNullOrWhiteSpace(hrText))
-            return new List<ParsedLine>();
+            return new List<ParsedStep>();
 
         var rawLines = hrText.Split('\n');
         var mergedLines = MergeMultilineStatements(rawLines);
-        var result = new List<ParsedLine>();
+        var result = new List<ParsedStep>();
 
         foreach (var raw in mergedLines)
         {
@@ -70,10 +70,10 @@ public static class ScriptLineParser
         BracketMatcher.HasUnbalancedBrackets(text);
 
     // Used by ScriptStep.FromDisplayLine — returns the same data as ParseLine
-    // but avoids coupling ScriptStep to ParsedLine
-    internal static ParsedLine ParseRaw(string line) => ParseLine(line);
+    // but avoids coupling ScriptStep to ParsedStep
+    internal static ParsedStep ParseRaw(string line) => ParseLine(line);
 
-    public static ParsedLine ParseLine(string line)
+    public static ParsedStep ParseLine(string line)
     {
         var raw = line;
         var trimmed = line.TrimStart();
@@ -90,7 +90,7 @@ public static class ScriptLineParser
         if (trimmed.StartsWith("#"))
         {
             var commentText = trimmed.Length > 1 ? trimmed.Substring(1).TrimStart() : "";
-            return new ParsedLine("# (comment)", new[] { commentText }, disabled, true, raw);
+            return new ParsedStep("# (comment)", new[] { commentText }, disabled, true, raw);
         }
 
         // Find the bracket-delimited parameters
@@ -98,7 +98,7 @@ public static class ScriptLineParser
         if (bracketStart < 0)
         {
             // No parameters — just a step name
-            return new ParsedLine(trimmed.Trim(), Array.Empty<string>(), disabled, false, raw);
+            return new ParsedStep(trimmed.Trim(), Array.Empty<string>(), disabled, false, raw);
         }
 
         var stepName = trimmed.Substring(0, bracketStart).Trim();
@@ -111,6 +111,6 @@ public static class ScriptLineParser
             ? Array.Empty<string>()
             : BracketMatcher.SplitParams(paramText);
 
-        return new ParsedLine(stepName, parameters, disabled, false, raw);
+        return new ParsedStep(stepName, parameters, disabled, false, raw);
     }
 }

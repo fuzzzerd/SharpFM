@@ -16,7 +16,7 @@ internal class ControlFlowHandler : StepHandlerBase, IStepHandler
         return name switch
         {
             "If" or "Else If" or "Exit Loop If" =>
-                FormatCondition(name, step.RawXml?.Element("Calculation")?.Value),
+                FormatCondition(name, step.SourceXml?.Element("Calculation")?.Value),
             _ => name
         };
     }
@@ -60,7 +60,7 @@ internal class ControlFlowHandler : StepHandlerBase, IStepHandler
     private static XElement BuildCondition(int id, string name, ScriptStep step)
     {
         var el = MakeStep(id, name, step.Enabled);
-        var calc = step.RawXml?.Element("Calculation")?.Value ?? "";
+        var calc = step.SourceXml?.Element("Calculation")?.Value ?? "";
         el.Add(XElement.Parse($"<Calculation><![CDATA[{calc}]]></Calculation>"));
         return el;
     }

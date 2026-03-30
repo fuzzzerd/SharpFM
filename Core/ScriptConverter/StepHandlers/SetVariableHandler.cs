@@ -12,11 +12,11 @@ internal class SetVariableHandler : StepHandlerBase, IStepHandler
     public string? ToDisplayLine(ScriptStep step)
     {
         string name, value, repetition;
-        if (step.RawXml != null)
+        if (step.SourceXml != null)
         {
-            name = step.RawXml.Element("Name")?.Value ?? "";
-            value = step.RawXml.Element("Value")?.Element("Calculation")?.Value ?? "";
-            repetition = step.RawXml.Element("Repetition")?.Element("Calculation")?.Value ?? "";
+            name = step.SourceXml.Element("Name")?.Value ?? "";
+            value = step.SourceXml.Element("Value")?.Element("Calculation")?.Value ?? "";
+            repetition = step.SourceXml.Element("Repetition")?.Element("Calculation")?.Value ?? "";
         }
         else
         {

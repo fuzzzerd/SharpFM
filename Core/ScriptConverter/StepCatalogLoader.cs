@@ -9,15 +9,39 @@ using System.Text.Json;
 
 namespace SharpFM.Core.ScriptConverter;
 
-public static class StepCatalogLoader
+public class StepCatalogLoader : IStepCatalog
 {
-    private static readonly Lazy<IReadOnlyList<StepDefinition>> _all = new(LoadCatalog);
-    private static readonly Lazy<IReadOnlyDictionary<int, StepDefinition>> _byId = new(BuildByIdIndex);
-    private static readonly Lazy<IReadOnlyDictionary<string, StepDefinition>> _byName = new(BuildByNameIndex);
+    private static readonly Lazy<StepCatalogLoader> _instance = new(() => new StepCatalogLoader());
+    private readonly IReadOnlyList<StepDefinition> _all;
+    private readonly IReadOnlyDictionary<int, StepDefinition> _byId;
+    private readonly IReadOnlyDictionary<string, StepDefinition> _byName;
 
-    public static IReadOnlyList<StepDefinition> All => _all.Value;
-    public static IReadOnlyDictionary<int, StepDefinition> ById => _byId.Value;
-    public static IReadOnlyDictionary<string, StepDefinition> ByName => _byName.Value;
+    /// <summary>Default singleton instance. Use directly or inject IStepCatalog for testing.</summary>
+    public static StepCatalogLoader Default => _instance.Value;
+
+    // Static accessors for backward compatibility
+    public static IReadOnlyList<StepDefinition> All => Default._all;
+    public static IReadOnlyDictionary<int, StepDefinition> ById => Default._byId;
+    public static IReadOnlyDictionary<string, StepDefinition> ByName => Default._byName;
+
+    IReadOnlyList<StepDefinition> IStepCatalog.All => _all;
+
+    public bool TryGetByName(string name, out StepDefinition definition)
+    {
+        return _byName.TryGetValue(name, out definition!);
+    }
+
+    public bool TryGetById(int id, out StepDefinition definition)
+    {
+        return _byId.TryGetValue(id, out definition!);
+    }
+
+    private StepCatalogLoader()
+    {
+        _all = LoadCatalog();
+        _byId = BuildByIdIndex();
+        _byName = BuildByNameIndex();
+    }
 
     private static IReadOnlyList<StepDefinition> LoadCatalog()
     {
@@ -34,10 +58,10 @@ public static class StepCatalogLoader
         return steps.AsReadOnly();
     }
 
-    private static IReadOnlyDictionary<int, StepDefinition> BuildByIdIndex()
+    private IReadOnlyDictionary<int, StepDefinition> BuildByIdIndex()
     {
         var dict = new Dictionary<int, StepDefinition>();
-        foreach (var step in All)
+        foreach (var step in _all)
         {
             if (step.Id.HasValue)
                 dict.TryAdd(step.Id.Value, step);
@@ -45,10 +69,10 @@ public static class StepCatalogLoader
         return dict;
     }
 
-    private static IReadOnlyDictionary<string, StepDefinition> BuildByNameIndex()
+    private IReadOnlyDictionary<string, StepDefinition> BuildByNameIndex()
     {
         var dict = new Dictionary<string, StepDefinition>(StringComparer.OrdinalIgnoreCase);
-        foreach (var step in All)
+        foreach (var step in _all)
         {
             dict.TryAdd(step.Name, step);
         }

@@ -160,12 +160,12 @@ public class ScriptStepTests
     }
 
     [Fact]
-    public void UnknownStep_PreservesRawXml()
+    public void UnknownStep_PreservesSourceXml()
     {
         var el = MakeStep("<Step enable=\"True\" id=\"9999\" name=\"FutureStep\"><Foo>bar</Foo></Step>");
         var step = ScriptStep.FromXml(el);
         Assert.Null(step.Definition);
-        Assert.NotNull(step.RawXml);
+        Assert.NotNull(step.SourceXml);
         // Display shows original name
         Assert.Contains("FutureStep", step.ToDisplayLine());
         // XML serializes as comment with original name preserved

@@ -10,9 +10,9 @@ internal class GoToRecordHandler : StepHandlerBase, IStepHandler
 
     public string? ToDisplayLine(ScriptStep step)
     {
-        var location = step.RawXml?.Element("RowPageLocation")?.Attribute("value")?.Value;
-        var exitAfterLast = step.RawXml?.Element("Exit")?.Attribute("state")?.Value;
-        var calc = step.RawXml?.Element("Calculation")?.Value;
+        var location = step.SourceXml?.Element("RowPageLocation")?.Attribute("value")?.Value;
+        var exitAfterLast = step.SourceXml?.Element("Exit")?.Attribute("state")?.Value;
+        var calc = step.SourceXml?.Element("Calculation")?.Value;
 
         var parts = new List<string>();
         if (location == "By Calculation" && !string.IsNullOrEmpty(calc))

@@ -10,9 +10,9 @@ internal class ShowCustomDialogHandler : StepHandlerBase, IStepHandler
 
     public string? ToDisplayLine(ScriptStep step)
     {
-        var title = step.RawXml?.Element("Title")?.Element("Calculation")?.Value;
-        var message = step.RawXml?.Element("Message")?.Element("Calculation")?.Value;
-        var buttons = step.RawXml?.Element("Buttons")?.Elements("Button")
+        var title = step.SourceXml?.Element("Title")?.Element("Calculation")?.Value;
+        var message = step.SourceXml?.Element("Message")?.Element("Calculation")?.Value;
+        var buttons = step.SourceXml?.Element("Buttons")?.Elements("Button")
             .Select(b => b.Element("Calculation")?.Value)
             .Where(b => !string.IsNullOrEmpty(b))
             .ToList() ?? new List<string?>();

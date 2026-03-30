@@ -1,6 +1,7 @@
 // Step catalog data model — ported from agentic-fm (https://github.com/petrowsky/agentic-fm)
 // Copyright 2026 Matt Petrowsky, Apache License 2.0
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -91,11 +92,45 @@ public record StepParam
     public Dictionary<string, JsonElement>? ExtensionData { get; init; }
 }
 
+public enum BlockPairRole
+{
+    Open,
+    Middle,
+    Close
+}
+
 public record StepBlockPair
 {
     [JsonPropertyName("role")]
-    public string Role { get; init; } = "";
+    [JsonConverter(typeof(BlockPairRoleConverter))]
+    public BlockPairRole Role { get; init; }
 
     [JsonPropertyName("partners")]
     public string[] Partners { get; init; } = [];
+}
+
+internal class BlockPairRoleConverter : JsonConverter<BlockPairRole>
+{
+    public override BlockPairRole Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var value = reader.GetString();
+        return value switch
+        {
+            "open" => BlockPairRole.Open,
+            "middle" => BlockPairRole.Middle,
+            "close" => BlockPairRole.Close,
+            _ => throw new JsonException($"Unknown BlockPairRole: '{value}'")
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, BlockPairRole value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value switch
+        {
+            BlockPairRole.Open => "open",
+            BlockPairRole.Middle => "middle",
+            BlockPairRole.Close => "close",
+            _ => throw new JsonException($"Unknown BlockPairRole: '{value}'")
+        });
+    }
 }

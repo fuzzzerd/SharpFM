@@ -10,7 +10,7 @@ public partial class ScriptStep
     public StepDefinition? Definition { get; }
     public bool Enabled { get; set; }
     public List<StepParamValue> ParamValues { get; }
-    public XElement? RawXml { get; }
+    public XElement? SourceXml { get; }
 
     public ScriptStep(StepDefinition? definition, bool enabled,
                       List<StepParamValue>? paramValues = null, XElement? rawXml = null)
@@ -18,7 +18,7 @@ public partial class ScriptStep
         Definition = definition;
         Enabled = enabled;
         ParamValues = paramValues ?? new List<StepParamValue>();
-        RawXml = rawXml;
+        SourceXml = rawXml;
     }
 
     // --- Factory: from XML element ---
@@ -72,7 +72,7 @@ public partial class ScriptStep
         }
 
         // Specialized steps build their own XML from display text,
-        // then construct from that XML for consistent RawXml population.
+        // then construct from that XML for consistent SourceXml population.
         var specializedXml = BuildXmlFromDisplay_Specialized(definition, !raw.Disabled, raw.Params);
         if (specializedXml != null)
             return FromXml(specializedXml);
@@ -89,8 +89,8 @@ public partial class ScriptStep
         if (Definition == null)
         {
             // Unknown step — emit as comment preserving original text
-            var text = RawXml?.Element("RawText")?.Value
-                ?? RawXml?.Attribute("name")?.Value
+            var text = SourceXml?.Element("RawText")?.Value
+                ?? SourceXml?.Attribute("name")?.Value
                 ?? "Unknown";
             var commentStep = new XElement("Step",
                 new XAttribute("enable", Enabled ? "True" : "False"),
@@ -140,7 +140,7 @@ public partial class ScriptStep
             .Where(s => s != null)
             .ToList();
 
-        var name = Definition?.Name ?? RawXml?.Attribute("name")?.Value ?? "Unknown";
+        var name = Definition?.Name ?? SourceXml?.Attribute("name")?.Value ?? "Unknown";
 
         if (parts.Count == 0)
             return name;
@@ -156,7 +156,7 @@ public partial class ScriptStep
 
         if (Definition == null)
         {
-            var name = RawXml?.Attribute("name")?.Value ?? "Unknown";
+            var name = SourceXml?.Attribute("name")?.Value ?? "Unknown";
             diagnostics.Add(new ScriptDiagnostic(
                 lineIndex, 0, name.Length,
                 $"Unknown script step: '{name}'",

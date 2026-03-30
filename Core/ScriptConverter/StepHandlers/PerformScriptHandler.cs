@@ -10,8 +10,8 @@ internal class PerformScriptHandler : StepHandlerBase, IStepHandler
 
     public string? ToDisplayLine(ScriptStep step)
     {
-        var scriptName = step.RawXml?.Element("Script")?.Attribute("name")?.Value;
-        var param = step.RawXml?.Element("Calculation")?.Value;
+        var scriptName = step.SourceXml?.Element("Script")?.Attribute("name")?.Value;
+        var param = step.SourceXml?.Element("Calculation")?.Value;
 
         var parts = new List<string>();
         if (!string.IsNullOrEmpty(scriptName)) parts.Add($"\"{scriptName}\"");

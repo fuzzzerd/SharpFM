@@ -25,7 +25,7 @@ public class StepCatalogLoaderTests
         var step = StepCatalogLoader.ById[68];
         Assert.Equal("If", step.Name);
         Assert.NotNull(step.BlockPair);
-        Assert.Equal("open", step.BlockPair!.Role);
+        Assert.Equal(BlockPairRole.Open, step.BlockPair!.Role);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class StepCatalogLoaderTests
     public void BlockPairSteps_HaveMatchingPartners()
     {
         var openSteps = StepCatalogLoader.All
-            .Where(s => s.BlockPair?.Role == "open")
+            .Where(s => s.BlockPair?.Role == BlockPairRole.Open)
             .ToList();
 
         foreach (var step in openSteps)

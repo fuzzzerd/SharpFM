@@ -104,7 +104,7 @@ public class FmScript
             var name = step.Definition?.Name ?? "";
 
             // Decrease indent before close/middle blocks
-            if (step.Definition?.BlockPair?.Role is "close" or "middle" && indentLevel > 0)
+            if (step.Definition?.BlockPair?.Role is BlockPairRole.Close or BlockPairRole.Middle && indentLevel > 0)
                 indentLevel--;
 
             var displayLine = step.ToDisplayLine();
@@ -129,7 +129,7 @@ public class FmScript
             }
 
             // Increase indent after open/middle blocks
-            if (step.Definition?.BlockPair?.Role is "open" or "middle")
+            if (step.Definition?.BlockPair?.Role is BlockPairRole.Open or BlockPairRole.Middle)
                 indentLevel++;
         }
 

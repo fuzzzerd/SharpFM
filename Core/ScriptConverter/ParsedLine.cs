@@ -1,6 +1,6 @@
 namespace SharpFM.Core.ScriptConverter;
 
-public record ParsedLine(
+public record ParsedStep(
     string StepName,
     string[] Params,
     bool Disabled,

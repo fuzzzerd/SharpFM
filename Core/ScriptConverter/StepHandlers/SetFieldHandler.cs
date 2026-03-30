@@ -9,7 +9,7 @@ internal class SetFieldHandler : StepHandlerBase, IStepHandler
 
     public string? ToDisplayLine(ScriptStep step)
     {
-        var field = step.RawXml?.Element("Field");
+        var field = step.SourceXml?.Element("Field");
         string fieldRef = "";
         if (field != null)
         {
@@ -23,7 +23,7 @@ internal class SetFieldHandler : StepHandlerBase, IStepHandler
                 fieldRef = field.Value;
         }
 
-        var calc = step.RawXml?.Element("Calculation")?.Value;
+        var calc = step.SourceXml?.Element("Calculation")?.Value;
         var parts = new List<string>();
         if (!string.IsNullOrEmpty(fieldRef)) parts.Add(fieldRef);
         if (!string.IsNullOrEmpty(calc)) parts.Add(calc);
