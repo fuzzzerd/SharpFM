@@ -279,11 +279,15 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         set
         {
             _searchText = value;
+            var previousSelection = _selectedClip;
             FilteredClips.Clear();
             foreach (var c in FileMakerClips.Where(c => c.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)))
             {
                 FilteredClips.Add(c);
             }
+            // Preserve selection if still visible in filtered results
+            if (previousSelection != null && FilteredClips.Contains(previousSelection))
+                SelectedClip = previousSelection;
             NotifyPropertyChanged();
         }
     }
