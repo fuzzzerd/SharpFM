@@ -18,15 +18,15 @@
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_New">
-                    <MenuItem Command="{Binding NewEmptyItem}" Header="Blank Clip" />
-                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="From Clipboard (copied from FileMaker)" />
+                    <MenuItem Command="{Binding NewEmptyItem}" Header="Blank Clip" InputGesture="Ctrl+N" />
+                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="From Clipboard (copied from FileMaker)" InputGesture="Ctrl+V" />
                 </MenuItem>
                 <Separator />
                 <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder" />
                 <Separator />
                 <MenuItem Header="Save">
-                    <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All To Folder" />
-                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Selected clip to Clipboard (to paste into FileMaker)" />
+                    <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All To Folder" InputGesture="Ctrl+S" />
+                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Selected clip to Clipboard (to paste into FileMaker)" InputGesture="Ctrl+Shift+C" />
                 </MenuItem>
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
@@ -35,7 +35,7 @@
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
             <MenuItem Header="_View">
-                <MenuItem x:Name="viewXmlMenuItem" Header="Show XML" />
+                <MenuItem x:Name="viewXmlMenuItem" Header="Show XML" InputGesture="Ctrl+Shift+X" />
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
