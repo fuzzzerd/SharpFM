@@ -82,23 +82,37 @@ public class FileMakerClip
 
     /// <summary>
     /// Raw data that can be put back onto the Clipboard in FileMaker structure.
+    /// Cached — invalidated when XmlData changes.
     /// </summary>
     public byte[] RawData
     {
         get
         {
-            // recalculate the length of the original text and make sure that is the first four bytes in the stream
-            byte[] byteList = Encoding.UTF8.GetBytes(XmlData);
-            int bl = byteList.Length;
-            byte[] intBytes = BitConverter.GetBytes(bl);
-            return intBytes.Concat(byteList).ToArray();
+            if (_cachedRawData == null)
+            {
+                byte[] byteList = Encoding.UTF8.GetBytes(XmlData);
+                byte[] intBytes = BitConverter.GetBytes(byteList.Length);
+                _cachedRawData = intBytes.Concat(byteList).ToArray();
+            }
+            return _cachedRawData;
         }
     }
+
+    private string _xmlData = string.Empty;
+    private byte[]? _cachedRawData;
 
     /// <summary>
     /// The actual clip. Users work with the Xml version here, and then pull the RawData property when ready to write back to FileMaker.
     /// </summary>
-    public string XmlData { get; set; }
+    public string XmlData
+    {
+        get => _xmlData;
+        set
+        {
+            _xmlData = value;
+            _cachedRawData = null; // invalidate cache
+        }
+    }
 
     /// <summary>
     /// The fields exposed through this FileMaker Clip (if its a table or a layout).
