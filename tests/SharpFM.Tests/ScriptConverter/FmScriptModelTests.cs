@@ -111,16 +111,15 @@ public class FmScriptModelTests
     [Fact]
     public void Validate_UnmatchedIf()
     {
-        var script = FmScript.FromDisplayText("If [ $x > 0 ]\n    Beep");
-        var diagnostics = script.Validate();
+        // Block pair validation is in ScriptValidator (needs text line positions)
+        var diagnostics = ScriptValidator.Validate("If [ $x > 0 ]\n    Beep");
         Assert.Contains(diagnostics, d => d.Message.Contains("no matching closing step"));
     }
 
     [Fact]
     public void Validate_UnmatchedEndIf()
     {
-        var script = FmScript.FromDisplayText("End If");
-        var diagnostics = script.Validate();
+        var diagnostics = ScriptValidator.Validate("End If");
         Assert.Contains(diagnostics, d => d.Message.Contains("without matching opening step"));
     }
 

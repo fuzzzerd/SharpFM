@@ -137,53 +137,14 @@ public class FmScript
     }
 
     // --- Validate ---
+    // Block pair and positional validation lives in ScriptValidator (needs text line positions).
+    // This method validates the model itself (per-step param validation only).
 
     public List<ScriptDiagnostic> Validate()
     {
         var diagnostics = new List<ScriptDiagnostic>();
-        var blockStack = new Stack<(string StepName, int Line)>();
-
         for (int i = 0; i < Steps.Count; i++)
-        {
-            var step = Steps[i];
-
-            // Per-step validation
-            diagnostics.AddRange(step.Validate(i));
-
-            // Block pair validation
-            if (step.Definition?.BlockPair != null)
-            {
-                switch (step.Definition.BlockPair.Role)
-                {
-                    case "open":
-                        blockStack.Push((step.Definition.Name, i));
-                        break;
-                    case "middle":
-                        if (blockStack.Count == 0)
-                            diagnostics.Add(new ScriptDiagnostic(i, 0, step.Definition.Name.Length,
-                                $"'{step.Definition.Name}' without matching opening step",
-                                DiagnosticSeverity.Error));
-                        break;
-                    case "close":
-                        if (blockStack.Count == 0)
-                            diagnostics.Add(new ScriptDiagnostic(i, 0, step.Definition.Name.Length,
-                                $"'{step.Definition.Name}' without matching opening step",
-                                DiagnosticSeverity.Error));
-                        else
-                            blockStack.Pop();
-                        break;
-                }
-            }
-        }
-
-        while (blockStack.Count > 0)
-        {
-            var unclosed = blockStack.Pop();
-            diagnostics.Add(new ScriptDiagnostic(unclosed.Line, 0, 0,
-                $"'{unclosed.StepName}' has no matching closing step",
-                DiagnosticSeverity.Error));
-        }
-
+            diagnostics.AddRange(Steps[i].Validate(i));
         return diagnostics;
     }
 
