@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpFM", "SharpFM.csproj", "{5245F468-DAD7-478C-8E5F-518A03664F71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpFM", "src\SharpFM\SharpFM.csproj", "{5245F468-DAD7-478C-8E5F-518A03664F71}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E2FF2BB3-AF37-44BA-BD84-999B352D814E}"
 EndProject

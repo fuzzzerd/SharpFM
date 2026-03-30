@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SharpFM.csproj" />
+    <ProjectReference Include="..\..\src\SharpFM\SharpFM.csproj" />
   </ItemGroup>
 
 </Project>
