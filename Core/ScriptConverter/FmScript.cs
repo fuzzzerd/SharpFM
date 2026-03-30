@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
+using NLog;
 
 namespace SharpFM.Core.ScriptConverter;
 
 public class FmScript
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     public List<ScriptStep> Steps { get; }
 
     public FmScript(List<ScriptStep> steps)
@@ -24,7 +28,11 @@ public class FmScript
 
         XDocument doc;
         try { doc = XDocument.Parse(xml); }
-        catch { return new FmScript(new List<ScriptStep>()); }
+        catch (XmlException ex)
+        {
+            Log.Error(ex, "Failed to parse script XML");
+            return new FmScript(new List<ScriptStep>());
+        }
 
         var root = doc.Root;
         if (root == null) return new FmScript(new List<ScriptStep>());
@@ -196,15 +204,10 @@ public class FmScript
         foreach (var step in steps)
         {
             bool isComment = step.Definition?.Name == "# (comment)";
-            bool isBareText = !isComment && step.Definition?.Name == "# (comment)"
-                && step.ParamValues.Any(p => p.Value?.StartsWith("[Unknown]") == false);
-
-            // Bare unknown text following a comment → merge
             bool prevIsComment = result.Count > 0 && result[^1].Definition?.Name == "# (comment)";
 
             if (prevIsComment && isComment)
             {
-                // Consecutive comments: merge text
                 var prev = result[^1];
                 var prevText = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
                 var thisText = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";

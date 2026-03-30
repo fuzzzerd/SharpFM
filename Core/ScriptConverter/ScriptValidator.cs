@@ -40,7 +40,7 @@ public static class ScriptValidator
             }
 
             // Extract step name (text before '[' or end of line)
-            var bracketPos = ScriptLineParser.FindTopLevelBracket(forLookup);
+            var bracketPos = BracketMatcher.FindTopLevelOpenBracket(forLookup);
             var stepName = bracketPos >= 0
                 ? forLookup.Substring(0, bracketPos).Trim()
                 : forLookup.Trim();

@@ -38,44 +38,29 @@ public class BracketMatchRenderer : IBackgroundRenderer
         if (offset <= 0 || offset > doc.TextLength) return;
 
         // Check character before caret and at caret
+        var text = doc.Text;
         var charBefore = offset > 0 ? doc.GetCharAt(offset - 1) : '\0';
         var charAt = offset < doc.TextLength ? doc.GetCharAt(offset) : '\0';
 
         if (charBefore == '[')
         {
-            var match = FindMatchingClose(doc.Text, offset - 1);
-            if (match >= 0)
-            {
-                _openOffset = offset - 1;
-                _closeOffset = match;
-            }
+            var match = BracketMatcher.FindMatchingClose(text, offset - 1);
+            if (match >= 0) { _openOffset = offset - 1; _closeOffset = match; }
         }
         else if (charBefore == ']')
         {
-            var match = FindMatchingOpen(doc.Text, offset - 2);
-            if (match >= 0)
-            {
-                _openOffset = match;
-                _closeOffset = offset - 1;
-            }
+            var match = BracketMatcher.FindMatchingOpen(text, offset - 2);
+            if (match >= 0) { _openOffset = match; _closeOffset = offset - 1; }
         }
         else if (charAt == '[')
         {
-            var match = FindMatchingClose(doc.Text, offset);
-            if (match >= 0)
-            {
-                _openOffset = offset;
-                _closeOffset = match;
-            }
+            var match = BracketMatcher.FindMatchingClose(text, offset);
+            if (match >= 0) { _openOffset = offset; _closeOffset = match; }
         }
         else if (charAt == ']')
         {
-            var match = FindMatchingOpen(doc.Text, offset - 1);
-            if (match >= 0)
-            {
-                _openOffset = match;
-                _closeOffset = offset;
-            }
+            var match = BracketMatcher.FindMatchingOpen(text, offset - 1);
+            if (match >= 0) { _openOffset = match; _closeOffset = offset; }
         }
 
         if (_openOffset != oldOpen || _closeOffset != oldClose)
@@ -99,39 +84,4 @@ public class BracketMatchRenderer : IBackgroundRenderer
         }
     }
 
-    private static int FindMatchingClose(string text, int openPos)
-    {
-        int depth = 1;
-        bool inQuote = false;
-        for (int i = openPos + 1; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote && c == '[') depth++;
-            else if (!inQuote && c == ']')
-            {
-                depth--;
-                if (depth == 0) return i;
-            }
-        }
-        return -1;
-    }
-
-    private static int FindMatchingOpen(string text, int closePos)
-    {
-        int depth = 1;
-        bool inQuote = false;
-        for (int i = closePos; i >= 0; i--)
-        {
-            var c = text[i];
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote && c == ']') depth++;
-            else if (!inQuote && c == '[')
-            {
-                depth--;
-                if (depth == 0) return i;
-            }
-        }
-        return -1;
-    }
 }

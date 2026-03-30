@@ -1,11 +1,14 @@
+using System;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using NLog;
 
 namespace SharpFM.Core.ScriptConverter;
 
 internal static class XmlHelpers
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
     internal static string XmlEscape(string s)
     {
         return s.Replace("&", "&amp;")
@@ -39,8 +42,9 @@ internal static class XmlHelpers
             }
             return sb.ToString();
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Warn(ex, "Failed to pretty-print XML, returning original");
             return xml;
         }
     }

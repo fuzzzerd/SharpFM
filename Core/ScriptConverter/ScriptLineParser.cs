@@ -66,20 +66,8 @@ public static class ScriptLineParser
         return result;
     }
 
-    internal static bool HasUnbalancedBrackets(string text)
-    {
-        int depth = 0;
-        bool inQuote = false;
-
-        foreach (var c in text)
-        {
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote && c == '[') depth++;
-            else if (!inQuote && c == ']') depth--;
-        }
-
-        return depth > 0;
-    }
+    internal static bool HasUnbalancedBrackets(string text) =>
+        BracketMatcher.HasUnbalancedBrackets(text);
 
     // Used by ScriptStep.FromDisplayLine — returns the same data as ParseLine
     // but avoids coupling ScriptStep to ParsedLine
@@ -106,7 +94,7 @@ public static class ScriptLineParser
         }
 
         // Find the bracket-delimited parameters
-        var bracketStart = FindTopLevelBracket(trimmed);
+        var bracketStart = BracketMatcher.FindTopLevelOpenBracket(trimmed);
         if (bracketStart < 0)
         {
             // No parameters — just a step name
@@ -114,90 +102,15 @@ public static class ScriptLineParser
         }
 
         var stepName = trimmed.Substring(0, bracketStart).Trim();
-        var bracketEnd = FindMatchingBracket(trimmed, bracketStart);
+        var bracketEnd = BracketMatcher.FindMatchingClose(trimmed, bracketStart);
         if (bracketEnd < 0)
             bracketEnd = trimmed.Length - 1;
 
         var paramText = trimmed.Substring(bracketStart + 1, bracketEnd - bracketStart - 1).Trim();
         var parameters = string.IsNullOrEmpty(paramText)
             ? Array.Empty<string>()
-            : SplitParams(paramText);
+            : BracketMatcher.SplitParams(paramText);
 
         return new ParsedLine(stepName, parameters, disabled, false, raw);
-    }
-
-    internal static int FindTopLevelBracket(string text)
-    {
-        bool inQuote = false;
-        int parenDepth = 0;
-
-        for (int i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote && c == '(') parenDepth++;
-            else if (!inQuote && c == ')') parenDepth--;
-            else if (!inQuote && parenDepth == 0 && c == '[')
-                return i;
-        }
-
-        return -1;
-    }
-
-    internal static int FindMatchingBracket(string text, int openPos)
-    {
-        int depth = 1;
-        bool inQuote = false;
-
-        for (int i = openPos + 1; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote && c == '[') depth++;
-            else if (!inQuote && c == ']')
-            {
-                depth--;
-                if (depth == 0) return i;
-            }
-        }
-
-        return -1;
-    }
-
-    internal static string[] SplitParams(string paramText)
-    {
-        var results = new List<string>();
-        int start = 0;
-        int parenDepth = 0;
-        int bracketDepth = 0;
-        bool inQuote = false;
-
-        for (int i = 0; i < paramText.Length; i++)
-        {
-            var c = paramText[i];
-
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote)
-            {
-                switch (c)
-                {
-                    case '(': parenDepth++; break;
-                    case ')': parenDepth--; break;
-                    case '[': bracketDepth++; break;
-                    case ']': bracketDepth--; break;
-                    case ';' when parenDepth == 0 && bracketDepth == 0:
-                        results.Add(paramText.Substring(start, i - start).Trim());
-                        start = i + 1;
-                        break;
-                }
-            }
-        }
-
-        // Add final segment
-        var last = paramText.Substring(start).Trim();
-        if (last.Length > 0)
-            results.Add(last);
-
-        return results.ToArray();
     }
 }

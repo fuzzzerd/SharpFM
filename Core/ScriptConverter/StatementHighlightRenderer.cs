@@ -93,10 +93,10 @@ public class StatementHighlightRenderer : IBackgroundRenderer
             if (currentStart < 0)
             {
                 // Not in a multi-line statement
-                if (ScriptLineParser.HasUnbalancedBrackets(line))
+                if (BracketMatcher.HasUnbalancedBrackets(line))
                 {
                     currentStart = lineNum;
-                    depth = CountBracketDepth(line);
+                    depth = BracketMatcher.CountBracketDepth(line);
                 }
                 else
                 {
@@ -106,7 +106,7 @@ public class StatementHighlightRenderer : IBackgroundRenderer
             else
             {
                 // Continuing a multi-line statement
-                depth += CountBracketDepth(line);
+                depth += BracketMatcher.CountBracketDepth(line);
                 if (depth <= 0)
                 {
                     ranges.Add((currentStart, lineNum));
@@ -125,16 +125,4 @@ public class StatementHighlightRenderer : IBackgroundRenderer
         return ranges;
     }
 
-    private static int CountBracketDepth(string line)
-    {
-        int depth = 0;
-        bool inQuote = false;
-        foreach (var c in line)
-        {
-            if (c == '"') inQuote = !inQuote;
-            else if (!inQuote && c == '[') depth++;
-            else if (!inQuote && c == ']') depth--;
-        }
-        return depth;
-    }
 }
