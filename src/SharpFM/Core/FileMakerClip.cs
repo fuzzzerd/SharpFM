@@ -64,7 +64,7 @@ public class FileMakerClip
 
         // try to show better "name" if possible
         var xdoc = XDocument.Load(new StringReader(XmlData));
-        var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().First()?.Attribute("name")?.Value ?? "new-clip";
+        var containerName = xdoc.Element("fmxmlsnippet")?.Descendants().FirstOrDefault()?.Attribute("name")?.Value ?? "new-clip";
 
         // set the name from the xml data if possible and fall back to constructor parameter
         Name = containerName ?? name;
