@@ -29,7 +29,7 @@ public static class ScriptLineParser
     internal static List<string> MergeMultilineStatements(string[] lines)
     {
         var result = new List<string>();
-        string? accumulator = null;
+        System.Text.StringBuilder? accumulator = null;
 
         for (int i = 0; i < lines.Length; i++)
         {
@@ -39,7 +39,7 @@ public static class ScriptLineParser
             {
                 if (HasUnbalancedBrackets(line))
                 {
-                    accumulator = line;
+                    accumulator = new System.Text.StringBuilder(line);
                 }
                 else
                 {
@@ -48,20 +48,19 @@ public static class ScriptLineParser
             }
             else
             {
-                // Continue merging — preserve the newline for readability
-                accumulator += "\n" + line;
+                accumulator.Append('\n').Append(line);
+                var merged = accumulator.ToString();
 
-                if (!HasUnbalancedBrackets(accumulator))
+                if (!HasUnbalancedBrackets(merged))
                 {
-                    result.Add(accumulator);
+                    result.Add(merged);
                     accumulator = null;
                 }
             }
         }
 
-        // If still accumulating at end, emit what we have
         if (accumulator != null)
-            result.Add(accumulator);
+            result.Add(accumulator.ToString());
 
         return result;
     }
