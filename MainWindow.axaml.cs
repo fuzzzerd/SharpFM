@@ -43,21 +43,21 @@ public partial class MainWindow : Window
             _scriptTextMateInstallation = _scriptEditor.InstallTextMate(fmScriptRegistry);
             _scriptTextMateInstallation.SetGrammar(FmScriptRegistryOptions.ScopeName);
 
-            // Error highlighting
-            _errorRenderer = new ErrorMarkerRenderer(_scriptEditor.Document);
-            _scriptEditor.TextArea.TextView.BackgroundRenderers.Add(_errorRenderer);
-
-            // Debounced validation on text changes
+            // Debounced validation timer
             _validationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             _validationTimer.Tick += (_, _) =>
             {
                 _validationTimer.Stop();
                 RunValidation();
             };
-            _scriptEditor.Document.TextChanged += (_, _) =>
+
+            // Attach error renderer and validation to current (and future) documents.
+            // The Document changes when the binding fires ScriptDocument for a new clip.
+            AttachToDocument(_scriptEditor.Document);
+            _scriptEditor.PropertyChanged += (_, args) =>
             {
-                _validationTimer.Stop();
-                _validationTimer.Start();
+                if (args.Property.Name == "Document" && _scriptEditor.Document != null)
+                    AttachToDocument(_scriptEditor.Document);
             };
 
             // Bracket matching
@@ -144,6 +144,29 @@ public partial class MainWindow : Window
 
         _completionWindow.Show();
         _completionWindow.Closed += (_, _) => _completionWindow = null;
+    }
+
+    private void AttachToDocument(AvaloniaEdit.Document.TextDocument document)
+    {
+        if (_scriptEditor == null) return;
+
+        // Remove old renderer if present
+        if (_errorRenderer != null)
+            _scriptEditor.TextArea.TextView.BackgroundRenderers.Remove(_errorRenderer);
+
+        // Create new renderer for this document
+        _errorRenderer = new ErrorMarkerRenderer(document);
+        _scriptEditor.TextArea.TextView.BackgroundRenderers.Add(_errorRenderer);
+
+        // Subscribe to text changes for debounced validation
+        document.TextChanged += (_, _) =>
+        {
+            _validationTimer?.Stop();
+            _validationTimer?.Start();
+        };
+
+        // Run initial validation
+        RunValidation();
     }
 
     private void RunValidation()

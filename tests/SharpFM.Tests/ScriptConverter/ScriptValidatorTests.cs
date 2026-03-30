@@ -15,11 +15,12 @@ public class ScriptValidatorTests
     }
 
     [Fact]
-    public void UnknownStep_BecomesComment_NoDiagnostics()
+    public void UnknownStep_ProducesError()
     {
-        // Unknown text is gracefully converted to a comment step
         var diagnostics = ScriptValidator.Validate("FakeStep [ param ]");
-        Assert.Empty(diagnostics);
+        Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+        Assert.Contains("Unknown script step", diagnostics[0].Message);
     }
 
     [Fact]
@@ -105,20 +106,19 @@ public class ScriptValidatorTests
     }
 
     [Fact]
-    public void MultipleErrors_UnmatchedBlock()
+    public void MultipleErrors_AllReported()
     {
-        // Unknown steps become comments, only the unclosed If is an error
         var script = "FakeStep1\nFakeStep2\nIf [ 1 ]";
         var diagnostics = ScriptValidator.Validate(script);
-        Assert.Single(diagnostics);
-        Assert.Contains("no matching closing step", diagnostics[0].Message);
+        // 2 unknown steps + 1 unclosed If
+        Assert.Equal(3, diagnostics.Count);
     }
 
     [Fact]
-    public void DisabledUnknownStep_BecomesComment()
+    public void DisabledUnknownStep_StillFlagged()
     {
-        // Disabled unknown text becomes a disabled comment — no error
         var diagnostics = ScriptValidator.Validate("// FakeStep [ param ]");
-        Assert.Empty(diagnostics);
+        Assert.Single(diagnostics);
+        Assert.Contains("Unknown script step", diagnostics[0].Message);
     }
 }

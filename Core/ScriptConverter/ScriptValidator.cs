@@ -12,8 +12,175 @@ public static class ScriptValidator
         if (string.IsNullOrWhiteSpace(displayText))
             return new List<ScriptDiagnostic>();
 
-        var script = FmScript.FromDisplayText(displayText);
-        return script.Validate();
+        var diagnostics = new List<ScriptDiagnostic>();
+        var textLines = displayText.Split('\n');
+        var blockStack = new Stack<(string Name, int Line)>();
+
+        // Walk actual text lines for correct positions
+        int stepIndex = 0;
+        for (int lineNum = 0; lineNum < textLines.Length; lineNum++)
+        {
+            var rawLine = textLines[lineNum].TrimEnd('\r');
+            if (string.IsNullOrWhiteSpace(rawLine))
+                continue;
+
+            var trimmed = rawLine.TrimStart();
+            var indent = rawLine.Length - trimmed.Length;
+
+            // Strip disabled prefix for step name lookup
+            var forLookup = trimmed;
+            if (forLookup.StartsWith("//"))
+                forLookup = forLookup.Substring(2).TrimStart();
+
+            // Comments are always valid
+            if (forLookup.StartsWith("#"))
+            {
+                stepIndex++;
+                continue;
+            }
+
+            // Extract step name (text before '[' or end of line)
+            var bracketPos = ScriptLineParser.FindTopLevelBracket(forLookup);
+            var stepName = bracketPos >= 0
+                ? forLookup.Substring(0, bracketPos).Trim()
+                : forLookup.Trim();
+
+            // Check if step exists
+            if (!StepCatalogLoader.ByName.TryGetValue(stepName, out var definition))
+            {
+                // Underline the step name portion of the line
+                var nameStart = rawLine.IndexOf(stepName, StringComparison.Ordinal);
+                if (nameStart < 0) nameStart = indent;
+                diagnostics.Add(new ScriptDiagnostic(
+                    lineNum, nameStart, nameStart + stepName.Length,
+                    $"Unknown script step: '{stepName}'",
+                    DiagnosticSeverity.Error));
+                stepIndex++;
+                continue;
+            }
+
+            // Block pair validation
+            if (definition.BlockPair != null)
+            {
+                switch (definition.BlockPair.Role)
+                {
+                    case "open":
+                        blockStack.Push((definition.Name, lineNum));
+                        break;
+                    case "middle":
+                        if (blockStack.Count == 0)
+                            diagnostics.Add(new ScriptDiagnostic(
+                                lineNum, indent, indent + definition.Name.Length,
+                                $"'{definition.Name}' without matching opening step",
+                                DiagnosticSeverity.Error));
+                        break;
+                    case "close":
+                        if (blockStack.Count == 0)
+                            diagnostics.Add(new ScriptDiagnostic(
+                                lineNum, indent, indent + definition.Name.Length,
+                                $"'{definition.Name}' without matching opening step",
+                                DiagnosticSeverity.Error));
+                        else
+                            blockStack.Pop();
+                        break;
+                }
+            }
+
+            // Validate param values
+            if (bracketPos >= 0)
+            {
+                var parsed = ScriptLineParser.ParseRaw(rawLine);
+                var usedParams = new bool[definition.Params.Length];
+
+                foreach (var hrParam in parsed.Params)
+                {
+                    var paramTrimmed = hrParam.Trim();
+                    bool matchedLabel = false;
+
+                    // First: try labeled match
+                    for (int pi = 0; pi < definition.Params.Length; pi++)
+                    {
+                        var catalogParam = definition.Params[pi];
+                        var label = catalogParam.HrLabel
+                            ?? (catalogParam.Type == "namedCalc" && catalogParam.WrapperElement != null
+                                ? catalogParam.WrapperElement : null);
+                        if (label == null) continue;
+                        if (!paramTrimmed.StartsWith(label + ":", StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        var value = paramTrimmed.Substring(label.Length + 1).TrimStart();
+                        ValidateParamValue(value, label, catalogParam, rawLine, lineNum, diagnostics);
+                        usedParams[pi] = true;
+                        matchedLabel = true;
+                        break;
+                    }
+
+                    // Second: positional match for unlabeled enum/boolean params
+                    if (!matchedLabel && !LooksLikeCalculation(paramTrimmed))
+                    {
+                        for (int pi = 0; pi < definition.Params.Length; pi++)
+                        {
+                            if (usedParams[pi]) continue;
+                            var catalogParam = definition.Params[pi];
+                            var validValues = GetValidValues(catalogParam);
+                            if (validValues.Count == 0) continue;
+
+                            // This param has restricted values — check
+                            if (!validValues.Contains(paramTrimmed, StringComparer.OrdinalIgnoreCase))
+                            {
+                                var paramLabel = catalogParam.HrLabel ?? catalogParam.XmlElement;
+                                ValidateParamValue(paramTrimmed, paramLabel, catalogParam, rawLine, lineNum, diagnostics);
+                            }
+                            usedParams[pi] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            stepIndex++;
+        }
+
+        // Report unclosed blocks
+        while (blockStack.Count > 0)
+        {
+            var unclosed = blockStack.Pop();
+            diagnostics.Add(new ScriptDiagnostic(
+                unclosed.Line, 0, 0,
+                $"'{unclosed.Name}' has no matching closing step",
+                DiagnosticSeverity.Error));
+        }
+
+        return diagnostics;
+    }
+
+    private static void ValidateParamValue(
+        string value, string label, StepParam catalogParam,
+        string rawLine, int lineNum, List<ScriptDiagnostic> diagnostics)
+    {
+        var validValues = GetValidValues(catalogParam);
+        if (validValues.Count > 0 && !validValues.Contains(value, StringComparer.OrdinalIgnoreCase))
+        {
+            var bracketStart = rawLine.IndexOf('[');
+            var valuePos = bracketStart >= 0
+                ? rawLine.IndexOf(value, bracketStart, StringComparison.Ordinal)
+                : rawLine.IndexOf(value, StringComparison.Ordinal);
+            if (valuePos < 0) valuePos = 0;
+            diagnostics.Add(new ScriptDiagnostic(
+                lineNum, valuePos, valuePos + value.Length,
+                $"Invalid value '{value}' for {label}. Expected: {string.Join(", ", validValues)}",
+                DiagnosticSeverity.Warning));
+        }
+    }
+
+    private static bool LooksLikeCalculation(string value)
+    {
+        // Skip validation for values that appear to be calculations, expressions, or literals
+        if (value.Length > 0 && char.IsDigit(value[0])) return true; // numeric literal
+        return value.Contains('$') || value.Contains('(') || value.Contains('"')
+            || value.Contains('>') || value.Contains('<') || value.Contains('=')
+            || value.Contains('&') || value.Contains('+') || value.Contains('-')
+            || value.Contains('*') || value.Contains('/');
     }
 
     internal static List<string> GetValidValues(StepParam param)

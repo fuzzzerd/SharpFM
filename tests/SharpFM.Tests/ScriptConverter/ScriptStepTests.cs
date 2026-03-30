@@ -166,8 +166,12 @@ public class ScriptStepTests
         var step = ScriptStep.FromXml(el);
         Assert.Null(step.Definition);
         Assert.NotNull(step.RawXml);
-        var roundTrip = step.ToXml();
-        Assert.Equal("FutureStep", roundTrip.Attribute("name")?.Value);
+        // Display shows original name
+        Assert.Contains("FutureStep", step.ToDisplayLine());
+        // XML serializes as comment with original name preserved
+        var xml = step.ToXml();
+        Assert.Equal("# (comment)", xml.Attribute("name")?.Value);
+        Assert.Contains("FutureStep", xml.Element("Text")?.Value ?? "");
     }
 
     [Fact]
@@ -180,10 +184,13 @@ public class ScriptStepTests
     }
 
     [Fact]
-    public void FromDisplayLine_UnknownStep_BecomesComment()
+    public void FromDisplayLine_UnknownStep_HasNullDefinition()
     {
         var step = ScriptStep.FromDisplayLine("some random text");
-        Assert.Equal("# (comment)", step.Definition?.Name);
+        Assert.Null(step.Definition);
+        // But ToXml emits it as a comment for safety
+        var xml = step.ToXml();
+        Assert.Equal("89", xml.Attribute("id")?.Value);
     }
 
     [Fact]

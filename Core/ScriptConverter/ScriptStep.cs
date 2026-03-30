@@ -62,13 +62,13 @@ public partial class ScriptStep
 
         if (!StepCatalogLoader.ByName.TryGetValue(raw.StepName, out var definition))
         {
-            // Unknown step — create as comment preserving original text
-            var commentDef = StepCatalogLoader.ByName["# (comment)"];
-            var textParam = commentDef.Params.FirstOrDefault(p => p.XmlElement == "Text");
-            var paramValues = textParam != null
-                ? new List<StepParamValue> { new(textParam, raw.RawLine.Trim()) }
-                : new List<StepParamValue>();
-            return new ScriptStep(commentDef, true, paramValues);
+            // Unknown step — preserve as-is with Definition=null.
+            // Validate() will flag it. ToXml() will emit it as a comment for safety.
+            return new ScriptStep(null, !raw.Disabled, rawXml:
+                new XElement("Step",
+                    new XAttribute("enable", raw.Disabled ? "False" : "True"),
+                    new XAttribute("name", raw.StepName),
+                    new XElement("RawText", raw.RawLine.Trim())));
         }
 
         // Specialized steps build their own XML from display text,
@@ -86,8 +86,19 @@ public partial class ScriptStep
 
     public XElement ToXml()
     {
-        if (Definition == null && RawXml != null)
-            return new XElement(RawXml);
+        if (Definition == null)
+        {
+            // Unknown step — emit as comment preserving original text
+            var text = RawXml?.Element("RawText")?.Value
+                ?? RawXml?.Attribute("name")?.Value
+                ?? "Unknown";
+            var commentStep = new XElement("Step",
+                new XAttribute("enable", Enabled ? "True" : "False"),
+                new XAttribute("id", 89),
+                new XAttribute("name", "# (comment)"));
+            commentStep.Add(new XElement("Text", text));
+            return commentStep;
+        }
 
         var name = Definition?.Name ?? "# (comment)";
         var id = Definition?.Id ?? 89;
