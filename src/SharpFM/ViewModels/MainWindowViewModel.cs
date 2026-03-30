@@ -7,8 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using FluentAvalonia.UI.Data;
-using Microsoft.Extensions.DependencyInjection;
+using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Models;
 using SharpFM.Services;
@@ -18,6 +17,8 @@ namespace SharpFM.ViewModels;
 public partial class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly ILogger _logger;
+    private readonly IClipboardService _clipboard;
+    private readonly DispatcherTimer _statusTimer;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -26,9 +27,17 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public MainWindowViewModel(ILogger logger)
+    public MainWindowViewModel(ILogger logger, IClipboardService clipboard)
     {
         _logger = logger;
+        _clipboard = clipboard;
+
+        _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _statusTimer.Tick += (_, _) =>
+        {
+            _statusTimer.Stop();
+            StatusMessage = "";
+        };
 
         // default to the local app data folder + \SharpFM, otherwise use provided path
         _currentPath ??= Path.Join(
@@ -71,41 +80,51 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public async Task OpenFolderPicker()
     {
-        if (App.Current?.Services?.GetService<FolderService>() is FolderService folderService)
+        if (App.Current?.Services?.GetService(typeof(FolderService)) is FolderService folderService)
         {
             CurrentPath = await folderService.GetFolderAsync();
-
             LoadClips(CurrentPath);
         }
     }
 
     public void SaveClipsStorage()
     {
-        var clipContext = new ClipRepository(CurrentPath);
-
-        var fsClips = clipContext.Clips.ToList();
-
-        foreach (var clip in FileMakerClips)
+        try
         {
-            var dbClip = fsClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+            var clipContext = new ClipRepository(CurrentPath);
+            var fsClips = clipContext.Clips.ToList();
 
-            if (dbClip is not null)
+            foreach (var clip in FileMakerClips)
             {
-                dbClip.ClipType = clip.ClipType;
-                dbClip.ClipXml = clip.ClipXml;
-            }
-            else
-            {
-                clipContext.Clips.Add(new Clip()
+                // Sync model to XML before saving
+                clip.SyncModelFromEditor();
+
+                var dbClip = fsClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+
+                if (dbClip is not null)
                 {
-                    ClipName = clip.Name,
-                    ClipType = clip.ClipType,
-                    ClipXml = clip.ClipXml
-                });
+                    dbClip.ClipType = clip.ClipType;
+                    dbClip.ClipXml = clip.ClipXml;
+                }
+                else
+                {
+                    clipContext.Clips.Add(new Clip()
+                    {
+                        ClipName = clip.Name,
+                        ClipType = clip.ClipType,
+                        ClipXml = clip.ClipXml
+                    });
+                }
             }
-        }
 
-        clipContext.SaveChanges();
+            clipContext.SaveChanges();
+            ShowStatus($"Saved {FileMakerClips.Count} clip(s) to {CurrentPath}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error saving clips.");
+            ShowStatus("Error saving clips");
+        }
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound to Xaml Button, throws when static.")]
@@ -122,39 +141,34 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         try
         {
             var clip = new FileMakerClip("New", FileMakerClip.ClipTypes.First()?.KeyId ?? "", Array.Empty<byte>());
-            var clipVm = new ClipViewModel(clip);
-
-            FileMakerClips.Add(clipVm);
+            FileMakerClips.Add(new ClipViewModel(clip));
+            ShowStatus("Created new clip");
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error creating new Clip.");
+            _logger.LogError(e, "Error creating new clip.");
+            ShowStatus("Error creating clip");
         }
     }
 
-    public void CopyAsClass()
+    public async Task CopyAsClass()
     {
-        // TODO: improve the UX of this whole thing. This works as a hack 
-        // for proving the concept, but it could be so much better.
+        if (SelectedClip == null)
+        {
+            ShowStatus("No clip selected");
+            return;
+        }
+
         try
         {
-            if (SelectedClip == null)
-            {
-                // no clip selected;
-                return;
-            }
-
-            // See DepInject project for a sample of how to accomplish this.
-            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
-                desktop.MainWindow?.Clipboard is not { } provider)
-                throw new NullReferenceException("Missing Clipboard instance.");
-
             var classString = SelectedClip.Clip.CreateClass();
-            provider.SetTextAsync(classString);
+            await _clipboard.SetTextAsync(classString);
+            ShowStatus("Copied C# class to clipboard");
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error Copying as Class.");
+            _logger.LogError(e, "Error copying as class.");
+            ShowStatus("Error copying to clipboard");
         }
     }
 
@@ -162,69 +176,62 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         try
         {
-            // See DepInject project for a sample of how to accomplish this.
-            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
-                desktop.MainWindow?.Clipboard is not { } provider)
-                throw new NullReferenceException("Missing Clipboard instance.");
-
-            var formats = await provider.GetFormatsAsync();
+            var formats = await _clipboard.GetFormatsAsync();
+            int count = 0;
 
             foreach (var format in formats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct())
             {
-                if (string.IsNullOrEmpty(format)) { continue; }
+                if (string.IsNullOrEmpty(format)) continue;
 
-                object? clipData = await provider.GetDataAsync(format);
+                object? clipData = await _clipboard.GetDataAsync(format);
 
-                if (clipData is not byte[] dataObj)
-                {
-                    // this is some type of clipboard data this program can't handle
-                    continue;
-                }
+                if (clipData is not byte[] dataObj) continue;
 
                 var clip = new FileMakerClip("new-clip", format, dataObj);
 
-                if (clip is null) { continue; }
-
-                // don't bother adding a duplicate. For some reason entries were getting entered twice per clip
-                // this is not the most efficient method to detect it, but it works well enough for now
-                if (FileMakerClips.Any(k => k.ClipXml == clip.XmlData))
-                {
-                    continue;
-                }
+                // don't add duplicates
+                if (FileMakerClips.Any(k => k.ClipXml == clip.XmlData)) continue;
 
                 FileMakerClips.Add(new ClipViewModel(clip));
+                count++;
             }
+
+            ShowStatus(count > 0 ? $"Pasted {count} clip(s) from FileMaker" : "No FileMaker clips found on clipboard");
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error translating FileMaker blob to Xml.");
+            _logger.LogError(e, "Error pasting from FileMaker clipboard.");
+            ShowStatus("Error pasting from clipboard");
         }
     }
 
     public async Task CopySelectedToClip()
     {
+        if (SelectedClip is not ClipViewModel data)
+        {
+            ShowStatus("No clip selected");
+            return;
+        }
+
         try
         {
-            // See DepInject project for a sample of how to accomplish this.
-            if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
-                desktop.MainWindow?.Clipboard is not { } provider)
-                throw new NullReferenceException("Missing Clipboard instance.");
-
-            var dp = new DataPackage();
-
-            if (SelectedClip is not ClipViewModel data)
-            {
-                return; // no data
-            }
-
-            dp.SetData(data.ClipType, data.Clip.RawData);
-
-            await provider.SetDataObjectAsync(dp);
+            // Sync model to XML before copying to ensure current data
+            data.SyncModelFromEditor();
+            await _clipboard.SetDataAsync(data.ClipType, data.Clip.RawData);
+            ShowStatus("Copied to FileMaker clipboard");
         }
         catch (Exception e)
         {
-            _logger.LogCritical(e, "Error returning the selected Clip FileMaker blob format.");
+            _logger.LogError(e, "Error copying to FileMaker clipboard.");
+            ShowStatus("Error copying to clipboard");
         }
+    }
+
+    private void ShowStatus(string message)
+    {
+        StatusMessage = message;
+        _statusTimer.Stop();
+        _statusTimer.Start();
     }
 
     /// <summary>
@@ -282,4 +289,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    private string _statusMessage = "";
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set
+        {
+            _statusMessage = value;
+            NotifyPropertyChanged();
+        }
+    }
 }

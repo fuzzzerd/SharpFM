@@ -23,16 +23,15 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainWindowViewModel(logger)
-            };
+            desktop.MainWindow = new MainWindow();
 
             var services = new ServiceCollection();
-
             services.AddSingleton(x => new FolderService(desktop.MainWindow));
-
+            services.AddSingleton<IClipboardService>(x => new ClipboardService(desktop.MainWindow));
             Services = services.BuildServiceProvider();
+
+            var clipboard = Services.GetRequiredService<IClipboardService>();
+            desktop.MainWindow.DataContext = new MainWindowViewModel(logger, clipboard);
         }
 
         base.OnFrameworkInitializationCompleted();
