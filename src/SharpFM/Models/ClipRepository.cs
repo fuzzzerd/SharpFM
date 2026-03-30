@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using NLog;
 
 namespace SharpFM.Models;
 
@@ -9,6 +10,8 @@ namespace SharpFM.Models;
 /// </summary>
 public class ClipRepository
 {
+    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Clips stored in the specified folder.
     /// </summary>
@@ -43,16 +46,23 @@ public class ClipRepository
     {
         foreach (var clipFile in Directory.EnumerateFiles(ClipPath))
         {
-            var fi = new FileInfo(clipFile);
-
-            var clip = new Clip
+            try
             {
-                ClipName = fi.Name.Replace(fi.Extension, string.Empty),
-                ClipType = fi.Extension.Replace(".", string.Empty),
-                ClipXml = File.ReadAllText(clipFile)
-            };
+                var fi = new FileInfo(clipFile);
 
-            Clips.Add(clip);
+                var clip = new Clip
+                {
+                    ClipName = fi.Name.Replace(fi.Extension, string.Empty),
+                    ClipType = fi.Extension.Replace(".", string.Empty),
+                    ClipXml = File.ReadAllText(clipFile)
+                };
+
+                Clips.Add(clip);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to load clip file: {File}", clipFile);
+            }
         }
     }
 
