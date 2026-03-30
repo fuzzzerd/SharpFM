@@ -156,30 +156,30 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <!-- Editor header -->
-                        <Border 
+                        <TabControl
                             Grid.Row="0"
-                            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-                            CornerRadius="8,8,0,0"
-                            Padding="16,12">
-                            <TextBlock 
-                                Classes="Fluent2Subtitle"
-                                Text="Clip Content" />
-                        </Border>
-
-                        <!-- AvaloniaEdit component with Document binding -->
-                        <Border 
-                            Grid.Row="1"
-                            CornerRadius="0,0,8,8"
-                            ClipToBounds="True">
-                            <AvaloniaEdit:TextEditor
-                                x:Name="avaloniaEditor"
-                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                ShowLineNumbers="True"
-                                SyntaxHighlighting="Xml"
-                                WordWrap="False"
-                                Document="{Binding SelectedClip.XmlDocument}" />
-                        </Border>
+                            Grid.RowSpan="2"
+                            SelectedIndex="{Binding SelectedClip.SelectedEditorTab}">
+                            <TabItem Header="XML">
+                                <AvaloniaEdit:TextEditor
+                                    x:Name="avaloniaEditor"
+                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                    ShowLineNumbers="True"
+                                    SyntaxHighlighting="Xml"
+                                    WordWrap="False"
+                                    Document="{Binding SelectedClip.XmlDocument}" />
+                            </TabItem>
+                            <TabItem
+                                Header="Script"
+                                IsVisible="{Binding SelectedClip.IsScriptClip}">
+                                <AvaloniaEdit:TextEditor
+                                    x:Name="scriptEditor"
+                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                    ShowLineNumbers="True"
+                                    WordWrap="False"
+                                    Document="{Binding SelectedClip.ScriptDocument}" />
+                            </TabItem>
+                        </TabControl>
                     </Grid>
                 </Border>
             </Grid>

@@ -14,6 +14,10 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SharpFM.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
     <MinVerTagPrefix>v</MinVerTagPrefix>
@@ -22,6 +26,16 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Core\ScriptConverter\step-catalog-en.json" />
+    <EmbeddedResource Include="Core\ScriptConverter\fmscript.tmLanguage.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <None Remove="tests\**" />
   </ItemGroup>
 
   <ItemGroup>
