@@ -26,12 +26,14 @@ public partial class App : Application
             desktop.MainWindow = new MainWindow();
 
             var services = new ServiceCollection();
-            services.AddSingleton(x => new FolderService(desktop.MainWindow));
+            services.AddSingleton<IFolderService>(x => new FolderService(desktop.MainWindow));
             services.AddSingleton<IClipboardService>(x => new ClipboardService(desktop.MainWindow));
             Services = services.BuildServiceProvider();
 
-            var clipboard = Services.GetRequiredService<IClipboardService>();
-            desktop.MainWindow.DataContext = new MainWindowViewModel(logger, clipboard);
+            desktop.MainWindow.DataContext = new MainWindowViewModel(
+                logger,
+                Services.GetRequiredService<IClipboardService>(),
+                Services.GetRequiredService<IFolderService>());
         }
 
         base.OnFrameworkInitializationCompleted();

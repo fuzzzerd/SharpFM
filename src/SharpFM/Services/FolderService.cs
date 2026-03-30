@@ -6,7 +6,7 @@ using Avalonia.Platform.Storage;
 
 namespace SharpFM.Services;
 
-public class FolderService(Window target)
+public class FolderService(Window target) : IFolderService
 {
     private readonly Window _target = target;
 

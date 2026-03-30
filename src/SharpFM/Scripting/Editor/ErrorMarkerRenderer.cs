@@ -12,8 +12,6 @@ public class ErrorMarkerRenderer : IBackgroundRenderer
     private readonly TextDocument _document;
     private List<ScriptDiagnostic> _diagnostics = new();
 
-    private static readonly IPen ErrorPen = new Pen(Brushes.Red, 1.0);
-    private static readonly IPen WarningPen = new Pen(Brushes.Gold, 1.0);
 
     public ErrorMarkerRenderer(TextDocument document)
     {
@@ -77,7 +75,9 @@ public class ErrorMarkerRenderer : IBackgroundRenderer
             }
 
             var segment = new TextSegment { StartOffset = startOffset, EndOffset = endOffset };
-            var pen = diag.Severity == DiagnosticSeverity.Error ? ErrorPen : WarningPen;
+            var pen = diag.Severity == DiagnosticSeverity.Error
+                ? ScriptEditorTheme.ErrorPen
+                : ScriptEditorTheme.WarningPen;
 
             foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
             {

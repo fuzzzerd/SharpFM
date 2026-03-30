@@ -18,6 +18,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 {
     private readonly ILogger _logger;
     private readonly IClipboardService _clipboard;
+    private readonly IFolderService _folderService;
     private readonly DispatcherTimer _statusTimer;
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -27,10 +28,11 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public MainWindowViewModel(ILogger logger, IClipboardService clipboard)
+    public MainWindowViewModel(ILogger logger, IClipboardService clipboard, IFolderService folderService)
     {
         _logger = logger;
         _clipboard = clipboard;
+        _folderService = folderService;
 
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _statusTimer.Tick += (_, _) =>
@@ -80,10 +82,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public async Task OpenFolderPicker()
     {
-        if (App.Current?.Services?.GetService(typeof(FolderService)) is FolderService folderService)
+        try
         {
-            CurrentPath = await folderService.GetFolderAsync();
+            CurrentPath = await _folderService.GetFolderAsync();
             LoadClips(CurrentPath);
+            ShowStatus($"Opened {CurrentPath}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error opening folder.");
+            ShowStatus("Error opening folder");
         }
     }
 

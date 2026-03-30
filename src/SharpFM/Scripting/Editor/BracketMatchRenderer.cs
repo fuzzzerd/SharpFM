@@ -9,8 +9,6 @@ namespace SharpFM.Scripting.Editor;
 
 public class BracketMatchRenderer : IBackgroundRenderer
 {
-    private static readonly IBrush MatchBrush = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255));
-    private static readonly IPen MatchPen = new Pen(new SolidColorBrush(Color.FromArgb(100, 255, 255, 255)), 1.0);
 
     private readonly TextArea _textArea;
     private int _openOffset = -1;
@@ -80,7 +78,7 @@ public class BracketMatchRenderer : IBackgroundRenderer
         var segment = new TextSegment { StartOffset = offset, EndOffset = offset + 1 };
         foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
         {
-            context.DrawRectangle(MatchBrush, MatchPen, rect);
+            context.DrawRectangle(ScriptEditorTheme.BracketMatchBrush, ScriptEditorTheme.BracketMatchPen, rect);
         }
     }
 

@@ -10,7 +10,6 @@ namespace SharpFM.Scripting.Editor;
 
 public class StatementHighlightRenderer : IBackgroundRenderer
 {
-    private static readonly IBrush HighlightBrush = new SolidColorBrush(Color.FromArgb(20, 100, 180, 255));
 
     private readonly TextArea _textArea;
     private int _highlightStartLine = -1;
@@ -74,7 +73,7 @@ public class StatementHighlightRenderer : IBackgroundRenderer
         var geometry = builder.CreateGeometry();
         if (geometry != null)
         {
-            drawingContext.DrawGeometry(HighlightBrush, null, geometry);
+            drawingContext.DrawGeometry(ScriptEditorTheme.StatementHighlightBrush, null, geometry);
         }
     }
 

@@ -23,12 +23,23 @@ public class MockClipboardService : IClipboardService
         Task.FromResult(ClipboardData.TryGetValue(format, out var v) ? v : null);
 }
 
+public class MockFolderService : IFolderService
+{
+    public string FolderToReturn { get; set; } = "/tmp/test-clips";
+    public Task<string> GetFolderAsync() => Task.FromResult(FolderToReturn);
+}
+
 public class MainWindowViewModelTests
 {
-    private static MainWindowViewModel CreateVm(MockClipboardService? clipboard = null)
+    private static MainWindowViewModel CreateVm(
+        MockClipboardService? clipboard = null,
+        MockFolderService? folderService = null)
     {
         var logger = NullLoggerFactory.Instance.CreateLogger<MainWindowViewModel>();
-        return new MainWindowViewModel(logger, clipboard ?? new MockClipboardService());
+        return new MainWindowViewModel(
+            logger,
+            clipboard ?? new MockClipboardService(),
+            folderService ?? new MockFolderService());
     }
 
     [Fact]
