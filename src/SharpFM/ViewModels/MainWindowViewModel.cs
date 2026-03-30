@@ -91,7 +91,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception e)
         {
             _logger.LogError(e, "Error opening folder.");
-            ShowStatus("Error opening folder");
+            ShowStatus("Error opening folder", isError: true);
         }
     }
 
@@ -131,7 +131,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception e)
         {
             _logger.LogError(e, "Error saving clips.");
-            ShowStatus("Error saving clips");
+            ShowStatus("Error saving clips", isError: true);
         }
     }
 
@@ -155,7 +155,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception e)
         {
             _logger.LogError(e, "Error creating new clip.");
-            ShowStatus("Error creating clip");
+            ShowStatus("Error creating clip", isError: true);
         }
     }
 
@@ -176,7 +176,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception e)
         {
             _logger.LogError(e, "Error copying as class.");
-            ShowStatus("Error copying to clipboard");
+            ShowStatus("Error copying to clipboard", isError: true);
         }
     }
 
@@ -209,7 +209,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception e)
         {
             _logger.LogError(e, "Error pasting from FileMaker clipboard.");
-            ShowStatus("Error pasting from clipboard");
+            ShowStatus("Error pasting from clipboard", isError: true);
         }
     }
 
@@ -231,13 +231,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception e)
         {
             _logger.LogError(e, "Error copying to FileMaker clipboard.");
-            ShowStatus("Error copying to clipboard");
+            ShowStatus("Error copying to clipboard", isError: true);
         }
     }
 
-    private void ShowStatus(string message)
+    private void ShowStatus(string message, bool isError = false)
     {
         StatusMessage = message;
+        _statusTimer.Interval = isError ? TimeSpan.FromSeconds(8) : TimeSpan.FromSeconds(3);
         _statusTimer.Stop();
         _statusTimer.Start();
     }
