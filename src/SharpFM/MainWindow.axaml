@@ -39,6 +39,18 @@
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
+
+        <!-- Status bar (docked before main content so Grid fills remaining space) -->
+        <Border
+            DockPanel.Dock="Bottom"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+            Padding="16,6"
+            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock
+                Classes="Fluent2Caption"
+                Text="{Binding StatusMessage}" />
+        </Border>
+
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -153,10 +165,11 @@
                 <Border
                     Grid.Column="2"
                     Classes="Fluent2SurfaceElevated">
-                    <Panel>
+                    <DockPanel>
                         <!-- Script editor for script clips -->
                         <AvaloniaEdit:TextEditor
                             x:Name="scriptEditor"
+                            DockPanel.Dock="Top"
                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                             ShowLineNumbers="True"
                             WordWrap="False"
@@ -171,21 +184,11 @@
                             WordWrap="False"
                             IsVisible="{Binding SelectedClip.IsScriptClip, Converter={x:Static BoolConverters.Not}}"
                             Document="{Binding SelectedClip.XmlDocument}" />
-                    </Panel>
+                    </DockPanel>
                 </Border>
             </Grid>
         </Grid>
 
-        <!-- Status bar -->
-        <Border
-            DockPanel.Dock="Bottom"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-            Padding="16,6"
-            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-            <TextBlock
-                Classes="Fluent2Caption"
-                Text="{Binding StatusMessage}" />
-        </Border>
     </DockPanel>
 
 </Window>
