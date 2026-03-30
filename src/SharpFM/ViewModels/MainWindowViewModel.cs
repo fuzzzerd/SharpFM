@@ -278,7 +278,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             _searchText = value;
             FilteredClips.Clear();
-            foreach (var c in FileMakerClips.Where(c => c.Name.Contains(_searchText)))
+            foreach (var c in FileMakerClips.Where(c => c.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)))
             {
                 FilteredClips.Add(c);
             }
