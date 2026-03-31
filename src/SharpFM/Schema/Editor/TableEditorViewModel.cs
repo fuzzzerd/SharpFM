@@ -44,6 +44,7 @@ public class TableEditorViewModel : INotifyPropertyChanged
 
     public ICommand AddFieldCommand { get; }
     public ICommand RemoveFieldCommand { get; }
+    public ICommand EditCalculationCommand { get; }
 
     public TableEditorViewModel(FmTable table)
     {
@@ -52,6 +53,8 @@ public class TableEditorViewModel : INotifyPropertyChanged
         Fields = new ObservableCollection<FmField>(table.Fields);
         AddFieldCommand = new RelayCommand(_ => AddField());
         RemoveFieldCommand = new RelayCommand(_ => RemoveSelectedField(), _ => SelectedField != null);
+        EditCalculationCommand = new RelayCommand(_ => OpenCalculationEditor(),
+            _ => SelectedField?.Kind is FieldKind.Calculated or FieldKind.Summary);
     }
 
     public void AddField()
@@ -75,6 +78,15 @@ public class TableEditorViewModel : INotifyPropertyChanged
         Fields.Remove(field);
         Table.RemoveField(field);
         SelectedField = null;
+    }
+
+    public void OpenCalculationEditor()
+    {
+        if (SelectedField == null) return;
+        var window = new CalculationEditorWindow(SelectedField);
+        window.ShowDialog(Avalonia.Application.Current?.ApplicationLifetime
+            is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+            ? desktop.MainWindow! : null!);
     }
 
     /// <summary>
