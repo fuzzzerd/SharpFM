@@ -1,7 +1,9 @@
 using System;
+using System.ComponentModel;
 using Avalonia.Controls;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
+using SharpFM.Schema.Editor;
 using SharpFM.Scripting;
 using TextMateSharp.Grammars;
 
@@ -14,6 +16,7 @@ public partial class MainWindow : Window
     private TextMate.Installation? _xmlTextMateInstallation;
     private TextMate.Installation? _scriptTextMateInstallation;
     private Window? _xmlWindow;
+    private TableEditorControl? _tableEditor;
 
     public MainWindow()
     {
@@ -21,7 +24,7 @@ public partial class MainWindow : Window
 
         _registryOptions = new RegistryOptions((ThemeName)(int)ThemeName.DarkPlus);
 
-        // Script editor: setup on first load (deferred until control is available)
+        // Script editor
         var scriptEditor = this.FindControl<TextEditor>("scriptEditor");
         if (scriptEditor != null)
         {
@@ -31,15 +34,34 @@ public partial class MainWindow : Window
             _scriptController = new ScriptEditorController(scriptEditor);
         }
 
-        // Fallback XML editor for non-script clips (lightweight — no TextMate needed,
-        // built-in SyntaxHighlighting="Xml" in the XAML handles it)
+        // Table editor — wire DataContext when selection changes
+        _tableEditor = this.FindControl<TableEditorControl>("tableEditorControl");
 
-        // "View XML" menu item — opens XML in a separate window on demand
+        // Listen for SelectedClip changes to update table editor DataContext
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is SharpFM.ViewModels.MainWindowViewModel mainVm)
+            {
+                mainVm.PropertyChanged += OnMainVmPropertyChanged;
+            }
+        };
+
+        // "View XML" menu item
         var viewXmlItem = this.FindControl<MenuItem>("viewXmlMenuItem");
         if (viewXmlItem != null)
         {
             viewXmlItem.Click += (_, _) => ShowXmlWindow();
         }
+    }
+
+    private void OnMainVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != "SelectedClip" || _tableEditor == null) return;
+
+        var mainVm = sender as SharpFM.ViewModels.MainWindowViewModel;
+        var clip = mainVm?.SelectedClip;
+
+        _tableEditor.DataContext = clip?.IsTableClip == true ? clip.TableEditor : null;
     }
 
     private void ShowXmlWindow()
