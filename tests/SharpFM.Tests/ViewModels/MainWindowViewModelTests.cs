@@ -65,6 +65,25 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void NewTableCommand_TableEditorIsUsable()
+    {
+        var vm = CreateVm();
+        vm.NewTableCommand();
+        var clip = vm.SelectedClip!;
+
+        // TableEditor should lazy-create from the starter XML
+        var editor = clip.TableEditor;
+        Assert.NotNull(editor);
+        Assert.Equal("NewTable", editor!.TableName);
+
+        // AddField command should work
+        Assert.True(editor.AddFieldCommand.CanExecute(null));
+        editor.AddField();
+        Assert.Single(editor.Fields);
+        Assert.Equal("NewField", editor.Fields[0].Name);
+    }
+
+    [Fact]
     public async Task CopyAsClass_NoSelection_ShowsStatus()
     {
         var vm = CreateVm();
