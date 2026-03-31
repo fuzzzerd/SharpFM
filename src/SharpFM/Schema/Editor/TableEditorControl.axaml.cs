@@ -1,6 +1,6 @@
 using System;
-using System.Windows.Input;
 using Avalonia.Controls;
+using Avalonia.Input;
 using SharpFM.Schema.Model;
 
 namespace SharpFM.Schema.Editor;
@@ -13,5 +13,15 @@ public partial class TableEditorControl : UserControl
     public TableEditorControl()
     {
         InitializeComponent();
+        KeyDown += OnKeyDown;
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Delete && DataContext is TableEditorViewModel vm)
+        {
+            vm.RemoveSelectedField();
+            e.Handled = true;
+        }
     }
 }
