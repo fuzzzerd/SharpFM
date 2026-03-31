@@ -5,7 +5,7 @@
              xmlns:editor="using:SharpFM.Schema.Editor"
              xmlns:model="using:SharpFM.Schema.Model"
              x:Class="SharpFM.Schema.Editor.TableEditorControl"
-             x:DataType="editor:TableEditorViewModel"
+             x:CompileBindings="False"
              mc:Ignorable="d"
              d:DesignWidth="600" d:DesignHeight="400">
 

@@ -178,10 +178,10 @@
                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                             ShowLineNumbers="True"
                             WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsScriptClip}"
+                            IsVisible="{Binding SelectedClip.IsScriptClip, FallbackValue=False}"
                             Document="{Binding SelectedClip.ScriptDocument}" />
                         <!-- Table editor for table/field clips -->
-                        <Border IsVisible="{Binding SelectedClip.IsTableClip}">
+                        <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
                             <schema:TableEditorControl
                                 DataContext="{ReflectionBinding SelectedClip.TableEditor}" />
                         </Border>
@@ -192,7 +192,7 @@
                             ShowLineNumbers="True"
                             SyntaxHighlighting="Xml"
                             WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsFallbackClip}"
+                            IsVisible="{Binding SelectedClip.IsFallbackClip, FallbackValue=False}"
                             Document="{Binding SelectedClip.XmlDocument}" />
                     </Grid>
                 </Border>
