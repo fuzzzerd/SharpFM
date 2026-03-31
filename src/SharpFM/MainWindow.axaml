@@ -181,15 +181,10 @@
                             IsVisible="{Binding SelectedClip.IsScriptClip}"
                             Document="{Binding SelectedClip.ScriptDocument}" />
                         <!-- Table editor for table/field clips -->
-                        <ContentControl
-                            IsVisible="{Binding SelectedClip.IsTableClip}"
-                            Content="{Binding SelectedClip.TableEditor}">
-                            <ContentControl.ContentTemplate>
-                                <DataTemplate x:DataType="schema:TableEditorViewModel">
-                                    <schema:TableEditorControl />
-                                </DataTemplate>
-                            </ContentControl.ContentTemplate>
-                        </ContentControl>
+                        <Border IsVisible="{Binding SelectedClip.IsTableClip}">
+                            <schema:TableEditorControl
+                                DataContext="{Binding SelectedClip.TableEditor}" />
+                        </Border>
                         <!-- Fallback XML editor for other clips -->
                         <AvaloniaEdit:TextEditor
                             x:Name="fallbackXmlEditor"
