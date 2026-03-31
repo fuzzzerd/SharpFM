@@ -25,14 +25,14 @@
                 <Button Grid.Column="2"
                         Margin="8,0,4,0"
                         Content="+ Add Field"
-                        x:Name="addFieldButton" />
+                        Command="{Binding AddFieldCommand}" />
                 <Button Grid.Column="3"
                         Content="Remove"
-                        x:Name="removeFieldButton" />
+                        Command="{Binding RemoveFieldCommand}" />
                 <Button Grid.Column="4"
                         Margin="8,0,0,0"
                         Content="Edit Calculation..."
-                        x:Name="editCalcButton" />
+                        Command="{Binding EditCalculationCommand}" />
             </Grid>
         </Border>
 
