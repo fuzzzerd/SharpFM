@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using AvaloniaEdit.Document;
+using SharpFM.Schema.Editor;
+using SharpFM.Schema.Model;
 using SharpFM.Scripting;
 
 namespace SharpFM.ViewModels;
@@ -19,6 +21,7 @@ public partial class ClipViewModel : INotifyPropertyChanged
     private TextDocument? _xmlDocument;
     private TextDocument? _scriptDocument;
     private FmScript? _script;
+    private TableEditorViewModel? _tableEditor;
 
     public ClipViewModel(FileMakerClip clip)
     {
@@ -28,6 +31,24 @@ public partial class ClipViewModel : INotifyPropertyChanged
     public bool IsScriptClip =>
         Clip.ClipboardFormat == "Mac-XMSS" || Clip.ClipboardFormat == "Mac-XMSC";
 
+    public bool IsTableClip =>
+        Clip.ClipboardFormat == "Mac-XMTB" || Clip.ClipboardFormat == "Mac-XMFD";
+
+    public bool IsFallbackClip => !IsScriptClip && !IsTableClip;
+
+    public TableEditorViewModel? TableEditor
+    {
+        get
+        {
+            if (_tableEditor == null && IsTableClip)
+            {
+                var table = FmTable.FromXml(Clip.XmlData ?? "");
+                _tableEditor = new TableEditorViewModel(table);
+            }
+            return _tableEditor;
+        }
+    }
+
     public string ClipType
     {
         get => Clip.ClipboardFormat;
@@ -36,6 +57,8 @@ public partial class ClipViewModel : INotifyPropertyChanged
             Clip.ClipboardFormat = value;
             NotifyPropertyChanged();
             NotifyPropertyChanged(nameof(IsScriptClip));
+            NotifyPropertyChanged(nameof(IsTableClip));
+            NotifyPropertyChanged(nameof(IsFallbackClip));
         }
     }
 
@@ -98,13 +121,22 @@ public partial class ClipViewModel : INotifyPropertyChanged
     /// </summary>
     public void SyncModelFromEditor()
     {
-        if (!IsScriptClip || _scriptDocument == null) return;
-
-        _script = FmScript.FromDisplayText(_scriptDocument.Text);
-        var xml = _script.ToXml();
-        Clip.XmlData = xml;
-        if (_xmlDocument != null)
-            _xmlDocument.Text = xml;
+        if (IsScriptClip && _scriptDocument != null)
+        {
+            _script = FmScript.FromDisplayText(_scriptDocument.Text);
+            var xml = _script.ToXml();
+            Clip.XmlData = xml;
+            if (_xmlDocument != null)
+                _xmlDocument.Text = xml;
+        }
+        else if (IsTableClip && _tableEditor != null)
+        {
+            _tableEditor.SyncToModel();
+            var xml = _tableEditor.Table.ToXml();
+            Clip.XmlData = xml;
+            if (_xmlDocument != null)
+                _xmlDocument.Text = xml;
+        }
     }
 
     /// <summary>

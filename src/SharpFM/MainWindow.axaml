@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:SharpFM.ViewModels"
+    xmlns:schema="using:SharpFM.Schema.Editor"
     Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
     Title="SharpFM"
     Width="700"
@@ -172,26 +173,35 @@
                 <Border
                     Grid.Column="2"
                     Classes="Fluent2SurfaceElevated">
-                    <DockPanel>
+                    <Grid x:DataType="vm:MainWindowViewModel">
                         <!-- Script editor for script clips -->
                         <AvaloniaEdit:TextEditor
                             x:Name="scriptEditor"
-                            DockPanel.Dock="Top"
                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                             ShowLineNumbers="True"
                             WordWrap="False"
                             IsVisible="{Binding SelectedClip.IsScriptClip}"
                             Document="{Binding SelectedClip.ScriptDocument}" />
-                        <!-- Fallback XML editor for non-script clips -->
+                        <!-- Table editor for table/field clips -->
+                        <ContentControl
+                            IsVisible="{Binding SelectedClip.IsTableClip}"
+                            Content="{Binding SelectedClip.TableEditor}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="schema:TableEditorViewModel">
+                                    <schema:TableEditorControl />
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+                        <!-- Fallback XML editor for other clips -->
                         <AvaloniaEdit:TextEditor
                             x:Name="fallbackXmlEditor"
                             FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
                             ShowLineNumbers="True"
                             SyntaxHighlighting="Xml"
                             WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsScriptClip, Converter={x:Static BoolConverters.Not}}"
+                            IsVisible="{Binding SelectedClip.IsFallbackClip}"
                             Document="{Binding SelectedClip.XmlDocument}" />
-                    </DockPanel>
+                    </Grid>
                 </Border>
             </Grid>
         </Grid>
