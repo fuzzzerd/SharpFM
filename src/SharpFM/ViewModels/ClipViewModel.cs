@@ -36,6 +36,16 @@ public partial class ClipViewModel : INotifyPropertyChanged
 
     public bool IsFallbackClip => !IsScriptClip && !IsTableClip;
 
+    public string ClipTypeDisplay => Clip.ClipboardFormat switch
+    {
+        "Mac-XMSS" => "Script Steps",
+        "Mac-XMSC" => "Script",
+        "Mac-XMTB" => "Table",
+        "Mac-XMFD" => "Field",
+        "Mac-XML2" => "Layout",
+        _ => Clip.ClipboardFormat
+    };
+
     public TableEditorViewModel? TableEditor
     {
         get

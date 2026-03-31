@@ -144,18 +144,43 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public void NewEmptyItem()
+    private static readonly string EmptyScriptXml =
+        "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
+
+    private static readonly string EmptyTableXml =
+        "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"NewTable\"></BaseTable></fmxmlsnippet>";
+
+    public void NewScriptCommand()
     {
         try
         {
-            var clip = new FileMakerClip("New", FileMakerClip.ClipTypes.First()?.KeyId ?? "", Array.Empty<byte>());
-            FileMakerClips.Add(new ClipViewModel(clip));
-            ShowStatus("Created new clip");
+            var clip = new FileMakerClip("New Script", "Mac-XMSS", EmptyScriptXml);
+            var vm = new ClipViewModel(clip);
+            FileMakerClips.Add(vm);
+            SelectedClip = vm;
+            ShowStatus("Created new script");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error creating new clip.");
-            ShowStatus("Error creating clip", isError: true);
+            _logger.LogError(e, "Error creating script.");
+            ShowStatus("Error creating script", isError: true);
+        }
+    }
+
+    public void NewTableCommand()
+    {
+        try
+        {
+            var clip = new FileMakerClip("New Table", "Mac-XMTB", EmptyTableXml);
+            var vm = new ClipViewModel(clip);
+            FileMakerClips.Add(vm);
+            SelectedClip = vm;
+            ShowStatus("Created new table");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error creating table.");
+            ShowStatus("Error creating table", isError: true);
         }
     }
 
