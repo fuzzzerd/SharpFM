@@ -43,13 +43,25 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void NewEmptyItem_AddsClip()
+    public void NewScriptCommand_AddsScriptClip()
     {
         var vm = CreateVm();
         var initialCount = vm.FileMakerClips.Count;
-        vm.NewEmptyItem();
+        vm.NewScriptCommand();
         Assert.Equal(initialCount + 1, vm.FileMakerClips.Count);
-        Assert.Contains("Created new clip", vm.StatusMessage);
+        Assert.True(vm.SelectedClip?.IsScriptClip);
+        Assert.Contains("Created new script", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void NewTableCommand_AddsTableClip()
+    {
+        var vm = CreateVm();
+        var initialCount = vm.FileMakerClips.Count;
+        vm.NewTableCommand();
+        Assert.Equal(initialCount + 1, vm.FileMakerClips.Count);
+        Assert.True(vm.SelectedClip?.IsTableClip);
+        Assert.Contains("Created new table", vm.StatusMessage);
     }
 
     [Fact]
@@ -93,7 +105,7 @@ public class MainWindowViewModelTests
     public void SearchText_FiltersClips()
     {
         var vm = CreateVm();
-        vm.NewEmptyItem(); // adds a clip named "New"
+        vm.NewScriptCommand(); // adds a clip named "New Script"
         vm.SearchText = "zzz_nonexistent";
         Assert.Empty(vm.FilteredClips);
         vm.SearchText = "";
