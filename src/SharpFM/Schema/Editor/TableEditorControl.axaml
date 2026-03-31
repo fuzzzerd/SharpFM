@@ -14,7 +14,7 @@
         <Border DockPanel.Dock="Top"
                 Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
                 Padding="12,8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0"
                            VerticalAlignment="Center"
                            Margin="0,0,8,0"
@@ -29,6 +29,10 @@
                 <Button Grid.Column="3"
                         Content="Remove"
                         Command="{Binding RemoveFieldCommand}" />
+                <Button Grid.Column="4"
+                        Margin="8,0,0,0"
+                        Content="Edit Calculation..."
+                        Command="{Binding EditCalculationCommand}" />
             </Grid>
         </Border>
 
