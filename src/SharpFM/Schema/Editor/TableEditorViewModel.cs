@@ -27,6 +27,8 @@ public class TableEditorViewModel : INotifyPropertyChanged
         {
             _selectedField = value;
             NotifyPropertyChanged();
+            (RemoveFieldCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (EditCalculationCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
     }
 
