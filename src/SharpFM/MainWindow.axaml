@@ -182,7 +182,7 @@
                             Document="{Binding SelectedClip.ScriptDocument}" />
                         <!-- Table editor for table/field clips -->
                         <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
-                            <schema:TableEditorControl x:Name="tableEditorControl" />
+                            <schema:TableEditorControl DataContext="{Binding SelectedClip.TableEditor}" />
                         </Border>
                         <!-- Fallback XML editor for other clips -->
                         <AvaloniaEdit:TextEditor

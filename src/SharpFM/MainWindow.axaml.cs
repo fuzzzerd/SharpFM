@@ -1,9 +1,7 @@
 using System;
-using System.ComponentModel;
 using Avalonia.Controls;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
-using SharpFM.Schema.Editor;
 using SharpFM.Scripting;
 using TextMateSharp.Grammars;
 
@@ -16,7 +14,6 @@ public partial class MainWindow : Window
     private TextMate.Installation? _xmlTextMateInstallation;
     private TextMate.Installation? _scriptTextMateInstallation;
     private Window? _xmlWindow;
-    private TableEditorControl? _tableEditor;
 
     public MainWindow()
     {
@@ -34,34 +31,12 @@ public partial class MainWindow : Window
             _scriptController = new ScriptEditorController(scriptEditor);
         }
 
-        // Table editor — wire DataContext when selection changes
-        _tableEditor = this.FindControl<TableEditorControl>("tableEditorControl");
-
-        // Listen for SelectedClip changes to update table editor DataContext
-        DataContextChanged += (_, _) =>
-        {
-            if (DataContext is SharpFM.ViewModels.MainWindowViewModel mainVm)
-            {
-                mainVm.PropertyChanged += OnMainVmPropertyChanged;
-            }
-        };
-
         // "View XML" menu item
         var viewXmlItem = this.FindControl<MenuItem>("viewXmlMenuItem");
         if (viewXmlItem != null)
         {
             viewXmlItem.Click += (_, _) => ShowXmlWindow();
         }
-    }
-
-    private void OnMainVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName != "SelectedClip" || _tableEditor == null) return;
-
-        var mainVm = sender as SharpFM.ViewModels.MainWindowViewModel;
-        var clip = mainVm?.SelectedClip;
-
-        _tableEditor.DataContext = clip?.IsTableClip == true ? clip.TableEditor : null;
     }
 
     private void ShowXmlWindow()
