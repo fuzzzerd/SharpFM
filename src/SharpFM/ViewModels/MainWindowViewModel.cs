@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -6,10 +7,12 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Models;
+using SharpFM.Plugin;
 using SharpFM.Services;
 
 namespace SharpFM.ViewModels;
@@ -28,7 +31,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public MainWindowViewModel(ILogger logger, IClipboardService clipboard, IFolderService folderService)
+    public MainWindowViewModel(
+        ILogger logger,
+        IClipboardService clipboard,
+        IFolderService folderService)
     {
         _logger = logger;
         _clipboard = clipboard;
@@ -336,6 +342,59 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             _statusMessage = value;
             NotifyPropertyChanged();
+        }
+    }
+
+    // --- Plugin support ---
+
+    private IReadOnlyList<IPanelPlugin> _panelPlugins = [];
+    public IReadOnlyList<IPanelPlugin> PanelPlugins
+    {
+        get => _panelPlugins;
+        set
+        {
+            _panelPlugins = value;
+            NotifyPropertyChanged();
+        }
+    }
+
+    private IPanelPlugin? _activePlugin;
+    public IPanelPlugin? ActivePlugin
+    {
+        get => _activePlugin;
+        private set
+        {
+            _activePlugin = value;
+            NotifyPropertyChanged();
+            NotifyPropertyChanged(nameof(IsPluginPanelVisible));
+            NotifyPropertyChanged(nameof(PluginPanelControl));
+        }
+    }
+
+    public bool IsPluginPanelVisible => _activePlugin is not null;
+
+    private Control? _pluginPanelControl;
+    public Control? PluginPanelControl
+    {
+        get => _pluginPanelControl;
+        private set
+        {
+            _pluginPanelControl = value;
+            NotifyPropertyChanged();
+        }
+    }
+
+    public void TogglePluginPanel(IPanelPlugin plugin)
+    {
+        if (_activePlugin?.Id == plugin.Id)
+        {
+            ActivePlugin = null;
+            PluginPanelControl = null;
+        }
+        else
+        {
+            PluginPanelControl = plugin.CreatePanel();
+            ActivePlugin = plugin;
         }
     }
 }

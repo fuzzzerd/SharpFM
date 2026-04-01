@@ -30,10 +30,22 @@ public partial class App : Application
             services.AddSingleton<IClipboardService>(x => new ClipboardService(desktop.MainWindow));
             Services = services.BuildServiceProvider();
 
-            desktop.MainWindow.DataContext = new MainWindowViewModel(
+            var viewModel = new MainWindowViewModel(
                 logger,
                 Services.GetRequiredService<IClipboardService>(),
                 Services.GetRequiredService<IFolderService>());
+
+            // Load plugins
+            var pluginHost = new PluginHost(viewModel);
+            var pluginService = new PluginService(logger);
+            pluginService.LoadPlugins(pluginHost);
+            viewModel.PanelPlugins = pluginService.LoadedPlugins;
+
+            // Give the window access to plugin services for the manager dialog
+            if (desktop.MainWindow is MainWindow mainWindow)
+                mainWindow.SetPluginServices(pluginService, pluginHost);
+
+            desktop.MainWindow.DataContext = viewModel;
         }
 
         base.OnFrameworkInitializationCompleted();

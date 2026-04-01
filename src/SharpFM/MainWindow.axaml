@@ -46,7 +46,10 @@
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
             <MenuItem Header="_View">
-                <MenuItem x:Name="viewXmlMenuItem" Header="Show XML" InputGesture="Ctrl+Shift+X" />
+                <Separator x:Name="pluginMenuSeparator" IsVisible="False" />
+                <!-- Plugin menu items are added dynamically in code-behind -->
+                <Separator />
+                <MenuItem x:Name="managePluginsMenuItem" Header="Manage Plugins..." />
             </MenuItem>
             <MenuItem Header="{Binding Version}" />
         </Menu>
@@ -167,34 +170,61 @@
                     ResizeDirection="Columns"
                     Width="16" />
 
-                <!-- Right panel: Code editor with Fluent 2 surface treatment -->
-                <Border
-                    Grid.Column="2"
-                    Classes="Fluent2SurfaceElevated">
-                    <Grid x:DataType="vm:MainWindowViewModel">
-                        <!-- Script editor for script clips -->
-                        <AvaloniaEdit:TextEditor
-                            x:Name="scriptEditor"
-                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                            ShowLineNumbers="True"
-                            WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsScriptClip, FallbackValue=False}"
-                            Document="{Binding SelectedClip.ScriptDocument}" />
-                        <!-- Table editor for table/field clips -->
-                        <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
-                            <schema:TableEditorControl DataContext="{Binding SelectedClip.TableEditor}" />
-                        </Border>
-                        <!-- Fallback XML editor for other clips -->
-                        <AvaloniaEdit:TextEditor
-                            x:Name="fallbackXmlEditor"
-                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                            ShowLineNumbers="True"
-                            SyntaxHighlighting="Xml"
-                            WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsFallbackClip, FallbackValue=False}"
-                            Document="{Binding SelectedClip.XmlDocument}" />
-                    </Grid>
-                </Border>
+                <!-- Right panel: Editor + optional plugin sidebar -->
+                <Grid x:Name="editorPluginGrid" Grid.Column="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="0" />
+                        <ColumnDefinition Width="0" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Code editor with Fluent 2 surface treatment -->
+                    <Border
+                        Grid.Column="0"
+                        Classes="Fluent2SurfaceElevated">
+                        <Grid x:DataType="vm:MainWindowViewModel">
+                            <!-- Script editor for script clips -->
+                            <AvaloniaEdit:TextEditor
+                                x:Name="scriptEditor"
+                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                ShowLineNumbers="True"
+                                WordWrap="False"
+                                IsVisible="{Binding SelectedClip.IsScriptClip, FallbackValue=False}"
+                                Document="{Binding SelectedClip.ScriptDocument}" />
+                            <!-- Table editor for table/field clips -->
+                            <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
+                                <schema:TableEditorControl DataContext="{Binding SelectedClip.TableEditor}" />
+                            </Border>
+                            <!-- Fallback XML editor for other clips -->
+                            <AvaloniaEdit:TextEditor
+                                x:Name="fallbackXmlEditor"
+                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                ShowLineNumbers="True"
+                                SyntaxHighlighting="Xml"
+                                WordWrap="False"
+                                IsVisible="{Binding SelectedClip.IsFallbackClip, FallbackValue=False}"
+                                Document="{Binding SelectedClip.XmlDocument}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Plugin panel splitter -->
+                    <GridSplitter
+                        x:Name="pluginSplitter"
+                        Grid.Column="1"
+                        Background="Transparent"
+                        ResizeDirection="Columns"
+                        IsVisible="False"
+                        Width="16" />
+
+                    <!-- Plugin panel host -->
+                    <Border
+                        x:Name="pluginPanelBorder"
+                        Grid.Column="2"
+                        Classes="Fluent2SurfaceElevated"
+                        IsVisible="False">
+                        <ContentControl x:Name="pluginPanelHost" />
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
 

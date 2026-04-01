@@ -1,9 +1,9 @@
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using AvaloniaEdit.Document;
+using SharpFM.Editors;
 using SharpFM.Schema.Editor;
-using SharpFM.Schema.Model;
-using SharpFM.Scripting;
 
 namespace SharpFM.ViewModels;
 
@@ -18,14 +18,40 @@ public partial class ClipViewModel : INotifyPropertyChanged
 
     public FileMakerClip Clip { get; set; }
 
-    private TextDocument? _xmlDocument;
-    private TextDocument? _scriptDocument;
-    private FmScript? _script;
-    private TableEditorViewModel? _tableEditor;
+    /// <summary>
+    /// The clip-type-specific editor. Handles change detection, XML serialization,
+    /// and reverse sync for this clip's format.
+    /// </summary>
+    public IClipEditor Editor { get; }
+
+    /// <summary>
+    /// Fires when the editor content changes due to user edits (debounced).
+    /// Not fired for external XML pushes (guarded by generation counter).
+    /// </summary>
+    public event EventHandler? EditorContentChanged;
+
+    private int _syncGeneration;
 
     public ClipViewModel(FileMakerClip clip)
     {
         Clip = clip;
+
+        Editor = clip.ClipboardFormat switch
+        {
+            "Mac-XMSS" or "Mac-XMSC" => new ScriptClipEditor(clip.XmlData),
+            "Mac-XMTB" or "Mac-XMFD" => new TableClipEditor(clip.XmlData),
+            _ => new FallbackXmlEditor(clip.XmlData),
+        };
+
+        Editor.ContentChanged += OnEditorContentChanged;
+    }
+
+    private void OnEditorContentChanged(object? sender, EventArgs e)
+    {
+        var gen = _syncGeneration;
+        Clip.XmlData = Editor.ToXml();
+        if (gen != _syncGeneration) return; // external update arrived during sync, stale
+        EditorContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public bool IsScriptClip =>
@@ -46,18 +72,15 @@ public partial class ClipViewModel : INotifyPropertyChanged
         _ => Clip.ClipboardFormat
     };
 
-    public TableEditorViewModel? TableEditor
-    {
-        get
-        {
-            if (_tableEditor == null && IsTableClip)
-            {
-                var table = FmTable.FromXml(Clip.XmlData ?? "");
-                _tableEditor = new TableEditorViewModel(table);
-            }
-            return _tableEditor;
-        }
-    }
+    // --- Convenience properties for AXAML bindings ---
+    // These delegate to the typed editor so MainWindow.axaml doesn't need to change.
+
+    public TextDocument? ScriptDocument => (Editor as ScriptClipEditor)?.Document;
+
+    public TableEditorViewModel? TableEditor => (Editor as TableClipEditor)?.ViewModel;
+
+    public TextDocument XmlDocument =>
+        (Editor as FallbackXmlEditor)?.Document ?? new TextDocument(Clip.XmlData ?? "");
 
     public string ClipType
     {
@@ -82,84 +105,31 @@ public partial class ClipViewModel : INotifyPropertyChanged
         }
     }
 
-    public TextDocument XmlDocument
-    {
-        get
-        {
-            if (_xmlDocument == null)
-                _xmlDocument = new TextDocument(Clip.XmlData ?? string.Empty);
-            return _xmlDocument;
-        }
-    }
-
-    public TextDocument ScriptDocument
-    {
-        get
-        {
-            if (_scriptDocument == null)
-            {
-                if (IsScriptClip)
-                {
-                    _script = FmScript.FromXml(Clip.XmlData ?? "");
-                    _scriptDocument = new TextDocument(_script.ToDisplayText());
-                }
-                else
-                {
-                    _scriptDocument = new TextDocument("");
-                }
-            }
-            return _scriptDocument;
-        }
-    }
-
     public string ClipXml
     {
-        get => _xmlDocument?.Text ?? Clip.XmlData;
+        get => Clip.XmlData;
         set
         {
             Clip.XmlData = value;
-            if (_xmlDocument != null)
-                _xmlDocument.Text = value ?? string.Empty;
             NotifyPropertyChanged();
-            NotifyPropertyChanged(nameof(XmlDocument));
         }
     }
 
     /// <summary>
-    /// Sync the model from the current script editor text, then update XML.
-    /// Called before save/clipboard operations and on tab switch.
+    /// Sync the editor state to XML. Called before save/clipboard operations.
     /// </summary>
     public void SyncModelFromEditor()
     {
-        if (IsScriptClip && _scriptDocument != null)
-        {
-            _script = FmScript.FromDisplayText(_scriptDocument.Text);
-            var xml = _script.ToXml();
-            Clip.XmlData = xml;
-            if (_xmlDocument != null)
-                _xmlDocument.Text = xml;
-        }
-        else if (IsTableClip && _tableEditor != null)
-        {
-            _tableEditor.SyncToModel();
-            var xml = _tableEditor.Table.ToXml();
-            Clip.XmlData = xml;
-            if (_xmlDocument != null)
-                _xmlDocument.Text = xml;
-        }
+        Clip.XmlData = Editor.ToXml();
     }
 
     /// <summary>
-    /// Rebuild the script editor text from the XML.
-    /// Used when XML is edited externally (e.g., View XML window).
+    /// Push XML into the editor (reverse sync). Bumps the generation counter
+    /// so the debounced ContentChanged event knows to discard the stale tick.
     /// </summary>
     public void SyncEditorFromXml()
     {
-        if (!IsScriptClip) return;
-
-        var xmlText = _xmlDocument?.Text ?? Clip.XmlData ?? "";
-        _script = FmScript.FromXml(xmlText);
-        if (_scriptDocument != null)
-            _scriptDocument.Text = _script.ToDisplayText();
+        _syncGeneration++;
+        Editor.FromXml(Clip.XmlData ?? "");
     }
 }

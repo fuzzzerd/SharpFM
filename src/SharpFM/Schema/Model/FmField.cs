@@ -1,44 +1,93 @@
 using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
 namespace SharpFM.Schema.Model;
 
-public class FmField
+public class FmField : INotifyPropertyChanged
 {
-    public int Id { get; set; }
-    public string Name { get; set; } = "";
-    public FieldDataType DataType { get; set; } = FieldDataType.Text;
-    public FieldKind Kind { get; set; } = FieldKind.Normal;
-    public int Repetitions { get; set; } = 1;
-    public string? Comment { get; set; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void Notify([CallerMemberName] string name = "")
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    private int _id;
+    public int Id { get => _id; set { _id = value; Notify(); } }
+
+    private string _name = "";
+    public string Name { get => _name; set { _name = value; Notify(); } }
+
+    private FieldDataType _dataType = FieldDataType.Text;
+    public FieldDataType DataType { get => _dataType; set { _dataType = value; Notify(); } }
+
+    private FieldKind _kind = FieldKind.Normal;
+    public FieldKind Kind { get => _kind; set { _kind = value; Notify(); } }
+
+    private int _repetitions = 1;
+    public int Repetitions { get => _repetitions; set { _repetitions = value; Notify(); } }
+
+    private string? _comment;
+    public string? Comment { get => _comment; set { _comment = value; Notify(); } }
 
     // Validation
-    public bool NotEmpty { get; set; }
-    public bool Unique { get; set; }
-    public bool Existing { get; set; }
-    public string? MaxDataLength { get; set; }
-    public string? ValidationCalculation { get; set; }
-    public string? ErrorMessage { get; set; }
-    public string? RangeMin { get; set; }
-    public string? RangeMax { get; set; }
+    private bool _notEmpty;
+    public bool NotEmpty { get => _notEmpty; set { _notEmpty = value; Notify(); } }
+
+    private bool _unique;
+    public bool Unique { get => _unique; set { _unique = value; Notify(); } }
+
+    private bool _existing;
+    public bool Existing { get => _existing; set { _existing = value; Notify(); } }
+
+    private string? _maxDataLength;
+    public string? MaxDataLength { get => _maxDataLength; set { _maxDataLength = value; Notify(); } }
+
+    private string? _validationCalculation;
+    public string? ValidationCalculation { get => _validationCalculation; set { _validationCalculation = value; Notify(); } }
+
+    private string? _errorMessage;
+    public string? ErrorMessage { get => _errorMessage; set { _errorMessage = value; Notify(); } }
+
+    private string? _rangeMin;
+    public string? RangeMin { get => _rangeMin; set { _rangeMin = value; Notify(); } }
+
+    private string? _rangeMax;
+    public string? RangeMax { get => _rangeMax; set { _rangeMax = value; Notify(); } }
 
     // Auto-enter
-    public AutoEnterType? AutoEnter { get; set; }
-    public bool AllowEditing { get; set; }
-    public string? AutoEnterValue { get; set; }
+    private AutoEnterType? _autoEnter;
+    public AutoEnterType? AutoEnter { get => _autoEnter; set { _autoEnter = value; Notify(); } }
+
+    private bool _allowEditing;
+    public bool AllowEditing { get => _allowEditing; set { _allowEditing = value; Notify(); } }
+
+    private string? _autoEnterValue;
+    public string? AutoEnterValue { get => _autoEnterValue; set { _autoEnterValue = value; Notify(); } }
 
     // Calculated fields
-    public string? Calculation { get; set; }
-    public bool AlwaysEvaluate { get; set; }
-    public string? CalculationContext { get; set; }
+    private string? _calculation;
+    public string? Calculation { get => _calculation; set { _calculation = value; Notify(); } }
+
+    private bool _alwaysEvaluate;
+    public bool AlwaysEvaluate { get => _alwaysEvaluate; set { _alwaysEvaluate = value; Notify(); } }
+
+    private string? _calculationContext;
+    public string? CalculationContext { get => _calculationContext; set { _calculationContext = value; Notify(); } }
 
     // Summary fields
-    public SummaryOperation? SummaryOp { get; set; }
-    public string? SummaryTargetField { get; set; }
+    private SummaryOperation? _summaryOp;
+    public SummaryOperation? SummaryOp { get => _summaryOp; set { _summaryOp = value; Notify(); } }
+
+    private string? _summaryTargetField;
+    public string? SummaryTargetField { get => _summaryTargetField; set { _summaryTargetField = value; Notify(); } }
 
     // Storage
-    public bool IsGlobal { get; set; }
-    public FieldIndexing Indexing { get; set; } = FieldIndexing.None;
+    private bool _isGlobal;
+    public bool IsGlobal { get => _isGlobal; set { _isGlobal = value; Notify(); } }
+
+    private FieldIndexing _indexing = FieldIndexing.None;
+    public FieldIndexing Indexing { get => _indexing; set { _indexing = value; Notify(); } }
 
     public static FmField FromXml(XElement el)
     {

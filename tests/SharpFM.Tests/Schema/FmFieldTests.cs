@@ -212,8 +212,11 @@ public class FmFieldTests
     {
         var f = new FmField
         {
-            Id = 2, Name = "Total", DataType = FieldDataType.Number,
-            Kind = FieldKind.Calculated, Calculation = "Qty * Price"
+            Id = 2,
+            Name = "Total",
+            DataType = FieldDataType.Number,
+            Kind = FieldKind.Calculated,
+            Calculation = "Qty * Price"
         };
         var xml = f.ToXml();
         Assert.Equal("Calculated", xml.Attribute("fieldType")?.Value);
@@ -225,8 +228,11 @@ public class FmFieldTests
     {
         var f = new FmField
         {
-            Id = 3, Name = "Sum", DataType = FieldDataType.Number,
-            Kind = FieldKind.Summary, SummaryOp = SummaryOperation.Sum,
+            Id = 3,
+            Name = "Sum",
+            DataType = FieldDataType.Number,
+            Kind = FieldKind.Summary,
+            SummaryOp = SummaryOperation.Sum,
             SummaryTargetField = "Items::Amount"
         };
         var xml = f.ToXml();
@@ -240,8 +246,11 @@ public class FmFieldTests
     {
         var f = new FmField
         {
-            Id = 4, Name = "ID", DataType = FieldDataType.Number,
-            AutoEnter = AutoEnterType.Serial, AutoEnterValue = "100"
+            Id = 4,
+            Name = "ID",
+            DataType = FieldDataType.Number,
+            AutoEnter = AutoEnterType.Serial,
+            AutoEnterValue = "100"
         };
         var xml = f.ToXml();
         var autoEl = xml.Element("AutoEnter");
@@ -254,8 +263,12 @@ public class FmFieldTests
     {
         var f = new FmField
         {
-            Id = 5, Name = "Email", DataType = FieldDataType.Text,
-            NotEmpty = true, Unique = true, ErrorMessage = "Required"
+            Id = 5,
+            Name = "Email",
+            DataType = FieldDataType.Text,
+            NotEmpty = true,
+            Unique = true,
+            ErrorMessage = "Required"
         };
         var xml = f.ToXml();
         var valEl = xml.Element("Validation");
@@ -270,8 +283,11 @@ public class FmFieldTests
     {
         var f = new FmField
         {
-            Id = 6, Name = "G", DataType = FieldDataType.Text,
-            IsGlobal = true, Indexing = FieldIndexing.Minimal
+            Id = 6,
+            Name = "G",
+            DataType = FieldDataType.Text,
+            IsGlobal = true,
+            Indexing = FieldIndexing.Minimal
         };
         var xml = f.ToXml();
         var storage = xml.Element("Storage");
