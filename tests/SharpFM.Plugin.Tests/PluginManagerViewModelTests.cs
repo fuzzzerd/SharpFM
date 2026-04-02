@@ -23,7 +23,7 @@ public class PluginManagerViewModelTests
     public void Refresh_PopulatesPlugins()
     {
         var vm = new PluginManagerViewModel();
-        var plugins = new List<IPanelPlugin> { new StubPlugin() };
+        var plugins = new List<IPlugin> { new StubPlugin() };
 
         vm.Refresh(plugins, activePlugin: null);
 
@@ -37,7 +37,7 @@ public class PluginManagerViewModelTests
     {
         var vm = new PluginManagerViewModel();
         var plugin = new StubPlugin { Id = "active-one" };
-        var plugins = new List<IPanelPlugin> { plugin, new StubPlugin { Id = "other" } };
+        var plugins = new List<IPlugin> { plugin, new StubPlugin { Id = "other" } };
 
         vm.Refresh(plugins, activePlugin: plugin);
 
@@ -49,11 +49,18 @@ public class PluginManagerViewModelTests
     public void Refresh_ClearsPreviousEntries()
     {
         var vm = new PluginManagerViewModel();
-        vm.Refresh(new List<IPanelPlugin> { new StubPlugin() }, null);
+        vm.Refresh(new List<IPlugin> { new StubPlugin() }, null);
         Assert.Single(vm.Plugins);
 
-        vm.Refresh(new List<IPanelPlugin>(), null);
+        vm.Refresh(new List<IPlugin>(), null);
         Assert.Empty(vm.Plugins);
+    }
+
+    [Fact]
+    public void PluginEntry_PluginType_Panel()
+    {
+        var entry = new PluginEntry(new StubPlugin(), false);
+        Assert.Equal("Panel", entry.PluginType);
     }
 
     [Fact]
