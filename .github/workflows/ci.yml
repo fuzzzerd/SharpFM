@@ -1,6 +1,7 @@
 name: CI Builds
 permissions:
   contents: read
+  pull-requests: write
 
 on:
   pull_request:
@@ -36,7 +37,18 @@ jobs:
         run: dotnet build --no-restore
 
       - name: Test
-        run: dotnet test --no-build 
+        run: dotnet test --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+
+      - name: Generate test report
+        uses: bibipkins/dotnet-test-reporter@v1.6.1
+        if: ${{ always() && matrix.os == 'ubuntu-latest' }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-title: "Test Results"
+          results-path: tests/**/*.trx
+          coverage-path: tests/**/*.cobertura.xml
+          coverage-type: cobertura
+          coverage-threshold: 70
 
       - name: Publish
         run: dotnet publish src/SharpFM/SharpFM.csproj --runtime "${{ matrix.target }}" -c Debug
