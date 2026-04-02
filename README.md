@@ -61,6 +61,25 @@ SharpFM persists clips between sessions as XML files in a local folder.
 - [x] DataGrid table/field editor with inline editing, calculation editor, and type/kind selection.
 - [x] View and edit raw XML alongside structured editors.
 
+## Plugins
+
+SharpFM supports plugins via the `SharpFM.Plugin` contract library. Plugins implement `IPanelPlugin` and are loaded from the `plugins/` directory at startup. You can also install and manage plugins from the **View > Manage Plugins...** menu.
+
+A sample "Clip Inspector" plugin is included to demonstrate the plugin API.
+
+### Writing a Plugin
+
+1. Create a new .NET 8 class library referencing `SharpFM.Plugin`.
+2. Implement `IPanelPlugin` — provide an `Id`, `DisplayName`, and `CreatePanel()` returning an Avalonia `Control`.
+3. Use `IPluginHost` in `Initialize()` to observe clip selection and push XML updates.
+4. Build your DLL and drop it in the `plugins/` directory.
+
+See `src/SharpFM.Plugin.Sample/` for a complete working example.
+
+### License
+
+While SharpFM is licensed under GPL v3, plugins that communicate solely through the interfaces in `SharpFM.Plugin` are not required to be GPL-licensed. See the plugin interface source files for the full exception clause.
+
 ## Troubleshooting
 
 Logs are stored in `${specialfolder:folder=CommonApplicationData}\SharpFM` and are automatically rotated after thirty days.

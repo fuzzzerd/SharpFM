@@ -26,40 +26,43 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_New">
-                    <MenuItem Command="{Binding NewScriptCommand}" Header="Script" InputGesture="Ctrl+N" />
-                    <MenuItem Command="{Binding NewTableCommand}" Header="Table" InputGesture="Ctrl+Shift+N" />
-                    <Separator />
-                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="From Clipboard (copied from FileMaker)" InputGesture="Ctrl+V" />
-                </MenuItem>
+                <MenuItem Command="{Binding NewScriptCommand}" Header="New Script" InputGesture="Ctrl+N" />
+                <MenuItem Command="{Binding NewTableCommand}" Header="New Table" InputGesture="Ctrl+Shift+N" />
                 <Separator />
-                <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder" />
-                <Separator />
-                <MenuItem Header="Save">
-                    <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All To Folder" InputGesture="Ctrl+S" />
-                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Selected clip to Clipboard (to paste into FileMaker)" InputGesture="Ctrl+Shift+C" />
-                </MenuItem>
+                <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder..." />
+                <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All" InputGesture="Ctrl+S" />
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
             </MenuItem>
-            <MenuItem Header="Transform">
+            <MenuItem Header="_Edit">
+                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste from FileMaker" InputGesture="Ctrl+V" />
+                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" InputGesture="Ctrl+Shift+C" />
+                <Separator />
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
-            <MenuItem Header="_View">
-                <MenuItem x:Name="viewXmlMenuItem" Header="Show XML" InputGesture="Ctrl+Shift+X" />
+            <MenuItem x:Name="pluginsMenu" Header="_Plugins">
+                <!-- Plugin menu items are added dynamically in code-behind -->
+                <MenuItem x:Name="managePluginsMenuItem" Header="Manage Plugins..." />
             </MenuItem>
-            <MenuItem Header="{Binding Version}" />
         </Menu>
 
-        <!-- Status bar (docked before main content so Grid fills remaining space) -->
+        <!-- Status bar -->
         <Border
             DockPanel.Dock="Bottom"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-            Padding="16,6"
-            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-            <TextBlock
-                Classes="Fluent2Caption"
-                Text="{Binding StatusMessage}" />
+            Padding="16,6">
+            <Grid>
+                <TextBlock
+                    Classes="Fluent2Caption"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                    Text="{Binding StatusMessage}" />
+                <TextBlock
+                    Classes="Fluent2Caption"
+                    HorizontalAlignment="Right"
+                    Opacity="0.5"
+                    Text="{Binding Version}" />
+            </Grid>
         </Border>
 
         <Grid>
@@ -167,34 +170,61 @@
                     ResizeDirection="Columns"
                     Width="16" />
 
-                <!-- Right panel: Code editor with Fluent 2 surface treatment -->
-                <Border
-                    Grid.Column="2"
-                    Classes="Fluent2SurfaceElevated">
-                    <Grid x:DataType="vm:MainWindowViewModel">
-                        <!-- Script editor for script clips -->
-                        <AvaloniaEdit:TextEditor
-                            x:Name="scriptEditor"
-                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                            ShowLineNumbers="True"
-                            WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsScriptClip, FallbackValue=False}"
-                            Document="{Binding SelectedClip.ScriptDocument}" />
-                        <!-- Table editor for table/field clips -->
-                        <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
-                            <schema:TableEditorControl DataContext="{Binding SelectedClip.TableEditor}" />
-                        </Border>
-                        <!-- Fallback XML editor for other clips -->
-                        <AvaloniaEdit:TextEditor
-                            x:Name="fallbackXmlEditor"
-                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                            ShowLineNumbers="True"
-                            SyntaxHighlighting="Xml"
-                            WordWrap="False"
-                            IsVisible="{Binding SelectedClip.IsFallbackClip, FallbackValue=False}"
-                            Document="{Binding SelectedClip.XmlDocument}" />
-                    </Grid>
-                </Border>
+                <!-- Right panel: Editor + optional plugin sidebar -->
+                <Grid x:Name="editorPluginGrid" Grid.Column="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="0" />
+                        <ColumnDefinition Width="0" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Code editor with Fluent 2 surface treatment -->
+                    <Border
+                        Grid.Column="0"
+                        Classes="Fluent2SurfaceElevated">
+                        <Grid x:DataType="vm:MainWindowViewModel">
+                            <!-- Script editor for script clips -->
+                            <AvaloniaEdit:TextEditor
+                                x:Name="scriptEditor"
+                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                ShowLineNumbers="True"
+                                WordWrap="False"
+                                IsVisible="{Binding SelectedClip.IsScriptClip, FallbackValue=False}"
+                                Document="{Binding SelectedClip.ScriptDocument}" />
+                            <!-- Table editor for table/field clips -->
+                            <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
+                                <schema:TableEditorControl DataContext="{Binding SelectedClip.TableEditor}" />
+                            </Border>
+                            <!-- Fallback XML editor for other clips -->
+                            <AvaloniaEdit:TextEditor
+                                x:Name="fallbackXmlEditor"
+                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                ShowLineNumbers="True"
+                                SyntaxHighlighting="Xml"
+                                WordWrap="False"
+                                IsVisible="{Binding SelectedClip.IsFallbackClip, FallbackValue=False}"
+                                Document="{Binding SelectedClip.XmlDocument}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Plugin panel splitter -->
+                    <GridSplitter
+                        x:Name="pluginSplitter"
+                        Grid.Column="1"
+                        Background="Transparent"
+                        ResizeDirection="Columns"
+                        IsVisible="False"
+                        Width="16" />
+
+                    <!-- Plugin panel host -->
+                    <Border
+                        x:Name="pluginPanelBorder"
+                        Grid.Column="2"
+                        Classes="Fluent2SurfaceElevated"
+                        IsVisible="False">
+                        <ContentControl x:Name="pluginPanelHost" />
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
 
