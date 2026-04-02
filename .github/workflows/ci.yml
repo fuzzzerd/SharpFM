@@ -39,6 +39,14 @@ jobs:
       - name: Test
         run: dotnet test --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage"
 
+      - name: Merge coverage reports
+        if: ${{ always() && matrix.os == 'ubuntu-latest' }}
+        uses: danielpalme/ReportGenerator-GitHub-Action@5
+        with:
+          reports: tests/**/coverage.cobertura.xml
+          targetdir: coverage
+          reporttypes: Cobertura
+
       - name: Generate test report
         uses: bibipkins/dotnet-test-reporter@v1.6.1
         if: ${{ always() && matrix.os == 'ubuntu-latest' }}
@@ -46,7 +54,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-title: "Test Results"
           results-path: tests/**/*.trx
-          coverage-path: tests/**/*.cobertura.xml
+          coverage-path: coverage/Cobertura.xml
           coverage-type: cobertura
           coverage-threshold: 70
 
