@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Avalonia.Controls;
 using SharpFM.Plugin;
 
@@ -9,6 +10,7 @@ public class ClipInspectorPlugin : IPanelPlugin
 {
     public string Id => "clip-inspector";
     public string DisplayName => "Clip Inspector";
+    public string Version => GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
     public IReadOnlyList<PluginKeyBinding> KeyBindings => [];
     public IReadOnlyList<PluginMenuAction> MenuActions => [];
 

@@ -30,9 +30,9 @@
                                     <TextBlock Classes="Fluent2Body" Text="{Binding DisplayName}" FontWeight="SemiBold" />
                                     <TextBlock Classes="Fluent2Caption" Opacity="0.7">
                                         <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}{0} ({1})">
+                                            <MultiBinding StringFormat="{}{0} v{1}">
                                                 <Binding Path="Id" />
-                                                <Binding Path="AssemblyName" />
+                                                <Binding Path="PluginVersion" />
                                             </MultiBinding>
                                         </TextBlock.Text>
                                     </TextBlock>

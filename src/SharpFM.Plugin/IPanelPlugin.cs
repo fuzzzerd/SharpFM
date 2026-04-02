@@ -20,9 +20,15 @@ public interface IPanelPlugin : IDisposable
     string Id { get; }
 
     /// <summary>
-    /// Display name shown in the View menu (e.g. "Clip Inspector").
+    /// Display name shown in the Plugins menu (e.g. "Clip Inspector").
     /// </summary>
     string DisplayName { get; }
+
+    /// <summary>
+    /// Plugin version string (e.g. "2.0.0-beta.0"). Shown in the Plugin Manager UI.
+    /// Typically derived from the assembly's informational version.
+    /// </summary>
+    string Version { get; }
 
     /// <summary>
     /// Create the panel control to be hosted in the main window sidebar.
