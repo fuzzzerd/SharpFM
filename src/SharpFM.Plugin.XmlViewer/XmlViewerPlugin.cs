@@ -16,6 +16,8 @@ public class XmlViewerPlugin : IPanelPlugin
     public IReadOnlyList<PluginKeyBinding> KeyBindings { get; } =
         [new PluginKeyBinding("Ctrl+Shift+X", "Toggle XML Viewer", () => { })];
 
+    public IReadOnlyList<PluginMenuAction> MenuActions => [];
+
     public void Initialize(IPluginHost host)
     {
         _host = host;

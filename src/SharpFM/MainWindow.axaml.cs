@@ -71,29 +71,62 @@ public partial class MainWindow : Window
 
     private void BuildPluginMenuItems(MainWindowViewModel vm)
     {
-        var separator = this.FindControl<Separator>("pluginMenuSeparator");
-        if (separator is null) return;
+        var pluginsMenu = this.FindControl<MenuItem>("pluginsMenu");
+        var manageItem = this.FindControl<MenuItem>("managePluginsMenuItem");
+        if (pluginsMenu is null || manageItem is null || vm.PanelPlugins.Count == 0)
+        {
+            RegisterPluginKeyBindings(vm);
+            return;
+        }
 
-        var viewMenu = separator.Parent as MenuItem;
-        if (viewMenu is null || vm.PanelPlugins.Count == 0) return;
-
-        separator.IsVisible = true;
+        // Insert plugin items before the Manage Plugins item
+        var insertIndex = pluginsMenu.Items.IndexOf(manageItem);
 
         foreach (var plugin in vm.PanelPlugins)
         {
-            var item = new MenuItem { Header = plugin.DisplayName, Tag = plugin };
-            item.Click += (_, _) =>
+            MenuItem pluginItem;
+
+            if (plugin.MenuActions.Count > 0)
             {
-                if (item.Tag is IPanelPlugin p)
-                    vm.TogglePluginPanel(p);
-            };
+                // Plugin has custom actions — create a submenu
+                pluginItem = new MenuItem { Header = plugin.DisplayName };
 
-            // Show the first keybinding gesture as an InputGesture hint
-            if (plugin.KeyBindings.Count > 0)
-                item.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                var toggleItem = new MenuItem { Header = "Toggle Panel", Tag = plugin };
+                if (plugin.KeyBindings.Count > 0)
+                    toggleItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                toggleItem.Click += (_, _) =>
+                {
+                    if (toggleItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
+                };
+                pluginItem.Items.Add(toggleItem);
 
-            viewMenu.Items.Add(item);
+                foreach (var action in plugin.MenuActions)
+                {
+                    var actionItem = new MenuItem { Header = action.Label };
+                    if (action.Gesture is not null)
+                        actionItem.InputGesture = KeyGesture.Parse(action.Gesture);
+                    var cb = action.Callback;
+                    actionItem.Click += (_, _) => cb();
+                    pluginItem.Items.Add(actionItem);
+                }
+            }
+            else
+            {
+                // No custom actions — flat item that toggles the panel
+                pluginItem = new MenuItem { Header = plugin.DisplayName, Tag = plugin };
+                if (plugin.KeyBindings.Count > 0)
+                    pluginItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                pluginItem.Click += (_, _) =>
+                {
+                    if (pluginItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
+                };
+            }
+
+            pluginsMenu.Items.Insert(insertIndex++, pluginItem);
         }
+
+        // Add separator before Manage Plugins
+        pluginsMenu.Items.Insert(insertIndex, new Separator());
 
         RegisterPluginKeyBindings(vm);
     }

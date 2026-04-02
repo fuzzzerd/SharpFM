@@ -210,6 +210,7 @@ public class MainWindowViewModelTests
         public string DisplayName => "Stub Plugin";
         public IReadOnlyList<PluginKeyBinding> TestKeyBindings { get; set; } = [];
         public IReadOnlyList<PluginKeyBinding> KeyBindings => TestKeyBindings;
+        public IReadOnlyList<PluginMenuAction> MenuActions => [];
         public Control CreatePanel() => new TextBlock { Text = "stub" };
         public void Initialize(IPluginHost host) { }
         public void Dispose() { }

@@ -26,43 +26,43 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_New">
-                    <MenuItem Command="{Binding NewScriptCommand}" Header="Script" InputGesture="Ctrl+N" />
-                    <MenuItem Command="{Binding NewTableCommand}" Header="Table" InputGesture="Ctrl+Shift+N" />
-                    <Separator />
-                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="From Clipboard (copied from FileMaker)" InputGesture="Ctrl+V" />
-                </MenuItem>
+                <MenuItem Command="{Binding NewScriptCommand}" Header="New Script" InputGesture="Ctrl+N" />
+                <MenuItem Command="{Binding NewTableCommand}" Header="New Table" InputGesture="Ctrl+Shift+N" />
                 <Separator />
-                <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder" />
-                <Separator />
-                <MenuItem Header="Save">
-                    <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All To Folder" InputGesture="Ctrl+S" />
-                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Selected clip to Clipboard (to paste into FileMaker)" InputGesture="Ctrl+Shift+C" />
-                </MenuItem>
+                <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder..." />
+                <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All" InputGesture="Ctrl+S" />
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
             </MenuItem>
-            <MenuItem Header="Transform">
+            <MenuItem Header="_Edit">
+                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste from FileMaker" InputGesture="Ctrl+V" />
+                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" InputGesture="Ctrl+Shift+C" />
+                <Separator />
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
             </MenuItem>
-            <MenuItem Header="_View">
-                <Separator x:Name="pluginMenuSeparator" IsVisible="False" />
+            <MenuItem x:Name="pluginsMenu" Header="_Plugins">
                 <!-- Plugin menu items are added dynamically in code-behind -->
-                <Separator />
                 <MenuItem x:Name="managePluginsMenuItem" Header="Manage Plugins..." />
             </MenuItem>
-            <MenuItem Header="{Binding Version}" />
         </Menu>
 
-        <!-- Status bar (docked before main content so Grid fills remaining space) -->
+        <!-- Status bar -->
         <Border
             DockPanel.Dock="Bottom"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-            Padding="16,6"
-            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-            <TextBlock
-                Classes="Fluent2Caption"
-                Text="{Binding StatusMessage}" />
+            Padding="16,6">
+            <Grid>
+                <TextBlock
+                    Classes="Fluent2Caption"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                    Text="{Binding StatusMessage}" />
+                <TextBlock
+                    Classes="Fluent2Caption"
+                    HorizontalAlignment="Right"
+                    Opacity="0.5"
+                    Text="{Binding Version}" />
+            </Grid>
         </Border>
 
         <Grid>

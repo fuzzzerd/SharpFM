@@ -41,4 +41,11 @@ public interface IPanelPlugin : IDisposable
     /// The host registers these when the plugin is loaded. Return empty for no shortcuts.
     /// </summary>
     IReadOnlyList<PluginKeyBinding> KeyBindings { get; }
+
+    /// <summary>
+    /// Custom menu actions shown under this plugin's entry in the Plugins menu.
+    /// If empty, the plugin shows as a simple toggle item. If non-empty, it shows
+    /// as a submenu with "Toggle Panel" plus these custom actions.
+    /// </summary>
+    IReadOnlyList<PluginMenuAction> MenuActions { get; }
 }

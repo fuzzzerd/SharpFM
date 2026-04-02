@@ -10,6 +10,7 @@ public class ClipInspectorPlugin : IPanelPlugin
     public string Id => "clip-inspector";
     public string DisplayName => "Clip Inspector";
     public IReadOnlyList<PluginKeyBinding> KeyBindings => [];
+    public IReadOnlyList<PluginMenuAction> MenuActions => [];
 
     private IPluginHost? _host;
     private ClipInspectorViewModel? _viewModel;
