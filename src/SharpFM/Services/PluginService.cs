@@ -10,14 +10,35 @@ using SharpFM.Plugin;
 namespace SharpFM.Services;
 
 /// <summary>
-/// Discovers, loads, and manages <see cref="IPanelPlugin"/> implementations from the plugins/ directory.
+/// Discovers, loads, and manages plugin implementations from the plugins/ directory.
+/// Supports all plugin types: panel, event, persistence, and transform.
 /// </summary>
 public class PluginService
 {
     private readonly ILogger _logger;
-    private readonly List<IPanelPlugin> _loadedPlugins = [];
+    private readonly List<IPanelPlugin> _panelPlugins = [];
+    private readonly List<IEventPlugin> _eventPlugins = [];
+    private readonly List<IPersistencePlugin> _persistencePlugins = [];
+    private readonly List<IClipTransformPlugin> _transformPlugins = [];
 
-    public IReadOnlyList<IPanelPlugin> LoadedPlugins => _loadedPlugins;
+    /// <summary>Panel plugins that provide sidebar UI.</summary>
+    public IReadOnlyList<IPanelPlugin> PanelPlugins => _panelPlugins;
+
+    /// <summary>Headless event handler plugins.</summary>
+    public IReadOnlyList<IEventPlugin> EventPlugins => _eventPlugins;
+
+    /// <summary>Storage backend plugins.</summary>
+    public IReadOnlyList<IPersistencePlugin> PersistencePlugins => _persistencePlugins;
+
+    /// <summary>Clip transform plugins for import/export pipeline.</summary>
+    public IReadOnlyList<IClipTransformPlugin> TransformPlugins => _transformPlugins;
+
+    /// <summary>All loaded plugins across all types.</summary>
+    public IReadOnlyList<IPlugin> AllPlugins =>
+        [.. _panelPlugins, .. _eventPlugins, .. _persistencePlugins, .. _transformPlugins];
+
+    /// <summary>Backwards compat: returns panel plugins only.</summary>
+    public IReadOnlyList<IPanelPlugin> LoadedPlugins => _panelPlugins;
 
     public string PluginsDirectory { get; }
 
@@ -52,14 +73,17 @@ public class PluginService
             }
         }
 
-        _logger.LogInformation("Loaded {Count} plugin(s).", _loadedPlugins.Count);
+        _logger.LogInformation(
+            "Loaded {Count} plugin(s): {Panel} panel, {Event} event, {Persistence} persistence, {Transform} transform.",
+            AllPlugins.Count, _panelPlugins.Count, _eventPlugins.Count,
+            _persistencePlugins.Count, _transformPlugins.Count);
     }
 
     /// <summary>
     /// Copy a plugin DLL into the plugins directory and load it.
-    /// Returns the loaded plugin(s), or empty if it failed or contained no plugins.
+    /// Returns all newly loaded plugins, or empty if it failed or contained none.
     /// </summary>
-    public IReadOnlyList<IPanelPlugin> InstallPlugin(string sourceDllPath, IPluginHost host)
+    public IReadOnlyList<IPlugin> InstallPlugin(string sourceDllPath, IPluginHost host)
     {
         Directory.CreateDirectory(PluginsDirectory);
         var fileName = Path.GetFileName(sourceDllPath);
@@ -73,7 +97,7 @@ public class PluginService
         File.Copy(sourceDllPath, destPath, overwrite: true);
         _logger.LogInformation("Copied plugin to {Path}.", destPath);
 
-        var before = _loadedPlugins.Count;
+        var beforeCount = AllPlugins.Count;
         try
         {
             LoadPluginAssembly(destPath, host);
@@ -84,14 +108,14 @@ public class PluginService
             return [];
         }
 
-        return _loadedPlugins.Skip(before).ToList();
+        return AllPlugins.Skip(beforeCount).ToList();
     }
 
     /// <summary>
     /// Remove a plugin DLL from the plugins directory.
     /// The plugin remains in memory until the app restarts.
     /// </summary>
-    public bool UninstallPlugin(IPanelPlugin plugin)
+    public bool UninstallPlugin(IPlugin plugin)
     {
         var dllPath = FindPluginDll(plugin);
         if (dllPath is null)
@@ -103,7 +127,7 @@ public class PluginService
         try
         {
             plugin.Dispose();
-            _loadedPlugins.Remove(plugin);
+            RemoveFromTypedList(plugin);
             File.Delete(dllPath);
             _logger.LogInformation("Uninstalled plugin {Id} from {Path}.", plugin.Id, dllPath);
             return true;
@@ -126,7 +150,7 @@ public class PluginService
         return Directory.EnumerateFiles(PluginsDirectory, "*.dll").ToList();
     }
 
-    private string? FindPluginDll(IPanelPlugin plugin)
+    private string? FindPluginDll(IPlugin plugin)
     {
         var assembly = plugin.GetType().Assembly;
         var location = assembly.Location;
@@ -139,21 +163,53 @@ public class PluginService
         return File.Exists(candidate) ? candidate : null;
     }
 
+    private void RemoveFromTypedList(IPlugin plugin)
+    {
+        switch (plugin)
+        {
+            case IPanelPlugin p: _panelPlugins.Remove(p); break;
+            case IEventPlugin p: _eventPlugins.Remove(p); break;
+            case IPersistencePlugin p: _persistencePlugins.Remove(p); break;
+            case IClipTransformPlugin p: _transformPlugins.Remove(p); break;
+        }
+    }
+
     private void LoadPluginAssembly(string dllPath, IPluginHost host)
     {
         var context = new AssemblyLoadContext(Path.GetFileNameWithoutExtension(dllPath), isCollectible: false);
         var assembly = context.LoadFromAssemblyPath(Path.GetFullPath(dllPath));
 
-        var pluginTypes = assembly.GetTypes()
-            .Where(t => typeof(IPanelPlugin).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
+        var candidateTypes = assembly.GetTypes()
+            .Where(t => typeof(IPlugin).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });
 
-        foreach (var type in pluginTypes)
+        foreach (var type in candidateTypes)
         {
-            if (Activator.CreateInstance(type) is not IPanelPlugin plugin) continue;
+            if (Activator.CreateInstance(type) is not IPlugin plugin) continue;
 
             plugin.Initialize(host);
-            _loadedPlugins.Add(plugin);
-            _logger.LogInformation("Loaded plugin: {Id} ({DisplayName})", plugin.Id, plugin.DisplayName);
+
+            switch (plugin)
+            {
+                case IPanelPlugin p:
+                    _panelPlugins.Add(p);
+                    break;
+                case IEventPlugin p:
+                    _eventPlugins.Add(p);
+                    break;
+                case IPersistencePlugin p:
+                    _persistencePlugins.Add(p);
+                    break;
+                case IClipTransformPlugin p:
+                    _transformPlugins.Add(p);
+                    break;
+                default:
+                    _logger.LogWarning("Plugin {Id} implements IPlugin but no known subtype, skipping.", plugin.Id);
+                    plugin.Dispose();
+                    continue;
+            }
+
+            _logger.LogInformation("Loaded {Type} plugin: {Id} ({DisplayName})",
+                plugin.GetType().BaseType?.Name ?? plugin.GetType().Name, plugin.Id, plugin.DisplayName);
         }
     }
 }

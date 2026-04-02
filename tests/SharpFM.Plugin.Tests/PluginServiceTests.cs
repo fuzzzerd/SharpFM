@@ -108,6 +108,26 @@ public class PluginServiceTests
     }
 
     [Fact]
+    public void AllPlugins_AggregatesAllTypes()
+    {
+        var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
+        // No plugins loaded, but verify the property returns empty aggregate
+        Assert.Empty(service.AllPlugins);
+        Assert.Empty(service.PanelPlugins);
+        Assert.Empty(service.EventPlugins);
+        Assert.Empty(service.PersistencePlugins);
+        Assert.Empty(service.TransformPlugins);
+    }
+
+    [Fact]
+    public void LoadedPlugins_ReturnsPanelPlugins()
+    {
+        var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
+        // LoadedPlugins is a backwards-compat alias for PanelPlugins
+        Assert.Same(service.PanelPlugins, service.LoadedPlugins);
+    }
+
+    [Fact]
     public void InstallPlugin_OverwritesExisting()
     {
         var pluginsDir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
