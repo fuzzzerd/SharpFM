@@ -143,4 +143,43 @@ public class PluginHostTests
         Assert.NotNull(received);
         Assert.Equal("New Script", received!.Name);
     }
+
+    // --- New IPluginHost members ---
+
+    [Fact]
+    public void AllClips_ReturnsAllLoadedClips()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm);
+
+        var baseline = host.AllClips.Count;
+        vm.NewScriptCommand();
+        vm.NewTableCommand();
+
+        Assert.Equal(baseline + 2, host.AllClips.Count);
+    }
+
+    [Fact]
+    public void ClipCollectionChanged_Fires_WhenClipAdded()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm);
+        var fired = false;
+        host.ClipCollectionChanged += (_, _) => fired = true;
+
+        vm.NewScriptCommand();
+
+        Assert.True(fired);
+    }
+
+    [Fact]
+    public void ShowStatus_SetsViewModelStatus()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm);
+
+        host.ShowStatus("Plugin says hello");
+
+        Assert.Equal("Plugin says hello", vm.StatusMessage);
+    }
 }

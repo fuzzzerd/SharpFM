@@ -1,83 +1,93 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using NLog;
+using SharpFM.Plugin;
 
 namespace SharpFM.Models;
 
 /// <summary>
-/// Clip File Repository.
+/// File-system-based clip repository. Stores each clip as a file in a directory.
 /// </summary>
-[ExcludeFromCodeCoverage]
-public class ClipRepository
+public class ClipRepository : IClipRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-    /// <summary>
-    /// Clips stored in the specified folder.
-    /// </summary>
-    public ICollection<Clip> Clips { get; init; }
+    public string ProviderName => "Local Files";
+
+    public string CurrentLocation => ClipPath;
+
+    public bool SupportsLocationPicker => false;
 
     /// <summary>
-    /// Database path.
+    /// Directory path where clip files are stored.
     /// </summary>
     public string ClipPath { get; }
 
-    /// <summary>
-    /// Constructor.
-    /// </summary>
     public ClipRepository(string path)
     {
-        // ensure the directory exists
         if (!Directory.Exists(path))
         {
             Directory.CreateDirectory(path);
         }
 
         ClipPath = path;
-
-        // init clips to empty
-        Clips = [];
     }
 
-    /// <summary>
-    /// Load clips from the path specified by <see cref="ClipPath"/>.
-    /// </summary>
-    public void LoadClips()
+    public Task<IReadOnlyList<ClipData>> LoadClipsAsync()
     {
+        var clips = new List<ClipData>();
+
         foreach (var clipFile in Directory.EnumerateFiles(ClipPath))
         {
             try
             {
                 var fi = new FileInfo(clipFile);
 
-                var clip = new Clip
-                {
-                    ClipName = fi.Name.Replace(fi.Extension, string.Empty),
-                    ClipType = fi.Extension.Replace(".", string.Empty),
-                    ClipXml = File.ReadAllText(clipFile)
-                };
-
-                Clips.Add(clip);
+                clips.Add(new ClipData(
+                    Name: fi.Name.Replace(fi.Extension, string.Empty),
+                    ClipType: fi.Extension.Replace(".", string.Empty),
+                    Xml: File.ReadAllText(clipFile)));
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to load clip file: {File}", clipFile);
             }
         }
+
+        return Task.FromResult<IReadOnlyList<ClipData>>(clips);
     }
 
-    /// <summary>
-    /// Write all clips to their associated clip type files in the path specified by <see cref="ClipPath"/>.
-    /// </summary>
-    public void SaveChanges()
+    public Task SaveClipsAsync(IReadOnlyList<ClipData> clips)
     {
-        foreach (var clip in Clips)
+        foreach (var clip in clips)
         {
-            var clipPath = Path.Combine(ClipPath, $"{clip.ClipName}.{clip.ClipType}");
-
-            File.WriteAllText(clipPath, clip.ClipXml);
+            var clipPath = Path.Combine(ClipPath, $"{clip.Name}.{clip.ClipType}");
+            File.WriteAllText(clipPath, clip.Xml);
         }
+
+        // Remove files for clips that no longer exist
+        var activeNames = new HashSet<string>(
+            clips.Select(c => $"{c.Name}.{c.ClipType}"),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var file in Directory.EnumerateFiles(ClipPath))
+        {
+            if (!activeNames.Contains(Path.GetFileName(file)))
+            {
+                File.Delete(file);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<string?> PickLocationAsync()
+    {
+        // File-based repo doesn't handle its own location picking.
+        // The host manages folder selection and creates a new ClipRepository.
+        return Task.FromResult<string?>(null);
     }
 }

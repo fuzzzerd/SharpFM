@@ -133,10 +133,12 @@ public class XmlViewerPluginTests
 public class TrackingPluginHost : IPluginHost
 {
     public ClipInfo? SelectedClip { get; set; }
+    public IReadOnlyList<ClipInfo> AllClips { get; set; } = [];
     public string? LastUpdatedXml { get; private set; }
     public string? LastOriginPluginId { get; private set; }
     public event EventHandler<ClipInfo?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
+    public event EventHandler? ClipCollectionChanged;
 
     public void UpdateSelectedClipXml(string xml, string originPluginId)
     {
@@ -145,6 +147,7 @@ public class TrackingPluginHost : IPluginHost
     }
 
     public ClipInfo? RefreshSelectedClip() => SelectedClip;
+    public void ShowStatus(string message) { }
     public void RaiseChanged(ClipInfo? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
 }

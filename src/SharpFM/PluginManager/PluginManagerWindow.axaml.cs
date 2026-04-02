@@ -37,7 +37,7 @@ public partial class PluginManagerWindow : Window
         _pluginService = pluginService;
         _host = host;
         _mainVm = mainVm;
-        _viewModel.Refresh(pluginService.LoadedPlugins, mainVm.ActivePlugin);
+        _viewModel.Refresh(pluginService.AllPlugins, mainVm.ActivePlugin);
     }
 
     private async void OnInstall(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -59,8 +59,9 @@ public partial class PluginManagerWindow : Window
         var newPlugins = _pluginService.InstallPlugin(path, _host);
         if (newPlugins.Count > 0)
         {
-            _mainVm.PanelPlugins = _pluginService.LoadedPlugins;
-            _viewModel.Refresh(_pluginService.LoadedPlugins, _mainVm.ActivePlugin);
+            _mainVm.PanelPlugins = _pluginService.PanelPlugins;
+            _mainVm.TransformPlugins = _pluginService.TransformPlugins;
+            _viewModel.Refresh(_pluginService.AllPlugins, _mainVm.ActivePlugin);
         }
     }
 
@@ -71,12 +72,13 @@ public partial class PluginManagerWindow : Window
         var entry = _viewModel.SelectedPlugin;
         if (entry is null) return;
 
-        // Deactivate if this is the active plugin
-        if (_mainVm.ActivePlugin?.Id == entry.Id)
-            _mainVm.TogglePluginPanel(entry.Plugin);
+        // Deactivate if this is the active panel plugin
+        if (entry.Plugin is IPanelPlugin panelPlugin && _mainVm.ActivePlugin?.Id == entry.Id)
+            _mainVm.TogglePluginPanel(panelPlugin);
 
         _pluginService.UninstallPlugin(entry.Plugin);
-        _mainVm.PanelPlugins = _pluginService.LoadedPlugins;
-        _viewModel.Refresh(_pluginService.LoadedPlugins, _mainVm.ActivePlugin);
+        _mainVm.PanelPlugins = _pluginService.PanelPlugins;
+        _mainVm.TransformPlugins = _pluginService.TransformPlugins;
+        _viewModel.Refresh(_pluginService.AllPlugins, _mainVm.ActivePlugin);
     }
 }

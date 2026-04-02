@@ -10,12 +10,17 @@ namespace SharpFM.Plugin.Tests;
 public class MockPluginHost : IPluginHost
 {
     public ClipInfo? SelectedClip { get; set; }
+    public IReadOnlyList<ClipInfo> AllClips { get; set; } = [];
     public event EventHandler<ClipInfo?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
+    public event EventHandler? ClipCollectionChanged;
     public void UpdateSelectedClipXml(string xml, string originPluginId) { }
     public ClipInfo? RefreshSelectedClip() => SelectedClip;
+    public void ShowStatus(string message) { LastStatus = message; }
+    public string? LastStatus { get; private set; }
     public void RaiseChanged(ClipInfo? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
+    public void RaiseCollectionChanged() => ClipCollectionChanged?.Invoke(this, EventArgs.Empty);
 }
 
 public class PluginServiceTests
@@ -100,6 +105,26 @@ public class PluginServiceTests
             if (Directory.Exists(pluginsDir)) Directory.Delete(pluginsDir, recursive: true);
             Directory.Delete(sourceDir, recursive: true);
         }
+    }
+
+    [Fact]
+    public void AllPlugins_AggregatesAllTypes()
+    {
+        var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
+        // No plugins loaded, but verify the property returns empty aggregate
+        Assert.Empty(service.AllPlugins);
+        Assert.Empty(service.PanelPlugins);
+        Assert.Empty(service.EventPlugins);
+        Assert.Empty(service.PersistencePlugins);
+        Assert.Empty(service.TransformPlugins);
+    }
+
+    [Fact]
+    public void LoadedPlugins_ReturnsPanelPlugins()
+    {
+        var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
+        // LoadedPlugins is a backwards-compat alias for PanelPlugins
+        Assert.Same(service.PanelPlugins, service.LoadedPlugins);
     }
 
     [Fact]

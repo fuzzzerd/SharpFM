@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using SharpFM.Plugin;
 using SharpFM.ViewModels;
 
@@ -33,6 +35,9 @@ public class PluginHost : IPluginHost
 
         _trackedClip = _viewModel.SelectedClip;
         Subscribe(_trackedClip);
+
+        _viewModel.FileMakerClips.CollectionChanged += (_, _) =>
+            ClipCollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public ClipInfo? SelectedClip
@@ -47,6 +52,14 @@ public class PluginHost : IPluginHost
 
     public event EventHandler<ClipInfo?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
+    public event EventHandler? ClipCollectionChanged;
+
+    public IReadOnlyList<ClipInfo> AllClips =>
+        _viewModel.FileMakerClips
+            .Select(c => new ClipInfo(c.Name, c.ClipType, c.ClipXml))
+            .ToList();
+
+    public void ShowStatus(string message) => _viewModel.StatusMessage = message;
 
     public void UpdateSelectedClipXml(string xml, string originPluginId)
     {
