@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using AvaloniaEdit;
@@ -8,6 +9,7 @@ using TextMateSharp.Grammars;
 
 namespace SharpFM.Schema.Editor;
 
+[ExcludeFromCodeCoverage]
 public partial class CalculationEditorWindow : Window
 {
     private readonly FmField _field;

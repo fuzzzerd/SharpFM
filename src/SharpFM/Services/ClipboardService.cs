@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -6,6 +7,7 @@ using FluentAvalonia.UI.Data;
 
 namespace SharpFM.Services;
 
+[ExcludeFromCodeCoverage]
 public class ClipboardService : IClipboardService
 {
     private readonly Window _window;

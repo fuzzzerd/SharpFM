@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -13,6 +14,7 @@ namespace SharpFM.Scripting.Editor;
 /// Manages script editor behavior: validation, completion, tooltips, and document tracking.
 /// Extracted from MainWindow to keep UI code thin and this logic independently testable.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class ScriptEditorController : IDisposable
 {
     private readonly TextEditor _editor;

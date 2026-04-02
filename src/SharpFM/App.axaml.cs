@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -5,11 +7,11 @@ using SharpFM.ViewModels;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using SharpFM.Services;
 
 namespace SharpFM;
 
+[ExcludeFromCodeCoverage]
 public partial class App : Application
 {
     ILogger logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<MainWindow>();

@@ -1,9 +1,11 @@
-﻿using Avalonia;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using Avalonia;
 using NLog;
-using System;
 
 namespace SharpFM;
 
+[ExcludeFromCodeCoverage]
 class Program
 {
     // Initialization code. Don't use any Avalonia, third-party APIs or any

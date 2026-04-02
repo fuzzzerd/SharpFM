@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
@@ -5,6 +6,7 @@ using TextMateSharp.Grammars;
 
 namespace SharpFM.Plugin.XmlViewer;
 
+[ExcludeFromCodeCoverage]
 public partial class XmlViewerPanel : UserControl
 {
     private TextMate.Installation? _textMateInstallation;

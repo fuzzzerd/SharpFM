@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
@@ -7,6 +8,7 @@ using AvaloniaEdit.CodeCompletion;
 
 namespace SharpFM.Scripting.Editor;
 
+[ExcludeFromCodeCoverage]
 public class FmScriptCompletionData : ICompletionData
 {
     public FmScriptCompletionData(string text, string? description = null, double priority = 0)

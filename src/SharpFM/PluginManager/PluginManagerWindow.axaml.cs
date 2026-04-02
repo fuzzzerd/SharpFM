@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -9,6 +10,7 @@ using SharpFM.ViewModels;
 
 namespace SharpFM.PluginManager;
 
+[ExcludeFromCodeCoverage]
 public partial class PluginManagerWindow : Window
 {
     private readonly PluginManagerViewModel _viewModel = new();
