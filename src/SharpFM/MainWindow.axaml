@@ -21,6 +21,7 @@
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewScriptCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewTableCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding CopySelectedToClip}" />
+        <KeyBinding Gesture="Delete" Command="{Binding DeleteSelectedClip}" />
     </Window.KeyBindings>
 
     <DockPanel>
@@ -39,6 +40,8 @@
                 <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" InputGesture="Ctrl+Shift+C" />
                 <Separator />
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
+                <Separator />
+                <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" InputGesture="Delete" />
             </MenuItem>
             <MenuItem x:Name="pluginsMenu" Header="_Plugins">
                 <!-- Plugin menu items are added dynamically in code-behind -->
@@ -138,6 +141,20 @@
                                     Classes="Fluent2"
                                     ItemsSource="{Binding FilteredClips}"
                                     SelectedItem="{Binding SelectedClip}">
+                                    <ListBox.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem
+                                                Command="{Binding CopySelectedToClip}"
+                                                Header="Copy to FileMaker" />
+                                            <MenuItem
+                                                Command="{Binding CopyAsClass}"
+                                                Header="Copy as C# Class" />
+                                            <Separator />
+                                            <MenuItem
+                                                Command="{Binding DeleteSelectedClip}"
+                                                Header="Delete Clip" />
+                                        </ContextMenu>
+                                    </ListBox.ContextMenu>
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border 

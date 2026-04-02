@@ -123,6 +123,45 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void DeleteSelectedClip_RemovesClipFromCollection()
+    {
+        var vm = CreateVm();
+        vm.NewScriptCommand();
+        var clip = vm.SelectedClip;
+        Assert.NotNull(clip);
+
+        vm.DeleteSelectedClip();
+
+        Assert.DoesNotContain(clip, vm.FileMakerClips);
+        Assert.Null(vm.SelectedClip);
+        Assert.Contains("Deleted clip", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void DeleteSelectedClip_NoSelection_ShowsStatus()
+    {
+        var vm = CreateVm();
+        vm.SelectedClip = null;
+
+        vm.DeleteSelectedClip();
+
+        Assert.Equal("No clip selected", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void DeleteSelectedClip_RemovesFromFilteredClips()
+    {
+        var vm = CreateVm();
+        vm.NewScriptCommand();
+        var clip = vm.SelectedClip!;
+        Assert.Contains(clip, vm.FilteredClips);
+
+        vm.DeleteSelectedClip();
+
+        Assert.DoesNotContain(clip, vm.FilteredClips);
+    }
+
+    [Fact]
     public void SearchText_FiltersClips()
     {
         var vm = CreateVm();

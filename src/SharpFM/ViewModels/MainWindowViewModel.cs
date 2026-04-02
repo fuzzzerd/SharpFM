@@ -132,6 +132,20 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             }
 
             clipContext.SaveChanges();
+
+            // Remove files for clips that no longer exist in memory
+            var activeNames = new HashSet<string>(
+                FileMakerClips.Select(c => $"{c.Name}.{c.ClipType}"),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var file in Directory.EnumerateFiles(CurrentPath))
+            {
+                if (!activeNames.Contains(Path.GetFileName(file)))
+                {
+                    File.Delete(file);
+                }
+            }
+
             ShowStatus($"Saved {FileMakerClips.Count} clip(s) to {CurrentPath}");
         }
         catch (Exception e)
@@ -155,6 +169,20 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     private static readonly string EmptyTableXml =
         "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"NewTable\"></BaseTable></fmxmlsnippet>";
+
+    public void DeleteSelectedClip()
+    {
+        if (SelectedClip is null)
+        {
+            ShowStatus("No clip selected");
+            return;
+        }
+
+        var name = SelectedClip.Name;
+        FileMakerClips.Remove(SelectedClip);
+        SelectedClip = null;
+        ShowStatus($"Deleted clip '{name}'");
+    }
 
     public void NewScriptCommand()
     {
