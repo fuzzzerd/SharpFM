@@ -1,0 +1,36 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:local="using:SharpFM.Plugin.XmlViewer"
+    x:Class="SharpFM.Plugin.XmlViewer.XmlViewerPanel"
+    x:DataType="local:XmlViewerViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Border Grid.Row="0" Padding="12,8" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+            <TextBlock Classes="Fluent2Caption" Text="{Binding ClipLabel}" Opacity="0.8" />
+        </Border>
+
+        <!-- XML Editor -->
+        <AvaloniaEdit:TextEditor
+            x:Name="xmlEditor"
+            Grid.Row="1"
+            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+            ShowLineNumbers="True"
+            WordWrap="False"
+            IsVisible="{Binding HasClip}"
+            Document="{Binding Document}" />
+
+        <!-- Empty state -->
+        <TextBlock
+            Grid.Row="1"
+            Classes="Fluent2Body"
+            Opacity="0.5"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            IsVisible="{Binding !HasClip}"
+            Text="Select a clip to view its XML." />
+    </Grid>
+
+</UserControl>

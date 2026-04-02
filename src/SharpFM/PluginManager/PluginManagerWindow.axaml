@@ -1,0 +1,73 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SharpFM.PluginManager"
+    x:Class="SharpFM.PluginManager.PluginManagerWindow"
+    x:DataType="local:PluginManagerViewModel"
+    Title="Plugin Manager"
+    Width="550"
+    Height="400"
+    CanResize="False"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16" RowDefinitions="*,Auto">
+
+        <!-- Plugin list -->
+        <Border Grid.Row="0" Classes="Fluent2SurfaceElevated" Margin="0,0,0,12">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Classes="Fluent2Subtitle" Text="Installed Plugins" Margin="12,12,12,8" />
+
+                <ListBox
+                    Grid.Row="1"
+                    Classes="Fluent2"
+                    ItemsSource="{Binding Plugins}"
+                    SelectedItem="{Binding SelectedPlugin}"
+                    Margin="8,0,8,8">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="local:PluginEntry">
+                            <Grid ColumnDefinitions="*,Auto" Margin="4">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Classes="Fluent2Body" Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                    <TextBlock Classes="Fluent2Caption" Opacity="0.7">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} ({1})">
+                                                <Binding Path="Id" />
+                                                <Binding Path="AssemblyName" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Classes="Fluent2Caption"
+                                    VerticalAlignment="Center"
+                                    Foreground="Green"
+                                    IsVisible="{Binding IsActive}"
+                                    Text="Active" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <TextBlock
+                    Grid.Row="1"
+                    Classes="Fluent2Body"
+                    Opacity="0.5"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding !Plugins.Count}"
+                    Text="No plugins installed." />
+            </Grid>
+        </Border>
+
+        <!-- Actions -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button x:Name="installButton" Classes="Fluent2" Content="Install from File..." />
+            <Button x:Name="removeButton" Classes="Fluent2" Content="Remove"
+                    IsEnabled="{Binding HasSelection}" />
+            <Button x:Name="closeButton" Classes="Fluent2Primary" Content="Close" />
+        </StackPanel>
+
+    </Grid>
+
+</Window>

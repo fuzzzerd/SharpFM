@@ -16,7 +16,27 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="SharpFM.Tests" />
+    <InternalsVisibleTo Include="SharpFM.Plugin.Tests" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharpFM.Plugin\SharpFM.Plugin.csproj" />
+    <ProjectReference Include="..\SharpFM.Plugin.Sample\SharpFM.Plugin.Sample.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\SharpFM.Plugin.XmlViewer\SharpFM.Plugin.XmlViewer.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="CopyPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <PluginFiles Include="$(MSBuildProjectDirectory)\..\SharpFM.Plugin.Sample\bin\$(Configuration)\net8.0\SharpFM.Plugin.Sample.dll" />
+      <PluginFiles Include="$(MSBuildProjectDirectory)\..\SharpFM.Plugin.XmlViewer\bin\$(Configuration)\net8.0\SharpFM.Plugin.XmlViewer.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutputPath)plugins" />
+    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(OutputPath)plugins" SkipUnchangedFiles="true" />
+  </Target>
 
   <PropertyGroup>
     <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
