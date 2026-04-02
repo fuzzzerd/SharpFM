@@ -11,11 +11,11 @@
             "preLaunchTask": "build",
             "windows": 
             {
-                "program": "${workspaceFolder}/bin/Debug/net8.0/win-x64/SharpFM.dll",
+                "program": "${workspaceFolder}/src/SharpFM/bin/Debug/net8.0/win-x64/SharpFM.dll",
             },
-            "linux": 
+            "linux":
             {
-                "program": "${workspaceFolder}/bin/Debug/net8.0/linux-x64/SharpFM.dll",
+                "program": "${workspaceFolder}/src/SharpFM/bin/Debug/net8.0/linux-x64/SharpFM.dll",
             },
             "args": [],
             "cwd": "${workspaceFolder}",

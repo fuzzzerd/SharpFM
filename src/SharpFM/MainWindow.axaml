@@ -1,0 +1,201 @@
+﻿<Window
+    x:Class="SharpFM.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:SharpFM.ViewModels"
+    Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
+    Title="SharpFM"
+    Width="700"
+    Height="500"
+    d:DesignHeight="500"
+    d:DesignWidth="700"
+    x:DataType="vm:MainWindowViewModel"
+    mc:Ignorable="d">
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveClipsStorage}" />
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewEmptyItem}" />
+        <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding CopySelectedToClip}" />
+    </Window.KeyBindings>
+
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New">
+                    <MenuItem Command="{Binding NewEmptyItem}" Header="Blank Clip" InputGesture="Ctrl+N" />
+                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="From Clipboard (copied from FileMaker)" InputGesture="Ctrl+V" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder" />
+                <Separator />
+                <MenuItem Header="Save">
+                    <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All To Folder" InputGesture="Ctrl+S" />
+                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Selected clip to Clipboard (to paste into FileMaker)" InputGesture="Ctrl+Shift+C" />
+                </MenuItem>
+                <Separator />
+                <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
+            </MenuItem>
+            <MenuItem Header="Transform">
+                <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem x:Name="viewXmlMenuItem" Header="Show XML" InputGesture="Ctrl+Shift+X" />
+            </MenuItem>
+            <MenuItem Header="{Binding Version}" />
+        </Menu>
+
+        <!-- Status bar (docked before main content so Grid fills remaining space) -->
+        <Border
+            DockPanel.Dock="Bottom"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+            Padding="16,6"
+            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock
+                Classes="Fluent2Caption"
+                Text="{Binding StatusMessage}" />
+        </Border>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header section with Fluent 2 design tokens -->
+            <Border 
+                Grid.Row="0"
+                Classes="Fluent2Surface"
+                Margin="24,16,24,0"
+                Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock 
+                        Grid.Column="0" 
+                        Classes="Fluent2Body"
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center" 
+                        Text="Clip path:" />
+                    <TextBox 
+                        Grid.Column="1" 
+                        Classes="Fluent2"
+                        Margin="0,0,12,0"
+                        Text="{Binding CurrentPath, Mode=OneWay}" />
+                    <Button 
+                        Grid.Column="2" 
+                        Classes="Fluent2Primary"
+                        Command="{Binding OpenFolderPicker}" 
+                        Content="Browse" />
+                </Grid>
+            </Border>
+
+            <!-- Main content area with Fluent 2 elevation and spacing -->
+            <Grid 
+                Grid.Row="1" 
+                Margin="24,16,24,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left panel: Clips navigation with Fluent 2 surface treatment -->
+                <Border 
+                    Grid.Column="0"
+                    Classes="Fluent2SurfaceElevated">
+                    <ScrollViewer>
+                        <StackPanel Margin="16" Spacing="16">
+                            <!-- Search section -->
+                            <StackPanel Spacing="8">
+                                <TextBlock 
+                                    Classes="Fluent2Subtitle"
+                                    Text="Search Clips" />
+                                <TextBox 
+                                    Classes="Fluent2"
+                                    Watermark="Type to search clips..." 
+                                    Text="{Binding SearchText}" />
+                            </StackPanel>
+
+                            <!-- Clips list section -->
+                            <StackPanel Spacing="8">
+                                <TextBlock 
+                                    Classes="Fluent2Subtitle"
+                                    Text="Available Clips" />
+                                <ListBox
+                                    Classes="Fluent2"
+                                    ItemsSource="{Binding FilteredClips}"
+                                    SelectedItem="{Binding SelectedClip}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border 
+                                                CornerRadius="4"
+                                                Padding="12">
+                                                <StackPanel Spacing="8">
+                                                    <TextBox 
+                                                        Classes="Fluent2"
+                                                        Text="{Binding Name, Mode=TwoWay}" 
+                                                        Watermark="Clip name" />
+                                                    <ComboBox
+                                                        Classes="Fluent2"
+                                                        DisplayMemberBinding="{Binding DisplayName}"
+                                                        ItemsSource="{Binding Clip.ClipTypes}"
+                                                        SelectedValue="{Binding ClipType, Mode=TwoWay}"
+                                                        SelectedValueBinding="{Binding KeyId}" />
+                                                    <TextBlock 
+                                                        Classes="Fluent2Caption"
+                                                        MaxLines="1" 
+                                                        Text="{Binding ClipType}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Splitter space -->
+                <GridSplitter 
+                    Grid.Column="1" 
+                    Background="Transparent"
+                    ResizeDirection="Columns"
+                    Width="16" />
+
+                <!-- Right panel: Code editor with Fluent 2 surface treatment -->
+                <Border
+                    Grid.Column="2"
+                    Classes="Fluent2SurfaceElevated">
+                    <DockPanel>
+                        <!-- Script editor for script clips -->
+                        <AvaloniaEdit:TextEditor
+                            x:Name="scriptEditor"
+                            DockPanel.Dock="Top"
+                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                            ShowLineNumbers="True"
+                            WordWrap="False"
+                            IsVisible="{Binding SelectedClip.IsScriptClip}"
+                            Document="{Binding SelectedClip.ScriptDocument}" />
+                        <!-- Fallback XML editor for non-script clips -->
+                        <AvaloniaEdit:TextEditor
+                            x:Name="fallbackXmlEditor"
+                            FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                            ShowLineNumbers="True"
+                            SyntaxHighlighting="Xml"
+                            WordWrap="False"
+                            IsVisible="{Binding SelectedClip.IsScriptClip, Converter={x:Static BoolConverters.Not}}"
+                            Document="{Binding SelectedClip.XmlDocument}" />
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+    </DockPanel>
+
+</Window>
