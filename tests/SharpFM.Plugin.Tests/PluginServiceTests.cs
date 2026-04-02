@@ -10,12 +10,17 @@ namespace SharpFM.Plugin.Tests;
 public class MockPluginHost : IPluginHost
 {
     public ClipInfo? SelectedClip { get; set; }
+    public IReadOnlyList<ClipInfo> AllClips { get; set; } = [];
     public event EventHandler<ClipInfo?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
+    public event EventHandler? ClipCollectionChanged;
     public void UpdateSelectedClipXml(string xml, string originPluginId) { }
     public ClipInfo? RefreshSelectedClip() => SelectedClip;
+    public void ShowStatus(string message) { LastStatus = message; }
+    public string? LastStatus { get; private set; }
     public void RaiseChanged(ClipInfo? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
+    public void RaiseCollectionChanged() => ClipCollectionChanged?.Invoke(this, EventArgs.Empty);
 }
 
 public class PluginServiceTests

@@ -4,6 +4,7 @@
 // plugins being subject to the GPL. Such plugins may use any license, including proprietary.
 
 using System;
+using System.Collections.Generic;
 
 namespace SharpFM.Plugin;
 
@@ -45,4 +46,22 @@ public interface IPluginHost
     /// Debounced for editor edits; immediate for plugin pushes.
     /// </summary>
     event EventHandler<ClipContentChangedArgs> ClipContentChanged;
+
+    /// <summary>
+    /// All clips currently loaded in the application.
+    /// Useful for event plugins that need to operate across the full clip set.
+    /// </summary>
+    IReadOnlyList<ClipInfo> AllClips { get; }
+
+    /// <summary>
+    /// Raised when the clip collection changes (clips added, removed, or reloaded).
+    /// </summary>
+    event EventHandler? ClipCollectionChanged;
+
+    /// <summary>
+    /// Request the host to show a status message in the status bar.
+    /// Plugins should use this for user-visible feedback rather than
+    /// implementing their own notification UI.
+    /// </summary>
+    void ShowStatus(string message);
 }
