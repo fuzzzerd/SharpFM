@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private readonly IClipboardService _clipboard;
     private readonly IFolderService _folderService;
     private readonly DispatcherTimer _statusTimer;
+    private IClipRepository _repository;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -63,26 +64,35 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         FilteredClips = [];
 
-        LoadClips(CurrentPath);
+        _repository = new ClipRepository(_currentPath);
+        LoadClipsFromRepository();
     }
 
-    private void LoadClips(string pathToLoad)
+    public IClipRepository ActiveRepository => _repository;
+
+    private void LoadClipsFromRepository()
     {
-        var clipContext = new ClipRepository(pathToLoad);
-        clipContext.LoadClips();
+        var clips = _repository.LoadClipsAsync().GetAwaiter().GetResult();
 
         FileMakerClips.Clear();
 
-        foreach (var clip in clipContext.Clips)
+        foreach (var clip in clips)
         {
             FileMakerClips.Add(new ClipViewModel(
-                    new FileMakerClip(
-                        clip.ClipName,
-                        clip.ClipType,
-                        clip.ClipXml
-                    )
-                )
-            );
+                new FileMakerClip(clip.Name, clip.ClipType, clip.Xml)));
+        }
+    }
+
+    private async Task LoadClipsFromRepositoryAsync()
+    {
+        var clips = await _repository.LoadClipsAsync();
+
+        FileMakerClips.Clear();
+
+        foreach (var clip in clips)
+        {
+            FileMakerClips.Add(new ClipViewModel(
+                new FileMakerClip(clip.Name, clip.ClipType, clip.Xml)));
         }
     }
 
@@ -91,7 +101,8 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         try
         {
             CurrentPath = await _folderService.GetFolderAsync();
-            LoadClips(CurrentPath);
+            _repository = new ClipRepository(CurrentPath);
+            await LoadClipsFromRepositoryAsync();
             ShowStatus($"Opened {CurrentPath}");
         }
         catch (Exception e)
@@ -101,58 +112,39 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public void SaveClipsStorage()
+    public async Task SwitchRepository(IClipRepository repository)
+    {
+        _repository = repository;
+        CurrentPath = repository.CurrentLocation;
+        await LoadClipsFromRepositoryAsync();
+        ShowStatus($"Switched to {repository.ProviderName}: {repository.CurrentLocation}");
+    }
+
+    public async Task SaveClipsStorageAsync()
     {
         try
         {
-            var clipContext = new ClipRepository(CurrentPath);
-            var fsClips = clipContext.Clips.ToList();
-
             foreach (var clip in FileMakerClips)
-            {
-                // Sync model to XML before saving
                 clip.SyncModelFromEditor();
 
-                var dbClip = fsClips.FirstOrDefault(dbc => dbc.ClipName == clip.Name);
+            var clipData = FileMakerClips
+                .Select(c => new ClipData(c.Name, c.ClipType, c.ClipXml))
+                .ToList();
 
-                if (dbClip is not null)
-                {
-                    dbClip.ClipType = clip.ClipType;
-                    dbClip.ClipXml = clip.ClipXml;
-                }
-                else
-                {
-                    clipContext.Clips.Add(new Clip()
-                    {
-                        ClipName = clip.Name,
-                        ClipType = clip.ClipType,
-                        ClipXml = clip.ClipXml
-                    });
-                }
-            }
+            await _repository.SaveClipsAsync(clipData);
 
-            clipContext.SaveChanges();
-
-            // Remove files for clips that no longer exist in memory
-            var activeNames = new HashSet<string>(
-                FileMakerClips.Select(c => $"{c.Name}.{c.ClipType}"),
-                StringComparer.OrdinalIgnoreCase);
-
-            foreach (var file in Directory.EnumerateFiles(CurrentPath))
-            {
-                if (!activeNames.Contains(Path.GetFileName(file)))
-                {
-                    File.Delete(file);
-                }
-            }
-
-            ShowStatus($"Saved {FileMakerClips.Count} clip(s) to {CurrentPath}");
+            ShowStatus($"Saved {clipData.Count} clip(s) to {_repository.CurrentLocation}");
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Error saving clips.");
             ShowStatus("Error saving clips", isError: true);
         }
+    }
+
+    public void SaveClipsStorage()
+    {
+        SaveClipsStorageAsync().GetAwaiter().GetResult();
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound to Xaml Button, throws when static.")]
