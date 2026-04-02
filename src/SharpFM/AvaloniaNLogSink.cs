@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Logging;
 using NLog;
@@ -8,6 +9,7 @@ namespace SharpFM;
 /// <summary>
 /// Avalonia Log Sink that writes to NLog Loggers.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class AvaloniaNLogSink : ILogSink
 {
     /// <summary>
@@ -43,6 +45,7 @@ public class AvaloniaNLogSink : ILogSink
     }
 }
 
+[ExcludeFromCodeCoverage]
 public static class NLogSinkExtensions
 {
     /// <summary>

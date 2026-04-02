@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
@@ -7,6 +8,7 @@ using AvaloniaEdit.Rendering;
 
 namespace SharpFM.Scripting.Editor;
 
+[ExcludeFromCodeCoverage]
 public class BracketMatchRenderer : IBackgroundRenderer
 {
 

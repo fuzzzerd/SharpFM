@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Media;
 
@@ -6,6 +7,7 @@ namespace SharpFM.Scripting.Editor;
 /// <summary>
 /// Shared color constants for script editor renderers.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal static class ScriptEditorTheme
 {
     internal static readonly IPen ErrorPen = new Pen(Brushes.Red, 1.0);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
@@ -7,6 +8,7 @@ using AvaloniaEdit.Rendering;
 
 namespace SharpFM.Scripting.Editor;
 
+[ExcludeFromCodeCoverage]
 public class ErrorMarkerRenderer : IBackgroundRenderer
 {
     private readonly TextDocument _document;

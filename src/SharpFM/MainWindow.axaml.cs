@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -14,6 +15,7 @@ using TextMateSharp.Grammars;
 
 namespace SharpFM;
 
+[ExcludeFromCodeCoverage]
 public partial class MainWindow : Window
 {
     private readonly RegistryOptions _registryOptions;

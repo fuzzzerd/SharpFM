@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpFM.Plugin;
 using SharpFM.Services;
@@ -19,6 +20,12 @@ public class MockPluginHost : IPluginHost
 
 public class PluginServiceTests
 {
+    private static PluginService CreateService(string pluginsDir)
+    {
+        var logger = LoggerFactory.Create(_ => { }).CreateLogger<PluginService>();
+        return new PluginService(logger, pluginsDir);
+    }
+
     [Fact]
     public void LoadPlugins_NoPluginsDir_LoadsZero()
     {
@@ -35,13 +42,11 @@ public class PluginServiceTests
     public void LoadPlugins_EmptyDir_LoadsZero()
     {
         var dir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
-        Directory.CreateDirectory(Path.Combine(dir, "plugins"));
+        Directory.CreateDirectory(dir);
 
         try
         {
-            // PluginService scans AppContext.BaseDirectory/plugins, so this tests
-            // the scenario indirectly — the important behavior is graceful handling
-            var service = new PluginService(NullLogger.Instance);
+            var service = CreateService(dir);
             service.LoadPlugins(new MockPluginHost());
             Assert.Empty(service.LoadedPlugins);
         }
@@ -50,4 +55,77 @@ public class PluginServiceTests
             Directory.Delete(dir, recursive: true);
         }
     }
+
+    [Fact]
+    public void LoadPlugins_InvalidDll_GracefullySkips()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
+        Directory.CreateDirectory(dir);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "BadPlugin.dll"), "not a real assembly");
+
+            var service = CreateService(dir);
+            service.LoadPlugins(new MockPluginHost());
+
+            Assert.Empty(service.LoadedPlugins);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InstallPlugin_InvalidDll_CopiesButReturnsEmpty()
+    {
+        var pluginsDir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
+        var sourceDir = Path.Combine(Path.GetTempPath(), $"sharpfm-source-{Guid.NewGuid()}");
+        Directory.CreateDirectory(sourceDir);
+
+        try
+        {
+            var sourceDll = Path.Combine(sourceDir, "Bad.dll");
+            File.WriteAllText(sourceDll, "not a real assembly");
+
+            var service = CreateService(pluginsDir);
+            var result = service.InstallPlugin(sourceDll, new MockPluginHost());
+
+            Assert.Empty(result);
+            Assert.True(File.Exists(Path.Combine(pluginsDir, "Bad.dll")));
+        }
+        finally
+        {
+            if (Directory.Exists(pluginsDir)) Directory.Delete(pluginsDir, recursive: true);
+            Directory.Delete(sourceDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InstallPlugin_OverwritesExisting()
+    {
+        var pluginsDir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
+        var sourceDir = Path.Combine(Path.GetTempPath(), $"sharpfm-source-{Guid.NewGuid()}");
+        Directory.CreateDirectory(pluginsDir);
+        Directory.CreateDirectory(sourceDir);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(pluginsDir, "Plugin.dll"), "old content");
+            var sourceDll = Path.Combine(sourceDir, "Plugin.dll");
+            File.WriteAllText(sourceDll, "new content");
+
+            var service = CreateService(pluginsDir);
+            service.InstallPlugin(sourceDll, new MockPluginHost());
+
+            Assert.Equal("new content", File.ReadAllText(Path.Combine(pluginsDir, "Plugin.dll")));
+        }
+        finally
+        {
+            Directory.Delete(pluginsDir, recursive: true);
+            Directory.Delete(sourceDir, recursive: true);
+        }
+    }
+
 }

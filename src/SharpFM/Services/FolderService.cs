@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -6,6 +7,7 @@ using Avalonia.Platform.Storage;
 
 namespace SharpFM.Services;
 
+[ExcludeFromCodeCoverage]
 public class FolderService(Window target) : IFolderService
 {
     private readonly Window _target = target;

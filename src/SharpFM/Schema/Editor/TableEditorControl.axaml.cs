@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Input;
 using SharpFM.Schema.Model;
 
 namespace SharpFM.Schema.Editor;
 
+[ExcludeFromCodeCoverage]
 public partial class TableEditorControl : UserControl
 {
     public static FieldDataType[] DataTypes { get; } = Enum.GetValues<FieldDataType>();

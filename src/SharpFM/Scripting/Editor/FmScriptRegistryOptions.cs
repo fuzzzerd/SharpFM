@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using TextMateSharp.Grammars;
@@ -9,6 +10,7 @@ using TextMateSharp.Themes;
 
 namespace SharpFM.Scripting.Editor;
 
+[ExcludeFromCodeCoverage]
 public class FmScriptRegistryOptions : IRegistryOptions
 {
     public const string ScopeName = "source.fmscript";

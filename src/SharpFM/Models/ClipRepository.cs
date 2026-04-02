@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using NLog;
 
@@ -8,6 +9,7 @@ namespace SharpFM.Models;
 /// <summary>
 /// Clip File Repository.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class ClipRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
