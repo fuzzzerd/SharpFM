@@ -208,6 +208,7 @@ public class MainWindowViewModelTests
     {
         public string Id { get; set; } = "stub";
         public string DisplayName => "Stub Plugin";
+        public string Version => "1.0.0-test";
         public IReadOnlyList<PluginKeyBinding> TestKeyBindings { get; set; } = [];
         public IReadOnlyList<PluginKeyBinding> KeyBindings => TestKeyBindings;
         public IReadOnlyList<PluginMenuAction> MenuActions => [];

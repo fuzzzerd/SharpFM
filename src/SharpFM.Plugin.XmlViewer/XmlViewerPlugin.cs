@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Avalonia.Controls;
 using SharpFM.Plugin;
 
@@ -9,6 +10,7 @@ public class XmlViewerPlugin : IPanelPlugin
 {
     public string Id => "xml-viewer";
     public string DisplayName => "XML Viewer";
+    public string Version => GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
 
     private IPluginHost? _host;
     private XmlViewerViewModel? _viewModel;

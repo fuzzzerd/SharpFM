@@ -11,6 +11,7 @@ public class PluginManagerViewModelTests
     {
         public string Id { get; set; } = "stub";
         public string DisplayName { get; set; } = "Stub";
+        public string Version => "1.0.0-test";
         public IReadOnlyList<PluginKeyBinding> KeyBindings => [];
         public IReadOnlyList<PluginMenuAction> MenuActions => [];
         public Control CreatePanel() => new TextBlock();

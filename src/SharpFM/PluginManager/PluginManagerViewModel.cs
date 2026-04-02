@@ -15,6 +15,7 @@ public class PluginEntry : INotifyPropertyChanged
     public IPanelPlugin Plugin { get; }
     public string Id => Plugin.Id;
     public string DisplayName => Plugin.DisplayName;
+    public string PluginVersion => Plugin.Version;
     public string AssemblyName => Plugin.GetType().Assembly.GetName().Name ?? "(unknown)";
 
     private bool _isActive;
