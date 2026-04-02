@@ -1,0 +1,35 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        x:Class="SharpFM.Schema.Editor.CalculationEditorWindow"
+        Title="Calculation Editor"
+        Width="500"
+        Height="350"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="12">
+        <!-- Options bar -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+            <TextBlock VerticalAlignment="Center" Text="Context table:" />
+            <TextBox x:Name="contextTableBox" Width="200" />
+            <CheckBox x:Name="alwaysEvaluateCheck" Content="Always evaluate" />
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Spacing="8" Margin="0,8,0,0">
+            <Button Content="OK" x:Name="okButton" Width="80" />
+            <Button Content="Cancel" x:Name="cancelButton" Width="80" />
+        </StackPanel>
+
+        <!-- Calculation text editor -->
+        <Border BorderBrush="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                BorderThickness="1" CornerRadius="4">
+            <AvaloniaEdit:TextEditor
+                x:Name="calcEditor"
+                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                ShowLineNumbers="True"
+                WordWrap="True" />
+        </Border>
+    </DockPanel>
+</Window>

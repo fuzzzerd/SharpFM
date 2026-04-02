@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:editor="using:SharpFM.Schema.Editor"
+             xmlns:model="using:SharpFM.Schema.Model"
+             x:Class="SharpFM.Schema.Editor.TableEditorControl"
+             x:DataType="editor:TableEditorViewModel"
+             x:CompileBindings="False"
+             mc:Ignorable="d"
+             d:DesignWidth="600" d:DesignHeight="400">
+
+    <DockPanel>
+        <!-- Header: table name + toolbar -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                Padding="12,8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Text="Table:" />
+                <TextBox Grid.Column="1"
+                         Text="{Binding TableName, Mode=TwoWay}"
+                         Watermark="Table name" />
+                <Button Grid.Column="2"
+                        Margin="8,0,4,0"
+                        Content="+ Add Field"
+                        Command="{Binding AddFieldCommand}" />
+                <Button Grid.Column="3"
+                        Content="Remove"
+                        Command="{Binding RemoveFieldCommand}" />
+                <Button Grid.Column="4"
+                        Margin="8,0,0,0"
+                        Content="Edit Calculation..."
+                        Command="{Binding EditCalculationCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Field grid -->
+        <DataGrid ItemsSource="{Binding Fields}"
+                  SelectedItem="{Binding SelectedField}"
+                  AutoGenerateColumns="False"
+                  CanUserReorderColumns="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
+                  GridLinesVisibility="Horizontal"
+                  IsReadOnly="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Field Name"
+                                    Binding="{Binding Name}"
+                                    Width="2*" />
+                <DataGridTemplateColumn Header="Type" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="model:FmField">
+                            <TextBlock Text="{Binding DataType}"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate x:DataType="model:FmField">
+                            <ComboBox SelectedItem="{Binding DataType}"
+                                      ItemsSource="{x:Static editor:TableEditorControl.DataTypes}"
+                                      HorizontalAlignment="Stretch" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Kind" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="model:FmField">
+                            <TextBlock Text="{Binding Kind}"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate x:DataType="model:FmField">
+                            <ComboBox SelectedItem="{Binding Kind}"
+                                      ItemsSource="{x:Static editor:TableEditorControl.FieldKinds}"
+                                      HorizontalAlignment="Stretch" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <DataGridCheckBoxColumn Header="Req"
+                                         Binding="{Binding NotEmpty}"
+                                         Width="50" />
+                <DataGridCheckBoxColumn Header="Uniq"
+                                         Binding="{Binding Unique}"
+                                         Width="50" />
+                <DataGridTextColumn Header="Comment"
+                                    Binding="{Binding Comment}"
+                                    Width="2*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

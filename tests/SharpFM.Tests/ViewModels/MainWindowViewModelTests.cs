@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpFM.Plugin;
 using SharpFM.Services;
 using SharpFM.ViewModels;
 using Xunit;
@@ -43,13 +45,44 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void NewEmptyItem_AddsClip()
+    public void NewScriptCommand_AddsScriptClip()
     {
         var vm = CreateVm();
         var initialCount = vm.FileMakerClips.Count;
-        vm.NewEmptyItem();
+        vm.NewScriptCommand();
         Assert.Equal(initialCount + 1, vm.FileMakerClips.Count);
-        Assert.Contains("Created new clip", vm.StatusMessage);
+        Assert.True(vm.SelectedClip?.IsScriptClip);
+        Assert.Contains("Created new script", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void NewTableCommand_AddsTableClip()
+    {
+        var vm = CreateVm();
+        var initialCount = vm.FileMakerClips.Count;
+        vm.NewTableCommand();
+        Assert.Equal(initialCount + 1, vm.FileMakerClips.Count);
+        Assert.True(vm.SelectedClip?.IsTableClip);
+        Assert.Contains("Created new table", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void NewTableCommand_TableEditorIsUsable()
+    {
+        var vm = CreateVm();
+        vm.NewTableCommand();
+        var clip = vm.SelectedClip!;
+
+        // TableEditor should lazy-create from the starter XML
+        var editor = clip.TableEditor;
+        Assert.NotNull(editor);
+        Assert.Equal("NewTable", editor!.TableName);
+
+        // AddField command should work
+        Assert.True(editor.AddFieldCommand.CanExecute(null));
+        editor.AddField();
+        Assert.Single(editor.Fields);
+        Assert.Equal("NewField", editor.Fields[0].Name);
     }
 
     [Fact]
@@ -93,10 +126,93 @@ public class MainWindowViewModelTests
     public void SearchText_FiltersClips()
     {
         var vm = CreateVm();
-        vm.NewEmptyItem(); // adds a clip named "New"
+        vm.NewScriptCommand(); // adds a clip named "New Script"
         vm.SearchText = "zzz_nonexistent";
         Assert.Empty(vm.FilteredClips);
         vm.SearchText = "";
         Assert.NotEmpty(vm.FilteredClips);
+    }
+
+    [Fact]
+    public void PanelPlugins_DefaultsToEmpty()
+    {
+        var vm = CreateVm();
+        Assert.Empty(vm.PanelPlugins);
+    }
+
+    [Fact]
+    public void PanelPlugins_CanBeSet()
+    {
+        var vm = CreateVm();
+        var plugin = new StubPanelPlugin();
+        vm.PanelPlugins = [plugin];
+        Assert.Single(vm.PanelPlugins);
+    }
+
+    [Fact]
+    public void TogglePluginPanel_ActivatesPlugin()
+    {
+        var vm = CreateVm();
+        var plugin = new StubPanelPlugin();
+        vm.PanelPlugins = [plugin];
+
+        vm.TogglePluginPanel(plugin);
+
+        Assert.True(vm.IsPluginPanelVisible);
+        Assert.Same(plugin, vm.ActivePlugin);
+        Assert.NotNull(vm.PluginPanelControl);
+    }
+
+    [Fact]
+    public void TogglePluginPanel_DeactivatesSamePlugin()
+    {
+        var vm = CreateVm();
+        var plugin = new StubPanelPlugin();
+        vm.PanelPlugins = [plugin];
+
+        vm.TogglePluginPanel(plugin);
+        vm.TogglePluginPanel(plugin);
+
+        Assert.False(vm.IsPluginPanelVisible);
+        Assert.Null(vm.ActivePlugin);
+    }
+
+    [Fact]
+    public void TogglePluginPanel_SwitchesPlugins()
+    {
+        var vm = CreateVm();
+        var plugin1 = new StubPanelPlugin { Id = "p1" };
+        var plugin2 = new StubPanelPlugin { Id = "p2" };
+        vm.PanelPlugins = [plugin1, plugin2];
+
+        vm.TogglePluginPanel(plugin1);
+        Assert.Same(plugin1, vm.ActivePlugin);
+
+        vm.TogglePluginPanel(plugin2);
+        Assert.Same(plugin2, vm.ActivePlugin);
+    }
+
+    [Fact]
+    public void PluginWithKeyBindings_ExposesBindings()
+    {
+        bool called = false;
+        var plugin = new StubPanelPlugin();
+        plugin.TestKeyBindings = [new PluginKeyBinding("Ctrl+Shift+X", "Test", () => called = true)];
+
+        Assert.Single(plugin.KeyBindings);
+        plugin.KeyBindings[0].Callback();
+        Assert.True(called);
+    }
+
+    private class StubPanelPlugin : IPanelPlugin
+    {
+        public string Id { get; set; } = "stub";
+        public string DisplayName => "Stub Plugin";
+        public IReadOnlyList<PluginKeyBinding> TestKeyBindings { get; set; } = [];
+        public IReadOnlyList<PluginKeyBinding> KeyBindings => TestKeyBindings;
+        public IReadOnlyList<PluginMenuAction> MenuActions => [];
+        public Control CreatePanel() => new TextBlock { Text = "stub" };
+        public void Initialize(IPluginHost host) { }
+        public void Dispose() { }
     }
 }

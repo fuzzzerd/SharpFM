@@ -75,15 +75,16 @@ public class ClipViewModelTests
     }
 
     [Fact]
-    public void SyncModelFromEditor_NoOpForNonScript()
+    public void SyncModelFromEditor_TableClip_RoundTripsXml()
     {
-        var clip = new FileMakerClip("Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
+        var clip = new FileMakerClip("Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"T\"></BaseTable></fmxmlsnippet>");
         var vm = new ClipViewModel(clip);
-        var originalXml = vm.Clip.XmlData;
 
-        vm.SyncModelFromEditor(); // should not crash or modify anything
+        vm.SyncModelFromEditor();
 
-        Assert.Equal(originalXml, vm.Clip.XmlData);
+        // Table XML round-trips through the model, so it gets normalized
+        Assert.Contains("BaseTable", vm.Clip.XmlData);
+        Assert.Contains("name=\"T\"", vm.Clip.XmlData);
     }
 
     [Fact]

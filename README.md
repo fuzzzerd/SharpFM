@@ -8,34 +8,48 @@ Note: SharpFM and FileMaker must be running on the same computer. In order to sh
 
 - Head over to [Releases](https://github.com/fuzzzerd/SharpFM/releases), grab the latest version (binaries for Windows, Mac, Linux are all available there).
 
-### Clipping from FileMaker
+### Importing Clips from FileMaker
 
 - Open SharpFM.
 - Switch over to FileMaker.
-- Copy something to the clipboard.
+- Copy something to the clipboard (scripts, tables, layouts, etc).
 - Switch back to SharpFM.
-- Use the Edit menu to "Paste from FileMaker Blob".
-- See your object(s) in the clips list with the Xml editor on the side.
+- Use **File > New > From Clipboard** (`Ctrl+V`) to import the clip.
+- The clip appears in the left panel with the appropriate editor on the right.
 
-### Clipping from SharpFM to FileMaker
+### Exporting Clips to FileMaker
 
-- Ensure you have a clip in SharpFM
-- Select the clip in the list
-- Use the Edit menu to "Copy As FileMaker Blob"
-- Switch to FileMaker: based on the clip type, open Database manger, Script manager, layout mode, etc.
-- Paste into FileMaker as you normally would.
+- Select a clip in the left panel.
+- Use **File > Save > Selected clip to Clipboard** (`Ctrl+Shift+C`).
+- Switch to FileMaker and open the appropriate destination (Database Manager, Script Workspace, Layout mode, etc).
+- Paste as you normally would.
 
-### Saving / Sharing XML Clips
+### Editing Scripts
 
-This is an area we can improve, with interoperability with some other similar tools. More to come? Contributions welcome.
+- Select a script clip or create one with **File > New > Script** (`Ctrl+N`).
+- The script editor shows a plain-text representation of the script steps with FmScript syntax highlighting.
+- Edit the script text directly; changes are synced back to the underlying XML.
 
-SharpFM has the option to persist clips between sessions by using the File menu to "Save to Db".
+### Editing Tables
 
-- Save the XML for a given clip as a separate file (copy/paste to Notepad, Nano, email body, etc)
-- Share the resulting XML file.
-- Use the File menu to create a New clip.
-- Select the appropriate clip type (Table, Script, Layout, etc)
-- Paste the raw XML into the code editor.
+- Select a table clip or create one with **File > New > Table** (`Ctrl+Shift+N`).
+- The table editor shows a DataGrid with columns for Field Name, Type, Kind, Required, Unique, and Comment.
+- Click **+ Add Field** to add a new field, then edit its properties inline.
+- Select a field and click **Remove** or press `Delete` to remove it.
+- Change a field's Kind to Calculated or Summary, then click **Edit Calculation...** to open the calculation editor.
+
+### Viewing Raw XML
+
+- Select any clip and use **View > Show XML** (`Ctrl+Shift+X`) to open the raw XML in a separate window.
+- Edits made in the XML window are synced back to the clip when the window is closed.
+
+### Saving and Sharing Clips
+
+SharpFM persists clips between sessions as XML files in a local folder.
+
+- Use **File > Save > Save All To Folder** (`Ctrl+S`) to save all clips.
+- Use **File > Open Folder** to load clips from a different folder.
+- The clip files are plain XML and can be shared via git, email, or any text-based tool.
 
 ## Features
 
@@ -43,7 +57,28 @@ SharpFM has the option to persist clips between sessions by using the File menu 
 - [x] Store FileMaker Scripts, Tables, and Layouts to xml files that can be shared via git, email or other text based tools.
 - [x] Edit raw FileMaker XML code (scripts, layouts, tables) with ability to paste changes back into FileMaker.
 - [x] Use AvaloniaEdit for XML editing with XML syntax highlighting.
-- [ ] Better UI tools to mutate the Raw XML.
+- [x] Plain-text script editor with FmScript syntax highlighting.
+- [x] DataGrid table/field editor with inline editing, calculation editor, and type/kind selection.
+- [x] View and edit raw XML alongside structured editors.
+
+## Plugins
+
+SharpFM supports plugins via the `SharpFM.Plugin` contract library. Plugins implement `IPanelPlugin` and are loaded from the `plugins/` directory at startup. You can also install and manage plugins from the **View > Manage Plugins...** menu.
+
+A sample "Clip Inspector" plugin is included to demonstrate the plugin API.
+
+### Writing a Plugin
+
+1. Create a new .NET 8 class library referencing `SharpFM.Plugin`.
+2. Implement `IPanelPlugin` — provide an `Id`, `DisplayName`, and `CreatePanel()` returning an Avalonia `Control`.
+3. Use `IPluginHost` in `Initialize()` to observe clip selection and push XML updates.
+4. Build your DLL and drop it in the `plugins/` directory.
+
+See `src/SharpFM.Plugin.Sample/` for a complete working example.
+
+### License
+
+While SharpFM is licensed under GPL v3, plugins that communicate solely through the interfaces in `SharpFM.Plugin` are not required to be GPL-licensed. See the plugin interface source files for the full exception clause.
 
 ## Troubleshooting
 

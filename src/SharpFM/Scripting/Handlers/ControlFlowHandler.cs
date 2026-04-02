@@ -6,8 +6,13 @@ internal class ControlFlowHandler : StepHandlerBase, IStepHandler
 {
     public string[] StepNames =>
     [
-        "If", "Else If", "Exit Loop If",
-        "Else", "End If", "Loop", "End Loop"
+        "If",
+        "Else If",
+        "Exit Loop If",
+        "Else",
+        "End If",
+        "Loop",
+        "End Loop"
     ];
 
     public string? ToDisplayLine(ScriptStep step)
