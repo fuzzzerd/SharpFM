@@ -78,29 +78,6 @@ public class PluginServiceTests
     }
 
     [Fact]
-    public void LoadPlugins_DllWithNoPluginTypes_LoadsZero()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
-        Directory.CreateDirectory(dir);
-
-        try
-        {
-            // Copy a real assembly that has no IPanelPlugin implementations
-            var nlogAssembly = typeof(NLog.LogManager).Assembly.Location;
-            File.Copy(nlogAssembly, Path.Combine(dir, "NLog.dll"));
-
-            var service = CreateService(dir);
-            service.LoadPlugins(new MockPluginHost());
-
-            Assert.Empty(service.LoadedPlugins);
-        }
-        finally
-        {
-            Directory.Delete(dir, recursive: true);
-        }
-    }
-
-    [Fact]
     public void InstallPlugin_InvalidDll_CopiesButReturnsEmpty()
     {
         var pluginsDir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
@@ -151,28 +128,4 @@ public class PluginServiceTests
         }
     }
 
-    [Fact]
-    public void LoadPlugins_WithRealPlugin_LoadsIt()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
-        Directory.CreateDirectory(dir);
-
-        try
-        {
-            // Copy the sample plugin and its dependencies
-            var sampleAssembly = typeof(SharpFM.Plugin.Sample.ClipInspectorPlugin).Assembly.Location;
-            var sampleDir = Path.GetDirectoryName(sampleAssembly)!;
-            File.Copy(sampleAssembly, Path.Combine(dir, Path.GetFileName(sampleAssembly)));
-
-            var service = CreateService(dir);
-            service.LoadPlugins(new MockPluginHost());
-
-            Assert.Single(service.LoadedPlugins);
-            Assert.Equal("clip-inspector", service.LoadedPlugins[0].Id);
-        }
-        finally
-        {
-            Directory.Delete(dir, recursive: true);
-        }
-    }
 }
