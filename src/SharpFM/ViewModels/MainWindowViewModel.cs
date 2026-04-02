@@ -404,6 +404,20 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    private IReadOnlyList<IClipTransformPlugin> _transformPlugins = [];
+    public IReadOnlyList<IClipTransformPlugin> TransformPlugins
+    {
+        get => _transformPlugins;
+        set { _transformPlugins = value; NotifyPropertyChanged(); }
+    }
+
+    private IReadOnlyList<IClipRepository> _availableRepositories = [];
+    public IReadOnlyList<IClipRepository> AvailableRepositories
+    {
+        get => _availableRepositories;
+        set { _availableRepositories = value; NotifyPropertyChanged(); }
+    }
+
     public void TogglePluginPanel(IPanelPlugin plugin)
     {
         if (_activePlugin?.Id == plugin.Id)

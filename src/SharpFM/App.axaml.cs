@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using SharpFM.Models;
+using SharpFM.Plugin;
 using SharpFM.ViewModels;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
@@ -41,7 +44,16 @@ public partial class App : Application
             var pluginHost = new PluginHost(viewModel);
             var pluginService = new PluginService(logger);
             pluginService.LoadPlugins(pluginHost);
-            viewModel.PanelPlugins = pluginService.LoadedPlugins;
+
+            // Wire up all plugin types
+            viewModel.PanelPlugins = pluginService.PanelPlugins;
+            viewModel.TransformPlugins = pluginService.TransformPlugins;
+
+            // Build repository list: built-in + plugin-provided
+            var repos = new List<IClipRepository> { viewModel.ActiveRepository };
+            foreach (var pp in pluginService.PersistencePlugins)
+                repos.Add(pp.CreateRepository());
+            viewModel.AvailableRepositories = repos;
 
             // Give the window access to plugin services for the manager dialog
             if (desktop.MainWindow is MainWindow mainWindow)
