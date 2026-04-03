@@ -63,11 +63,10 @@ public class FmScript
             var trimmed = line.TrimEnd('\r');
             if (string.IsNullOrWhiteSpace(trimmed))
                 continue;
+
             steps.Add(ScriptStep.FromDisplayLine(trimmed));
         }
 
-        // Merge consecutive comment lines into single comment steps
-        steps = MergeCommentContinuations(steps);
         return new FmScript(steps);
     }
 
@@ -117,16 +116,7 @@ public class FmScript
             if (indentLevel > 0)
                 displayLine = string.Concat(Enumerable.Repeat(indent, indentLevel)) + displayLine;
 
-            // Comments may produce multi-line output
-            if (displayLine.Contains('\n'))
-            {
-                foreach (var subLine in displayLine.Split('\n'))
-                    result.Add(subLine);
-            }
-            else
-            {
-                result.Add(displayLine);
-            }
+            result.Add(displayLine);
 
             // Increase indent after open/middle blocks
             if (step.Definition?.BlockPair?.Role is BlockPairRole.Open or BlockPairRole.Middle)
@@ -219,33 +209,4 @@ public class FmScript
         return results;
     }
 
-    // --- Comment merging ---
-
-    private static List<ScriptStep> MergeCommentContinuations(List<ScriptStep> steps)
-    {
-        var result = new List<ScriptStep>();
-
-        foreach (var step in steps)
-        {
-            bool isComment = step.Definition?.Name == "# (comment)";
-            bool prevIsComment = result.Count > 0 && result[^1].Definition?.Name == "# (comment)";
-
-            if (prevIsComment && isComment)
-            {
-                var prev = result[^1];
-                var prevText = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
-                var thisText = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
-                var merged = string.IsNullOrEmpty(prevText) ? thisText : prevText + "\n" + thisText;
-
-                var textParam = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text");
-                if (textParam != null) textParam.Value = merged;
-            }
-            else
-            {
-                result.Add(step);
-            }
-        }
-
-        return result;
-    }
 }

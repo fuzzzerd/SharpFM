@@ -12,8 +12,10 @@ internal class CommentHandler : StepHandlerBase, IStepHandler
         var text = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
         if (text.Contains('\n'))
         {
-            var lines = text.Split('\n');
-            return string.Join("\n", lines.Select(l => $"# {l.TrimEnd('\r')}"));
+            // Multi-line: show first line truncated. Full text lives in the model,
+            // editable via popup dialog. This ensures 1 display line = 1 step, always.
+            var firstLine = text.Split('\n')[0].TrimEnd('\r');
+            return $"# {firstLine}\u2026";
         }
         return $"# {text}";
     }
