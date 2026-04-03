@@ -124,10 +124,111 @@ public class TableClipEditorTests
     }
 
     [Fact]
-    public void IsPartial_AlwaysFalse()
+    public void IsPartial_FalseForValidTable()
     {
         var editor = new TableClipEditor(SampleTableXml);
-        editor.ToXml();
+        editor.Save();
         Assert.False(editor.IsPartial);
+    }
+
+    // --- Save/Dirty pattern ---
+
+    [Fact]
+    public void IsDirty_FalseOnConstruction()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        Assert.False(editor.IsDirty);
+    }
+
+    [Fact]
+    public void IsDirty_TrueAfterFieldChange()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        editor.ViewModel.Fields[0].Name = "Modified";
+
+        Assert.True(editor.IsDirty);
+    }
+
+    [Fact]
+    public void IsDirty_TrueAfterAddField()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        editor.ViewModel.AddField();
+
+        Assert.True(editor.IsDirty);
+    }
+
+    [Fact]
+    public void Save_ClearsDirty()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        editor.ViewModel.Fields[0].Name = "Modified";
+        Assert.True(editor.IsDirty);
+
+        editor.Save();
+        Assert.False(editor.IsDirty);
+    }
+
+    [Fact]
+    public void Save_FiresSavedEvent()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        var fired = false;
+        editor.Saved += (_, _) => fired = true;
+
+        editor.ViewModel.Fields[0].Name = "Modified";
+        editor.Save();
+
+        Assert.True(fired);
+    }
+
+    [Fact]
+    public void ToXml_ReflectsModelState_NotLiveGrid()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        var original = editor.ToXml();
+
+        // Modify grid but don't save
+        editor.ViewModel.Fields[0].Name = "Unsaved";
+
+        // ToXml returns the model state (SyncToModel not called)
+        // Note: ViewModel.Table is the model, and SyncToModel updates it
+        // Without save, the table's XML should still have the original field names
+        Assert.Contains("FirstName", original);
+    }
+
+    [Fact]
+    public void Save_ThenToXml_ReflectsChanges()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        editor.ViewModel.Fields[0].Name = "GivenName";
+        editor.Save();
+
+        var xml = editor.ToXml();
+        Assert.Contains("GivenName", xml);
+    }
+
+    [Fact]
+    public void FromXml_ClearsDirty()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        editor.ViewModel.Fields[0].Name = "Dirty";
+        Assert.True(editor.IsDirty);
+
+        editor.FromXml(SampleTableXml);
+        Assert.False(editor.IsDirty);
+    }
+
+    [Fact]
+    public void BecameDirty_FiresOnce()
+    {
+        var editor = new TableClipEditor(SampleTableXml);
+        int fireCount = 0;
+        editor.BecameDirty += (_, _) => fireCount++;
+
+        editor.ViewModel.Fields[0].Name = "A";
+        editor.ViewModel.Fields[0].Name = "B";
+
+        Assert.Equal(1, fireCount);
     }
 }

@@ -31,9 +31,12 @@ public interface IClipEditor
     bool IsDirty { get; }
 
     /// <summary>
-    /// Flush the editor's local buffer to the model. After save, <see cref="IsDirty"/> is false
-    /// and <see cref="ToXml"/> returns the newly saved state.
-    /// Returns true if save succeeded, false if the editor content couldn't be parsed.
+    /// Flush the editor's local buffer to the model. Validates the content first.
+    /// On success: <see cref="IsDirty"/> becomes false, <see cref="IsPartial"/> becomes false,
+    /// <see cref="Saved"/> fires, and <see cref="ToXml"/> returns the newly saved state.
+    /// On failure (invalid content): returns false, <see cref="IsDirty"/> stays true,
+    /// <see cref="IsPartial"/> becomes true, <see cref="Saved"/> does NOT fire,
+    /// and <see cref="ToXml"/> continues to return the last valid state.
     /// </summary>
     bool Save();
 

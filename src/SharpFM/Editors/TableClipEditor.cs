@@ -2,6 +2,7 @@ using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Xml.Linq;
 using SharpFM.Schema.Editor;
 using SharpFM.Schema.Model;
 
@@ -21,7 +22,7 @@ public class TableClipEditor : IClipEditor
     public TableEditorViewModel ViewModel { get; private set; }
 
     public bool IsDirty { get; private set; }
-    public bool IsPartial => false;
+    public bool IsPartial { get; private set; }
 
     public TableClipEditor(string? xml)
     {
@@ -34,6 +35,20 @@ public class TableClipEditor : IClipEditor
     public bool Save()
     {
         ViewModel.SyncToModel();
+
+        // Validate the generated XML
+        try
+        {
+            var xml = ViewModel.Table.ToXml();
+            XDocument.Parse(xml);
+        }
+        catch
+        {
+            IsPartial = true;
+            return false;
+        }
+
+        IsPartial = false;
         IsDirty = false;
         Saved?.Invoke(this, EventArgs.Empty);
         return true;

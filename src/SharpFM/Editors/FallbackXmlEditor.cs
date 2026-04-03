@@ -1,4 +1,5 @@
 using System;
+using System.Xml.Linq;
 using AvaloniaEdit.Document;
 
 namespace SharpFM.Editors;
@@ -6,7 +7,7 @@ namespace SharpFM.Editors;
 /// <summary>
 /// Editor for clips with no specialized editor (layouts, unknown formats).
 /// The user edits the raw XML directly via a TextDocument.
-/// The saved XML string is the source of truth.
+/// Save validates the XML before accepting it — invalid XML stays dirty.
 /// </summary>
 public class FallbackXmlEditor : IClipEditor
 {
@@ -20,7 +21,7 @@ public class FallbackXmlEditor : IClipEditor
     public TextDocument Document { get; }
 
     public bool IsDirty { get; private set; }
-    public bool IsPartial => false;
+    public bool IsPartial { get; private set; }
 
     public FallbackXmlEditor(string? xml)
     {
@@ -42,7 +43,21 @@ public class FallbackXmlEditor : IClipEditor
 
     public bool Save()
     {
-        _savedXml = Document.Text;
+        var text = Document.Text;
+
+        // Validate XML before accepting
+        try
+        {
+            XDocument.Parse(text);
+        }
+        catch
+        {
+            IsPartial = true;
+            return false;
+        }
+
+        _savedXml = text;
+        IsPartial = false;
         IsDirty = false;
         Saved?.Invoke(this, EventArgs.Empty);
         return true;
@@ -65,5 +80,6 @@ public class FallbackXmlEditor : IClipEditor
         }
 
         IsDirty = false;
+        IsPartial = false;
     }
 }

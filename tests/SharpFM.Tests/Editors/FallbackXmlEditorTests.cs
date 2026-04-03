@@ -89,10 +89,62 @@ public class FallbackXmlEditorTests
     }
 
     [Fact]
-    public void IsPartial_AlwaysFalse()
+    public void IsPartial_FalseForValidXml()
     {
         var editor = new FallbackXmlEditor("<root/>");
         Assert.False(editor.IsPartial);
+    }
+
+    [Fact]
+    public void Save_InvalidXml_ReturnsFalse()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        editor.Document.Text = "<unclosed";
+
+        Assert.False(editor.Save());
+        Assert.True(editor.IsPartial);
+        Assert.True(editor.IsDirty); // stays dirty
+    }
+
+    [Fact]
+    public void Save_InvalidXml_PreservesLastGoodState()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        editor.Document.Text = "<unclosed";
+        editor.Save();
+
+        // ToXml still returns the last valid saved state
+        Assert.Equal("<root/>", editor.ToXml());
+    }
+
+    [Fact]
+    public void Save_InvalidThenValid_Recovers()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+
+        // First: invalid save fails
+        editor.Document.Text = "not xml at all";
+        Assert.False(editor.Save());
+        Assert.True(editor.IsPartial);
+
+        // Second: valid save succeeds
+        editor.Document.Text = "<fixed/>";
+        Assert.True(editor.Save());
+        Assert.False(editor.IsPartial);
+        Assert.Equal("<fixed/>", editor.ToXml());
+    }
+
+    [Fact]
+    public void Save_InvalidXml_DoesNotFireSavedEvent()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        var fired = false;
+        editor.Saved += (_, _) => fired = true;
+
+        editor.Document.Text = "<broken";
+        editor.Save();
+
+        Assert.False(fired);
     }
 
     [Fact]
