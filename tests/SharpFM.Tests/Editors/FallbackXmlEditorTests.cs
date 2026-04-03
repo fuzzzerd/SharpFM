@@ -15,12 +15,68 @@ public class FallbackXmlEditorTests
     }
 
     [Fact]
-    public void ToXml_ReturnsDocumentText()
+    public void ToXml_ReturnsSavedState_NotLiveBuffer()
     {
         var editor = new FallbackXmlEditor("<root/>");
         editor.Document.Text = "<modified/>";
 
+        // ToXml returns saved state, not live buffer
+        Assert.Equal("<root/>", editor.ToXml());
+
+        // After save, ToXml returns the updated content
+        editor.Save();
         Assert.Equal("<modified/>", editor.ToXml());
+    }
+
+    [Fact]
+    public void IsDirty_TracksUnsavedChanges()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        Assert.False(editor.IsDirty);
+
+        editor.Document.Text = "<modified/>";
+        Assert.True(editor.IsDirty);
+
+        editor.Save();
+        Assert.False(editor.IsDirty);
+    }
+
+    [Fact]
+    public void FromXml_ClearsDirtyState()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        editor.Document.Text = "<modified/>";
+        Assert.True(editor.IsDirty);
+
+        editor.FromXml("<external/>");
+        Assert.False(editor.IsDirty);
+        Assert.Equal("<external/>", editor.Document.Text);
+    }
+
+    [Fact]
+    public void BecameDirty_FiresOnce()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        int fireCount = 0;
+        editor.BecameDirty += (_, _) => fireCount++;
+
+        editor.Document.Text = "<a/>";
+        editor.Document.Text = "<b/>";
+
+        Assert.Equal(1, fireCount);
+    }
+
+    [Fact]
+    public void Saved_FiresOnSave()
+    {
+        var editor = new FallbackXmlEditor("<root/>");
+        var fired = false;
+        editor.Saved += (_, _) => fired = true;
+
+        editor.Document.Text = "<modified/>";
+        editor.Save();
+
+        Assert.True(fired);
     }
 
     [Fact]

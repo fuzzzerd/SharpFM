@@ -25,12 +25,20 @@ public partial class ClipViewModel : INotifyPropertyChanged
     public IClipEditor Editor { get; }
 
     /// <summary>
-    /// Fires when the editor content changes due to user edits (debounced).
-    /// Not fired for external XML pushes (guarded by generation counter).
+    /// Fires when the editor is saved, indicating the model has been updated.
+    /// Replaces the old debounced ContentChanged event.
     /// </summary>
     public event EventHandler? EditorContentChanged;
 
-    private int _syncGeneration;
+    /// <summary>
+    /// Fires when the editor becomes dirty (user made first edit since last save/load).
+    /// </summary>
+    public event EventHandler? EditorBecameDirty;
+
+    /// <summary>
+    /// Whether the editor has unsaved changes.
+    /// </summary>
+    public bool IsDirty => Editor.IsDirty;
 
     public ClipViewModel(FileMakerClip clip)
     {
@@ -43,15 +51,21 @@ public partial class ClipViewModel : INotifyPropertyChanged
             _ => new FallbackXmlEditor(clip.XmlData),
         };
 
-        Editor.ContentChanged += OnEditorContentChanged;
+        Editor.Saved += OnEditorSaved;
+        Editor.BecameDirty += OnEditorBecameDirty;
     }
 
-    private void OnEditorContentChanged(object? sender, EventArgs e)
+    private void OnEditorSaved(object? sender, EventArgs e)
     {
-        var gen = _syncGeneration;
         Clip.XmlData = Editor.ToXml();
-        if (gen != _syncGeneration) return; // external update arrived during sync, stale
+        NotifyPropertyChanged(nameof(IsDirty));
         EditorContentChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnEditorBecameDirty(object? sender, EventArgs e)
+    {
+        NotifyPropertyChanged(nameof(IsDirty));
+        EditorBecameDirty?.Invoke(this, EventArgs.Empty);
     }
 
     public bool IsScriptClip =>
@@ -116,20 +130,36 @@ public partial class ClipViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Sync the editor state to XML. Called before save/clipboard operations.
+    /// Save the editor's local buffer to the model. Updates Clip.XmlData.
+    /// Returns true if save succeeded.
     /// </summary>
-    public void SyncModelFromEditor()
+    public bool SaveEditor()
     {
-        Clip.XmlData = Editor.ToXml();
+        var result = Editor.Save();
+        if (result)
+            Clip.XmlData = Editor.ToXml();
+        return result;
     }
 
     /// <summary>
-    /// Push XML into the editor (reverse sync). Bumps the generation counter
-    /// so the debounced ContentChanged event knows to discard the stale tick.
+    /// Sync the editor state to XML. Called before save/clipboard operations.
+    /// Auto-saves if dirty.
+    /// </summary>
+    public void SyncModelFromEditor()
+    {
+        if (Editor.IsDirty)
+            SaveEditor();
+        else
+            Clip.XmlData = Editor.ToXml();
+    }
+
+    /// <summary>
+    /// Push XML into the editor from an external source (plugin, agent, other editor).
+    /// Replaces the local buffer and model. Clears dirty state.
     /// </summary>
     public void SyncEditorFromXml()
     {
-        _syncGeneration++;
         Editor.FromXml(Clip.XmlData ?? "");
+        NotifyPropertyChanged(nameof(IsDirty));
     }
 }
