@@ -173,6 +173,63 @@ public partial class ScriptStep
         return diagnostics;
     }
 
+    // --- Typed accessors for agents/plugins ---
+
+    /// <summary>The step name (e.g. "Set Variable", "If", "# (comment)").</summary>
+    public string StepName => Definition?.Name ?? SourceXml?.Attribute("name")?.Value ?? "Unknown";
+
+    /// <summary>Get a parameter value by its human-readable label (e.g. "Value", "Parameter").</summary>
+    public string? GetNamedParam(string label)
+    {
+        return ParamValues.FirstOrDefault(p =>
+            string.Equals(p.Definition.HrLabel, label, StringComparison.OrdinalIgnoreCase)
+            || (p.Definition.Type == "namedCalc"
+                && string.Equals(p.Definition.WrapperElement, label, StringComparison.OrdinalIgnoreCase)))
+            ?.Value;
+    }
+
+    /// <summary>Get the first calculation-type parameter value.</summary>
+    public string? GetCalculation()
+    {
+        return ParamValues
+            .FirstOrDefault(p => p.Definition.Type is "calculation" or "calc" or "namedCalc")
+            ?.Value;
+    }
+
+    /// <summary>Get the field reference (Table::Field or $variable) if this step has one.</summary>
+    public string? GetFieldReference()
+    {
+        return ParamValues
+            .FirstOrDefault(p => p.Definition.Type is "field" or "fieldOrVariable")
+            ?.Value;
+    }
+
+    /// <summary>Get the script reference (quoted name) if this step has one.</summary>
+    public string? GetScriptReference()
+    {
+        var val = ParamValues
+            .FirstOrDefault(p => p.Definition.Type == "script")
+            ?.Value;
+        return val != null ? XmlHelpers.Unquote(val) : null;
+    }
+
+    /// <summary>Get the layout reference (quoted name) if this step has one.</summary>
+    public string? GetLayoutReference()
+    {
+        var val = ParamValues
+            .FirstOrDefault(p => p.Definition.Type is "layout" or "layoutRef")
+            ?.Value;
+        return val != null ? XmlHelpers.Unquote(val) : null;
+    }
+
+    /// <summary>Get a parameter value by its XML element name.</summary>
+    public string? GetParamByXmlElement(string xmlElement)
+    {
+        return ParamValues
+            .FirstOrDefault(p => string.Equals(p.Definition.XmlElement, xmlElement, StringComparison.OrdinalIgnoreCase))
+            ?.Value;
+    }
+
     // --- Helpers ---
 
     private static StepDefinition? LookupDefinition(string name, string? idStr)

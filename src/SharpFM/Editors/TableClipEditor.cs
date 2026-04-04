@@ -2,45 +2,60 @@ using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using Avalonia.Threading;
+using System.Xml.Linq;
 using SharpFM.Schema.Editor;
 using SharpFM.Schema.Model;
 
 namespace SharpFM.Editors;
 
 /// <summary>
-/// Editor for table/field clips (Mac-XMTB, Mac-XMFD). Wraps a TableEditorViewModel
-/// and tracks field collection and property changes for live sync.
+/// Editor for table/field clips (Mac-XMTB, Mac-XMFD). The FmTable model is the source of truth.
+/// The DataGrid binds to the ViewModel which projects from the model.
+/// Save syncs ViewModel edits back to the model.
 /// </summary>
 public class TableClipEditor : IClipEditor
 {
-    private readonly DispatcherTimer _debounceTimer;
-
-    public event EventHandler? ContentChanged;
+    public event EventHandler? BecameDirty;
+    public event EventHandler? Saved;
 
     /// <summary>The TableEditorViewModel bound to the DataGrid.</summary>
     public TableEditorViewModel ViewModel { get; private set; }
 
-    public bool IsPartial => false;
+    public bool IsDirty { get; private set; }
+    public bool IsPartial { get; private set; }
 
     public TableClipEditor(string? xml)
     {
         var table = FmTable.FromXml(xml ?? "");
         ViewModel = new TableEditorViewModel(table);
 
-        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        _debounceTimer.Tick += (_, _) =>
-        {
-            _debounceTimer.Stop();
-            ContentChanged?.Invoke(this, EventArgs.Empty);
-        };
-
         SubscribeToViewModel(ViewModel);
+    }
+
+    public bool Save()
+    {
+        ViewModel.SyncToModel();
+
+        // Validate the generated XML
+        try
+        {
+            var xml = ViewModel.Table.ToXml();
+            XDocument.Parse(xml);
+        }
+        catch
+        {
+            IsPartial = true;
+            return false;
+        }
+
+        IsPartial = false;
+        IsDirty = false;
+        Saved?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     public string ToXml()
     {
-        ViewModel.SyncToModel();
         return ViewModel.Table.ToXml();
     }
 
@@ -48,6 +63,16 @@ public class TableClipEditor : IClipEditor
     {
         var incoming = FmTable.FromXml(xml);
         PatchViewModel(incoming);
+        IsDirty = false;
+    }
+
+    private void MarkDirty()
+    {
+        if (!IsDirty)
+        {
+            IsDirty = true;
+            BecameDirty?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void SubscribeToViewModel(TableEditorViewModel vm)
@@ -70,7 +95,6 @@ public class TableClipEditor : IClipEditor
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        // Subscribe to new fields, unsubscribe from removed ones
         if (e.NewItems is not null)
             foreach (FmField field in e.NewItems)
                 field.PropertyChanged += OnFieldPropertyChanged;
@@ -79,24 +103,18 @@ public class TableClipEditor : IClipEditor
             foreach (FmField field in e.OldItems)
                 field.PropertyChanged -= OnFieldPropertyChanged;
 
-        RestartDebounce();
+        MarkDirty();
     }
 
     private void OnFieldPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        RestartDebounce();
+        MarkDirty();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(TableEditorViewModel.TableName))
-            RestartDebounce();
-    }
-
-    private void RestartDebounce()
-    {
-        _debounceTimer.Stop();
-        _debounceTimer.Start();
+            MarkDirty();
     }
 
     /// <summary>
@@ -141,17 +159,14 @@ public class TableClipEditor : IClipEditor
 
             if (currentById.TryGetValue(inField.Id, out var existing))
             {
-                // Update properties on the existing field in-place
                 PatchField(existing, inField);
 
-                // Move to correct position if needed
                 var currentIdx = current.Fields.IndexOf(existing);
                 if (currentIdx != i && currentIdx >= 0 && i < current.Fields.Count)
                     current.Fields.Move(currentIdx, i);
             }
             else
             {
-                // New field — insert at the correct position
                 inField.PropertyChanged += OnFieldPropertyChanged;
                 if (i < current.Fields.Count)
                     current.Fields.Insert(i, inField);
@@ -160,7 +175,6 @@ public class TableClipEditor : IClipEditor
             }
         }
 
-        // Sync the underlying model
         current.SyncToModel();
     }
 

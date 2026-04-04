@@ -63,11 +63,10 @@ public class FmScript
             var trimmed = line.TrimEnd('\r');
             if (string.IsNullOrWhiteSpace(trimmed))
                 continue;
+
             steps.Add(ScriptStep.FromDisplayLine(trimmed));
         }
 
-        // Merge consecutive comment lines into single comment steps
-        steps = MergeCommentContinuations(steps);
         return new FmScript(steps);
     }
 
@@ -117,16 +116,7 @@ public class FmScript
             if (indentLevel > 0)
                 displayLine = string.Concat(Enumerable.Repeat(indent, indentLevel)) + displayLine;
 
-            // Comments may produce multi-line output
-            if (displayLine.Contains('\n'))
-            {
-                foreach (var subLine in displayLine.Split('\n'))
-                    result.Add(subLine);
-            }
-            else
-            {
-                result.Add(displayLine);
-            }
+            result.Add(displayLine);
 
             // Increase indent after open/middle blocks
             if (step.Definition?.BlockPair?.Role is BlockPairRole.Open or BlockPairRole.Middle)
@@ -148,41 +138,75 @@ public class FmScript
         return diagnostics;
     }
 
-    // --- Update single step from edited display line ---
+    // --- Mutation API ---
 
+    /// <summary>Fires after any mutation to the Steps collection.</summary>
+    public event EventHandler? StepsChanged;
+
+    /// <summary>Number of steps in the script.</summary>
+    public int StepCount => Steps.Count;
+
+    /// <summary>Get a step by index.</summary>
+    public ScriptStep GetStep(int index) => Steps[index];
+
+    /// <summary>Insert a step at the given index.</summary>
+    public void AddStep(int index, ScriptStep step)
+    {
+        Steps.Insert(index, step);
+        StepsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Remove the step at the given index.</summary>
+    public void RemoveStep(int index)
+    {
+        Steps.RemoveAt(index);
+        StepsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Move a step from one index to another.</summary>
+    public void MoveStep(int fromIndex, int toIndex)
+    {
+        var step = Steps[fromIndex];
+        Steps.RemoveAt(fromIndex);
+        Steps.Insert(toIndex, step);
+        StepsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Replace the step at the given index.</summary>
+    public void UpdateStep(int index, ScriptStep replacement)
+    {
+        Steps[index] = replacement;
+        StepsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Replace the step at the given index from a display line string.</summary>
     public void UpdateStep(int index, string displayLine)
     {
         if (index < 0 || index >= Steps.Count) return;
         Steps[index] = ScriptStep.FromDisplayLine(displayLine);
+        StepsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // --- Comment merging ---
-
-    private static List<ScriptStep> MergeCommentContinuations(List<ScriptStep> steps)
+    /// <summary>Replace all steps (bulk operation, e.g. from re-parsing text or XML).</summary>
+    public void ReplaceSteps(IReadOnlyList<ScriptStep> steps)
     {
-        var result = new List<ScriptStep>();
-
-        foreach (var step in steps)
-        {
-            bool isComment = step.Definition?.Name == "# (comment)";
-            bool prevIsComment = result.Count > 0 && result[^1].Definition?.Name == "# (comment)";
-
-            if (prevIsComment && isComment)
-            {
-                var prev = result[^1];
-                var prevText = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
-                var thisText = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
-                var merged = string.IsNullOrEmpty(prevText) ? thisText : prevText + "\n" + thisText;
-
-                var textParam = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text");
-                if (textParam != null) textParam.Value = merged;
-            }
-            else
-            {
-                result.Add(step);
-            }
-        }
-
-        return result;
+        Steps.Clear();
+        Steps.AddRange(steps);
+        StepsChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    // --- Query API ---
+
+    /// <summary>Find all steps matching a step name (case-insensitive).</summary>
+    public IReadOnlyList<(int Index, ScriptStep Step)> FindSteps(string stepName)
+    {
+        var results = new List<(int, ScriptStep)>();
+        for (int i = 0; i < Steps.Count; i++)
+        {
+            if (string.Equals(Steps[i].Definition?.Name, stepName, StringComparison.OrdinalIgnoreCase))
+                results.Add((i, Steps[i]));
+        }
+        return results;
+    }
+
 }
