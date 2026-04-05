@@ -91,13 +91,4 @@ public class TableEditorViewModel : INotifyPropertyChanged
             ? desktop.MainWindow! : null!);
     }
 
-    /// <summary>
-    /// Sync the ObservableCollection back to the model (in case of reordering etc.)
-    /// </summary>
-    public void SyncToModel()
-    {
-        Table.Fields.Clear();
-        foreach (var f in Fields)
-            Table.Fields.Add(f);
-    }
 }

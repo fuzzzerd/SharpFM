@@ -22,35 +22,49 @@ public partial class ClipViewModel : INotifyPropertyChanged
     /// The clip-type-specific editor. Handles change detection, XML serialization,
     /// and reverse sync for this clip's format.
     /// </summary>
-    public IClipEditor Editor { get; }
+    public IClipEditor Editor { get; private set; }
 
     /// <summary>
     /// Fires when the editor content changes due to user edits (debounced).
-    /// Not fired for external XML pushes (guarded by generation counter).
     /// </summary>
     public event EventHandler? EditorContentChanged;
-
-    private int _syncGeneration;
 
     public ClipViewModel(FileMakerClip clip)
     {
         Clip = clip;
-
-        Editor = clip.ClipboardFormat switch
-        {
-            "Mac-XMSS" or "Mac-XMSC" => new ScriptClipEditor(clip.XmlData),
-            "Mac-XMTB" or "Mac-XMFD" => new TableClipEditor(clip.XmlData),
-            _ => new FallbackXmlEditor(clip.XmlData),
-        };
-
+        Editor = CreateEditor(clip.XmlData);
         Editor.ContentChanged += OnEditorContentChanged;
     }
 
+    /// <summary>
+    /// Wholesale replacement: discard the current editor and create a fresh one
+    /// from the given XML. Used for all external updates (MCP, plugins, XML viewer).
+    /// The new editor re-parses the XML into fresh domain model state.
+    /// </summary>
+    public void ReplaceEditor(string xml)
+    {
+        Editor.ContentChanged -= OnEditorContentChanged;
+        Clip.XmlData = xml;
+        Editor = CreateEditor(xml);
+        Editor.ContentChanged += OnEditorContentChanged;
+
+        NotifyPropertyChanged(nameof(Editor));
+        NotifyPropertyChanged(nameof(ScriptDocument));
+        NotifyPropertyChanged(nameof(TableEditor));
+        NotifyPropertyChanged(nameof(XmlDocument));
+        NotifyPropertyChanged(nameof(ClipXml));
+    }
+
+    private IClipEditor CreateEditor(string? xml) => Clip.ClipboardFormat switch
+    {
+        "Mac-XMSS" or "Mac-XMSC" => new ScriptClipEditor(xml),
+        "Mac-XMTB" or "Mac-XMFD" => new TableClipEditor(xml),
+        _ => new FallbackXmlEditor(xml),
+    };
+
     private void OnEditorContentChanged(object? sender, EventArgs e)
     {
-        var gen = _syncGeneration;
         Clip.XmlData = Editor.ToXml();
-        if (gen != _syncGeneration) return; // external update arrived during sync, stale
         EditorContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -73,7 +87,6 @@ public partial class ClipViewModel : INotifyPropertyChanged
     };
 
     // --- Convenience properties for AXAML bindings ---
-    // These delegate to the typed editor so MainWindow.axaml doesn't need to change.
 
     public TextDocument? ScriptDocument => (Editor as ScriptClipEditor)?.Document;
 
@@ -113,29 +126,5 @@ public partial class ClipViewModel : INotifyPropertyChanged
             Clip.XmlData = value;
             NotifyPropertyChanged();
         }
-    }
-
-    /// <summary>
-    /// Sync the editor state to XML. Called before save/clipboard operations.
-    /// </summary>
-    public void SyncModelFromEditor()
-    {
-        Clip.XmlData = Editor.ToXml();
-    }
-
-    /// <summary>
-    /// Push XML into the editor (reverse sync). Bumps the generation counter
-    /// so the debounced ContentChanged event knows to discard the stale tick.
-    /// </summary>
-    public void SyncEditorFromXml()
-    {
-        _syncGeneration++;
-        Editor.FromXml(Clip.XmlData ?? "");
-
-        // Notify UI that editor-bound properties may have changed
-        // (e.g., TableClipEditor.PatchViewModel may create a new ViewModel)
-        NotifyPropertyChanged(nameof(TableEditor));
-        NotifyPropertyChanged(nameof(ScriptDocument));
-        NotifyPropertyChanged(nameof(XmlDocument));
     }
 }

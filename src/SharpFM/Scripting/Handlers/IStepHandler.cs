@@ -3,20 +3,16 @@ using System.Xml.Linq;
 namespace SharpFM.Scripting.Handlers;
 
 /// <summary>
-/// Handles specialized display, serialization, and parsing for specific step types.
-/// Implementations are registered by step name and dispatched by ScriptStep.
+/// Handles specialized parsing of display text input for specific step types.
+/// Used only by the FromDisplayLine path (UI text editing).
+/// Serialization (ToXml) and display (ToDisplayLine) always use the generic
+/// ParamValues-based path — handlers are NOT involved in output.
 /// </summary>
 public interface IStepHandler
 {
     /// <summary>Step names this handler covers (e.g., ["Set Variable"] or ["If", "Else If"]).</summary>
     string[] StepNames { get; }
 
-    /// <summary>Render the step as a single display line. Return null to fall through to generic.</summary>
-    string? ToDisplayLine(ScriptStep step);
-
-    /// <summary>Serialize the step model to XML. Return null to fall through to generic.</summary>
-    XElement? ToXml(ScriptStep step);
-
-    /// <summary>Build XML directly from parsed display params. Return null to fall through to generic.</summary>
+    /// <summary>Build XML from parsed display text params. Return null to fall through to generic.</summary>
     XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams);
 }

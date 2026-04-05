@@ -51,7 +51,6 @@ public class ScriptClipEditor : IClipEditor
         catch
         {
             IsPartial = true;
-            // Return best-effort XML from the last known good parse
             return _script.ToXml();
         }
     }

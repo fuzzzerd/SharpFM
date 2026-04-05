@@ -33,6 +33,7 @@ public class StepParamValue
             "field" or "fieldOrVariable" => ExtractField(element),
             "script" or "layout" or "layoutRef"
                 or "tableOccurrence" or "tableRef" or "tableReference" => ExtractNamedRef(element),
+            "complex" => ExtractComplex(element),
             _ => element.Value is { Length: > 0 } v ? v : null
         };
 
@@ -53,6 +54,7 @@ public class StepParamValue
             "field" or "fieldOrVariable" => BuildFieldXml(),
             "script" or "layout" or "layoutRef"
                 or "tableOccurrence" or "tableRef" or "tableReference" => BuildNamedRefXml(),
+            "complex" => BuildComplexXml(),
             _ => null
         };
     }
@@ -61,11 +63,54 @@ public class StepParamValue
     {
         if (Value == null) return null;
 
+        if (Definition.Type == "complex")
+            return FormatComplexForDisplay();
+
         var label = Definition.HrLabel
             ?? (Definition.Type == "namedCalc" && Definition.WrapperElement != null
                 ? Definition.WrapperElement : null);
 
         return label != null ? $"{label}: {Value}" : Value;
+    }
+
+    /// <summary>
+    /// Render a complex XML param as a human-readable summary for the text editor.
+    /// Extracts Calculation values, field references, and names from the XML structure.
+    /// </summary>
+    private string FormatComplexForDisplay()
+    {
+        var label = Definition.HrLabel ?? Definition.WrapperElement ?? Definition.XmlElement;
+        try
+        {
+            var wrapper = XElement.Parse($"<root>{Value}</root>");
+            var parts = new List<string>();
+
+            foreach (var child in wrapper.Elements())
+            {
+                // Extract the most useful text from each child element
+                var calc = child.Descendants("Calculation").FirstOrDefault()?.Value;
+                var name = child.Attribute("name")?.Value;
+                var fieldName = child.Descendants("Field").FirstOrDefault()?.Attribute("name")?.Value;
+                var fieldTable = child.Descendants("Field").FirstOrDefault()?.Attribute("table")?.Value;
+
+                if (fieldTable is not null && fieldName is not null)
+                    parts.Add($"{fieldTable}::{fieldName}");
+                else if (calc is not null)
+                    parts.Add(calc);
+                else if (name is not null)
+                    parts.Add(name);
+                else
+                    parts.Add(child.Name.LocalName);
+            }
+
+            return parts.Count > 0
+                ? $"{label}: {string.Join(", ", parts)}"
+                : $"{label}: (empty)";
+        }
+        catch
+        {
+            return $"{label}: {Value}";
+        }
     }
 
     public List<ScriptDiagnostic> Validate(int line)
@@ -150,6 +195,18 @@ public class StepParamValue
         return string.IsNullOrEmpty(text) ? null : text;
     }
 
+    /// <summary>
+    /// Extract a complex param by preserving the inner XML as a string.
+    /// This makes complex structures (Buttons, InputFields, SortList, etc.)
+    /// visible and round-trippable through the domain API.
+    /// </summary>
+    private static string? ExtractComplex(XElement element)
+    {
+        if (!element.HasElements) return null;
+        // Return the inner XML (child elements) as a string
+        return string.Concat(element.Elements().Select(e => e.ToString()));
+    }
+
     private static string? ExtractNamedRef(XElement element)
     {
         var name = element.Attribute("name")?.Value;
@@ -157,6 +214,24 @@ public class StepParamValue
     }
 
     // --- Building helpers ---
+
+    /// <summary>
+    /// Rebuild a complex param from its inner XML string.
+    /// </summary>
+    private XElement? BuildComplexXml()
+    {
+        if (string.IsNullOrEmpty(Value)) return null;
+        try
+        {
+            // Wrap in the element name, parse, return
+            var xmlElement = Definition.WrapperElement ?? Definition.XmlElement;
+            return XElement.Parse($"<{xmlElement}>{Value}</{xmlElement}>");
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private XElement BuildCalculationXml()
     {

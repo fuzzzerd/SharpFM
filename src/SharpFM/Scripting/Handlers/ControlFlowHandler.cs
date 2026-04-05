@@ -15,33 +15,6 @@ internal class ControlFlowHandler : StepHandlerBase, IStepHandler
         "End Loop"
     ];
 
-    public string? ToDisplayLine(ScriptStep step)
-    {
-        var name = step.Definition!.Name;
-        return name switch
-        {
-            "If" or "Else If" or "Exit Loop If" =>
-                FormatCondition(name, step.SourceXml?.Element("Calculation")?.Value),
-            _ => name
-        };
-    }
-
-    public XElement? ToXml(ScriptStep step)
-    {
-        var name = step.Definition!.Name;
-        return name switch
-        {
-            "If" => BuildCondition(68, name, step),
-            "Else If" => BuildCondition(125, name, step),
-            "Exit Loop If" => BuildCondition(72, name, step),
-            "Else" => MakeStep(69, name, step.Enabled),
-            "End If" => MakeStep(70, name, step.Enabled),
-            "Loop" => MakeStep(71, name, step.Enabled),
-            "End Loop" => MakeStep(73, name, step.Enabled),
-            _ => null
-        };
-    }
-
     public XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams)
     {
         return definition.Name switch
@@ -55,19 +28,6 @@ internal class ControlFlowHandler : StepHandlerBase, IStepHandler
             "End Loop" => MakeStep(73, "End Loop", enabled),
             _ => null
         };
-    }
-
-    private static string FormatCondition(string name, string? calc)
-    {
-        return string.IsNullOrEmpty(calc) ? name : $"{name} [ {calc} ]";
-    }
-
-    private static XElement BuildCondition(int id, string name, ScriptStep step)
-    {
-        var el = MakeStep(id, name, step.Enabled);
-        var calc = step.SourceXml?.Element("Calculation")?.Value ?? "";
-        el.Add(XElement.Parse($"<Calculation><![CDATA[{calc}]]></Calculation>"));
-        return el;
     }
 
     private static XElement BuildConditionFromParams(int id, string name, bool enabled, string[] hrParams)

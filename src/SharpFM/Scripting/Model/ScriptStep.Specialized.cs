@@ -5,18 +5,10 @@ namespace SharpFM.Scripting.Model;
 
 public partial class ScriptStep
 {
-    private string? ToDisplayLine_Specialized()
-    {
-        if (Definition == null) return null;
-        return StepHandlerRegistry.Get(Definition.Name)?.ToDisplayLine(this);
-    }
-
-    internal XElement? ToXml_Specialized()
-    {
-        if (Definition == null) return null;
-        return StepHandlerRegistry.Get(Definition.Name)?.ToXml(this);
-    }
-
+    /// <summary>
+    /// Dispatches to a specialized handler's BuildXmlFromDisplay if one exists.
+    /// Used only by FromDisplayLine (the UI text editing path).
+    /// </summary>
     internal static XElement? BuildXmlFromDisplay_Specialized(
         StepDefinition definition, bool enabled, string[] hrParams)
     {

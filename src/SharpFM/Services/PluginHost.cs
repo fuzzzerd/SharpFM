@@ -30,9 +30,6 @@ public class PluginHost : IPluginHost
         {
             if (e.PropertyName != nameof(MainWindowViewModel.SelectedClip)) return;
 
-            // Sync outgoing clip before switching
-            _trackedClip?.SyncModelFromEditor();
-
             Unsubscribe(_trackedClip);
             _trackedClip = _viewModel.SelectedClip;
             Subscribe(_trackedClip);
@@ -77,33 +74,27 @@ public class PluginHost : IPluginHost
             var clip = _viewModel.SelectedClip;
             if (clip is null) return;
 
-            clip.ClipXml = xml;
-            clip.SyncEditorFromXml();
+            clip.ReplaceEditor(xml);
 
             var info = new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
-    public ClipInfo? RefreshSelectedClip() =>
-        EnsureUiThread(() =>
-        {
-            var clip = _viewModel.SelectedClip;
-            if (clip is null) return null;
-            clip.SyncModelFromEditor();
-            return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
-        });
+    public ClipInfo? RefreshSelectedClip()
+    {
+        var clip = _viewModel.SelectedClip;
+        if (clip is null) return null;
+        // Auto-sync keeps ClipXml current — just return it
+        return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+    }
 
-    public ClipInfo? GetClip(string clipName) =>
-        EnsureUiThread(() =>
-        {
-            var clip = FindClipByName(clipName);
-            if (clip is null) return null;
-
-            if (clip == _viewModel.SelectedClip)
-                clip.SyncModelFromEditor();
-
-            return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
-        });
+    public ClipInfo? GetClip(string clipName)
+    {
+        var clip = FindClipByName(clipName);
+        if (clip is null) return null;
+        // Auto-sync keeps ClipXml current — just return it
+        return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+    }
 
     public void UpdateClipXml(string clipName, string xml, string originPluginId) =>
         EnsureUiThread(() =>
@@ -111,10 +102,8 @@ public class PluginHost : IPluginHost
             var clip = FindClipByName(clipName);
             if (clip is null) return;
 
-            clip.ClipXml = xml;
-
-            if (clip == _viewModel.SelectedClip)
-                clip.SyncEditorFromXml();
+            // Wholesale replacement — re-ingest the XML
+            clip.ReplaceEditor(xml);
 
             var info = new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
@@ -143,6 +132,32 @@ public class PluginHost : IPluginHost
             _viewModel.FileMakerClips.Remove(clip);
             return true;
         });
+
+    // --- Step catalog ---
+
+    public IReadOnlyList<StepCatalogEntry> GetAvailableSteps(string? category = null)
+    {
+        var steps = StepCatalogLoader.All;
+        if (category is not null)
+            steps = steps.Where(s => s.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
+        return steps.Select(ToCatalogEntry).ToList();
+    }
+
+    public StepCatalogEntry? GetStepDefinition(string stepName)
+    {
+        if (!StepCatalogLoader.ByName.TryGetValue(stepName, out var def))
+            return null;
+        return ToCatalogEntry(def);
+    }
+
+    private static StepCatalogEntry ToCatalogEntry(StepDefinition def) => new(
+        Name: def.Name,
+        Category: def.Category,
+        Signature: def.HrSignature,
+        Params: def.Params.Select(p => new StepCatalogParam(
+            Name: p.HrLabel ?? p.WrapperElement ?? p.XmlElement,
+            Type: p.Type,
+            Required: p.Required)).ToList());
 
     // --- Script domain operations ---
 
@@ -236,9 +251,6 @@ public class PluginHost : IPluginHost
                 else return [$"Parameter '{name}' not found on step '{step.Definition?.Name ?? "unknown"}'."];
             }
 
-            // Clear SourceXml so ToXml uses the generic path (ParamValues)
-            // instead of specialized handlers that read from the original XML.
-            step.SourceXml = null;
         }
         return [];
     }

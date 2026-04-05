@@ -124,8 +124,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         try
         {
+            // Ensure XML is up-to-date from editor state before saving
             foreach (var clip in FileMakerClips)
-                clip.SyncModelFromEditor();
+                clip.Clip.XmlData = clip.Editor.ToXml();
 
             var clipData = FileMakerClips
                 .Select(c => new ClipData(c.Name, c.ClipType, c.ClipXml))
@@ -274,8 +275,8 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         try
         {
-            // Sync model to XML before copying to ensure current data
-            data.SyncModelFromEditor();
+            // Ensure XML is up-to-date from editor state before copying
+            data.Clip.XmlData = data.Editor.ToXml();
             await _clipboard.SetDataAsync(data.ClipType, data.Clip.RawData);
             ShowStatus("Copied to FileMaker clipboard");
         }

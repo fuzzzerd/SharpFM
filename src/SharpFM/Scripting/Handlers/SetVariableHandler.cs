@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 
 namespace SharpFM.Scripting.Handlers;
@@ -8,38 +6,6 @@ namespace SharpFM.Scripting.Handlers;
 internal class SetVariableHandler : StepHandlerBase, IStepHandler
 {
     public string[] StepNames => ["Set Variable"];
-
-    public string? ToDisplayLine(ScriptStep step)
-    {
-        string name, value, repetition;
-        if (step.SourceXml != null)
-        {
-            name = step.SourceXml.Element("Name")?.Value ?? "";
-            value = step.SourceXml.Element("Value")?.Element("Calculation")?.Value ?? "";
-            repetition = step.SourceXml.Element("Repetition")?.Element("Calculation")?.Value ?? "";
-        }
-        else
-        {
-            name = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Name")?.Value ?? "";
-            value = step.ParamValues.FirstOrDefault(p => p.Definition.WrapperElement == "Value")?.Value ?? "";
-            repetition = step.ParamValues.FirstOrDefault(p => p.Definition.WrapperElement == "Repetition")?.Value ?? "";
-        }
-
-        var displayName = name;
-        if (!string.IsNullOrEmpty(repetition) && repetition != "1")
-            displayName = $"{name}[{repetition}]";
-
-        return string.IsNullOrEmpty(value)
-            ? $"Set Variable [ {displayName} ]"
-            : $"Set Variable [ {displayName} ; Value: {value} ]";
-    }
-
-    public XElement? ToXml(ScriptStep step)
-    {
-        // Re-parse from display for consistent output
-        return BuildXmlFromDisplay(step.Definition!, step.Enabled,
-            ScriptLineParser.ParseRaw(step.ToDisplayLine()).Params);
-    }
 
     public XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams)
     {

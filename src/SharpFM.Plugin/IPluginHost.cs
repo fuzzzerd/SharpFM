@@ -88,6 +88,18 @@ public interface IPluginHost
     bool RemoveClip(string clipName);
 
     /// <summary>
+    /// Get available script step definitions from the FileMaker step catalog.
+    /// Optionally filter by category.
+    /// </summary>
+    IReadOnlyList<StepCatalogEntry> GetAvailableSteps(string? category = null);
+
+    /// <summary>
+    /// Get the full definition of a specific script step by name.
+    /// Returns null if the step name is not in the catalog.
+    /// </summary>
+    StepCatalogEntry? GetStepDefinition(string stepName);
+
+    /// <summary>
     /// Get a script clip's steps as structured data.
     /// Returns null if the clip is not found or is not a script type.
     /// </summary>

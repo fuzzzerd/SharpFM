@@ -10,7 +10,13 @@ public partial class ScriptStep
     public StepDefinition? Definition { get; }
     public bool Enabled { get; set; }
     public List<StepParamValue> ParamValues { get; }
-    public XElement? SourceXml { get; internal set; }
+
+    /// <summary>
+    /// Original XML element, kept only for unknown steps (Definition == null)
+    /// as a fallback for display and serialization. For known steps, ParamValues
+    /// is always the source of truth.
+    /// </summary>
+    public XElement? SourceXml { get; }
 
     public ScriptStep(StepDefinition? definition, bool enabled,
                       List<StepParamValue>? paramValues = null, XElement? rawXml = null)
@@ -41,7 +47,7 @@ public partial class ScriptStep
             .Select(p => StepParamValue.FromXml(stepElement, p))
             .ToList();
 
-        return new ScriptStep(definition, enabled, paramValues, new XElement(stepElement));
+        return new ScriptStep(definition, enabled, paramValues);
     }
 
     // --- Factory: from display line text ---
@@ -63,7 +69,6 @@ public partial class ScriptStep
         if (!StepCatalogLoader.ByName.TryGetValue(raw.StepName, out var definition))
         {
             // Unknown step — preserve as-is with Definition=null.
-            // Validate() will flag it. ToXml() will emit it as a comment for safety.
             return new ScriptStep(null, !raw.Disabled, rawXml:
                 new XElement("Step",
                     new XAttribute("enable", raw.Disabled ? "False" : "True"),
@@ -72,7 +77,7 @@ public partial class ScriptStep
         }
 
         // Specialized steps build their own XML from display text,
-        // then construct from that XML for consistent SourceXml population.
+        // then parse that XML to extract ParamValues consistently.
         var specializedXml = BuildXmlFromDisplay_Specialized(definition, !raw.Disabled, raw.Params);
         if (specializedXml != null)
             return FromXml(specializedXml);
@@ -82,7 +87,7 @@ public partial class ScriptStep
             MatchDisplayParams(raw.Params, definition));
     }
 
-    // --- Serialize to XML ---
+    // --- Serialize to XML (always from ParamValues) ---
 
     public XElement ToXml()
     {
@@ -100,25 +105,15 @@ public partial class ScriptStep
             return commentStep;
         }
 
-        var name = Definition?.Name ?? "# (comment)";
-        var id = Definition?.Id ?? 89;
+        var name = Definition.Name;
+        var id = Definition.Id ?? 89;
 
-        // Use specialized serialization only when SourceXml is available.
-        // If SourceXml was cleared (e.g., by domain API param updates),
-        // fall through to generic serialization which uses ParamValues.
-        if (SourceXml is not null)
-        {
-            var specialized = ToXml_Specialized();
-            if (specialized != null) return specialized;
-        }
-
-        // Generic serialization from param values
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", id),
             new XAttribute("name", name));
 
-        if (Definition?.SelfClosing == true && ParamValues.All(p => p.Value == null))
+        if (Definition.SelfClosing && ParamValues.All(p => p.Value == null))
             return step;
 
         foreach (var pv in ParamValues)
@@ -130,27 +125,22 @@ public partial class ScriptStep
         return step;
     }
 
-    // --- Render to display line ---
+    // --- Render to display line (always from ParamValues) ---
 
     public string ToDisplayLine()
     {
-        // Check for specialized display
-        var specialized = ToDisplayLine_Specialized();
-        if (specialized != null)
-            return specialized;
+        if (Definition == null)
+            return SourceXml?.Attribute("name")?.Value ?? "Unknown";
 
-        // Generic: StepName [ param1 ; param2 ]
         var parts = ParamValues
             .Select(p => p.ToDisplayString())
             .Where(s => s != null)
             .ToList();
 
-        var name = Definition?.Name ?? SourceXml?.Attribute("name")?.Value ?? "Unknown";
-
         if (parts.Count == 0)
-            return name;
+            return Definition.Name;
 
-        return $"{name} [ {string.Join(" ; ", parts)} ]";
+        return $"{Definition.Name} [ {string.Join(" ; ", parts)} ]";
     }
 
     // --- Validate ---
@@ -169,7 +159,6 @@ public partial class ScriptStep
             return diagnostics;
         }
 
-        // Per-param validation
         foreach (var pv in ParamValues)
         {
             diagnostics.AddRange(pv.Validate(lineIndex));

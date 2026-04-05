@@ -148,6 +148,8 @@ public class TrackingPluginHost : IPluginHost
 
     public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
     public ClipInfo? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+    public IReadOnlyList<StepCatalogEntry> GetAvailableSteps(string? category = null) => [];
+    public StepCatalogEntry? GetStepDefinition(string stepName) => null;
     public IReadOnlyList<ScriptStepInfo>? GetScriptSteps(string clipName) => null;
     public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
     public IReadOnlyList<FieldInfo>? GetTableFields(string clipName) => null;
