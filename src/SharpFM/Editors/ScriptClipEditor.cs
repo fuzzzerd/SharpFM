@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using SharpFM.Scripting;
@@ -11,7 +13,7 @@ namespace SharpFM.Editors;
 /// </summary>
 public class ScriptClipEditor : IClipEditor
 {
-    private readonly DispatcherTimer _debounceTimer;
+    private CancellationTokenSource? _debounceCts;
     private FmScript _script;
 
     public event EventHandler? ContentChanged;
@@ -26,18 +28,26 @@ public class ScriptClipEditor : IClipEditor
         _script = FmScript.FromXml(xml ?? "");
         Document = new TextDocument(_script.ToDisplayText());
 
-        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        _debounceTimer.Tick += (_, _) =>
-        {
-            _debounceTimer.Stop();
-            ContentChanged?.Invoke(this, EventArgs.Empty);
-        };
+        Document.TextChanged += (_, _) => ScheduleContentChanged();
+    }
 
-        Document.TextChanged += (_, _) =>
+    private void ScheduleContentChanged()
+    {
+        // Cancel any pending debounce — truly resets the timer
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        _ = Task.Run(async () =>
         {
-            _debounceTimer.Stop();
-            _debounceTimer.Start();
-        };
+            try
+            {
+                await Task.Delay(500, token);
+                if (!token.IsCancellationRequested)
+                    Dispatcher.UIThread.Post(() => ContentChanged?.Invoke(this, EventArgs.Empty));
+            }
+            catch (OperationCanceledException) { }
+        }, token);
     }
 
     public string ToXml()

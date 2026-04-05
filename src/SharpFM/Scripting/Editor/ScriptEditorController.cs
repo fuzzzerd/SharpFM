@@ -71,14 +71,24 @@ public class ScriptEditorController : IDisposable
         RunValidation();
     }
 
-    private void RunValidation()
+    private async void RunValidation()
     {
         if (_errorRenderer == null) return;
 
         var text = _editor.Document.Text;
-        var diagnostics = ScriptValidator.Validate(text);
-        _errorRenderer.UpdateDiagnostics(diagnostics);
-        _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
+
+        try
+        {
+            var diagnostics = await System.Threading.Tasks.Task.Run(
+                () => ScriptValidator.Validate(text));
+
+            _errorRenderer.UpdateDiagnostics(diagnostics);
+            _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
+        }
+        catch
+        {
+            // Validation failure during typing is non-fatal — ignore
+        }
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)

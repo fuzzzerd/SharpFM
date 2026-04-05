@@ -105,7 +105,11 @@ public static class ScriptLineParser
         if (bracketEnd < 0)
             bracketEnd = trimmed.Length - 1;
 
-        var paramText = trimmed.Substring(bracketStart + 1, bracketEnd - bracketStart - 1).Trim();
+        var paramLength = bracketEnd - bracketStart - 1;
+        if (paramLength <= 0)
+            return new ParsedStep(stepName, Array.Empty<string>(), disabled, false, raw);
+
+        var paramText = trimmed.Substring(bracketStart + 1, paramLength).Trim();
         var parameters = string.IsNullOrEmpty(paramText)
             ? Array.Empty<string>()
             : BracketMatcher.SplitParams(paramText);
