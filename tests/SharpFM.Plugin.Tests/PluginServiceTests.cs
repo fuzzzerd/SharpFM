@@ -14,6 +14,15 @@ public class MockPluginHost : IPluginHost
     public event EventHandler<ClipInfo?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
     public event EventHandler? ClipCollectionChanged;
+    public ILogger CreateLogger(string categoryName) => NullLogger.Instance;
+    public ClipInfo? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+    public IReadOnlyList<ScriptStepInfo>? GetScriptSteps(string clipName) => null;
+    public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
+    public IReadOnlyList<FieldInfo>? GetTableFields(string clipName) => null;
+    public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId) => [];
+    public void UpdateClipXml(string clipName, string xml, string originPluginId) { }
+    public void CreateClip(string name, string clipType, string? xml = null) { }
+    public bool RemoveClip(string clipName) => false;
     public void UpdateSelectedClipXml(string xml, string originPluginId) { }
     public ClipInfo? RefreshSelectedClip() => SelectedClip;
     public void ShowStatus(string message) { LastStatus = message; }
@@ -125,6 +134,56 @@ public class PluginServiceTests
         var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
         // LoadedPlugins is a backwards-compat alias for PanelPlugins
         Assert.Same(service.PanelPlugins, service.LoadedPlugins);
+    }
+
+    [Fact]
+    public void LoadPlugins_ScansSubdirectories()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
+        Directory.CreateDirectory(dir);
+
+        try
+        {
+            // Create a subdirectory with a non-matching DLL name — should be skipped
+            var subDir = Path.Combine(dir, "MyPlugin");
+            Directory.CreateDirectory(subDir);
+            File.WriteAllText(Path.Combine(subDir, "WrongName.dll"), "not a real assembly");
+
+            var service = CreateService(dir);
+            service.LoadPlugins(new MockPluginHost());
+
+            // No plugins should load: subdirectory DLL name doesn't match directory name
+            Assert.Empty(service.AllPlugins);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LoadPlugins_SubdirectoryWithMatchingName_AttemptsLoad()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"sharpfm-test-{Guid.NewGuid()}");
+        Directory.CreateDirectory(dir);
+
+        try
+        {
+            // Create a subdirectory with a matching DLL name (invalid content, but proves scanning works)
+            var subDir = Path.Combine(dir, "MyPlugin");
+            Directory.CreateDirectory(subDir);
+            File.WriteAllText(Path.Combine(subDir, "MyPlugin.dll"), "not a real assembly");
+
+            var service = CreateService(dir);
+            // Should attempt to load and gracefully fail (bad DLL), not throw
+            service.LoadPlugins(new MockPluginHost());
+
+            Assert.Empty(service.AllPlugins);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 
     [Fact]

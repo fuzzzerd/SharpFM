@@ -122,6 +122,19 @@ public class TableClipEditor : IClipEditor
         if (current.TableName != incoming.Name)
             current.TableName = incoming.Name;
 
+        // If any fields lack unique IDs (e.g., newly added fields with Id=0),
+        // fall back to a full rebuild since we can't reliably diff by ID.
+        var hasUniqueIds = incoming.Fields.Select(f => f.Id).Distinct().Count() == incoming.Fields.Count
+                        && current.Fields.Select(f => f.Id).Distinct().Count() == current.Fields.Count;
+
+        if (!hasUniqueIds)
+        {
+            UnsubscribeFromViewModel(current);
+            ViewModel = new TableEditorViewModel(incoming);
+            SubscribeToViewModel(ViewModel);
+            return;
+        }
+
         // Build lookup of incoming fields by Id
         var incomingById = incoming.Fields.ToDictionary(f => f.Id);
         var currentById = current.Fields.ToDictionary(f => f.Id);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
@@ -35,9 +36,23 @@ internal class ShowCustomDialogHandler : StepHandlerBase, IStepHandler
 
     public XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams)
     {
-        var title = ExtractLabeled(hrParams, "Title") ?? "";
-        var message = ExtractLabeled(hrParams, "Message") ?? "";
+        // Support both labeled (Title: x ; Message: y) and positional ("title" ; "message") formats
+        var title = ExtractLabeled(hrParams, "Title");
+        var message = ExtractLabeled(hrParams, "Message");
         var buttonsRaw = ExtractLabeled(hrParams, "Buttons");
+
+        // Fall back to positional: first param = title, second = message
+        if (title is null && message is null && hrParams.Length >= 1)
+        {
+            title = hrParams[0].Trim();
+            if (hrParams.Length >= 2 && !hrParams[1].Trim().StartsWith("Buttons:", StringComparison.OrdinalIgnoreCase))
+                message = hrParams[1].Trim();
+            if (hrParams.Length >= 3)
+                buttonsRaw ??= ExtractLabeled(hrParams, "Buttons") ?? hrParams[2].Trim();
+        }
+
+        title ??= "";
+        message ??= "";
         var buttons = buttonsRaw?.Split(',').Select(b => b.Trim()).ToList() ?? new List<string>();
 
         var step = MakeStep(87, "Show Custom Dialog", enabled);

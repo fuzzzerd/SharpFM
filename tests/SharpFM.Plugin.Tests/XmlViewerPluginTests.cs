@@ -146,6 +146,15 @@ public class TrackingPluginHost : IPluginHost
         LastOriginPluginId = originPluginId;
     }
 
+    public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+    public ClipInfo? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+    public IReadOnlyList<ScriptStepInfo>? GetScriptSteps(string clipName) => null;
+    public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
+    public IReadOnlyList<FieldInfo>? GetTableFields(string clipName) => null;
+    public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId) => [];
+    public void CreateClip(string name, string clipType, string? xml = null) { }
+    public bool RemoveClip(string clipName) => false;
+    public void UpdateClipXml(string clipName, string xml, string originPluginId) { LastUpdatedXml = xml; LastOriginPluginId = originPluginId; }
     public ClipInfo? RefreshSelectedClip() => SelectedClip;
     public void ShowStatus(string message) { }
     public void RaiseChanged(ClipInfo? clip) => SelectedClipChanged?.Invoke(this, clip);

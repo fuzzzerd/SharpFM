@@ -61,6 +61,7 @@ public class PluginService
             return;
         }
 
+        // Load plugins from flat DLLs in the plugins directory (legacy/simple plugins)
         foreach (var dll in Directory.EnumerateFiles(PluginsDirectory, "*.dll"))
         {
             try
@@ -70,6 +71,24 @@ public class PluginService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to load plugin from {Path}.", dll);
+            }
+        }
+
+        // Load plugins from subdirectories: plugins/{Name}/{Name}.dll
+        // This supports plugins that ship with dependencies and a .deps.json file.
+        foreach (var subDir in Directory.EnumerateDirectories(PluginsDirectory))
+        {
+            var dirName = Path.GetFileName(subDir);
+            var candidateDll = Path.Combine(subDir, dirName + ".dll");
+            if (!File.Exists(candidateDll)) continue;
+
+            try
+            {
+                LoadPluginAssembly(candidateDll, host);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load plugin from {Path}.", candidateDll);
             }
         }
 
@@ -176,8 +195,23 @@ public class PluginService
 
     private void LoadPluginAssembly(string dllPath, IPluginHost host)
     {
-        var context = new AssemblyLoadContext(Path.GetFileNameWithoutExtension(dllPath), isCollectible: false);
-        var assembly = context.LoadFromAssemblyPath(Path.GetFullPath(dllPath));
+        var fullPath = Path.GetFullPath(dllPath);
+        var pluginDir = Path.GetDirectoryName(fullPath)!;
+        var context = new AssemblyLoadContext(
+            Path.GetFileNameWithoutExtension(dllPath), isCollectible: false);
+
+        // Resolving fires only AFTER the default ALC fails to find an assembly.
+        // This means host-provided assemblies always win (SharpFM.Plugin, logging, etc.)
+        // and only plugin-specific assemblies load from the plugin's directory.
+        context.Resolving += (ctx, name) =>
+        {
+            var candidate = Path.Combine(pluginDir, name.Name + ".dll");
+            if (!File.Exists(candidate)) return null;
+            _logger.LogDebug("Plugin dependency resolved: {Assembly} -> {Path}", name.Name, candidate);
+            return ctx.LoadFromAssemblyPath(candidate);
+        };
+
+        var assembly = context.LoadFromAssemblyPath(fullPath);
 
         var candidateTypes = assembly.GetTypes()
             .Where(t => typeof(IPlugin).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false });

@@ -131,5 +131,11 @@ public partial class ClipViewModel : INotifyPropertyChanged
     {
         _syncGeneration++;
         Editor.FromXml(Clip.XmlData ?? "");
+
+        // Notify UI that editor-bound properties may have changed
+        // (e.g., TableClipEditor.PatchViewModel may create a new ViewModel)
+        NotifyPropertyChanged(nameof(TableEditor));
+        NotifyPropertyChanged(nameof(ScriptDocument));
+        NotifyPropertyChanged(nameof(XmlDocument));
     }
 }
