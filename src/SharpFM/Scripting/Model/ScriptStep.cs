@@ -10,7 +10,7 @@ public partial class ScriptStep
     public StepDefinition? Definition { get; }
     public bool Enabled { get; set; }
     public List<StepParamValue> ParamValues { get; }
-    public XElement? SourceXml { get; }
+    public XElement? SourceXml { get; internal set; }
 
     public ScriptStep(StepDefinition? definition, bool enabled,
                       List<StepParamValue>? paramValues = null, XElement? rawXml = null)
@@ -103,9 +103,14 @@ public partial class ScriptStep
         var name = Definition?.Name ?? "# (comment)";
         var id = Definition?.Id ?? 89;
 
-        // Check for specialized serialization
-        var specialized = ToXml_Specialized();
-        if (specialized != null) return specialized;
+        // Use specialized serialization only when SourceXml is available.
+        // If SourceXml was cleared (e.g., by domain API param updates),
+        // fall through to generic serialization which uses ParamValues.
+        if (SourceXml is not null)
+        {
+            var specialized = ToXml_Specialized();
+            if (specialized != null) return specialized;
+        }
 
         // Generic serialization from param values
         var step = new XElement("Step",

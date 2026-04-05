@@ -235,6 +235,10 @@ public class PluginHost : IPluginHost
                 if (param is not null) param.Value = value;
                 else return [$"Parameter '{name}' not found on step '{step.Definition?.Name ?? "unknown"}'."];
             }
+
+            // Clear SourceXml so ToXml uses the generic path (ParamValues)
+            // instead of specialized handlers that read from the original XML.
+            step.SourceXml = null;
         }
         return [];
     }
