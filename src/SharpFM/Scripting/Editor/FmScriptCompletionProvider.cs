@@ -18,70 +18,98 @@ public static class FmScriptCompletionProvider
     public static (CompletionContext Context, IList<ICompletionData> Items) GetCompletions(
         string lineText, int caretColumn)
     {
-        var trimmed = lineText.TrimStart();
+        // Work with text from start of line to cursor only
+        var textToCursor = caretColumn >= 0 && caretColumn <= lineText.Length
+            ? lineText.Substring(0, caretColumn)
+            : lineText;
 
-        // Empty or start of line → suggest step names
-        if (string.IsNullOrWhiteSpace(trimmed) || !trimmed.Contains('['))
+        var trimmed = textToCursor.TrimStart();
+
+        // Comments don't get completions
+        if (trimmed.StartsWith("#"))
+            return (CompletionContext.None, Array.Empty<ICompletionData>());
+
+        // Strip disabled prefix for lookup
+        var forLookup = trimmed;
+        if (forLookup.StartsWith("//"))
+            forLookup = forLookup.Substring(2).TrimStart();
+
+        // Try to find a recognized step name at the start of the line
+        var (stepName, definition) = FindStepName(forLookup);
+
+        if (definition == null)
         {
-            var items = GetStepNameCompletions(trimmed);
+            // No recognized step yet → suggest step names
+            var items = GetStepNameCompletions(forLookup);
             return (CompletionContext.StepName, items);
         }
 
-        // Inside brackets → determine if we're after a label or need a label
-        var bracketPos = lineText.IndexOf('[');
-        if (bracketPos >= 0 && caretColumn > bracketPos)
+        // Step is recognized → suggest params
+        // Find the last semicolon to determine which param segment we're in
+        var afterStepName = forLookup.Substring(stepName.Length);
+        var lastSemicolon = afterStepName.LastIndexOf(';');
+        var currentSegment = lastSemicolon >= 0
+            ? afterStepName.Substring(lastSemicolon + 1).TrimStart()
+            : afterStepName.TrimStart(' ', '[').TrimStart();
+
+        // If current segment has a label, suggest values for that label
+        var colonPos = currentSegment.IndexOf(':');
+        if (colonPos >= 0)
         {
-            var insideBrackets = lineText.Substring(bracketPos + 1);
-            var stepName = lineText.Substring(0, bracketPos).Trim();
+            var label = currentSegment.Substring(0, colonPos).Trim();
+            var matchingParam = definition.Params
+                .FirstOrDefault(p => (p.HrLabel ?? p.WrapperElement)?
+                    .Equals(label, StringComparison.OrdinalIgnoreCase) == true);
 
-            // Check for disabled prefix
-            if (stepName.StartsWith("//"))
-                stepName = stepName.Substring(2).TrimStart();
-
-            if (!StepCatalogLoader.ByName.TryGetValue(stepName, out var definition))
-                return (CompletionContext.None, Array.Empty<ICompletionData>());
-
-            // Find what the user is currently typing after the last semicolon
-            var lastSemicolon = insideBrackets.LastIndexOf(';');
-            var currentSegment = lastSemicolon >= 0
-                ? insideBrackets.Substring(lastSemicolon + 1).TrimStart()
-                : insideBrackets.TrimStart();
-
-            // Check if we're after a label (e.g., "With dialog: ")
-            var colonPos = currentSegment.IndexOf(':');
-            if (colonPos >= 0)
+            if (matchingParam != null)
             {
-                var label = currentSegment.Substring(0, colonPos).Trim();
-                var matchingParam = definition.Params
-                    .FirstOrDefault(p => p.HrLabel != null &&
-                        p.HrLabel.Equals(label, StringComparison.OrdinalIgnoreCase));
-
-                if (matchingParam != null)
-                {
-                    var items = GetParamValueCompletions(matchingParam);
+                var items = GetParamValueCompletions(matchingParam);
+                if (items.Count > 0)
                     return (CompletionContext.ParamValue, items);
-                }
             }
-
-            // Suggest param labels + valid values for unlabeled positional params
-            var labelItems = GetParamLabelCompletions(definition, insideBrackets);
-            var valueItems = GetPositionalValueCompletions(definition, insideBrackets);
-
-            if (valueItems.Count > 0 && labelItems.Count > 0)
-            {
-                // Combine: values first (more immediately useful), then labels
-                foreach (var item in labelItems)
-                    valueItems.Add(item);
-                return (CompletionContext.ParamValue, valueItems);
-            }
-
-            if (valueItems.Count > 0)
-                return (CompletionContext.ParamValue, valueItems);
-
-            return (CompletionContext.ParamLabel, labelItems);
         }
 
+        // Suggest param labels (unused ones) and positional values
+        var labelItems = GetParamLabelCompletions(definition, afterStepName);
+        var valueItems = GetPositionalValueCompletions(definition, afterStepName);
+
+        if (valueItems.Count > 0 && labelItems.Count > 0)
+        {
+            foreach (var item in labelItems)
+                valueItems.Add(item);
+            return (CompletionContext.ParamValue, valueItems);
+        }
+
+        if (valueItems.Count > 0)
+            return (CompletionContext.ParamValue, valueItems);
+
+        if (labelItems.Count > 0)
+            return (CompletionContext.ParamLabel, labelItems);
+
         return (CompletionContext.None, Array.Empty<ICompletionData>());
+    }
+
+    private static (string Name, StepDefinition? Definition) FindStepName(string text)
+    {
+        // Try progressively longer prefixes to find the longest matching step name
+        // Steps can have spaces in names (e.g., "Go to Record/Request/Page")
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var bestMatch = (Name: "", Definition: (StepDefinition?)null);
+
+        var candidate = "";
+        foreach (var word in words)
+        {
+            if (candidate.Length > 0) candidate += " ";
+            candidate += word;
+
+            // Stop at bracket — everything after is params
+            if (word.Contains('[')) break;
+
+            if (StepCatalogLoader.ByName.TryGetValue(candidate, out var def))
+                bestMatch = (candidate, def);
+        }
+
+        return bestMatch;
     }
 
     private static IList<ICompletionData> GetStepNameCompletions(string prefix)
@@ -95,7 +123,14 @@ public static class FmScriptCompletionProvider
                 var desc = s.Category;
                 if (s.BlockPair != null) desc += $" ({s.BlockPair.Role})";
                 if (!string.IsNullOrEmpty(s.HrSignature)) desc += $" {s.HrSignature}";
-                return (ICompletionData)new FmScriptCompletionData(s.Name, desc);
+
+                // Use the Monaco snippet for full step template with placeholders
+                var snippet = s.MonacoSnippet;
+                // For self-closing steps without a snippet, just use the name
+                if (snippet == null && s.SelfClosing)
+                    snippet = s.Name;
+
+                return (ICompletionData)new FmScriptCompletionData(s.Name, desc, snippet: snippet);
             })
             .ToList();
     }
@@ -107,7 +142,6 @@ public static class FmScriptCompletionProvider
 
         foreach (var param in definition.Params)
         {
-            // Use hrLabel, or wrapperElement as synthetic label for namedCalc params
             var label = param.HrLabel
                 ?? (param.Type == "namedCalc" && param.WrapperElement != null
                     ? param.WrapperElement : null);
@@ -141,7 +175,6 @@ public static class FmScriptCompletionProvider
     {
         var items = new List<ICompletionData>();
 
-        // Count how many unlabeled positional params have been filled
         var segments = existingParams.Split(';')
             .Select(s => s.Trim())
             .Where(s => s.Length > 0)
@@ -150,14 +183,12 @@ public static class FmScriptCompletionProvider
         int positionalIndex = 0;
         foreach (var seg in segments)
         {
-            // If it has a label (contains ":"), it's not positional
             bool hasLabel = definition.Params.Any(p =>
                 p.HrLabel != null && seg.StartsWith(p.HrLabel + ":", StringComparison.OrdinalIgnoreCase));
             if (!hasLabel)
                 positionalIndex++;
         }
 
-        // Find the next unlabeled param with valid values
         int unlabeledCount = 0;
         foreach (var param in definition.Params)
         {

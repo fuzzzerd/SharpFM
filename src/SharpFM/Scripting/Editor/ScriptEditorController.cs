@@ -12,7 +12,6 @@ namespace SharpFM.Scripting.Editor;
 
 /// <summary>
 /// Manages script editor behavior: validation, completion, tooltips, and document tracking.
-/// Extracted from MainWindow to keep UI code thin and this logic independently testable.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public class ScriptEditorController : IDisposable
@@ -87,7 +86,7 @@ public class ScriptEditorController : IDisposable
         }
         catch
         {
-            // Validation failure during typing is non-fatal — ignore
+            // Validation failure during typing is non-fatal
         }
     }
 
@@ -120,6 +119,11 @@ public class ScriptEditorController : IDisposable
     {
         if (_completionWindow != null) return;
 
+        TryShowCompletions();
+    }
+
+    private void TryShowCompletions()
+    {
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
         var lineText = _editor.Document.GetText(line.Offset, line.Length);
@@ -134,6 +138,10 @@ public class ScriptEditorController : IDisposable
         {
             var wordStart = lineText.Length - lineText.TrimStart().Length;
             _completionWindow.StartOffset = line.Offset + wordStart;
+        }
+        else if (context == CompletionContext.ParamLabel)
+        {
+            _completionWindow.StartOffset = _editor.CaretOffset;
         }
 
         foreach (var item in items)

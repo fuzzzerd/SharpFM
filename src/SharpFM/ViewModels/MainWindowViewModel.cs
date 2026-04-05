@@ -172,8 +172,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
 
         var name = SelectedClip.Name;
-        FileMakerClips.Remove(SelectedClip);
+        var clip = SelectedClip;
         SelectedClip = null;
+        FileMakerClips.Remove(clip);
         ShowStatus($"Deleted clip '{name}'");
     }
 

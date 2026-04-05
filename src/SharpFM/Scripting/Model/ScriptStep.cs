@@ -132,6 +132,13 @@ public partial class ScriptStep
         if (Definition == null)
             return SourceXml?.Attribute("name")?.Value ?? "Unknown";
 
+        // Comments use a special format: # text (no brackets)
+        if (Definition.Name == "# (comment)")
+        {
+            var text = ParamValues.FirstOrDefault()?.Value ?? "";
+            return $"# {text}";
+        }
+
         var parts = ParamValues
             .Select(p => p.ToDisplayString())
             .Where(s => s != null)
