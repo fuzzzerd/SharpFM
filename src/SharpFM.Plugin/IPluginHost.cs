@@ -89,39 +89,4 @@ public interface IPluginHost
     /// Remove a clip from the loaded collection by name.
     /// </summary>
     bool RemoveClip(string clipName);
-
-    /// <summary>
-    /// Get available script step definitions from the FileMaker step catalog.
-    /// Optionally filter by category.
-    /// </summary>
-    IReadOnlyList<StepDefinition> GetAvailableSteps(string? category = null);
-
-    /// <summary>
-    /// Get the full definition of a specific script step by name.
-    /// Returns null if the step name is not in the catalog.
-    /// </summary>
-    StepDefinition? GetStepDefinition(string stepName);
-
-    /// <summary>
-    /// Get a script clip's steps as structured data.
-    /// Returns null if the clip is not found or is not a script type.
-    /// </summary>
-    IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName);
-
-    /// <summary>
-    /// Apply a batch of step operations (add, update, remove, move) to a script clip.
-    /// Works directly on the script model.
-    /// </summary>
-    IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId);
-
-    /// <summary>
-    /// Get a table clip's fields as structured data.
-    /// Returns null if the clip is not found or is not a table type.
-    /// </summary>
-    IReadOnlyList<FmField>? GetTableFields(string clipName);
-
-    /// <summary>
-    /// Apply a batch of field operations (add, modify, remove) to a table clip.
-    /// </summary>
-    IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId);
 }
