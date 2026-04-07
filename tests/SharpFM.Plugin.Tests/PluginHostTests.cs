@@ -103,22 +103,22 @@ public class PluginHostTests
     }
 
     [Fact]
-    public void RefreshSelectedClip_ReturnsNull_WhenNoClip()
+    public void SelectedClip_ReturnsNull_WhenNoClip()
     {
         var vm = CreateVm();
         var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
-        Assert.Null(host.RefreshSelectedClip());
+        Assert.Null(host.SelectedClip);
     }
 
     [Fact]
-    public void RefreshSelectedClip_ReturnsFreshClipData()
+    public void SelectedClip_ReturnsFreshClipData()
     {
         var vm = CreateVm();
         var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         vm.NewScriptCommand();
-        var clip = host.RefreshSelectedClip();
+        var clip = host.SelectedClip;
 
         Assert.NotNull(clip);
         Assert.Equal("New Script", clip!.Name);

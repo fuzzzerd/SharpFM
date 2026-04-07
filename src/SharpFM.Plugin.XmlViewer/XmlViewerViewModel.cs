@@ -33,8 +33,7 @@ public class XmlViewerViewModel : INotifyPropertyChanged
 
     public void RefreshFromHost()
     {
-        var clip = _host.RefreshSelectedClip();
-        LoadClip(clip);
+        LoadClip(_host.SelectedClip);
     }
 
     public void LoadClip(ClipData? clip)

@@ -40,13 +40,6 @@ public interface IPluginHost
     void UpdateSelectedClipXml(string xml, string originPluginId);
 
     /// <summary>
-    /// Sync the current editor state to XML and return a fresh snapshot.
-    /// Call this before reading <see cref="SelectedClip"/> if you need up-to-date XML
-    /// that reflects any in-progress edits in the structured editors.
-    /// </summary>
-    ClipData? RefreshSelectedClip();
-
-    /// <summary>
     /// Raised when clip content changes — either from a user edit in the structured editor
     /// or from a plugin pushing XML. The <see cref="ClipContentChangedArgs.Origin"/> field
     /// indicates who caused the change ("editor" for user edits, or a plugin Id).

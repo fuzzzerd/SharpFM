@@ -160,7 +160,6 @@ public class TrackingPluginHost : IPluginHost
     public void CreateClip(string name, string clipType, string? xml = null) { }
     public bool RemoveClip(string clipName) => false;
     public void UpdateClipXml(string clipName, string xml, string originPluginId) { LastUpdatedXml = xml; LastOriginPluginId = originPluginId; }
-    public ClipData? RefreshSelectedClip() => SelectedClip;
     public void ShowStatus(string message) { }
     public void RaiseChanged(ClipData? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);

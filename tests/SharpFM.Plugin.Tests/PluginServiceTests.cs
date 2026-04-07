@@ -29,7 +29,6 @@ public class MockPluginHost : IPluginHost
     public void CreateClip(string name, string clipType, string? xml = null) { }
     public bool RemoveClip(string clipName) => false;
     public void UpdateSelectedClipXml(string xml, string originPluginId) { }
-    public ClipData? RefreshSelectedClip() => SelectedClip;
     public void ShowStatus(string message) { LastStatus = message; }
     public string? LastStatus { get; private set; }
     public void RaiseChanged(ClipData? clip) => SelectedClipChanged?.Invoke(this, clip);

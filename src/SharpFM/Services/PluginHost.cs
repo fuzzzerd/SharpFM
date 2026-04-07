@@ -80,14 +80,6 @@ public class PluginHost : IPluginHost
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
-    public ClipData? RefreshSelectedClip()
-    {
-        var clip = _viewModel.SelectedClip;
-        if (clip is null) return null;
-        // Auto-sync keeps ClipXml current — just return it
-        return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
-    }
-
     public ClipData? GetClip(string clipName)
     {
         var clip = FindClipByName(clipName);
