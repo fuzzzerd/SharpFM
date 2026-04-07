@@ -50,7 +50,7 @@ public class PluginHost : IPluginHost
         {
             var clip = _viewModel.SelectedClip;
             if (clip is null) return null;
-            return new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
+            return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
         }
     }
 
@@ -60,7 +60,7 @@ public class PluginHost : IPluginHost
 
     public IReadOnlyList<ClipData> AllClips =>
         _viewModel.FileMakerClips
-            .Select(c => new ClipData(c.Name, c.ClipType, c.ClipXml))
+            .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.XmlData))
             .ToList();
 
     public ILogger CreateLogger(string categoryName) => _loggerFactory.CreateLogger(categoryName);
@@ -76,7 +76,7 @@ public class PluginHost : IPluginHost
 
             clip.ReplaceEditor(xml);
 
-            var info = new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
+            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
@@ -85,7 +85,7 @@ public class PluginHost : IPluginHost
         var clip = _viewModel.SelectedClip;
         if (clip is null) return null;
         // Auto-sync keeps ClipXml current — just return it
-        return new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
+        return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
     }
 
     public ClipData? GetClip(string clipName)
@@ -93,7 +93,7 @@ public class PluginHost : IPluginHost
         var clip = FindClipByName(clipName);
         if (clip is null) return null;
         // Auto-sync keeps ClipXml current — just return it
-        return new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
+        return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
     }
 
     public void UpdateClipXml(string clipName, string xml, string originPluginId) =>
@@ -105,7 +105,7 @@ public class PluginHost : IPluginHost
             // Wholesale replacement — re-ingest the XML
             clip.ReplaceEditor(xml);
 
-            var info = new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
+            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
@@ -355,7 +355,7 @@ public class PluginHost : IPluginHost
 
     private ClipViewModel? FindClipByName(string clipName) =>
         _viewModel.FileMakerClips.FirstOrDefault(c =>
-            c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+            c.Clip.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
 
     private void Subscribe(ClipViewModel? clip)
     {
@@ -389,7 +389,7 @@ public class PluginHost : IPluginHost
         var clip = _viewModel.SelectedClip;
         if (clip is null) return;
 
-        var info = new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
+        var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
         var isPartial = clip.Editor.IsPartial;
         ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, "editor", isPartial));
     }

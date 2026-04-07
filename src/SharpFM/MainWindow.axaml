@@ -163,7 +163,7 @@
                                                 <StackPanel Spacing="4">
                                                     <TextBox
                                                         Classes="Fluent2"
-                                                        Text="{Binding Name, Mode=TwoWay}"
+                                                        Text="{Binding Clip.Name, Mode=TwoWay}"
                                                         Watermark="Clip name" />
                                                     <TextBlock
                                                         Classes="Fluent2Caption"

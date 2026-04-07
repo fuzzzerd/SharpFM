@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -9,8 +11,15 @@ using SharpFM.Model.Scripting;
 
 namespace SharpFM.Model;
 
-public class FileMakerClip
+public class FileMakerClip : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
     public class ClipFormat
     {
         public string KeyId { get; set; } = string.Empty;
@@ -68,10 +77,21 @@ public class FileMakerClip
     /// </summary>
     public string ClipboardFormat { get; set; }
 
+    private string _name = string.Empty;
+
     /// <summary>
     /// Name of Clip
     /// </summary>
-    public string Name { get; set; } = string.Empty;
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (_name == value) return;
+            _name = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     /// <summary>
     /// Raw data that can be put back onto the Clipboard in FileMaker structure.
@@ -102,8 +122,10 @@ public class FileMakerClip
         get => _xmlData;
         set
         {
+            if (_xmlData == value) return;
             _xmlData = value;
             _cachedRawData = null; // invalidate cache
+            NotifyPropertyChanged();
         }
     }
 

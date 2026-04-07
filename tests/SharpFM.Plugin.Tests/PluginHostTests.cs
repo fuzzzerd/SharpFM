@@ -89,7 +89,7 @@ public class PluginHostTests
         var newXml = "<fmxmlsnippet type=\"FMObjectList\"><test /></fmxmlsnippet>";
         host.UpdateSelectedClipXml(newXml, "test-plugin");
 
-        Assert.Equal(newXml, vm.SelectedClip!.ClipXml);
+        Assert.Equal(newXml, vm.SelectedClip!.Clip.XmlData);
     }
 
     [Fact]

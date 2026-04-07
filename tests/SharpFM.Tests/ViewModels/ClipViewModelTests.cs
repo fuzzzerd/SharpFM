@@ -76,14 +76,14 @@ public class ClipViewModelTests
         var clip = new FileMakerClip("Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"T\"></BaseTable></fmxmlsnippet>");
         var vm = new ClipViewModel(clip);
 
-        vm.ReplaceEditor(vm.ClipXml);
+        vm.ReplaceEditor(vm.Clip.XmlData);
 
         Assert.Contains("BaseTable", vm.Clip.XmlData);
         Assert.Contains("name=\"T\"", vm.Clip.XmlData);
     }
 
     [Fact]
-    public void ClipXml_UpdatesBothClipAndDocument()
+    public void Clip_XmlData_UpdatesBothClipAndDocument()
     {
         var xml = WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>");
         var vm = CreateScriptClip(xml);
@@ -92,20 +92,20 @@ public class ClipViewModelTests
         _ = vm.XmlDocument;
 
         var newXml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>new</Text></Step>");
-        vm.ClipXml = newXml;
+        vm.Clip.XmlData = newXml;
 
         Assert.Equal(newXml, vm.Clip.XmlData);
         Assert.Equal(newXml, vm.XmlDocument.Text);
     }
 
     [Fact]
-    public void Name_TwoWayBinding()
+    public void Clip_Name_FiresPropertyChanged()
     {
         var vm = CreateScriptClip(WrapXml(""));
         string? changed = null;
-        vm.PropertyChanged += (_, args) => changed = args.PropertyName;
+        vm.Clip.PropertyChanged += (_, args) => changed = args.PropertyName;
 
-        vm.Name = "Renamed";
+        vm.Clip.Name = "Renamed";
         Assert.Equal("Renamed", vm.Clip.Name);
         Assert.Equal("Name", changed);
     }

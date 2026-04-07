@@ -52,7 +52,6 @@ public partial class ClipViewModel : INotifyPropertyChanged
         NotifyPropertyChanged(nameof(ScriptDocument));
         NotifyPropertyChanged(nameof(TableEditor));
         NotifyPropertyChanged(nameof(XmlDocument));
-        NotifyPropertyChanged(nameof(ClipXml));
     }
 
     private IClipEditor CreateEditor(string? xml) => Clip.ClipboardFormat switch
@@ -105,26 +104,6 @@ public partial class ClipViewModel : INotifyPropertyChanged
             NotifyPropertyChanged(nameof(IsScriptClip));
             NotifyPropertyChanged(nameof(IsTableClip));
             NotifyPropertyChanged(nameof(IsFallbackClip));
-        }
-    }
-
-    public string Name
-    {
-        get => Clip.Name;
-        set
-        {
-            Clip.Name = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    public string ClipXml
-    {
-        get => Clip.XmlData;
-        set
-        {
-            Clip.XmlData = value;
-            NotifyPropertyChanged();
         }
     }
 }

@@ -130,7 +130,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 clip.Clip.XmlData = clip.Editor.ToXml();
 
             var clipData = FileMakerClips
-                .Select(c => new ClipData(c.Name, c.ClipType, c.ClipXml))
+                .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.XmlData))
                 .ToList();
 
             await _repository.SaveClipsAsync(clipData);
@@ -172,7 +172,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        var name = SelectedClip.Name;
+        var name = SelectedClip.Clip.Name;
         var clip = SelectedClip;
         SelectedClip = null;
         FileMakerClips.Remove(clip);
@@ -241,7 +241,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 var clip = new FileMakerClip("new-clip", format, dataObj);
 
                 // don't add duplicates
-                if (FileMakerClips.Any(k => k.ClipXml == clip.XmlData)) continue;
+                if (FileMakerClips.Any(k => k.Clip.XmlData == clip.XmlData)) continue;
 
                 FileMakerClips.Add(new ClipViewModel(clip));
                 count++;
@@ -324,7 +324,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             _searchText = value;
             var previousSelection = _selectedClip;
             FilteredClips.Clear();
-            foreach (var c in FileMakerClips.Where(c => c.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)))
+            foreach (var c in FileMakerClips.Where(c => c.Clip.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)))
             {
                 FilteredClips.Add(c);
             }
