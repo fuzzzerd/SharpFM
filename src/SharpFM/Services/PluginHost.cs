@@ -230,8 +230,7 @@ public class PluginHost : IPluginHost
 
     private static List<string> ApplyUpdateStep(FmScript script, ScriptStepOperation op)
     {
-        if (op.Index < 0 || op.Index >= script.Steps.Count)
-            return [$"Step index {op.Index} out of range (0-{script.Steps.Count - 1})."];
+        if (ValidateStepIndex(op.Index, script.Steps.Count) is { } err) return [err];
 
         var step = script.Steps[op.Index];
         if (op.Enabled is not null) step.Enabled = op.Enabled.Value;
@@ -248,33 +247,34 @@ public class PluginHost : IPluginHost
                 if (param is not null) param.Value = value;
                 else return [$"Parameter '{name}' not found on step '{step.Definition?.Name ?? "unknown"}'."];
             }
-
         }
         return [];
     }
 
     private static List<string> ApplyRemoveStep(FmScript script, ScriptStepOperation op)
     {
-        if (op.Index < 0 || op.Index >= script.Steps.Count)
-            return [$"Step index {op.Index} out of range (0-{script.Steps.Count - 1})."];
+        if (ValidateStepIndex(op.Index, script.Steps.Count) is { } err) return [err];
         script.Steps.RemoveAt(op.Index);
         return [];
     }
 
     private static List<string> ApplyMoveStep(FmScript script, ScriptStepOperation op)
     {
-        if (op.Index < 0 || op.Index >= script.Steps.Count)
-            return [$"Step index {op.Index} out of range (0-{script.Steps.Count - 1})."];
+        if (ValidateStepIndex(op.Index, script.Steps.Count) is { } err) return [err];
         if (op.MoveToIndex is null) return ["MoveToIndex is required for move operations."];
-        var dest = op.MoveToIndex.Value;
-        if (dest < 0 || dest >= script.Steps.Count)
-            return [$"MoveToIndex {dest} out of range (0-{script.Steps.Count - 1})."];
+        if (ValidateStepIndex(op.MoveToIndex.Value, script.Steps.Count) is { } destErr)
+            return [destErr.Replace("Step index", "MoveToIndex")];
 
         var step = script.Steps[op.Index];
         script.Steps.RemoveAt(op.Index);
-        script.Steps.Insert(dest, step);
+        script.Steps.Insert(op.MoveToIndex.Value, step);
         return [];
     }
+
+    private static string? ValidateStepIndex(int index, int count) =>
+        index < 0 || index >= count
+            ? $"Step index {index} out of range (0-{count - 1})."
+            : null;
 
     // --- Table domain operations ---
 
