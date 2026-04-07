@@ -22,7 +22,7 @@ public class ScriptStepTests
     [Fact]
     public void Comment_FromDisplayLine_ToXml()
     {
-        var step = ScriptStep.FromDisplayLine("# hello world");
+        var step = ScriptTextParser.FromDisplayLine("# hello world");
         Assert.Equal("# (comment)", step.Definition?.Name);
         var xml = step.ToXml();
         Assert.Equal("hello world", xml.Element("Text")?.Value);
@@ -177,7 +177,7 @@ public class ScriptStepTests
     [Fact]
     public void FromDisplayLine_SetVariable()
     {
-        var step = ScriptStep.FromDisplayLine("Set Variable [ $x ; Value: 1 ]");
+        var step = ScriptTextParser.FromDisplayLine("Set Variable [ $x ; Value: 1 ]");
         Assert.Equal("Set Variable", step.Definition?.Name);
         var xml = step.ToXml();
         Assert.Equal("141", xml.Attribute("id")?.Value);
@@ -186,7 +186,7 @@ public class ScriptStepTests
     [Fact]
     public void FromDisplayLine_UnknownStep_HasNullDefinition()
     {
-        var step = ScriptStep.FromDisplayLine("some random text");
+        var step = ScriptTextParser.FromDisplayLine("some random text");
         Assert.Null(step.Definition);
         // But ToXml emits it as a comment for safety
         var xml = step.ToXml();

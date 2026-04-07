@@ -1,4 +1,4 @@
-namespace SharpFM.Scripting.Model;
+namespace SharpFM.Model.Scripting;
 
 public record ParsedStep(
     string StepName,

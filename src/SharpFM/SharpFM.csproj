@@ -14,12 +14,8 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="SharpFM.Tests" />
-    <InternalsVisibleTo Include="SharpFM.Plugin.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
+<ItemGroup>
+    <ProjectReference Include="..\SharpFM.Model\SharpFM.Model.csproj" />
     <ProjectReference Include="..\SharpFM.Plugin\SharpFM.Plugin.csproj" />
     <ProjectReference Include="..\SharpFM.Plugin.Sample\SharpFM.Plugin.Sample.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -49,7 +45,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Scripting\Catalog\step-catalog-en.json" />
+    <InternalsVisibleTo Include="SharpFM.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Scripting\Editor\fmscript.tmLanguage.json" />
   </ItemGroup>
 

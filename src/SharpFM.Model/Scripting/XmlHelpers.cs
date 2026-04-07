@@ -2,14 +2,11 @@ using System;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using NLog;
+namespace SharpFM.Model.Scripting;
 
-namespace SharpFM.Scripting;
-
-internal static class XmlHelpers
+public static class XmlHelpers
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-    internal static string XmlEscape(string s)
+    public static string XmlEscape(string s)
     {
         return s.Replace("&", "&amp;")
                 .Replace("<", "&lt;")
@@ -17,14 +14,14 @@ internal static class XmlHelpers
                 .Replace("\"", "&quot;");
     }
 
-    internal static string Unquote(string s)
+    public static string Unquote(string s)
     {
         if (s.Length >= 2 && s[0] == '"' && s[^1] == '"')
             return s[1..^1];
         return s;
     }
 
-    internal static string PrettyPrint(string xml)
+    public static string PrettyPrint(string xml)
     {
         try
         {
@@ -42,9 +39,8 @@ internal static class XmlHelpers
             }
             return sb.ToString();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log.Warn(ex, "Failed to pretty-print XML, returning original");
             return xml;
         }
     }

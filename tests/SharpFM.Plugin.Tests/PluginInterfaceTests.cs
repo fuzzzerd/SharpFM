@@ -1,3 +1,4 @@
+using SharpFM.Model;
 using SharpFM.Plugin;
 using Xunit;
 

@@ -1,12 +1,7 @@
-// This file is part of SharpFM and is licensed under the GNU General Public License v3.
-//
-// Plugin Exception: You may create plugins that implement these interfaces without those
-// plugins being subject to the GPL. Such plugins may use any license, including proprietary.
-
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SharpFM.Plugin;
+namespace SharpFM.Model;
 
 /// <summary>
 /// Abstraction for clip storage. The built-in file system storage and

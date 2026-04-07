@@ -1,3 +1,4 @@
+using SharpFM.Model;
 using Xunit;
 
 namespace SharpFM.Tests.Core;

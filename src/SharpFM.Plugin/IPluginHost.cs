@@ -6,6 +6,9 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using SharpFM.Model;
+using SharpFM.Model.Schema;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Plugin;
 
@@ -23,12 +26,12 @@ public interface IPluginHost
     /// <summary>
     /// The currently selected clip, or null if nothing is selected.
     /// </summary>
-    ClipInfo? SelectedClip { get; }
+    ClipData? SelectedClip { get; }
 
     /// <summary>
     /// Raised when the selected clip changes (user selects a different clip in the list).
     /// </summary>
-    event EventHandler<ClipInfo?> SelectedClipChanged;
+    event EventHandler<ClipData?> SelectedClipChanged;
 
     /// <summary>
     /// Replace the XML content of the currently selected clip.
@@ -41,7 +44,7 @@ public interface IPluginHost
     /// Call this before reading <see cref="SelectedClip"/> if you need up-to-date XML
     /// that reflects any in-progress edits in the structured editors.
     /// </summary>
-    ClipInfo? RefreshSelectedClip();
+    ClipData? RefreshSelectedClip();
 
     /// <summary>
     /// Raised when clip content changes — either from a user edit in the structured editor
@@ -53,7 +56,7 @@ public interface IPluginHost
     /// <summary>
     /// All clips currently loaded in the application.
     /// </summary>
-    IReadOnlyList<ClipInfo> AllClips { get; }
+    IReadOnlyList<ClipData> AllClips { get; }
 
     /// <summary>
     /// Raised when the clip collection changes (clips added, removed, or reloaded).
@@ -69,7 +72,7 @@ public interface IPluginHost
     /// Get fresh XML for any loaded clip by name.
     /// If the clip is currently selected, syncs the editor state first.
     /// </summary>
-    ClipInfo? GetClip(string clipName);
+    ClipData? GetClip(string clipName);
 
     /// <summary>
     /// Replace the XML content of any loaded clip by name.
@@ -91,19 +94,19 @@ public interface IPluginHost
     /// Get available script step definitions from the FileMaker step catalog.
     /// Optionally filter by category.
     /// </summary>
-    IReadOnlyList<StepCatalogEntry> GetAvailableSteps(string? category = null);
+    IReadOnlyList<StepDefinition> GetAvailableSteps(string? category = null);
 
     /// <summary>
     /// Get the full definition of a specific script step by name.
     /// Returns null if the step name is not in the catalog.
     /// </summary>
-    StepCatalogEntry? GetStepDefinition(string stepName);
+    StepDefinition? GetStepDefinition(string stepName);
 
     /// <summary>
     /// Get a script clip's steps as structured data.
     /// Returns null if the clip is not found or is not a script type.
     /// </summary>
-    IReadOnlyList<ScriptStepInfo>? GetScriptSteps(string clipName);
+    IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName);
 
     /// <summary>
     /// Apply a batch of step operations (add, update, remove, move) to a script clip.
@@ -115,7 +118,7 @@ public interface IPluginHost
     /// Get a table clip's fields as structured data.
     /// Returns null if the clip is not found or is not a table type.
     /// </summary>
-    IReadOnlyList<FieldInfo>? GetTableFields(string clipName);
+    IReadOnlyList<FmField>? GetTableFields(string clipName);
 
     /// <summary>
     /// Apply a batch of field operations (add, modify, remove) to a table clip.

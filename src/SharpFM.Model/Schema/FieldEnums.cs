@@ -1,4 +1,4 @@
-namespace SharpFM.Schema.Model;
+namespace SharpFM.Model.Schema;
 
 public enum FieldDataType
 {

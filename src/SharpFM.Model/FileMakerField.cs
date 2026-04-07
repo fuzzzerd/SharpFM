@@ -1,5 +1,5 @@
 ﻿
-namespace SharpFM;
+namespace SharpFM.Model;
 
 public class FileMakerField
 {

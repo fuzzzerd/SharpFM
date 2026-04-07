@@ -4,14 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using NLog;
 
-namespace SharpFM.Schema.Model;
+namespace SharpFM.Model.Schema;
 
 public class FmTable
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
     public string Name { get; set; } = "";
     public int? Id { get; set; }
     public List<FmField> Fields { get; }
@@ -27,13 +24,7 @@ public class FmTable
         if (string.IsNullOrWhiteSpace(xml))
             return new FmTable("");
 
-        XDocument doc;
-        try { doc = XDocument.Parse(xml); }
-        catch (XmlException ex)
-        {
-            Log.Error(ex, "Failed to parse table XML");
-            return new FmTable("");
-        }
+        XDocument doc = XDocument.Parse(xml);
 
         var root = doc.Root;
         if (root == null) return new FmTable("");

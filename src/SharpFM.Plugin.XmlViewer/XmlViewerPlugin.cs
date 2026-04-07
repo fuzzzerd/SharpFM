@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Avalonia.Controls;
+using SharpFM.Model;
 using SharpFM.Plugin;
 
 namespace SharpFM.Plugin.XmlViewer;
@@ -34,7 +35,7 @@ public class XmlViewerPlugin : IPanelPlugin
         return new XmlViewerPanel { DataContext = _viewModel };
     }
 
-    private void OnClipChanged(object? sender, ClipInfo? clip)
+    private void OnClipChanged(object? sender, ClipData? clip)
     {
         _viewModel?.LoadClip(clip);
     }

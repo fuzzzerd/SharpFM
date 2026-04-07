@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SharpFM.Scripting.Catalog;
+namespace SharpFM.Model.Scripting;
 
 public record StepDefinition
 {

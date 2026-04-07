@@ -1,6 +1,9 @@
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpFM.Model;
+using SharpFM.Model.Schema;
+using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
 using SharpFM.Services;
 using Xunit;
@@ -9,27 +12,27 @@ namespace SharpFM.Plugin.Tests;
 
 public class MockPluginHost : IPluginHost
 {
-    public ClipInfo? SelectedClip { get; set; }
-    public IReadOnlyList<ClipInfo> AllClips { get; set; } = [];
-    public event EventHandler<ClipInfo?>? SelectedClipChanged;
+    public ClipData? SelectedClip { get; set; }
+    public IReadOnlyList<ClipData> AllClips { get; set; } = [];
+    public event EventHandler<ClipData?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
     public event EventHandler? ClipCollectionChanged;
     public ILogger CreateLogger(string categoryName) => NullLogger.Instance;
-    public ClipInfo? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
-    public IReadOnlyList<StepCatalogEntry> GetAvailableSteps(string? category = null) => [];
-    public StepCatalogEntry? GetStepDefinition(string stepName) => null;
-    public IReadOnlyList<ScriptStepInfo>? GetScriptSteps(string clipName) => null;
+    public ClipData? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+    public IReadOnlyList<StepDefinition> GetAvailableSteps(string? category = null) => [];
+    public StepDefinition? GetStepDefinition(string stepName) => null;
+    public IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName) => null;
     public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
-    public IReadOnlyList<FieldInfo>? GetTableFields(string clipName) => null;
+    public IReadOnlyList<FmField>? GetTableFields(string clipName) => null;
     public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId) => [];
     public void UpdateClipXml(string clipName, string xml, string originPluginId) { }
     public void CreateClip(string name, string clipType, string? xml = null) { }
     public bool RemoveClip(string clipName) => false;
     public void UpdateSelectedClipXml(string xml, string originPluginId) { }
-    public ClipInfo? RefreshSelectedClip() => SelectedClip;
+    public ClipData? RefreshSelectedClip() => SelectedClip;
     public void ShowStatus(string message) { LastStatus = message; }
     public string? LastStatus { get; private set; }
-    public void RaiseChanged(ClipInfo? clip) => SelectedClipChanged?.Invoke(this, clip);
+    public void RaiseChanged(ClipData? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
     public void RaiseCollectionChanged() => ClipCollectionChanged?.Invoke(this, EventArgs.Empty);
 }

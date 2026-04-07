@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
-namespace SharpFM.Schema.Model;
+namespace SharpFM.Model.Schema;
 
 public class FmField : INotifyPropertyChanged
 {

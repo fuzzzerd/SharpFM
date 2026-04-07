@@ -1,4 +1,4 @@
-namespace SharpFM.Scripting.Validation;
+namespace SharpFM.Model.Scripting;
 
 public enum DiagnosticSeverity
 {

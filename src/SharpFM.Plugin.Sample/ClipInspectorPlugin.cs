@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Avalonia.Controls;
+using SharpFM.Model;
 using SharpFM.Plugin;
 
 namespace SharpFM.Plugin.Sample;
@@ -31,7 +32,7 @@ public class ClipInspectorPlugin : IPanelPlugin
         return new ClipInspectorPanel { DataContext = _viewModel };
     }
 
-    private void OnSelectedClipChanged(object? sender, ClipInfo? clip)
+    private void OnSelectedClipChanged(object? sender, ClipData? clip)
     {
         _viewModel?.Update(clip);
     }

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 
-namespace SharpFM.Scripting.Catalog;
+namespace SharpFM.Model.Scripting;
 
 public class StepCatalogLoader : IStepCatalog
 {

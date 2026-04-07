@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpFM.Model;
 using SharpFM.Plugin;
 using SharpFM.Services;
 using SharpFM.ViewModels;
@@ -38,7 +39,7 @@ public class PluginHostTests
     }
 
     [Fact]
-    public void SelectedClip_ReturnsClipInfo_WhenClipSelected()
+    public void SelectedClip_ReturnsClipData_WhenClipSelected()
     {
         var vm = CreateVm();
         var host = new PluginHost(vm, NullLoggerFactory.Instance);
@@ -55,7 +56,7 @@ public class PluginHostTests
     {
         var vm = CreateVm();
         var host = new PluginHost(vm, NullLoggerFactory.Instance);
-        ClipInfo? received = null;
+        ClipData? received = null;
         host.SelectedClipChanged += (_, clip) => received = clip;
 
         vm.NewScriptCommand();
@@ -71,7 +72,7 @@ public class PluginHostTests
         var host = new PluginHost(vm, NullLoggerFactory.Instance);
         vm.NewScriptCommand();
 
-        ClipInfo? received = new ClipInfo("placeholder", "", "");
+        ClipData? received = new ClipData("placeholder", "", "");
         host.SelectedClipChanged += (_, clip) => received = clip;
         vm.SelectedClip = null;
 
@@ -111,7 +112,7 @@ public class PluginHostTests
     }
 
     [Fact]
-    public void RefreshSelectedClip_ReturnsFreshClipInfo()
+    public void RefreshSelectedClip_ReturnsFreshClipData()
     {
         var vm = CreateVm();
         var host = new PluginHost(vm, NullLoggerFactory.Instance);
@@ -136,7 +137,7 @@ public class PluginHostTests
         vm.NewTableCommand();
 
         // Switch back to the script clip
-        ClipInfo? received = null;
+        ClipData? received = null;
         host.SelectedClipChanged += (_, clip) => received = clip;
         vm.SelectedClip = scriptClip;
 

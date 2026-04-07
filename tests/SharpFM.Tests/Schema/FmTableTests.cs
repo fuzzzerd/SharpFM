@@ -1,5 +1,5 @@
 using System.Xml.Linq;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 using Xunit;
 
 namespace SharpFM.Tests.Schema;

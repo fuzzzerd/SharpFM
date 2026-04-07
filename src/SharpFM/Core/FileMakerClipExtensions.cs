@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
+using SharpFM.Model;
+
 namespace SharpFM;
 
 public static class FileMakerClipExtensions

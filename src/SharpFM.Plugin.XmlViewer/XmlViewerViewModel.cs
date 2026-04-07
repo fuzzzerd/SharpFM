@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using AvaloniaEdit.Document;
+using SharpFM.Model;
 using SharpFM.Plugin;
 
 namespace SharpFM.Plugin.XmlViewer;
@@ -36,7 +37,7 @@ public class XmlViewerViewModel : INotifyPropertyChanged
         LoadClip(clip);
     }
 
-    public void LoadClip(ClipInfo? clip)
+    public void LoadClip(ClipData? clip)
     {
         _isSyncing = true;
         try

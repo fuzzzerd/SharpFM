@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SharpFM.Scripting.Catalog;
+namespace SharpFM.Model.Scripting;
 
 /// <summary>
 /// Abstracts step catalog access for testability and potential locale/version swapping.

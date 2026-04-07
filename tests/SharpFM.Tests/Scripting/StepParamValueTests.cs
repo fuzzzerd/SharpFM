@@ -1,6 +1,4 @@
 using System.Xml.Linq;
-using SharpFM.Scripting.Catalog;
-using SharpFM.Scripting.Model;
 using Xunit;
 
 namespace SharpFM.Tests.Scripting;

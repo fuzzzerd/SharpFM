@@ -47,7 +47,7 @@ public class PluginService
     {
     }
 
-    internal PluginService(ILogger logger, string pluginsDirectory)
+    public PluginService(ILogger logger, string pluginsDirectory)
     {
         _logger = logger;
         PluginsDirectory = pluginsDirectory;

@@ -12,6 +12,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Models;
+using SharpFM.Model;
 using SharpFM.Plugin;
 using SharpFM.Services;
 

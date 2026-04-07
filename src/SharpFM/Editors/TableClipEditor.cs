@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using Avalonia.Threading;
 using SharpFM.Schema.Editor;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 
 namespace SharpFM.Editors;
 

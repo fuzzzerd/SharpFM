@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace SharpFM.Scripting.Model;
+namespace SharpFM.Model.Scripting;
 
 public partial class ScriptStep
 {
@@ -48,43 +48,6 @@ public partial class ScriptStep
             .ToList();
 
         return new ScriptStep(definition, enabled, paramValues);
-    }
-
-    // --- Factory: from display line text ---
-
-    public static ScriptStep FromDisplayLine(string line)
-    {
-        var raw = ScriptLineParser.ParseRaw(line);
-
-        if (raw.IsComment)
-        {
-            var def = StepCatalogLoader.ByName["# (comment)"];
-            var textParam = def.Params.FirstOrDefault(p => p.XmlElement == "Text");
-            var paramValues = textParam != null
-                ? new List<StepParamValue> { new(textParam, raw.Params.Length > 0 ? raw.Params[0] : "") }
-                : new List<StepParamValue>();
-            return new ScriptStep(def, !raw.Disabled, paramValues);
-        }
-
-        if (!StepCatalogLoader.ByName.TryGetValue(raw.StepName, out var definition))
-        {
-            // Unknown step — preserve as-is with Definition=null.
-            return new ScriptStep(null, !raw.Disabled, rawXml:
-                new XElement("Step",
-                    new XAttribute("enable", raw.Disabled ? "False" : "True"),
-                    new XAttribute("name", raw.StepName),
-                    new XElement("RawText", raw.RawLine.Trim())));
-        }
-
-        // Specialized steps build their own XML from display text,
-        // then parse that XML to extract ParamValues consistently.
-        var specializedXml = BuildXmlFromDisplay_Specialized(definition, !raw.Disabled, raw.Params);
-        if (specializedXml != null)
-            return FromXml(specializedXml);
-
-        // Generic: match params positionally and by label
-        return new ScriptStep(definition, !raw.Disabled,
-            MatchDisplayParams(raw.Params, definition));
     }
 
     // --- Serialize to XML (always from ParamValues) ---
@@ -186,50 +149,4 @@ public partial class ScriptStep
         return null;
     }
 
-    private static List<StepParamValue> MatchDisplayParams(string[] hrParams, StepDefinition definition)
-    {
-        var result = new List<StepParamValue>();
-        var used = new bool[hrParams.Length];
-
-        foreach (var paramDef in definition.Params)
-        {
-            var label = paramDef.HrLabel
-                ?? (paramDef.Type == "namedCalc" && paramDef.WrapperElement != null
-                    ? paramDef.WrapperElement : null);
-
-            string? value = null;
-
-            // First: try label matching
-            if (label != null)
-            {
-                for (int i = 0; i < hrParams.Length; i++)
-                {
-                    if (used[i]) continue;
-                    var trimmed = hrParams[i].TrimStart();
-                    if (trimmed.StartsWith(label + ":", StringComparison.OrdinalIgnoreCase))
-                    {
-                        value = trimmed.Substring(label.Length + 1).TrimStart();
-                        used[i] = true;
-                        break;
-                    }
-                }
-            }
-
-            // Second: positional fill if no label match
-            if (value == null)
-            {
-                for (int i = 0; i < hrParams.Length; i++)
-                {
-                    if (used[i]) continue;
-                    value = hrParams[i].Trim();
-                    used[i] = true;
-                    break;
-                }
-            }
-
-            result.Add(new StepParamValue(paramDef, value));
-        }
-
-        return result;
-    }
 }

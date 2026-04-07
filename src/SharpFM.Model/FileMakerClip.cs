@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace SharpFM;
+namespace SharpFM.Model;
 
 public class FileMakerClip
 {

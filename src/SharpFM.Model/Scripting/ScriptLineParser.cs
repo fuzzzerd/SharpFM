@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpFM.Scripting.Parsing;
+namespace SharpFM.Model.Scripting;
 
 public static class ScriptLineParser
 {
@@ -26,7 +26,7 @@ public static class ScriptLineParser
         return result;
     }
 
-    internal static List<string> MergeMultilineStatements(string[] lines)
+    public static List<string> MergeMultilineStatements(string[] lines)
     {
         var result = new List<string>();
         System.Text.StringBuilder? accumulator = null;
@@ -65,12 +65,12 @@ public static class ScriptLineParser
         return result;
     }
 
-    internal static bool HasUnbalancedBrackets(string text) =>
+    public static bool HasUnbalancedBrackets(string text) =>
         BracketMatcher.HasUnbalancedBrackets(text);
 
     // Used by ScriptStep.FromDisplayLine — returns the same data as ParseLine
     // but avoids coupling ScriptStep to ParsedStep
-    internal static ParsedStep ParseRaw(string line) => ParseLine(line);
+    public static ParsedStep ParseRaw(string line) => ParseLine(line);
 
     public static ParsedStep ParseLine(string line)
     {

@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:editor="using:SharpFM.Schema.Editor"
-             xmlns:model="using:SharpFM.Schema.Model"
+             xmlns:model="using:SharpFM.Model.Schema"
              x:Class="SharpFM.Schema.Editor.TableEditorControl"
              x:DataType="editor:TableEditorViewModel"
              x:CompileBindings="False"

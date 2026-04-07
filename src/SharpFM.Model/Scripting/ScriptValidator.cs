@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
-namespace SharpFM.Scripting.Validation;
+namespace SharpFM.Model.Scripting;
 
 public static class ScriptValidator
 {
@@ -183,7 +183,7 @@ public static class ScriptValidator
             || value.Contains('*') || value.Contains('/');
     }
 
-    internal static List<string> GetValidValues(StepParam param)
+    public static List<string> GetValidValues(StepParam param)
     {
         var valid = new List<string>();
 

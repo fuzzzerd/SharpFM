@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using SharpFM.Model;
+using SharpFM.Model.Schema;
+using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
-using SharpFM.Schema.Model;
-using SharpFM.Scripting.Catalog;
-using SharpFM.Scripting.Model;
 using SharpFM.ViewModels;
 
 namespace SharpFM.Services;
@@ -44,23 +44,23 @@ public class PluginHost : IPluginHost
             ClipCollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public ClipInfo? SelectedClip
+    public ClipData? SelectedClip
     {
         get
         {
             var clip = _viewModel.SelectedClip;
             if (clip is null) return null;
-            return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+            return new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
         }
     }
 
-    public event EventHandler<ClipInfo?>? SelectedClipChanged;
+    public event EventHandler<ClipData?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
     public event EventHandler? ClipCollectionChanged;
 
-    public IReadOnlyList<ClipInfo> AllClips =>
+    public IReadOnlyList<ClipData> AllClips =>
         _viewModel.FileMakerClips
-            .Select(c => new ClipInfo(c.Name, c.ClipType, c.ClipXml))
+            .Select(c => new ClipData(c.Name, c.ClipType, c.ClipXml))
             .ToList();
 
     public ILogger CreateLogger(string categoryName) => _loggerFactory.CreateLogger(categoryName);
@@ -76,24 +76,24 @@ public class PluginHost : IPluginHost
 
             clip.ReplaceEditor(xml);
 
-            var info = new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+            var info = new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
-    public ClipInfo? RefreshSelectedClip()
+    public ClipData? RefreshSelectedClip()
     {
         var clip = _viewModel.SelectedClip;
         if (clip is null) return null;
         // Auto-sync keeps ClipXml current — just return it
-        return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+        return new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
     }
 
-    public ClipInfo? GetClip(string clipName)
+    public ClipData? GetClip(string clipName)
     {
         var clip = FindClipByName(clipName);
         if (clip is null) return null;
         // Auto-sync keeps ClipXml current — just return it
-        return new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+        return new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
     }
 
     public void UpdateClipXml(string clipName, string xml, string originPluginId) =>
@@ -105,11 +105,26 @@ public class PluginHost : IPluginHost
             // Wholesale replacement — re-ingest the XML
             clip.ReplaceEditor(xml);
 
-            var info = new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+            var info = new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
-    public void CreateClip(string name, string clipType, string? xml = null) =>
+    private static readonly HashSet<string> KnownClipTypes = new(StringComparer.Ordinal)
+    {
+        "Mac-XMSS", // script steps
+        "Mac-XMSC", // script
+        "Mac-XMTB", // table
+        "Mac-XMFD", // field
+        "Mac-XML2", // layout
+    };
+
+    public void CreateClip(string name, string clipType, string? xml = null)
+    {
+        if (!KnownClipTypes.Contains(clipType))
+            throw new ArgumentException(
+                $"Unknown clip type '{clipType}'. Valid types: {string.Join(", ", KnownClipTypes)}.",
+                nameof(clipType));
+
         EnsureUiThread(() =>
         {
             xml ??= clipType switch
@@ -123,6 +138,7 @@ public class PluginHost : IPluginHost
             var vm = new ClipViewModel(clip);
             _viewModel.FileMakerClips.Add(vm);
         });
+    }
 
     public bool RemoveClip(string clipName) =>
         EnsureUiThread(() =>
@@ -135,51 +151,33 @@ public class PluginHost : IPluginHost
 
     // --- Step catalog ---
 
-    public IReadOnlyList<StepCatalogEntry> GetAvailableSteps(string? category = null)
+    public IReadOnlyList<StepDefinition> GetAvailableSteps(string? category = null)
     {
         var steps = StepCatalogLoader.All;
         if (category is not null)
             steps = steps.Where(s => s.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
-        return steps.Select(ToCatalogEntry).ToList();
+        return steps.ToList();
     }
 
-    public StepCatalogEntry? GetStepDefinition(string stepName)
+    public StepDefinition? GetStepDefinition(string stepName)
     {
         if (!StepCatalogLoader.ByName.TryGetValue(stepName, out var def))
             return null;
-        return ToCatalogEntry(def);
+        return def;
     }
-
-    private static StepCatalogEntry ToCatalogEntry(StepDefinition def) => new(
-        Name: def.Name,
-        Category: def.Category,
-        Signature: def.HrSignature,
-        Params: def.Params.Select(p => new StepCatalogParam(
-            Name: p.HrLabel ?? p.WrapperElement ?? p.XmlElement,
-            Type: p.Type,
-            Required: p.Required)).ToList());
 
     // --- Script domain operations ---
 
     private static bool IsScriptClip(string clipType) => clipType is "Mac-XMSS" or "Mac-XMSC";
     private static bool IsTableClip(string clipType) => clipType is "Mac-XMTB" or "Mac-XMFD";
 
-    public IReadOnlyList<ScriptStepInfo>? GetScriptSteps(string clipName)
+    public IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName)
     {
         var clip = GetClip(clipName);
         if (clip is null || !IsScriptClip(clip.ClipType)) return null;
 
         var script = FmScript.FromXml(clip.Xml);
-        return script.Steps.Select((s, i) =>
-        {
-            var paramInfos = s.ParamValues.Select(p =>
-            {
-                var name = p.Definition.HrLabel ?? p.Definition.WrapperElement ?? p.Definition.XmlElement;
-                return new ScriptStepParam(name, p.Definition.Type, p.Value);
-            }).ToList();
-
-            return new ScriptStepInfo(i, s.Definition?.Name ?? "Unknown", s.Enabled, paramInfos);
-        }).ToList();
+        return script.Steps.ToList();
     }
 
     public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId)
@@ -280,15 +278,13 @@ public class PluginHost : IPluginHost
 
     // --- Table domain operations ---
 
-    public IReadOnlyList<FieldInfo>? GetTableFields(string clipName)
+    public IReadOnlyList<FmField>? GetTableFields(string clipName)
     {
         var clip = GetClip(clipName);
         if (clip is null || !IsTableClip(clip.ClipType)) return null;
 
         var table = FmTable.FromXml(clip.Xml);
-        return table.Fields.Select(f => new FieldInfo(
-            f.Name, f.DataType.ToString(), f.Kind.ToString(),
-            f.Comment, f.Calculation, f.IsGlobal, f.Repetitions)).ToList();
+        return table.Fields;
     }
 
     public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId)
@@ -395,7 +391,7 @@ public class PluginHost : IPluginHost
         var clip = _viewModel.SelectedClip;
         if (clip is null) return;
 
-        var info = new ClipInfo(clip.Name, clip.ClipType, clip.ClipXml);
+        var info = new ClipData(clip.Name, clip.ClipType, clip.ClipXml);
         var isPartial = clip.Editor.IsPartial;
         ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, "editor", isPartial));
     }

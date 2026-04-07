@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Xml.Linq;
 
-namespace SharpFM.Scripting.Model;
+namespace SharpFM.Model.Scripting;
 
 public class StepParamValue
 {

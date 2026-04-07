@@ -1,5 +1,5 @@
 using SharpFM.Editors;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 using Xunit;
 
 namespace SharpFM.Tests.Editors;

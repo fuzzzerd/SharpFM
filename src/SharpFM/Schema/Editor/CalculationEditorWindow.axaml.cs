@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 using SharpFM.Scripting;
 using TextMateSharp.Grammars;
 

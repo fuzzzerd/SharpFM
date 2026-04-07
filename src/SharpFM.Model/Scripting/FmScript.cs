@@ -4,14 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using NLog;
 
-namespace SharpFM.Scripting.Model;
+namespace SharpFM.Model.Scripting;
 
 public class FmScript
 {
-    private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
     public List<ScriptStep> Steps { get; }
 
     public FmScript(List<ScriptStep> steps)
@@ -26,13 +23,7 @@ public class FmScript
         if (string.IsNullOrWhiteSpace(xml))
             return new FmScript(new List<ScriptStep>());
 
-        XDocument doc;
-        try { doc = XDocument.Parse(xml); }
-        catch (XmlException ex)
-        {
-            Log.Error(ex, "Failed to parse script XML");
-            return new FmScript(new List<ScriptStep>());
-        }
+        XDocument doc = XDocument.Parse(xml);
 
         var root = doc.Root;
         if (root == null) return new FmScript(new List<ScriptStep>());
@@ -44,30 +35,6 @@ public class FmScript
             : root.Elements("Step");
 
         var steps = stepElements.Select(ScriptStep.FromXml).ToList();
-        return new FmScript(steps);
-    }
-
-    // --- Parse display text into model ---
-
-    public static FmScript FromDisplayText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return new FmScript(new List<ScriptStep>());
-
-        var rawLines = text.Split('\n');
-        var mergedLines = ScriptLineParser.MergeMultilineStatements(rawLines);
-
-        var steps = new List<ScriptStep>();
-        foreach (var line in mergedLines)
-        {
-            var trimmed = line.TrimEnd('\r');
-            if (string.IsNullOrWhiteSpace(trimmed))
-                continue;
-            steps.Add(ScriptStep.FromDisplayLine(trimmed));
-        }
-
-        // Merge consecutive comment lines into single comment steps
-        steps = MergeCommentContinuations(steps);
         return new FmScript(steps);
     }
 
@@ -148,41 +115,4 @@ public class FmScript
         return diagnostics;
     }
 
-    // --- Update single step from edited display line ---
-
-    public void UpdateStep(int index, string displayLine)
-    {
-        if (index < 0 || index >= Steps.Count) return;
-        Steps[index] = ScriptStep.FromDisplayLine(displayLine);
-    }
-
-    // --- Comment merging ---
-
-    private static List<ScriptStep> MergeCommentContinuations(List<ScriptStep> steps)
-    {
-        var result = new List<ScriptStep>();
-
-        foreach (var step in steps)
-        {
-            bool isComment = step.Definition?.Name == "# (comment)";
-            bool prevIsComment = result.Count > 0 && result[^1].Definition?.Name == "# (comment)";
-
-            if (prevIsComment && isComment)
-            {
-                var prev = result[^1];
-                var prevText = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
-                var thisText = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text")?.Value ?? "";
-                var merged = string.IsNullOrEmpty(prevText) ? thisText : prevText + "\n" + thisText;
-
-                var textParam = prev.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Text");
-                if (textParam != null) textParam.Value = merged;
-            }
-            else
-            {
-                result.Add(step);
-            }
-        }
-
-        return result;
-    }
 }

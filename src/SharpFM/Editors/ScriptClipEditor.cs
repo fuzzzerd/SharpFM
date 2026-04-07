@@ -54,7 +54,7 @@ public class ScriptClipEditor : IClipEditor
     {
         try
         {
-            _script = FmScript.FromDisplayText(Document.Text);
+            _script = ScriptTextParser.FromDisplayText(Document.Text);
             IsPartial = false;
             return _script.ToXml();
         }

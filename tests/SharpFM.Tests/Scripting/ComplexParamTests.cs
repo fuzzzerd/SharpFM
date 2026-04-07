@@ -1,5 +1,3 @@
-using SharpFM.Scripting.Catalog;
-using SharpFM.Scripting.Model;
 using Xunit;
 using Xunit.Abstractions;
 
