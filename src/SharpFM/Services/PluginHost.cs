@@ -320,13 +320,7 @@ public class PluginHost : IPluginHost
             return [$"Field '{op.FieldName}' already exists."];
 
         var field = new FmField { Name = op.FieldName };
-        if (op.DataType is not null && Enum.TryParse<FieldDataType>(op.DataType, ignoreCase: true, out var dt)) field.DataType = dt;
-        if (op.Kind is not null && Enum.TryParse<FieldKind>(op.Kind, ignoreCase: true, out var kind)) field.Kind = kind;
-        if (op.Comment is not null) field.Comment = op.Comment;
-        if (op.Calculation is not null) field.Calculation = op.Calculation;
-        if (op.IsGlobal is not null) field.IsGlobal = op.IsGlobal.Value;
-        if (op.Repetitions is not null) field.Repetitions = op.Repetitions.Value;
-
+        ApplyFieldProperties(field, op);
         table.AddField(field);
         return [];
     }
@@ -337,14 +331,18 @@ public class PluginHost : IPluginHost
         if (field is null) return [$"Field '{op.FieldName}' not found."];
 
         if (op.NewName is not null) field.Name = op.NewName;
+        ApplyFieldProperties(field, op);
+        return [];
+    }
+
+    private static void ApplyFieldProperties(FmField field, FieldOperation op)
+    {
         if (op.DataType is not null && Enum.TryParse<FieldDataType>(op.DataType, ignoreCase: true, out var dt)) field.DataType = dt;
         if (op.Kind is not null && Enum.TryParse<FieldKind>(op.Kind, ignoreCase: true, out var kind)) field.Kind = kind;
         if (op.Comment is not null) field.Comment = op.Comment;
         if (op.Calculation is not null) field.Calculation = op.Calculation;
         if (op.IsGlobal is not null) field.IsGlobal = op.IsGlobal.Value;
         if (op.Repetitions is not null) field.Repetitions = op.Repetitions.Value;
-
-        return [];
     }
 
     private static List<string> ApplyRemoveField(FmTable table, FieldOperation op)
