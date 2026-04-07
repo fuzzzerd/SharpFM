@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Model;
 
@@ -34,14 +34,7 @@ public class FileMakerClip
         // load the format
         ClipboardFormat = format;
 
-        try
-        {
-            XmlData = PrettyXml(xml);
-        }
-        catch
-        {
-            XmlData = xml;
-        }
+        XmlData = XmlHelpers.PrettyPrint(xml);
     }
 
     /// <summary>
@@ -166,35 +159,8 @@ public class FileMakerClip
         var xmlComments = Encoding.UTF8.GetString(clipData.ToArray());
         if (string.IsNullOrEmpty(xmlComments))
         {
-            // don't try to prettify if we don't have content
             return xmlComments;
         }
-        return PrettyXml(xmlComments);
-    }
-
-    /// <summary>
-    /// Make an Xml string pretty.
-    /// </summary>
-    /// <param name="xml">Raw xml to make pretty.</param>
-    /// <returns>A pretty (human readable) version of the input string.</returns>
-    private static string PrettyXml(string xml)
-    {
-        var stringBuilder = new StringBuilder();
-
-        var element = XElement.Parse(xml);
-
-        var settings = new XmlWriterSettings
-        {
-            OmitXmlDeclaration = true,
-            Indent = true,
-            NewLineOnAttributes = false
-        };
-
-        using (var xmlWriter = XmlWriter.Create(stringBuilder, settings))
-        {
-            element.Save(xmlWriter);
-        }
-
-        return stringBuilder.ToString();
+        return XmlHelpers.PrettyPrint(xmlComments);
     }
 }

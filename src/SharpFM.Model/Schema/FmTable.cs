@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Xml;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Model.Schema;
 
@@ -52,7 +51,7 @@ public class FmTable
 
         root.Add(baseTable);
 
-        return PrettyPrint(root.ToString());
+        return XmlHelpers.PrettyPrint(root.ToString());
     }
 
     public void AddField(FmField field)
@@ -63,29 +62,5 @@ public class FmTable
     public void RemoveField(FmField field)
     {
         Fields.Remove(field);
-    }
-
-    private static string PrettyPrint(string xml)
-    {
-        try
-        {
-            var element = XElement.Parse(xml);
-            var sb = new StringBuilder();
-            var settings = new XmlWriterSettings
-            {
-                OmitXmlDeclaration = true,
-                Indent = true,
-                NewLineOnAttributes = false
-            };
-            using (var writer = XmlWriter.Create(sb, settings))
-            {
-                element.Save(writer);
-            }
-            return sb.ToString();
-        }
-        catch
-        {
-            return xml;
-        }
     }
 }
