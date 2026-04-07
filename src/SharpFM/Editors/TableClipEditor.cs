@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Avalonia.Threading;
 using SharpFM.Schema.Editor;
 using SharpFM.Model.Schema;
 
@@ -13,7 +12,7 @@ namespace SharpFM.Editors;
 /// </summary>
 public class TableClipEditor : IClipEditor
 {
-    private readonly DispatcherTimer _debounceTimer;
+    private readonly DebouncedEventRaiser _debouncer;
 
     public event EventHandler? ContentChanged;
 
@@ -27,12 +26,7 @@ public class TableClipEditor : IClipEditor
         var table = FmTable.FromXml(xml ?? "");
         ViewModel = new TableEditorViewModel(table);
 
-        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        _debounceTimer.Tick += (_, _) =>
-        {
-            _debounceTimer.Stop();
-            ContentChanged?.Invoke(this, EventArgs.Empty);
-        };
+        _debouncer = new DebouncedEventRaiser(500, () => ContentChanged?.Invoke(this, EventArgs.Empty));
 
         SubscribeToViewModel(ViewModel);
     }
@@ -67,23 +61,17 @@ public class TableClipEditor : IClipEditor
             foreach (FmField field in e.OldItems)
                 field.PropertyChanged -= OnFieldPropertyChanged;
 
-        RestartDebounce();
+        _debouncer.Trigger();
     }
 
     private void OnFieldPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        RestartDebounce();
+        _debouncer.Trigger();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(TableEditorViewModel.TableName))
-            RestartDebounce();
-    }
-
-    private void RestartDebounce()
-    {
-        _debounceTimer.Stop();
-        _debounceTimer.Start();
+            _debouncer.Trigger();
     }
 }

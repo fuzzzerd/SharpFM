@@ -1,5 +1,4 @@
 using System;
-using Avalonia.Threading;
 using AvaloniaEdit.Document;
 
 namespace SharpFM.Editors;
@@ -10,7 +9,7 @@ namespace SharpFM.Editors;
 /// </summary>
 public class FallbackXmlEditor : IClipEditor
 {
-    private readonly DispatcherTimer _debounceTimer;
+    private readonly DebouncedEventRaiser _debouncer;
 
     public event EventHandler? ContentChanged;
 
@@ -23,18 +22,8 @@ public class FallbackXmlEditor : IClipEditor
     {
         Document = new TextDocument(xml ?? "");
 
-        _debounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        _debounceTimer.Tick += (_, _) =>
-        {
-            _debounceTimer.Stop();
-            ContentChanged?.Invoke(this, EventArgs.Empty);
-        };
-
-        Document.TextChanged += (_, _) =>
-        {
-            _debounceTimer.Stop();
-            _debounceTimer.Start();
-        };
+        _debouncer = new DebouncedEventRaiser(500, () => ContentChanged?.Invoke(this, EventArgs.Empty));
+        Document.TextChanged += (_, _) => _debouncer.Trigger();
     }
 
     public string ToXml() => Document.Text;
