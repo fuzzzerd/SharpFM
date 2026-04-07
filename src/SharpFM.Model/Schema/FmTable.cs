@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
@@ -10,12 +11,12 @@ public class FmTable
 {
     public string Name { get; set; } = "";
     public int? Id { get; set; }
-    public List<FmField> Fields { get; }
+    public ObservableCollection<FmField> Fields { get; }
 
-    public FmTable(string name, List<FmField>? fields = null)
+    public FmTable(string name, IEnumerable<FmField>? fields = null)
     {
         Name = name;
-        Fields = fields ?? new List<FmField>();
+        Fields = fields is null ? new ObservableCollection<FmField>() : new ObservableCollection<FmField>(fields);
     }
 
     public static FmTable FromXml(string xml)
@@ -33,8 +34,7 @@ public class FmTable
         var tableId = int.TryParse(baseTable.Attribute("id")?.Value, out var id) ? id : (int?)null;
 
         var fields = baseTable.Elements("Field")
-            .Select(FmField.FromXml)
-            .ToList();
+            .Select(FmField.FromXml);
 
         return new FmTable(tableName, fields) { Id = tableId };
     }

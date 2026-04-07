@@ -17,7 +17,7 @@ public class TableEditorViewModel : INotifyPropertyChanged
     }
 
     public FmTable Table { get; }
-    public ObservableCollection<FmField> Fields { get; }
+    public ObservableCollection<FmField> Fields => Table.Fields;
 
     private FmField? _selectedField;
     public FmField? SelectedField
@@ -52,7 +52,6 @@ public class TableEditorViewModel : INotifyPropertyChanged
     {
         Table = table;
         _tableName = table.Name;
-        Fields = new ObservableCollection<FmField>(table.Fields);
         AddFieldCommand = new RelayCommand(_ => AddField());
         RemoveFieldCommand = new RelayCommand(_ => RemoveSelectedField(), _ => SelectedField != null);
         EditCalculationCommand = new RelayCommand(_ => OpenCalculationEditor(),
@@ -68,7 +67,6 @@ public class TableEditorViewModel : INotifyPropertyChanged
             DataType = FieldDataType.Text,
             Kind = FieldKind.Normal
         };
-        Fields.Add(field);
         Table.AddField(field);
         SelectedField = field;
     }
@@ -76,9 +74,7 @@ public class TableEditorViewModel : INotifyPropertyChanged
     public void RemoveSelectedField()
     {
         if (SelectedField == null) return;
-        var field = SelectedField;
-        Fields.Remove(field);
-        Table.RemoveField(field);
+        Table.RemoveField(SelectedField);
         SelectedField = null;
     }
 
