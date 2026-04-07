@@ -179,37 +179,26 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         ShowStatus($"Deleted clip '{name}'");
     }
 
-    public void NewScriptCommand()
-    {
-        try
-        {
-            var clip = new FileMakerClip("New Script", "Mac-XMSS", EmptyScriptXml);
-            var vm = new ClipViewModel(clip);
-            FileMakerClips.Add(vm);
-            SelectedClip = vm;
-            ShowStatus("Created new script");
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error creating script.");
-            ShowStatus("Error creating script", isError: true);
-        }
-    }
+    public void NewScriptCommand() =>
+        CreateNewClip("New Script", "Mac-XMSS", EmptyScriptXml, "script");
 
-    public void NewTableCommand()
+    public void NewTableCommand() =>
+        CreateNewClip("New Table", "Mac-XMTB", EmptyTableXml, "table");
+
+    private void CreateNewClip(string name, string format, string xml, string kind)
     {
         try
         {
-            var clip = new FileMakerClip("New Table", "Mac-XMTB", EmptyTableXml);
+            var clip = new FileMakerClip(name, format, xml);
             var vm = new ClipViewModel(clip);
             FileMakerClips.Add(vm);
             SelectedClip = vm;
-            ShowStatus("Created new table");
+            ShowStatus($"Created new {kind}");
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error creating table.");
-            ShowStatus("Error creating table", isError: true);
+            _logger.LogError(e, "Error creating {Kind}.", kind);
+            ShowStatus($"Error creating {kind}", isError: true);
         }
     }
 
