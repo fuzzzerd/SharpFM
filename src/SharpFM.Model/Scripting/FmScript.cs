@@ -115,4 +115,87 @@ public class FmScript
         return diagnostics;
     }
 
+    // --- Apply mutation operations ---
+
+    /// <summary>
+    /// Apply a single step operation to this script. Returns any errors as a list
+    /// (empty list = success).
+    /// </summary>
+    public IReadOnlyList<string> Apply(ScriptStepOperation op) =>
+        op.Action.ToLowerInvariant() switch
+        {
+            "add" => ApplyAdd(op),
+            "update" => ApplyUpdate(op),
+            "remove" => ApplyRemove(op),
+            "move" => ApplyMove(op),
+            _ => [$"Unknown action '{op.Action}'."],
+        };
+
+    private List<string> ApplyAdd(ScriptStepOperation op)
+    {
+        if (op.StepName is null) return ["StepName is required for add operations."];
+        if (!StepCatalogLoader.ByName.TryGetValue(op.StepName, out var definition))
+            return [$"Unknown step name '{op.StepName}'."];
+
+        var paramValues = definition.Params.Select(p =>
+        {
+            var paramName = p.HrLabel ?? p.WrapperElement ?? p.XmlElement;
+            string? value = null;
+            op.Params?.TryGetValue(paramName, out value);
+            return new StepParamValue(p, value);
+        }).ToList();
+
+        var step = new ScriptStep(definition, op.Enabled ?? true, paramValues);
+        var index = op.Index < 0 || op.Index >= Steps.Count ? Steps.Count : op.Index;
+        Steps.Insert(index, step);
+        return [];
+    }
+
+    private List<string> ApplyUpdate(ScriptStepOperation op)
+    {
+        if (ValidateStepIndex(op.Index) is { } err) return [err];
+
+        var step = Steps[op.Index];
+        if (op.Enabled is not null) step.Enabled = op.Enabled.Value;
+
+        if (op.Params is not null)
+        {
+            foreach (var (name, value) in op.Params)
+            {
+                var param = step.ParamValues.FirstOrDefault(p =>
+                {
+                    var paramName = p.Definition.HrLabel ?? p.Definition.WrapperElement ?? p.Definition.XmlElement;
+                    return paramName.Equals(name, StringComparison.OrdinalIgnoreCase);
+                });
+                if (param is not null) param.Value = value;
+                else return [$"Parameter '{name}' not found on step '{step.Definition?.Name ?? "unknown"}'."];
+            }
+        }
+        return [];
+    }
+
+    private List<string> ApplyRemove(ScriptStepOperation op)
+    {
+        if (ValidateStepIndex(op.Index) is { } err) return [err];
+        Steps.RemoveAt(op.Index);
+        return [];
+    }
+
+    private List<string> ApplyMove(ScriptStepOperation op)
+    {
+        if (ValidateStepIndex(op.Index) is { } err) return [err];
+        if (op.MoveToIndex is null) return ["MoveToIndex is required for move operations."];
+        if (ValidateStepIndex(op.MoveToIndex.Value) is { } destErr)
+            return [destErr.Replace("Step index", "MoveToIndex")];
+
+        var step = Steps[op.Index];
+        Steps.RemoveAt(op.Index);
+        Steps.Insert(op.MoveToIndex.Value, step);
+        return [];
+    }
+
+    private string? ValidateStepIndex(int index) =>
+        index < 0 || index >= Steps.Count
+            ? $"Step index {index} out of range (0-{Steps.Count - 1})."
+            : null;
 }

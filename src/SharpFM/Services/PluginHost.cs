@@ -187,94 +187,13 @@ public class PluginHost : IPluginHost
         if (!IsScriptClip(clip.ClipType)) return [$"Clip '{clipName}' is not a script (type: {clip.ClipType})."];
 
         var script = FmScript.FromXml(clip.Xml);
-        var errors = new List<string>();
-
-        foreach (var op in operations)
-        {
-            var result = op.Action.ToLowerInvariant() switch
-            {
-                "add" => ApplyAddStep(script, op),
-                "update" => ApplyUpdateStep(script, op),
-                "remove" => ApplyRemoveStep(script, op),
-                "move" => ApplyMoveStep(script, op),
-                _ => [$"Unknown action '{op.Action}'."],
-            };
-            errors.AddRange(result);
-        }
+        var errors = operations.SelectMany(script.Apply).ToList();
 
         if (errors.Count == 0)
             UpdateClipXml(clipName, script.ToXml(), originPluginId);
 
         return errors;
     }
-
-    private static List<string> ApplyAddStep(FmScript script, ScriptStepOperation op)
-    {
-        if (op.StepName is null) return ["StepName is required for add operations."];
-        if (!StepCatalogLoader.ByName.TryGetValue(op.StepName, out var definition))
-            return [$"Unknown step name '{op.StepName}'."];
-
-        var paramValues = definition.Params.Select(p =>
-        {
-            var paramName = p.HrLabel ?? p.WrapperElement ?? p.XmlElement;
-            string? value = null;
-            op.Params?.TryGetValue(paramName, out value);
-            return new StepParamValue(p, value);
-        }).ToList();
-
-        var step = new ScriptStep(definition, op.Enabled ?? true, paramValues);
-        var index = op.Index < 0 || op.Index >= script.Steps.Count ? script.Steps.Count : op.Index;
-        script.Steps.Insert(index, step);
-        return [];
-    }
-
-    private static List<string> ApplyUpdateStep(FmScript script, ScriptStepOperation op)
-    {
-        if (ValidateStepIndex(op.Index, script.Steps.Count) is { } err) return [err];
-
-        var step = script.Steps[op.Index];
-        if (op.Enabled is not null) step.Enabled = op.Enabled.Value;
-
-        if (op.Params is not null)
-        {
-            foreach (var (name, value) in op.Params)
-            {
-                var param = step.ParamValues.FirstOrDefault(p =>
-                {
-                    var paramName = p.Definition.HrLabel ?? p.Definition.WrapperElement ?? p.Definition.XmlElement;
-                    return paramName.Equals(name, StringComparison.OrdinalIgnoreCase);
-                });
-                if (param is not null) param.Value = value;
-                else return [$"Parameter '{name}' not found on step '{step.Definition?.Name ?? "unknown"}'."];
-            }
-        }
-        return [];
-    }
-
-    private static List<string> ApplyRemoveStep(FmScript script, ScriptStepOperation op)
-    {
-        if (ValidateStepIndex(op.Index, script.Steps.Count) is { } err) return [err];
-        script.Steps.RemoveAt(op.Index);
-        return [];
-    }
-
-    private static List<string> ApplyMoveStep(FmScript script, ScriptStepOperation op)
-    {
-        if (ValidateStepIndex(op.Index, script.Steps.Count) is { } err) return [err];
-        if (op.MoveToIndex is null) return ["MoveToIndex is required for move operations."];
-        if (ValidateStepIndex(op.MoveToIndex.Value, script.Steps.Count) is { } destErr)
-            return [destErr.Replace("Step index", "MoveToIndex")];
-
-        var step = script.Steps[op.Index];
-        script.Steps.RemoveAt(op.Index);
-        script.Steps.Insert(op.MoveToIndex.Value, step);
-        return [];
-    }
-
-    private static string? ValidateStepIndex(int index, int count) =>
-        index < 0 || index >= count
-            ? $"Step index {index} out of range (0-{count - 1})."
-            : null;
 
     // --- Table domain operations ---
 
@@ -294,63 +213,12 @@ public class PluginHost : IPluginHost
         if (!IsTableClip(clip.ClipType)) return [$"Clip '{clipName}' is not a table (type: {clip.ClipType})."];
 
         var table = FmTable.FromXml(clip.Xml);
-        var errors = new List<string>();
-
-        foreach (var op in operations)
-        {
-            var result = op.Action.ToLowerInvariant() switch
-            {
-                "add" => ApplyAddField(table, op),
-                "modify" => ApplyModifyField(table, op),
-                "remove" => ApplyRemoveField(table, op),
-                _ => [$"Unknown action '{op.Action}' for field '{op.FieldName}'."],
-            };
-            errors.AddRange(result);
-        }
+        var errors = operations.SelectMany(table.Apply).ToList();
 
         if (errors.Count == 0)
             UpdateClipXml(clipName, table.ToXml(), originPluginId);
 
         return errors;
-    }
-
-    private static List<string> ApplyAddField(FmTable table, FieldOperation op)
-    {
-        if (table.Fields.Any(f => f.Name.Equals(op.FieldName, StringComparison.OrdinalIgnoreCase)))
-            return [$"Field '{op.FieldName}' already exists."];
-
-        var field = new FmField { Name = op.FieldName };
-        ApplyFieldProperties(field, op);
-        table.AddField(field);
-        return [];
-    }
-
-    private static List<string> ApplyModifyField(FmTable table, FieldOperation op)
-    {
-        var field = table.Fields.FirstOrDefault(f => f.Name.Equals(op.FieldName, StringComparison.OrdinalIgnoreCase));
-        if (field is null) return [$"Field '{op.FieldName}' not found."];
-
-        if (op.NewName is not null) field.Name = op.NewName;
-        ApplyFieldProperties(field, op);
-        return [];
-    }
-
-    private static void ApplyFieldProperties(FmField field, FieldOperation op)
-    {
-        if (op.DataType is not null && Enum.TryParse<FieldDataType>(op.DataType, ignoreCase: true, out var dt)) field.DataType = dt;
-        if (op.Kind is not null && Enum.TryParse<FieldKind>(op.Kind, ignoreCase: true, out var kind)) field.Kind = kind;
-        if (op.Comment is not null) field.Comment = op.Comment;
-        if (op.Calculation is not null) field.Calculation = op.Calculation;
-        if (op.IsGlobal is not null) field.IsGlobal = op.IsGlobal.Value;
-        if (op.Repetitions is not null) field.Repetitions = op.Repetitions.Value;
-    }
-
-    private static List<string> ApplyRemoveField(FmTable table, FieldOperation op)
-    {
-        var field = table.Fields.FirstOrDefault(f => f.Name.Equals(op.FieldName, StringComparison.OrdinalIgnoreCase));
-        if (field is null) return [$"Field '{op.FieldName}' not found."];
-        table.RemoveField(field);
-        return [];
     }
 
     private ClipViewModel? FindClipByName(string clipName) =>

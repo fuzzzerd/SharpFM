@@ -63,4 +63,58 @@ public class FmTable
     {
         Fields.Remove(field);
     }
+
+    // --- Apply mutation operations ---
+
+    /// <summary>
+    /// Apply a single field operation to this table. Returns any errors as a list
+    /// (empty list = success).
+    /// </summary>
+    public IReadOnlyList<string> Apply(FieldOperation op) =>
+        op.Action.ToLowerInvariant() switch
+        {
+            "add" => ApplyAdd(op),
+            "modify" => ApplyModify(op),
+            "remove" => ApplyRemove(op),
+            _ => [$"Unknown action '{op.Action}' for field '{op.FieldName}'."],
+        };
+
+    private List<string> ApplyAdd(FieldOperation op)
+    {
+        if (Fields.Any(f => f.Name.Equals(op.FieldName, StringComparison.OrdinalIgnoreCase)))
+            return [$"Field '{op.FieldName}' already exists."];
+
+        var field = new FmField { Name = op.FieldName };
+        ApplyFieldProperties(field, op);
+        AddField(field);
+        return [];
+    }
+
+    private List<string> ApplyModify(FieldOperation op)
+    {
+        var field = Fields.FirstOrDefault(f => f.Name.Equals(op.FieldName, StringComparison.OrdinalIgnoreCase));
+        if (field is null) return [$"Field '{op.FieldName}' not found."];
+
+        if (op.NewName is not null) field.Name = op.NewName;
+        ApplyFieldProperties(field, op);
+        return [];
+    }
+
+    private List<string> ApplyRemove(FieldOperation op)
+    {
+        var field = Fields.FirstOrDefault(f => f.Name.Equals(op.FieldName, StringComparison.OrdinalIgnoreCase));
+        if (field is null) return [$"Field '{op.FieldName}' not found."];
+        RemoveField(field);
+        return [];
+    }
+
+    private static void ApplyFieldProperties(FmField field, FieldOperation op)
+    {
+        if (op.DataType is not null && Enum.TryParse<FieldDataType>(op.DataType, ignoreCase: true, out var dt)) field.DataType = dt;
+        if (op.Kind is not null && Enum.TryParse<FieldKind>(op.Kind, ignoreCase: true, out var kind)) field.Kind = kind;
+        if (op.Comment is not null) field.Comment = op.Comment;
+        if (op.Calculation is not null) field.Calculation = op.Calculation;
+        if (op.IsGlobal is not null) field.IsGlobal = op.IsGlobal.Value;
+        if (op.Repetitions is not null) field.Repetitions = op.Repetitions.Value;
+    }
 }
