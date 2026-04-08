@@ -39,6 +39,11 @@ public static class FmScriptCompletionProvider
 
         if (definition == null)
         {
+            // If we're already inside brackets of an unrecognized step, there's
+            // nothing useful to suggest — this isn't a step-name context anymore.
+            if (forLookup.Contains('['))
+                return (CompletionContext.None, Array.Empty<ICompletionData>());
+
             // No recognized step yet → suggest step names
             var items = GetStepNameCompletions(forLookup);
             return (CompletionContext.StepName, items);
@@ -175,7 +180,12 @@ public static class FmScriptCompletionProvider
     {
         var items = new List<ICompletionData>();
 
-        var segments = existingParams.Split(';')
+        // Strip the opening bracket so it isn't counted as a positional segment
+        var paramsText = existingParams.TrimStart();
+        if (paramsText.StartsWith('['))
+            paramsText = paramsText.Substring(1);
+
+        var segments = paramsText.Split(';')
             .Select(s => s.Trim())
             .Where(s => s.Length > 0)
             .ToList();
