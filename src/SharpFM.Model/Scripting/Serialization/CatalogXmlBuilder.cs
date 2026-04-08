@@ -29,7 +29,7 @@ namespace SharpFM.Model.Scripting.Serialization;
 /// Phase 3 reaches each affected step.
 /// </para>
 /// </summary>
-internal static class CatalogXmlBuilder
+public static class CatalogXmlBuilder
 {
     /// <summary>
     /// Build a complete <c>&lt;Step&gt;</c> element from a display-line
@@ -50,12 +50,17 @@ internal static class CatalogXmlBuilder
     public static XElement BuildStepFromMap(
         StepDefinition def, bool enabled, IReadOnlyDictionary<string, string?>? paramMap)
     {
-        var values = new Dictionary<string, string?>(StringComparer.Ordinal);
+        // Positional list — not a dict — because distinct catalog params
+        // can share an XmlElement (e.g. Show Custom Dialog's Title and
+        // Message both use XmlElement="Calculation" and differ only in
+        // WrapperElement). Keying by XmlElement would collide.
+        var values = new List<(StepParam Param, string? Value)>(def.Params.Length);
         foreach (var paramDef in def.Params)
         {
             var key = paramDef.HrLabel ?? paramDef.WrapperElement ?? paramDef.XmlElement;
-            if (paramMap != null && paramMap.TryGetValue(key, out var v))
-                values[paramDef.XmlElement] = v;
+            string? value = null;
+            paramMap?.TryGetValue(key, out value);
+            values.Add((paramDef, value));
         }
         return BuildStepFromValues(def, enabled, values);
     }
@@ -108,9 +113,16 @@ internal static class CatalogXmlBuilder
 
     // --- Display-param matching (ported from ScriptTextParser.MatchDisplayParams) ---
 
-    private static Dictionary<string, string?> MatchDisplayParams(string[] hrParams, StepDefinition definition)
+    /// <summary>
+    /// Match display-text tokens to catalog params, label-first then
+    /// positionally. Returns a positional list so distinct params
+    /// sharing an XmlElement (e.g. Show Custom Dialog Title / Message)
+    /// are preserved as independent slots.
+    /// </summary>
+    private static List<(StepParam Param, string? Value)> MatchDisplayParams(
+        string[] hrParams, StepDefinition definition)
     {
-        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var result = new List<(StepParam, string?)>(definition.Params.Length);
         var used = new bool[hrParams.Length];
 
         foreach (var paramDef in definition.Params)
@@ -147,7 +159,7 @@ internal static class CatalogXmlBuilder
                 }
             }
 
-            result[paramDef.XmlElement] = value;
+            result.Add((paramDef, value));
         }
 
         return result;
@@ -156,7 +168,7 @@ internal static class CatalogXmlBuilder
     // --- Step assembly ---
 
     private static XElement BuildStepFromValues(
-        StepDefinition def, bool enabled, IReadOnlyDictionary<string, string?> values)
+        StepDefinition def, bool enabled, IReadOnlyList<(StepParam Param, string? Value)> values)
     {
         var id = def.Id ?? 89;
         var step = new XElement("Step",
@@ -164,18 +176,21 @@ internal static class CatalogXmlBuilder
             new XAttribute("id", id),
             new XAttribute("name", def.Name));
 
-        if (def.SelfClosing && values.Values.All(v => v == null))
+        if (def.SelfClosing && values.All(v => v.Value == null))
             return step;
 
-        foreach (var paramDef in def.Params)
+        foreach (var (paramDef, value) in values)
         {
-            values.TryGetValue(paramDef.XmlElement, out var value);
             var element = BuildParamElement(paramDef, value);
             if (element == null) continue;
 
             if (paramDef.ParentElement != null || paramDef.WrapperElement != null)
             {
                 var wrapperName = paramDef.ParentElement ?? paramDef.WrapperElement!;
+                // Per-slot wrapper: Title and Message are different wrapper
+                // elements but share XmlElement="Calculation", so we add
+                // each to its own wrapper. If a step really wants multiple
+                // children under the same wrapper, reuse it.
                 var wrapper = step.Element(wrapperName);
                 if (wrapper == null)
                 {

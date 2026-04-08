@@ -160,18 +160,23 @@ public class ScriptStepTests
     }
 
     [Fact]
-    public void UnknownStep_PreservesSourceXml()
+    public void UnknownStep_RawStep_RoundTripsVerbatim()
     {
+        // Unknown steps (not present in the catalog) are wrapped in a
+        // RawStep with a null Definition. The source element is cloned
+        // and preserved, so ToXml returns a structurally identical
+        // element — name, id, children, and all — rather than being
+        // rewritten as a placeholder comment.
         var el = MakeStep("<Step enable=\"True\" id=\"9999\" name=\"FutureStep\"><Foo>bar</Foo></Step>");
         var step = ScriptStep.FromXml(el);
+
         Assert.Null(step.Definition);
-        Assert.NotNull(step.SourceXml);
-        // Display shows original name
         Assert.Contains("FutureStep", step.ToDisplayLine());
-        // XML serializes as comment with original name preserved
+
         var xml = step.ToXml();
-        Assert.Equal("# (comment)", xml.Attribute("name")?.Value);
-        Assert.Contains("FutureStep", xml.Element("Text")?.Value ?? "");
+        Assert.Equal("FutureStep", xml.Attribute("name")?.Value);
+        Assert.Equal("9999", xml.Attribute("id")?.Value);
+        Assert.Equal("bar", xml.Element("Foo")?.Value);
     }
 
     [Fact]
@@ -184,13 +189,17 @@ public class ScriptStepTests
     }
 
     [Fact]
-    public void FromDisplayLine_UnknownStep_HasNullDefinition()
+    public void FromDisplayLine_UnknownStep_PreservesRawText()
     {
+        // Unknown display-line text (nothing matching a catalog step
+        // name) is wrapped in a RawStep whose internal element carries
+        // the original text as a <RawText> child. ToXml emits the
+        // RawStep verbatim — no silent rewriting as a comment.
         var step = ScriptTextParser.FromDisplayLine("some random text");
         Assert.Null(step.Definition);
-        // But ToXml emits it as a comment for safety
+
         var xml = step.ToXml();
-        Assert.Equal("89", xml.Attribute("id")?.Value);
+        Assert.Equal("some random text", xml.Element("RawText")?.Value);
     }
 
     [Fact]

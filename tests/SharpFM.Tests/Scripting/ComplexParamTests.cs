@@ -1,8 +1,20 @@
+using System.Xml.Linq;
+using SharpFM.Model.Scripting;
+using SharpFM.Model.Scripting.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace SharpFM.Tests.Scripting;
 
+/// <summary>
+/// Verifies that complex-shaped params (arbitrary nested XML children
+/// like Show Custom Dialog's Buttons and InputFields) survive the
+/// ingestion → emission round-trip under the new catalog-driven
+/// pipeline. Complex params are extracted by
+/// <see cref="CatalogParamExtractor"/> as verbatim inner-XML strings
+/// and rebuilt by <see cref="CatalogXmlBuilder"/>, so any structure
+/// the caller puts in comes back out unchanged.
+/// </summary>
 public class ComplexParamTests
 {
     private readonly ITestOutputHelper _output;
@@ -10,11 +22,11 @@ public class ComplexParamTests
     public ComplexParamTests(ITestOutputHelper output) => _output = output;
 
     [Fact]
-    public void ShowCustomDialog_ComplexParams_RoundTrip()
+    public void ShowCustomDialog_ComplexParams_BuildAndEmitPreserveContent()
     {
         var def = StepCatalogLoader.ByName["Show Custom Dialog"];
 
-        var testParams = new Dictionary<string, string?>
+        var paramMap = new Dictionary<string, string?>
         {
             ["Title"] = "\"Enter a number\"",
             ["Message"] = "\"How many?\"",
@@ -22,18 +34,11 @@ public class ComplexParamTests
             ["InputFields"] = "<InputField><Target><Variable value=\"$n\"/></Target></InputField>"
         };
 
-        var paramValues = def.Params.Select(p =>
-        {
-            var paramName = p.HrLabel ?? p.WrapperElement ?? p.XmlElement;
-            testParams.TryGetValue(paramName, out var value);
-            return new StepParamValue(p, value);
-        }).ToList();
+        var element = CatalogXmlBuilder.BuildStepFromMap(def, enabled: true, paramMap);
+        var step = ScriptStep.FromXml(element);
+        var xmlStr = step.ToXml().ToString();
 
-        var step = new ScriptStep(def, true, paramValues);
-        var xml = step.ToXml();
-        var xmlStr = xml.ToString();
-
-        _output.WriteLine("=== XML ===");
+        _output.WriteLine("=== Emitted XML ===");
         _output.WriteLine(xmlStr);
 
         Assert.Contains("\"Enter a number\"", xmlStr);
@@ -44,7 +49,7 @@ public class ComplexParamTests
     }
 
     [Fact]
-    public void ShowCustomDialog_FromXml_PreservesComplexParams()
+    public void ShowCustomDialog_FromXml_PreservesComplexChildrenThroughRoundTrip()
     {
         var xml = @"<Step enable=""True"" id=""87"" name=""Show Custom Dialog"">
             <Title><Calculation><![CDATA[""Hello""]]></Calculation></Title>
@@ -58,31 +63,19 @@ public class ComplexParamTests
             </InputFields>
         </Step>";
 
-        var step = ScriptStep.FromXml(System.Xml.Linq.XElement.Parse(xml));
-
-        _output.WriteLine("=== ParamValues ===");
-        foreach (var pv in step.ParamValues)
-        {
-            var name = pv.Definition.HrLabel ?? pv.Definition.WrapperElement ?? pv.Definition.XmlElement;
-            _output.WriteLine($"  {name} ({pv.Definition.Type}) = {pv.Value ?? "(null)"}");
-        }
-
-        // Verify complex params were extracted
-        var buttons = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "Buttons");
-        var inputFields = step.ParamValues.FirstOrDefault(p => p.Definition.XmlElement == "InputFields");
-
-        Assert.NotNull(buttons?.Value);
-        Assert.Contains("<Button", buttons!.Value);
-        Assert.NotNull(inputFields?.Value);
-        Assert.Contains("$n", inputFields!.Value);
-
-        // Re-serialize — always uses ParamValues (no SourceXml dependency)
+        var step = ScriptStep.FromXml(XElement.Parse(xml));
         var output = step.ToXml().ToString();
 
-        _output.WriteLine("\n=== Re-serialized XML ===");
+        _output.WriteLine("=== Re-serialized XML ===");
         _output.WriteLine(output);
 
+        // The Buttons and InputFields nested structures must survive
+        // parse → emit without loss. The RawStep holds the source
+        // element verbatim, so re-serialization is byte-identical
+        // modulo whitespace.
         Assert.Contains("<Button", output);
+        Assert.Contains("\"OK\"", output);
+        Assert.Contains("\"Cancel\"", output);
         Assert.Contains("<InputField", output);
         Assert.Contains("$n", output);
     }

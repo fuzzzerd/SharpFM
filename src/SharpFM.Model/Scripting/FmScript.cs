@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Steps;
 
 namespace SharpFM.Model.Scripting;
 
@@ -137,15 +139,12 @@ public class FmScript
         if (!StepCatalogLoader.ByName.TryGetValue(op.StepName, out var definition))
             return [$"Unknown step name '{op.StepName}'."];
 
-        var paramValues = definition.Params.Select(p =>
-        {
-            var paramName = p.HrLabel ?? p.WrapperElement ?? p.XmlElement;
-            string? value = null;
-            op.Params?.TryGetValue(paramName, out value);
-            return new StepParamValue(p, value);
-        }).ToList();
+        // Build the step element via the stateless catalog builder from the
+        // caller-supplied param map. Wrap the result in a RawStep —
+        // typed POCOs will override this arm as they migrate.
+        var element = CatalogXmlBuilder.BuildStepFromMap(definition, op.Enabled ?? true, op.Params);
+        var step = new RawStep(element, definition);
 
-        var step = new ScriptStep(definition, op.Enabled ?? true, paramValues);
         var index = op.Index < 0 || op.Index >= Steps.Count ? Steps.Count : op.Index;
         Steps.Insert(index, step);
         return [];
@@ -158,19 +157,28 @@ public class FmScript
         var step = Steps[op.Index];
         if (op.Enabled is not null) step.Enabled = op.Enabled.Value;
 
-        if (op.Params is not null)
+        if (op.Params is null) return [];
+
+        // Only RawStep currently supports in-place param updates via the
+        // generic catalog path. Typed POCOs will need their own update
+        // branches as they migrate — for now, those step kinds can't be
+        // edited through the MCP apply API, which is an accepted
+        // transitional limitation.
+        if (step is not RawStep rawStep || step.Definition is null)
         {
-            foreach (var (name, value) in op.Params)
-            {
-                var param = step.ParamValues.FirstOrDefault(p =>
-                {
-                    var paramName = p.Definition.HrLabel ?? p.Definition.WrapperElement ?? p.Definition.XmlElement;
-                    return paramName.Equals(name, StringComparison.OrdinalIgnoreCase);
-                });
-                if (param is not null) param.Value = value;
-                else return [$"Parameter '{name}' not found on step '{step.Definition?.Name ?? "unknown"}'."];
-            }
+            return [$"Apply/update is not yet supported for step '{step.Definition?.Name ?? "unknown"}'."];
         }
+
+        var updatedElement = rawStep.ToXml();
+        foreach (var (name, value) in op.Params)
+        {
+            var next = CatalogXmlBuilder.UpdateParam(updatedElement, step.Definition, name, value);
+            if (next is null)
+                return [$"Parameter '{name}' not found on step '{step.Definition.Name}'."];
+            updatedElement = next;
+        }
+
+        Steps[op.Index] = new RawStep(updatedElement, step.Definition);
         return [];
     }
 
