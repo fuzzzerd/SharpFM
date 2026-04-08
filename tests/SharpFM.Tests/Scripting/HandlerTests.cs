@@ -142,6 +142,90 @@ public class HandlerTests
 
     // --- GoToLayoutHandler ---
 
+    // Verbatim FM Pro clipboard XML for a Go to Layout step. Used as
+    // ground truth for display rendering and round-trip preservation tests.
+    private const string VerbatimGoToLayoutXml =
+        "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
+        + "<LayoutDestination value=\"SelectedLayout\"></LayoutDestination>"
+        + "<Layout id=\"81\" name=\"Projects\"></Layout>"
+        + "<Animation value=\"SlideFromLeft\"></Animation></Step>";
+
+    // Verbatim FM Pro clipboard XML for a by-calculation Go to Layout step.
+    // Note the real FM enum value "LayoutNameByCalc" (not "LayoutNameByCalculation"),
+    // and the <Calculation> nested inside <Layout> rather than as a sibling.
+    private const string VerbatimGoToLayoutByCalcXml =
+        "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
+        + "<LayoutDestination value=\"LayoutNameByCalc\"></LayoutDestination>"
+        + "<Layout><Calculation><![CDATA[\"SomeCALcluLATion\"]]></Calculation></Layout>"
+        + "<Animation value=\"CrossDissolve\"></Animation></Step>";
+
+    // Verbatim FM Pro clipboard XML for a by-layout-number Go to Layout step.
+    // Same nested Calculation shape as by-calc-name, but with LayoutNumberByCalc.
+    private const string VerbatimGoToLayoutByNumberXml =
+        "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
+        + "<LayoutDestination value=\"LayoutNumberByCalc\"></LayoutDestination>"
+        + "<Layout><Calculation><![CDATA[369*3]]></Calculation></Layout>"
+        + "<Animation value=\"SlideToLeft\"></Animation></Step>";
+
+    // Verbatim FM Pro clipboard XML for a Go to Original Layout step.
+    // OriginalLayout always omits <Layout>; in this particular sample the user
+    // also left Animation at default and it's absent, but OriginalLayout with
+    // an animation set IS valid and must still round-trip.
+    private const string VerbatimGoToLayoutOriginalXml =
+        "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
+        + "<LayoutDestination value=\"OriginalLayout\"></LayoutDestination></Step>";
+
+    [Fact]
+    public void GoToLayout_Display_Verbatim_PreservesLayoutIdAndAnimation()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutXml));
+
+        // The (#81) suffix is SharpFM's lossless extension: FM Pro shows the
+        // layout's base table there, but that requires schema lookup we don't
+        // have. Encoding the id ensures nothing is lost on round-trip.
+        Assert.Equal(
+            "Go to Layout [ \"Projects\" (#81) ; Animation: SlideFromLeft ]",
+            step.ToDisplayLine());
+    }
+
+    [Fact]
+    public void GoToLayout_RoundTrip_Verbatim_PreservesLayoutIdAndAnimation()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutXml));
+        var xml = step.ToXml();
+
+        var layout = xml.Element("Layout");
+        Assert.NotNull(layout);
+        Assert.Equal("81", layout!.Attribute("id")!.Value);
+        Assert.Equal("Projects", layout.Attribute("name")!.Value);
+
+        var animation = xml.Element("Animation");
+        Assert.NotNull(animation);
+        Assert.Equal("SlideFromLeft", animation!.Attribute("value")!.Value);
+    }
+
+    [Fact]
+    public void GoToLayout_RoundTrip_Verbatim_FromDisplayText_PreservesId()
+    {
+        // Full FromXml -> ToDisplayLine -> BuildXmlFromDisplay round-trip
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutXml));
+        var display = step.ToDisplayLine();
+
+        var handler = new GoToLayoutHandler();
+        var def = StepCatalogLoader.ByName["Go to Layout"];
+        // Strip "Go to Layout [ " and " ]" and split on " ; " to get params
+        var inner = display.Substring("Go to Layout [ ".Length);
+        inner = inner.Substring(0, inner.Length - " ]".Length);
+        var parts = inner.Split(" ; ");
+
+        var rebuilt = handler.BuildXmlFromDisplay(def, true, parts);
+
+        Assert.NotNull(rebuilt);
+        Assert.Equal("81", rebuilt!.Element("Layout")!.Attribute("id")!.Value);
+        Assert.Equal("Projects", rebuilt.Element("Layout")!.Attribute("name")!.Value);
+        Assert.Equal("SlideFromLeft", rebuilt.Element("Animation")!.Attribute("value")!.Value);
+    }
+
     [Fact]
     public void GoToLayout_Display_NamedLayout()
     {
@@ -151,30 +235,83 @@ public class HandlerTests
             + "<Layout id=\"1\" name=\"Detail\"/></Step>");
         var step = ScriptStep.FromXml(el);
 
-        Assert.Equal("Go to Layout [ \"Detail\" ]", step.ToDisplayLine());
+        Assert.Equal("Go to Layout [ \"Detail\" (#1) ]", step.ToDisplayLine());
     }
 
     [Fact]
-    public void GoToLayout_Display_OriginalLayout()
+    public void GoToLayout_Display_OriginalLayout_Verbatim()
     {
-        var el = MakeStep(
-            "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
-            + "<LayoutDestination value=\"OriginalLayout\"/></Step>");
-        var step = ScriptStep.FromXml(el);
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutOriginalXml));
 
         Assert.Equal("Go to Layout [ original layout ]", step.ToDisplayLine());
     }
 
     [Fact]
-    public void GoToLayout_Display_ByCalculation()
+    public void GoToLayout_RoundTrip_OriginalLayout_PreservesStructure()
     {
-        var el = MakeStep(
-            "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
-            + "<LayoutDestination value=\"LayoutNameByCalculation\"/>"
-            + "<Calculation><![CDATA[$layoutName]]></Calculation></Step>");
-        var step = ScriptStep.FromXml(el);
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutOriginalXml));
+        var xml = step.ToXml();
 
-        Assert.Equal("Go to Layout [ $layoutName ]", step.ToDisplayLine());
+        Assert.Equal("OriginalLayout",
+            xml.Element("LayoutDestination")!.Attribute("value")!.Value);
+        Assert.Null(xml.Element("Layout"));
+        Assert.Null(xml.Element("Animation"));
+    }
+
+    [Fact]
+    public void GoToLayout_Display_ByCalculation_Verbatim()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutByCalcXml));
+
+        Assert.Equal(
+            "Go to Layout [ Layout Name: \"SomeCALcluLATion\" ; Animation: CrossDissolve ]",
+            step.ToDisplayLine());
+    }
+
+    [Fact]
+    public void GoToLayout_RoundTrip_ByCalculation_PreservesCalcAndAnimation()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutByCalcXml));
+        var xml = step.ToXml();
+
+        Assert.Equal("LayoutNameByCalc",
+            xml.Element("LayoutDestination")!.Attribute("value")!.Value);
+        // The Calculation must remain nested inside <Layout>, matching FM's format.
+        var layout = xml.Element("Layout");
+        Assert.NotNull(layout);
+        Assert.Null(layout!.Attribute("id"));
+        Assert.Null(layout.Attribute("name"));
+        Assert.Contains("\"SomeCALcluLATion\"",
+            layout.Element("Calculation")!.Value);
+        Assert.Equal("CrossDissolve",
+            xml.Element("Animation")!.Attribute("value")!.Value);
+    }
+
+    [Fact]
+    public void GoToLayout_Display_ByNumber_Verbatim()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutByNumberXml));
+
+        Assert.Equal(
+            "Go to Layout [ Layout Number: 369*3 ; Animation: SlideToLeft ]",
+            step.ToDisplayLine());
+    }
+
+    [Fact]
+    public void GoToLayout_RoundTrip_ByNumber_PreservesCalcAndAnimation()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimGoToLayoutByNumberXml));
+        var xml = step.ToXml();
+
+        Assert.Equal("LayoutNumberByCalc",
+            xml.Element("LayoutDestination")!.Attribute("value")!.Value);
+        var layout = xml.Element("Layout");
+        Assert.NotNull(layout);
+        Assert.Null(layout!.Attribute("id"));
+        Assert.Null(layout.Attribute("name"));
+        Assert.Contains("369*3", layout.Element("Calculation")!.Value);
+        Assert.Equal("SlideToLeft",
+            xml.Element("Animation")!.Attribute("value")!.Value);
     }
 
     [Fact]
@@ -187,7 +324,7 @@ public class HandlerTests
             + "<Animation value=\"SlideLeft\"/></Step>");
         var step = ScriptStep.FromXml(el);
 
-        Assert.Equal("Go to Layout [ \"Detail\" ; Animation: SlideLeft ]", step.ToDisplayLine());
+        Assert.Equal("Go to Layout [ \"Detail\" (#1) ; Animation: SlideLeft ]", step.ToDisplayLine());
     }
 
     [Fact]
@@ -206,10 +343,11 @@ public class HandlerTests
     {
         var handler = new GoToLayoutHandler();
         var def = new StepDefinition { Name = "Go to Layout" };
-        var xml = handler.BuildXmlFromDisplay(def, true, ["\"Detail\""]);
+        var xml = handler.BuildXmlFromDisplay(def, true, ["\"Detail\" (#1)"]);
 
         Assert.Equal("SelectedLayout", xml!.Element("LayoutDestination")!.Attribute("value")!.Value);
         Assert.Equal("Detail", xml.Element("Layout")!.Attribute("name")!.Value);
+        Assert.Equal("1", xml.Element("Layout")!.Attribute("id")!.Value);
     }
 
     // --- GoToRecordHandler ---
