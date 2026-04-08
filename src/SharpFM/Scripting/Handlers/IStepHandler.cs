@@ -15,4 +15,10 @@ public interface IStepHandler
 
     /// <summary>Build XML from parsed display text params. Return null to fall through to generic.</summary>
     XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams);
+
+    /// <summary>
+    /// Render a specialized display line for this step. Return null to fall through
+    /// to the generic ParamValues-based renderer on <see cref="ScriptStep.ToDisplayLine"/>.
+    /// </summary>
+    string? ToDisplayLine(ScriptStep step) => null;
 }

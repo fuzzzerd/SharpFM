@@ -1,10 +1,33 @@
+using System.Linq;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Scripting.Handlers;
 
 internal class SetFieldHandler : StepHandlerBase, IStepHandler
 {
     public string[] StepNames => ["Set Field"];
+
+    public string? ToDisplayLine(ScriptStep step)
+    {
+        // Catalog order: [Calculation, Field]. Canonical display swaps them:
+        // Field appears first, Calculation second.
+        var calc = step.ParamValues
+            .FirstOrDefault(p => p.Definition.XmlElement == "Calculation")?.Value;
+        var field = step.ParamValues
+            .FirstOrDefault(p => p.Definition.XmlElement == "Field")?.Value;
+
+        if (string.IsNullOrEmpty(field) && string.IsNullOrEmpty(calc))
+            return "Set Field";
+
+        if (!string.IsNullOrEmpty(field) && !string.IsNullOrEmpty(calc))
+            return $"Set Field [ {field} ; {calc} ]";
+
+        if (!string.IsNullOrEmpty(field))
+            return $"Set Field [ {field} ]";
+
+        return $"Set Field [ {calc} ]";
+    }
 
     public XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams)
     {

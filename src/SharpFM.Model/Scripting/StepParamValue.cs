@@ -191,6 +191,8 @@ public class StepParamValue
         var name = element.Attribute("name")?.Value;
         if (!string.IsNullOrEmpty(table) && !string.IsNullOrEmpty(name))
             return $"{table}::{name}";
+        if (!string.IsNullOrEmpty(name))
+            return name;
         var text = element.Value;
         return string.IsNullOrEmpty(text) ? null : text;
     }

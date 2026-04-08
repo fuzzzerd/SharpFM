@@ -1,11 +1,39 @@
 using System;
+using System.Linq;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Scripting.Handlers;
 
 internal class SetVariableHandler : StepHandlerBase, IStepHandler
 {
     public string[] StepNames => ["Set Variable"];
+
+    public string? ToDisplayLine(ScriptStep step)
+    {
+        // Catalog params: [Value(namedCalc), Repetition(namedCalc), Name(text)].
+        // Canonical display: "Set Variable [ $name[rep] ; Value: <value> ]"
+        // with "[rep]" hidden when repetition is empty or "1".
+        string? name = null, value = null, repetition = null;
+        foreach (var pv in step.ParamValues)
+        {
+            if (pv.Definition.XmlElement == "Name") name = pv.Value;
+            else if (pv.Definition.WrapperElement == "Value") value = pv.Value;
+            else if (pv.Definition.WrapperElement == "Repetition") repetition = pv.Value;
+        }
+
+        if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(value))
+            return "Set Variable";
+
+        var nameWithRep = name ?? "";
+        if (!string.IsNullOrEmpty(repetition) && repetition != "1")
+            nameWithRep = $"{nameWithRep}[{repetition}]";
+
+        if (value == null)
+            return $"Set Variable [ {nameWithRep} ]";
+
+        return $"Set Variable [ {nameWithRep} ; Value: {value} ]";
+    }
 
     public XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams)
     {

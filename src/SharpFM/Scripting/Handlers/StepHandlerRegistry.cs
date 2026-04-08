@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Scripting.Handlers;
 
@@ -21,6 +23,21 @@ internal static class StepHandlerRegistry
         Register(new GoToRecordHandler());
         Register(new ShowCustomDialogHandler());
         Register(new ControlFlowHandler());
+
+        // Wire the specialized display renderer hook so ScriptStep.ToDisplayLine
+        // can defer to step-specific handlers for canonical FileMaker formatting.
+        ScriptStep.SpecializedDisplayRenderer = DispatchDisplayRender;
+    }
+
+    /// <summary>
+    /// Module initializer: ensures the static constructor above runs as soon as
+    /// the SharpFM assembly is loaded, so the SpecializedDisplayRenderer hook is
+    /// installed before any code calls ScriptStep.ToDisplayLine.
+    /// </summary>
+    [ModuleInitializer]
+    internal static void Initialize()
+    {
+        RuntimeHelpers.RunClassConstructor(typeof(StepHandlerRegistry).TypeHandle);
     }
 
     private static void Register(IStepHandler handler)
@@ -32,5 +49,11 @@ internal static class StepHandlerRegistry
     internal static IStepHandler? Get(string stepName)
     {
         return _handlers.TryGetValue(stepName, out var handler) ? handler : null;
+    }
+
+    internal static string? DispatchDisplayRender(ScriptStep step)
+    {
+        if (step.Definition == null) return null;
+        return Get(step.Definition.Name)?.ToDisplayLine(step);
     }
 }

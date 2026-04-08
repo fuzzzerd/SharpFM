@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Scripting.Handlers;
 
@@ -14,6 +16,22 @@ internal class ControlFlowHandler : StepHandlerBase, IStepHandler
         "Loop",
         "End Loop"
     ];
+
+    public string? ToDisplayLine(ScriptStep step)
+    {
+        // Control-flow steps only surface the Calculation (condition). The Restore
+        // boolean on If/Else If is internal plumbing and must never appear in the
+        // canonical display — even when the param has round-tripped to its default.
+        if (step.Definition == null) return null;
+
+        var calc = step.ParamValues
+            .FirstOrDefault(p => p.Definition.XmlElement == "Calculation")?.Value;
+
+        if (string.IsNullOrEmpty(calc))
+            return step.Definition.Name;
+
+        return $"{step.Definition.Name} [ {calc} ]";
+    }
 
     public XElement? BuildXmlFromDisplay(StepDefinition definition, bool enabled, string[] hrParams)
     {

@@ -7,14 +7,23 @@ namespace SharpFM.Model.Scripting;
 
 public partial class ScriptStep
 {
+    /// <summary>
+    /// Optional hook for specialized display-text renderers (set by app at startup).
+    /// When null or returns null, ToDisplayLine falls back to the generic param renderer.
+    /// </summary>
+    public static Func<ScriptStep, string?>? SpecializedDisplayRenderer { get; set; }
+
     public StepDefinition? Definition { get; }
     public bool Enabled { get; set; }
     public List<StepParamValue> ParamValues { get; }
 
     /// <summary>
-    /// Original XML element, kept only for unknown steps (Definition == null)
-    /// as a fallback for display and serialization. For known steps, ParamValues
-    /// is always the source of truth.
+    /// Original XML element when the step was parsed from XML. For unknown steps
+    /// (Definition == null) this is the canonical fallback for display/serialization.
+    /// For known steps it is retained as a read-only reference so specialized
+    /// display renderers can consult XML-only details (e.g. the Calculation under
+    /// a LayoutNameByCalculation Go to Layout) that aren't modelled as a param.
+    /// ParamValues remains the source of truth for serialization (ToXml).
     /// </summary>
     public XElement? SourceXml { get; }
 
@@ -47,7 +56,7 @@ public partial class ScriptStep
             .Select(p => StepParamValue.FromXml(stepElement, p))
             .ToList();
 
-        return new ScriptStep(definition, enabled, paramValues);
+        return new ScriptStep(definition, enabled, paramValues, new XElement(stepElement));
     }
 
     // --- Serialize to XML (always from ParamValues) ---
@@ -101,6 +110,12 @@ public partial class ScriptStep
             var text = ParamValues.FirstOrDefault()?.Value ?? "";
             return $"# {text}";
         }
+
+        // Specialized renderers (set by the SharpFM app) handle steps whose
+        // canonical FileMaker display differs from a simple param join.
+        var specialized = SpecializedDisplayRenderer?.Invoke(this);
+        if (specialized != null)
+            return specialized;
 
         var parts = ParamValues
             .Select(p => p.ToDisplayString())
