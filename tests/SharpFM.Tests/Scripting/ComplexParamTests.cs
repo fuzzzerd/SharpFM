@@ -26,12 +26,14 @@ public class ComplexParamTests
     {
         var def = StepCatalogLoader.ByName["Show Custom Dialog"];
 
+        // InputFields use FM Pro's actual wire shape: <InputField><Field>$n</Field>...
+        // (not the earlier speculative <Target><Variable value="$n"/></Target>).
         var paramMap = new Dictionary<string, string?>
         {
             ["Title"] = "\"Enter a number\"",
             ["Message"] = "\"How many?\"",
             ["Buttons"] = "<Button CommitState=\"True\"><Calculation><![CDATA[\"OK\"]]></Calculation></Button>",
-            ["InputFields"] = "<InputField><Target><Variable value=\"$n\"/></Target></InputField>"
+            ["InputFields"] = "<InputField UsePasswordCharacter=\"False\"><Field>$n</Field></InputField>"
         };
 
         var element = CatalogXmlBuilder.BuildStepFromMap(def, enabled: true, paramMap);
@@ -59,7 +61,7 @@ public class ComplexParamTests
                 <Button CommitState=""True""><Calculation><![CDATA[""Cancel""]]></Calculation></Button>
             </Buttons>
             <InputFields>
-                <InputField><Target><Variable value=""$n""/></Target></InputField>
+                <InputField UsePasswordCharacter=""False""><Field>$n</Field></InputField>
             </InputFields>
         </Step>";
 
@@ -69,10 +71,7 @@ public class ComplexParamTests
         _output.WriteLine("=== Re-serialized XML ===");
         _output.WriteLine(output);
 
-        // The Buttons and InputFields nested structures must survive
-        // parse → emit without loss. The RawStep holds the source
-        // element verbatim, so re-serialization is byte-identical
-        // modulo whitespace.
+        // All Buttons and InputField content must survive parse → emit.
         Assert.Contains("<Button", output);
         Assert.Contains("\"OK\"", output);
         Assert.Contains("\"Cancel\"", output);

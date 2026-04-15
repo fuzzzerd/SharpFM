@@ -124,7 +124,11 @@ public class ScriptStepTests
         var step = ScriptStep.FromXml(el);
         var display = step.ToDisplayLine();
         Assert.Contains("Title: \"Warning\"", display);
-        Assert.Contains("Buttons: \"OK\", \"Cancel\"", display);
+        // New lossless format: each slot carries its CommitState alongside
+        // the label calc source. See ShowCustomDialogStep / style guide in
+        // docs/step-definitions.md for the trailing-keyword convention.
+        Assert.Contains("\"OK\" commit", display);
+        Assert.Contains("\"Cancel\" commit", display);
     }
 
     [Fact]

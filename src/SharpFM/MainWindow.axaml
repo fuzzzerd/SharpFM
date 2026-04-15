@@ -38,6 +38,8 @@
             <MenuItem Header="_Edit">
                 <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste from FileMaker" InputGesture="Ctrl+V" />
                 <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" InputGesture="Ctrl+Shift+C" />
+                <MenuItem Command="{Binding CopyAsScript}" Header="Copy as Script (whole script)" />
+                <MenuItem Command="{Binding CopyAsScriptSteps}" Header="Copy as Script Steps (lines only)" />
                 <Separator />
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
                 <Separator />
@@ -149,6 +151,12 @@
                                             <MenuItem
                                                 Command="{Binding CopySelectedToClip}"
                                                 Header="Copy to FileMaker" />
+                                            <MenuItem
+                                                Command="{Binding CopyAsScript}"
+                                                Header="Copy as Script" />
+                                            <MenuItem
+                                                Command="{Binding CopyAsScriptSteps}"
+                                                Header="Copy as Script Steps" />
                                             <MenuItem
                                                 Command="{Binding CopyAsClass}"
                                                 Header="Copy as C# Class" />

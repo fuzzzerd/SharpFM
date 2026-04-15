@@ -149,7 +149,13 @@ public sealed class GoToLayoutStep : ScriptStep
                 break;
 
             case LayoutTarget.Named named:
-                parts.Add($"\"{named.Layout.Name}\" (#{named.Layout.Id})");
+                // id=0 is the "unknown" sentinel (user edited display text
+                // and dropped the suffix, or caller constructed without an
+                // id). Suppressing (#0) keeps the display clean when we
+                // don't actually have an id to preserve.
+                parts.Add(named.Layout.Id == 0
+                    ? $"\"{named.Layout.Name}\""
+                    : $"\"{named.Layout.Name}\" (#{named.Layout.Id})");
                 break;
 
             case LayoutTarget.ByNameCalc byName:

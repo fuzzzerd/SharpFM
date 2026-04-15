@@ -13,9 +13,18 @@ public class FmScript
 {
     public List<ScriptStep> Steps { get; }
 
-    public FmScript(List<ScriptStep> steps)
+    /// <summary>
+    /// Wrapper metadata from a Mac-XMSC ("Script") clipboard payload.
+    /// Null for Mac-XMSS ("ScriptSteps") payloads. When non-null,
+    /// <see cref="ToXml"/> emits the <c>&lt;Script&gt;</c> wrapper so the
+    /// output is paste-compatible with FM Pro under the Mac-XMSC format.
+    /// </summary>
+    public ScriptMetadata? Metadata { get; set; }
+
+    public FmScript(List<ScriptStep> steps, ScriptMetadata? metadata = null)
     {
         Steps = steps;
+        Metadata = metadata;
     }
 
     // --- Parse FM XML into model ---
@@ -30,14 +39,23 @@ public class FmScript
         var root = doc.Root;
         if (root == null) return new FmScript(new List<ScriptStep>());
 
-        // Mac-XMSC: steps inside <Script> wrapper
+        // Mac-XMSC: steps inside <Script> wrapper — preserve wrapper attrs.
+        // Mac-XMSS: steps directly under <fmxmlsnippet> root — no metadata.
         var script = root.Element("Script");
-        var stepElements = script != null
-            ? script.Elements("Step")
-            : root.Elements("Step");
+        ScriptMetadata? metadata = null;
+        IEnumerable<XElement> stepElements;
+        if (script != null)
+        {
+            metadata = ScriptMetadata.FromXml(script);
+            stepElements = script.Elements("Step");
+        }
+        else
+        {
+            stepElements = root.Elements("Step");
+        }
 
         var steps = stepElements.Select(ScriptStep.FromXml).ToList();
-        return new FmScript(steps);
+        return new FmScript(steps, metadata);
     }
 
     // --- Serialize to FM XML ---
@@ -46,9 +64,17 @@ public class FmScript
     {
         var root = new XElement("fmxmlsnippet", new XAttribute("type", "FMObjectList"));
 
-        foreach (var step in Steps)
+        if (Metadata is not null)
         {
-            root.Add(step.ToXml());
+            var scriptEl = Metadata.ToXmlElement();
+            foreach (var step in Steps)
+                scriptEl.Add(step.ToXml());
+            root.Add(scriptEl);
+        }
+        else
+        {
+            foreach (var step in Steps)
+                root.Add(step.ToXml());
         }
 
         return XmlHelpers.PrettyPrint(root.ToString());
