@@ -121,4 +121,37 @@ public class ScriptValidatorTests
         Assert.Single(diagnostics);
         Assert.Contains("Unknown script step", diagnostics[0].Message);
     }
+
+    [Fact]
+    public void MultiLineCalc_ContinuationLines_NotFlaggedAsUnknownSteps()
+    {
+        // Regression: continuation lines of a multi-line calc were being
+        // validated as separate steps and failing the catalog lookup,
+        // producing spurious "Unknown script step" red squiggles on every
+        // continuation line of a multi-line If/Else If/Set Variable etc.
+        var script =
+            "Else If [ Case ( $a > 1; 1;\n" +
+            "                 $b > 3; 4 ) ]\n" +
+            "End If";
+        // The Else If is unmatched (no opening If); that's the only legit
+        // diagnostic. Continuation line 2 must NOT produce an "Unknown
+        // script step" error for "$b > 3; 4 ) ]".
+        var diagnostics = ScriptValidator.Validate(script);
+
+        Assert.DoesNotContain(diagnostics, d => d.Message.Contains("Unknown script step"));
+    }
+
+    [Fact]
+    public void MultiLineSetVariable_ValidatesCleanly()
+    {
+        // Realistic multi-line Set Variable inside an If block — should
+        // produce zero diagnostics.
+        var script =
+            "If [ $x > 0 ]\n" +
+            "    Set Variable [ $y ; Value: Let ( a = 1 ;\n" +
+            "                                     a + 1 ) ]\n" +
+            "End If";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
 }

@@ -88,16 +88,20 @@ public class FmScript
         return string.Join("\n", lines);
     }
 
+    /// <summary>
+    /// One indent level as emitted by <see cref="ToDisplayLines"/>. Exported so
+    /// the parser (<see cref="ScriptLineParser"/>) can measure and strip block
+    /// indent with the same width used at render time.
+    /// </summary>
+    internal const string IndentUnit = "    ";
+
     public string[] ToDisplayLines()
     {
         var result = new List<string>();
         int indentLevel = 0;
-        const string indent = "    ";
 
         foreach (var step in Steps)
         {
-            var name = step.Definition?.Name ?? "";
-
             // Decrease indent before close/middle blocks
             if (step.Definition?.BlockPair?.Role is BlockPairRole.Close or BlockPairRole.Middle && indentLevel > 0)
                 indentLevel--;
@@ -108,15 +112,29 @@ public class FmScript
             if (!step.Enabled)
                 displayLine = $"// {displayLine}";
 
-            // Apply indentation
-            if (indentLevel > 0)
-                displayLine = string.Concat(Enumerable.Repeat(indent, indentLevel)) + displayLine;
+            // Apply block indentation
+            var blockIndent = indentLevel > 0
+                ? string.Concat(Enumerable.Repeat(IndentUnit, indentLevel))
+                : string.Empty;
+            displayLine = blockIndent + displayLine;
 
-            // Comments may produce multi-line output
             if (displayLine.Contains('\n'))
             {
-                foreach (var subLine in displayLine.Split('\n'))
-                    result.Add(subLine);
+                var subLines = displayLine.Split('\n');
+
+                // Align continuation lines to the column immediately after the
+                // first line's opening '[ '. Matches FM Pro's convention of
+                // treating each step as one "line" — visual breaks for calc
+                // newlines sit aligned under the bracket content.
+                var firstLine = subLines[0];
+                var bracketIdx = firstLine.IndexOf('[');
+                var continuationIndent = bracketIdx >= 0
+                    ? new string(' ', bracketIdx + 2)
+                    : blockIndent;
+
+                result.Add(firstLine);
+                for (int i = 1; i < subLines.Length; i++)
+                    result.Add(continuationIndent + subLines[i]);
             }
             else
             {

@@ -16,12 +16,31 @@ public static class ScriptValidator
         var textLines = displayText.Split('\n');
         var blockStack = new Stack<(string Name, int Line)>();
 
+        // Build a continuation-line lookup: text lines INSIDE a multi-line
+        // statement (lines after the step's first line, up to the closing
+        // bracket) must NOT be validated as separate steps. They're part
+        // of the calc above.
+        var ranges = MultiLineStatementRanges.Compute(displayText);
+        var continuationLineZeroIndexed = new HashSet<int>();
+        foreach (var (start, end) in ranges)
+        {
+            // start/end are 1-indexed in ranges. Continuation lines are
+            // (start+1)..end inclusive — converted to 0-indexed = start..(end-1).
+            for (int ln = start; ln <= end - 1; ln++)
+                continuationLineZeroIndexed.Add(ln);
+        }
+
         // Walk actual text lines for correct positions
         int stepIndex = 0;
         for (int lineNum = 0; lineNum < textLines.Length; lineNum++)
         {
             var rawLine = textLines[lineNum].TrimEnd('\r');
             if (string.IsNullOrWhiteSpace(rawLine))
+                continue;
+
+            // Skip continuation lines of a multi-line step — they are
+            // parsed as part of the owning step's calc, not standalone steps.
+            if (continuationLineZeroIndexed.Contains(lineNum))
                 continue;
 
             var trimmed = rawLine.TrimStart();

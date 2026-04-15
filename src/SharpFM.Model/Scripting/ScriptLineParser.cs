@@ -26,10 +26,20 @@ public static class ScriptLineParser
         return result;
     }
 
+    /// <summary>
+    /// Merge consecutive display-text lines that belong to a single logical
+    /// step (continuation lines from a multi-line calculation). Render-side
+    /// counterpart in <see cref="FmScript.ToDisplayLines"/> aligns continuation
+    /// lines to the column just after the step's opening <c>[</c>; this method
+    /// strips up to that many leading spaces from each continuation line so
+    /// the user's authored calc indent (anything beyond the bracket column)
+    /// survives the round-trip byte-for-byte.
+    /// </summary>
     public static List<string> MergeMultilineStatements(string[] lines)
     {
         var result = new List<string>();
         System.Text.StringBuilder? accumulator = null;
+        int continuationStrip = 0;
 
         for (int i = 0; i < lines.Length; i++)
         {
@@ -40,6 +50,7 @@ public static class ScriptLineParser
                 if (HasUnbalancedBrackets(line))
                 {
                     accumulator = new System.Text.StringBuilder(line);
+                    continuationStrip = ComputeContinuationStrip(line);
                 }
                 else
                 {
@@ -48,13 +59,15 @@ public static class ScriptLineParser
             }
             else
             {
-                accumulator.Append('\n').Append(line);
+                var stripped = StripLeadingSpaces(line, continuationStrip);
+                accumulator.Append('\n').Append(stripped);
                 var merged = accumulator.ToString();
 
                 if (!HasUnbalancedBrackets(merged))
                 {
                     result.Add(merged);
                     accumulator = null;
+                    continuationStrip = 0;
                 }
             }
         }
@@ -63,6 +76,32 @@ public static class ScriptLineParser
             result.Add(accumulator.ToString());
 
         return result;
+    }
+
+    /// <summary>
+    /// Continuation indent column for a step's first display line: the
+    /// column immediately after the opening <c>[</c> + following space.
+    /// Returns 0 if no <c>[</c> is present (defensive — the only path that
+    /// reaches this method already requires unbalanced brackets).
+    /// </summary>
+    private static int ComputeContinuationStrip(string firstLine)
+    {
+        var bracketIdx = firstLine.IndexOf('[');
+        return bracketIdx >= 0 ? bracketIdx + 2 : 0;
+    }
+
+    /// <summary>
+    /// Strip up to <paramref name="maxSpaces"/> leading spaces. If the line
+    /// has fewer leading spaces than the target (user deleted some), strip
+    /// only what's there. Anything beyond the target is part of the user's
+    /// calc content and stays.
+    /// </summary>
+    private static string StripLeadingSpaces(string line, int maxSpaces)
+    {
+        int n = 0;
+        while (n < line.Length && n < maxSpaces && line[n] == ' ')
+            n++;
+        return n == 0 ? line : line.Substring(n);
     }
 
     public static bool HasUnbalancedBrackets(string text) =>

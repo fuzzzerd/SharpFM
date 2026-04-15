@@ -6,6 +6,7 @@ using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Scripting.Editor;
 
@@ -36,18 +37,19 @@ public class StatementHighlightRenderer : IBackgroundRenderer
         if (doc == null) return;
 
         var caretLine = _textArea.Caret.Line; // 1-indexed
-        var ranges = ComputeStatementRanges(doc.Text);
+        var ranges = MultiLineStatementRanges.Compute(doc.Text);
 
-        foreach (var (start, end) in ranges)
+        // Highlight the step the caret is in — single-line OR multi-line.
+        // Skip blank-line "ranges" so the highlight doesn't appear on
+        // empty lines between steps.
+        var hit = MultiLineStatementRanges.FindRangeContainingLine(ranges, caretLine);
+        if (hit is { } range)
         {
-            // Only highlight multi-line statements
-            if (start == end) continue;
-
-            if (caretLine >= start && caretLine <= end)
+            var lineText = doc.GetText(doc.GetLineByNumber(range.StartLine));
+            if (!string.IsNullOrWhiteSpace(lineText))
             {
-                _highlightStartLine = start;
-                _highlightEndLine = end;
-                break;
+                _highlightStartLine = range.StartLine;
+                _highlightEndLine = range.EndLine;
             }
         }
 
@@ -77,53 +79,6 @@ public class StatementHighlightRenderer : IBackgroundRenderer
         {
             drawingContext.DrawGeometry(ScriptEditorTheme.StatementHighlightBrush, null, geometry);
         }
-    }
-
-    internal static List<(int StartLine, int EndLine)> ComputeStatementRanges(string text)
-    {
-        var ranges = new List<(int, int)>();
-        var lines = text.Split('\n');
-        int currentStart = -1;
-        int depth = 0;
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            var line = lines[i].TrimEnd('\r');
-            var lineNum = i + 1; // 1-indexed for AvaloniaEdit
-
-            if (currentStart < 0)
-            {
-                // Not in a multi-line statement
-                if (BracketMatcher.HasUnbalancedBrackets(line))
-                {
-                    currentStart = lineNum;
-                    depth = BracketMatcher.CountBracketDepth(line);
-                }
-                else
-                {
-                    ranges.Add((lineNum, lineNum));
-                }
-            }
-            else
-            {
-                // Continuing a multi-line statement
-                depth += BracketMatcher.CountBracketDepth(line);
-                if (depth <= 0)
-                {
-                    ranges.Add((currentStart, lineNum));
-                    currentStart = -1;
-                    depth = 0;
-                }
-            }
-        }
-
-        // Unclosed statement at end
-        if (currentStart >= 0)
-        {
-            ranges.Add((currentStart, lines.Length));
-        }
-
-        return ranges;
     }
 
 }

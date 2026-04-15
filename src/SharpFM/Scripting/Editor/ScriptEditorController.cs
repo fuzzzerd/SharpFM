@@ -40,6 +40,18 @@ public class ScriptEditorController : IDisposable
         var statementRenderer = new StatementHighlightRenderer(_editor.TextArea);
         _editor.TextArea.TextView.BackgroundRenderers.Add(statementRenderer);
 
+        // Continuation rail for multi-line calc steps
+        var continuationRenderer = new ContinuationLineRenderer(_editor.TextArea);
+        _editor.TextArea.TextView.BackgroundRenderers.Add(continuationRenderer);
+
+        // Replace AvaloniaEdit's built-in line-number margin with a step-index
+        // margin (FileMaker-style: one number per script step, regardless of
+        // physical line count).
+        InstallStepIndexMargin();
+
+        // Auto-indent on Enter inside multi-line calc regions.
+        _editor.TextArea.IndentationStrategy = new ContinuationIndentStrategy();
+
         // Wire events
         _editor.TextArea.TextEntered += OnTextEntered;
         _editor.PointerMoved += OnPointerMoved;
@@ -149,6 +161,27 @@ public class ScriptEditorController : IDisposable
 
         _completionWindow.Show();
         _completionWindow.Closed += (_, _) => _completionWindow = null;
+    }
+
+    private void InstallStepIndexMargin()
+    {
+        // Strip the default line-number margin (and its companion separator
+        // line) so we can replace them. AvaloniaEdit installs both when
+        // ShowLineNumbers is true. We leave any other left margins in place.
+        _editor.ShowLineNumbers = false;
+
+        var margins = _editor.TextArea.LeftMargins;
+        for (int i = margins.Count - 1; i >= 0; i--)
+        {
+            var m = margins[i];
+            if (m is AvaloniaEdit.Editing.LineNumberMargin
+                || m.GetType().Name == "Line") // separator line installed by AvaloniaEdit
+            {
+                margins.RemoveAt(i);
+            }
+        }
+
+        margins.Insert(0, new StepIndexMargin());
     }
 
     public void Dispose()
