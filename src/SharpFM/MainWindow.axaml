@@ -43,6 +43,9 @@
                 <Separator />
                 <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" InputGesture="Delete" />
             </MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem x:Name="rawClipboardMenuItem" Header="Raw Clipboard Viewer..." />
+            </MenuItem>
             <MenuItem x:Name="pluginsMenu" Header="_Plugins">
                 <!-- Plugin menu items are added dynamically in code-behind -->
                 <MenuItem x:Name="managePluginsMenuItem" Header="Manage Plugins..." />

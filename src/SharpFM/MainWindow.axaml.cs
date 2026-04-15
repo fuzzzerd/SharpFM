@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
+using SharpFM.Diagnostics;
 using SharpFM.Plugin;
 using SharpFM.PluginManager;
 using SharpFM.Scripting;
@@ -44,6 +45,11 @@ public partial class MainWindow : Window
         var managePlugins = this.FindControl<MenuItem>("managePluginsMenuItem");
         if (managePlugins != null)
             managePlugins.Click += (_, _) => ShowPluginManager();
+
+        // "Raw Clipboard Viewer..." menu item
+        var rawClipboard = this.FindControl<MenuItem>("rawClipboardMenuItem");
+        if (rawClipboard != null)
+            rawClipboard.Click += (_, _) => new RawClipboardWindow().Show(this);
 
         // Wire up plugin UI when DataContext is set
         DataContextChanged += OnDataContextChanged;
