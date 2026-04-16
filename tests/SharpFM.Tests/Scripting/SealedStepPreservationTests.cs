@@ -300,6 +300,45 @@ public class SealedStepPreservationTests
     // --- FromXml reload ---
 
     [Fact]
+    public void SealedAnchors_AfterDocumentShrink_AllOffsetsWithinBounds()
+    {
+        // Regression guard for the "stale renderer survives clip swap" bug
+        // that crashed AvaloniaEdit with ArgumentOutOfRangeException on
+        // Document.GetLineByOffset. The architectural fix (detach
+        // renderers on clip swap) is at the UI layer and needs an Avalonia
+        // context to test. This covers the defensive side: the editor's
+        // own SealedAnchors iterator must never yield an anchor whose
+        // offset lies past the current document length.
+        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        Assert.Single(editor.SealedAnchors);
+
+        // Drastically shrink the document — clears every line the
+        // original anchor could live on.
+        editor.Document.Replace(0, editor.Document.TextLength, string.Empty);
+
+        foreach (var anchor in editor.SealedAnchors)
+        {
+            Assert.InRange(anchor.Offset, 0, editor.Document.TextLength);
+        }
+    }
+
+    [Fact]
+    public void SealedAnchors_AfterDocumentReplacedWithShorterContent_AllOffsetsWithinBounds()
+    {
+        // Same invariant but with content that has steps — proves the
+        // iterator stays safe when the TextView swaps documents too.
+        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        Assert.Single(editor.SealedAnchors);
+
+        editor.Document.Replace(0, editor.Document.TextLength, "If [ $x > 0 ]");
+
+        foreach (var anchor in editor.SealedAnchors)
+        {
+            Assert.InRange(anchor.Offset, 0, editor.Document.TextLength);
+        }
+    }
+
+    [Fact]
     public void FromXml_Reload_RebuildsAnchorCacheFreshForNewContent()
     {
         var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);

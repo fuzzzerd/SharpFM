@@ -24,6 +24,14 @@ public class ScriptEditorController : IDisposable
     private ErrorMarkerRenderer? _errorRenderer;
     private CompletionWindow? _completionWindow;
     private ScriptClipEditor? _clipEditor;
+
+    // Sealed-step renderers are installed per clip and must be removed
+    // before the next AttachClipEditor call. Stale instances hold anchor
+    // references against their original document, and AvaloniaEdit will
+    // keep invoking them against whatever document the shared TextView
+    // is now displaying — offsets go out of range and throw.
+    private SealedStepSquiggleRenderer? _sealedSquiggleRenderer;
+    private SealedStepItalicColorizer? _sealedItalicColorizer;
     private SealedStepCogGenerator? _cogGenerator;
 
     /// <summary>
@@ -204,17 +212,21 @@ public class ScriptEditorController : IDisposable
     /// sealed-step visuals (squiggle, italic, cog, read-only provider)
     /// can find the anchor cache. Call whenever the underlying clip
     /// editor is swapped (e.g. user selects a different script clip).
+    /// Previous-clip renderers are removed before new ones are installed
+    /// so stale anchors can't leak into the new document's render loop.
     /// </summary>
     public void AttachClipEditor(ScriptClipEditor clipEditor)
     {
+        DetachSealedStepRenderers();
+
         _clipEditor = clipEditor;
 
-        // Squiggle + italic renderers read from the clipEditor.SealedAnchors.
-        var squiggle = new SealedStepSquiggleRenderer(_editor.TextArea, clipEditor);
-        _editor.TextArea.TextView.BackgroundRenderers.Add(squiggle);
+        // Squiggle + italic renderers read from clipEditor.SealedAnchors.
+        _sealedSquiggleRenderer = new SealedStepSquiggleRenderer(_editor.TextArea, clipEditor);
+        _editor.TextArea.TextView.BackgroundRenderers.Add(_sealedSquiggleRenderer);
 
-        var italic = new SealedStepItalicColorizer(clipEditor);
-        _editor.TextArea.TextView.LineTransformers.Add(italic);
+        _sealedItalicColorizer = new SealedStepItalicColorizer(clipEditor);
+        _editor.TextArea.TextView.LineTransformers.Add(_sealedItalicColorizer);
 
         // Cog-button inline element + click handler.
         _cogGenerator = new SealedStepCogGenerator(clipEditor);
@@ -224,6 +236,29 @@ public class ScriptEditorController : IDisposable
         // Read-only protection: user can't type inside a sealed line.
         _editor.TextArea.ReadOnlySectionProvider =
             new SealedStepReadOnlyProvider(clipEditor.Document, clipEditor);
+    }
+
+    private void DetachSealedStepRenderers()
+    {
+        if (_sealedSquiggleRenderer != null)
+        {
+            _editor.TextArea.TextView.BackgroundRenderers.Remove(_sealedSquiggleRenderer);
+            _sealedSquiggleRenderer = null;
+        }
+        if (_sealedItalicColorizer != null)
+        {
+            _editor.TextArea.TextView.LineTransformers.Remove(_sealedItalicColorizer);
+            _sealedItalicColorizer = null;
+        }
+        if (_cogGenerator != null)
+        {
+            _cogGenerator.CogClicked -= OnCogClicked;
+            _editor.TextArea.TextView.ElementGenerators.Remove(_cogGenerator);
+            _cogGenerator = null;
+        }
+        // ReadOnlySectionProvider is a single-slot property — the caller
+        // (AttachClipEditor) assigns a fresh provider immediately after
+        // detach, so the old reference is replaced, not cleared here.
     }
 
     private async void OnCogClicked(object? sender, TextAnchor anchor)

@@ -36,6 +36,7 @@ public class SealedStepSquiggleRenderer : IBackgroundRenderer
         foreach (var anchor in _editor.SealedAnchors)
         {
             if (anchor.IsDeleted) continue;
+            if (anchor.Offset < 0 || anchor.Offset > doc.TextLength) continue;
 
             var line = doc.GetLineByOffset(anchor.Offset);
             var segment = new TextSegment

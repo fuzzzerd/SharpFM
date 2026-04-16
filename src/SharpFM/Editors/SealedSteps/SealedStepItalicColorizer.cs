@@ -21,10 +21,12 @@ public class SealedStepItalicColorizer : DocumentColorizingTransformer
 
     protected override void ColorizeLine(DocumentLine line)
     {
+        var doc = CurrentContext.Document;
         foreach (var anchor in _editor.SealedAnchors)
         {
             if (anchor.IsDeleted) continue;
-            var anchorLine = CurrentContext.Document.GetLineByOffset(anchor.Offset);
+            if (anchor.Offset < 0 || anchor.Offset > doc.TextLength) continue;
+            var anchorLine = doc.GetLineByOffset(anchor.Offset);
             if (anchorLine.LineNumber != line.LineNumber) continue;
 
             ChangeLinePart(line.Offset, line.EndOffset, element =>

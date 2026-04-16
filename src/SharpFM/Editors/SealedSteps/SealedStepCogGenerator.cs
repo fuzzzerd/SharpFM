@@ -33,10 +33,14 @@ public class SealedStepCogGenerator : VisualLineElementGenerator
         // earliest end-of-line offset that belongs to a sealed anchor
         // and is >= startOffset; -1 when no more.
         int best = int.MaxValue;
+        var doc = CurrentContext.Document;
         foreach (var anchor in _editor.SealedAnchors)
         {
             if (anchor.IsDeleted) continue;
-            var line = CurrentContext.Document.GetLineByOffset(anchor.Offset);
+            // Defensive bounds check: a stale anchor from a previously
+            // attached clip could point past the end of the current doc.
+            if (anchor.Offset < 0 || anchor.Offset > doc.TextLength) continue;
+            var line = doc.GetLineByOffset(anchor.Offset);
             if (line.EndOffset >= startOffset && line.EndOffset < best)
                 best = line.EndOffset;
         }
@@ -45,10 +49,12 @@ public class SealedStepCogGenerator : VisualLineElementGenerator
 
     public override VisualLineElement? ConstructElement(int offset)
     {
+        var doc = CurrentContext.Document;
         foreach (var anchor in _editor.SealedAnchors)
         {
             if (anchor.IsDeleted) continue;
-            var line = CurrentContext.Document.GetLineByOffset(anchor.Offset);
+            if (anchor.Offset < 0 || anchor.Offset > doc.TextLength) continue;
+            var line = doc.GetLineByOffset(anchor.Offset);
             if (line.EndOffset != offset) continue;
 
             var button = new Button
