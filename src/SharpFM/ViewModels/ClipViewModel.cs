@@ -22,50 +22,49 @@ public partial class ClipViewModel : INotifyPropertyChanged
     /// The clip-type-specific editor. Handles change detection, XML serialization,
     /// and reverse sync for this clip's format.
     /// </summary>
-    public IClipEditor Editor { get; }
+    public IClipEditor Editor { get; private set; }
 
     /// <summary>
-    /// Fires when the editor is saved, indicating the model has been updated.
-    /// Replaces the old debounced ContentChanged event.
+    /// Fires when the editor content changes due to user edits (debounced).
     /// </summary>
     public event EventHandler? EditorContentChanged;
-
-    /// <summary>
-    /// Fires when the editor becomes dirty (user made first edit since last save/load).
-    /// </summary>
-    public event EventHandler? EditorBecameDirty;
-
-    /// <summary>
-    /// Whether the editor has unsaved changes.
-    /// </summary>
-    public bool IsDirty => Editor.IsDirty;
 
     public ClipViewModel(FileMakerClip clip)
     {
         Clip = clip;
-
-        Editor = clip.ClipboardFormat switch
-        {
-            "Mac-XMSS" or "Mac-XMSC" => new ScriptClipEditor(clip.XmlData),
-            "Mac-XMTB" or "Mac-XMFD" => new TableClipEditor(clip.XmlData),
-            _ => new FallbackXmlEditor(clip.XmlData),
-        };
-
-        Editor.Saved += OnEditorSaved;
-        Editor.BecameDirty += OnEditorBecameDirty;
+        Editor = CreateEditor(clip.XmlData);
+        Editor.ContentChanged += OnEditorContentChanged;
     }
 
-    private void OnEditorSaved(object? sender, EventArgs e)
+    /// <summary>
+    /// Wholesale replacement: discard the current editor and create a fresh one
+    /// from the given XML. Used for all external updates (MCP, plugins, XML viewer).
+    /// The new editor re-parses the XML into fresh domain model state.
+    /// </summary>
+    public void ReplaceEditor(string xml)
+    {
+        Editor.ContentChanged -= OnEditorContentChanged;
+        Clip.XmlData = xml;
+        Editor = CreateEditor(xml);
+        Editor.ContentChanged += OnEditorContentChanged;
+
+        NotifyPropertyChanged(nameof(Editor));
+        NotifyPropertyChanged(nameof(ScriptDocument));
+        NotifyPropertyChanged(nameof(TableEditor));
+        NotifyPropertyChanged(nameof(XmlDocument));
+    }
+
+    private IClipEditor CreateEditor(string? xml) => Clip.ClipboardFormat switch
+    {
+        "Mac-XMSS" or "Mac-XMSC" => new ScriptClipEditor(xml),
+        "Mac-XMTB" or "Mac-XMFD" => new TableClipEditor(xml),
+        _ => new FallbackXmlEditor(xml),
+    };
+
+    private void OnEditorContentChanged(object? sender, EventArgs e)
     {
         Clip.XmlData = Editor.ToXml();
-        NotifyPropertyChanged(nameof(IsDirty));
         EditorContentChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void OnEditorBecameDirty(object? sender, EventArgs e)
-    {
-        NotifyPropertyChanged(nameof(IsDirty));
-        EditorBecameDirty?.Invoke(this, EventArgs.Empty);
     }
 
     public bool IsScriptClip =>
@@ -87,7 +86,6 @@ public partial class ClipViewModel : INotifyPropertyChanged
     };
 
     // --- Convenience properties for AXAML bindings ---
-    // These delegate to the typed editor so MainWindow.axaml doesn't need to change.
 
     public TextDocument? ScriptDocument => (Editor as ScriptClipEditor)?.Document;
 
@@ -107,59 +105,5 @@ public partial class ClipViewModel : INotifyPropertyChanged
             NotifyPropertyChanged(nameof(IsTableClip));
             NotifyPropertyChanged(nameof(IsFallbackClip));
         }
-    }
-
-    public string Name
-    {
-        get => Clip.Name;
-        set
-        {
-            Clip.Name = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    public string ClipXml
-    {
-        get => Clip.XmlData;
-        set
-        {
-            Clip.XmlData = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// Save the editor's local buffer to the model. Updates Clip.XmlData.
-    /// Returns true if save succeeded.
-    /// </summary>
-    public bool SaveEditor()
-    {
-        var result = Editor.Save();
-        if (result)
-            Clip.XmlData = Editor.ToXml();
-        return result;
-    }
-
-    /// <summary>
-    /// Sync the editor state to XML. Called before save/clipboard operations.
-    /// Auto-saves if dirty.
-    /// </summary>
-    public void SyncModelFromEditor()
-    {
-        if (Editor.IsDirty)
-            SaveEditor();
-        else
-            Clip.XmlData = Editor.ToXml();
-    }
-
-    /// <summary>
-    /// Push XML into the editor from an external source (plugin, agent, other editor).
-    /// Replaces the local buffer and model. Clears dirty state.
-    /// </summary>
-    public void SyncEditorFromXml()
-    {
-        Editor.FromXml(Clip.XmlData ?? "");
-        NotifyPropertyChanged(nameof(IsDirty));
     }
 }

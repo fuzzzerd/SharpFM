@@ -1,5 +1,4 @@
 using System.Text.Json;
-using SharpFM.Scripting.Catalog;
 using Xunit;
 
 namespace SharpFM.Tests.Scripting;

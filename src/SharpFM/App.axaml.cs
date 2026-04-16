@@ -17,7 +17,8 @@ namespace SharpFM;
 [ExcludeFromCodeCoverage]
 public partial class App : Application
 {
-    ILogger logger = LoggerFactory.Create(builder => builder.AddNLog()).CreateLogger<MainWindow>();
+    ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddNLog());
+    ILogger logger => loggerFactory.CreateLogger<MainWindow>();
 
     public override void Initialize()
     {
@@ -41,7 +42,7 @@ public partial class App : Application
                 Services.GetRequiredService<IFolderService>());
 
             // Load plugins
-            var pluginHost = new PluginHost(viewModel);
+            var pluginHost = new PluginHost(viewModel, loggerFactory);
             var pluginService = new PluginService(logger);
             pluginService.LoadPlugins(pluginHost);
 
@@ -60,6 +61,16 @@ public partial class App : Application
                 mainWindow.SetPluginServices(pluginService, pluginHost);
 
             desktop.MainWindow.DataContext = viewModel;
+
+            // Dispose all plugins on app exit so background servers (MCP, etc.) stop cleanly
+            desktop.Exit += (_, _) =>
+            {
+                foreach (var plugin in pluginService.AllPlugins)
+                {
+                    try { plugin.Dispose(); }
+                    catch (Exception ex) { logger.LogWarning(ex, "Error disposing plugin {Id}", plugin.Id); }
+                }
+            };
         }
 
         base.OnFrameworkInitializationCompleted();

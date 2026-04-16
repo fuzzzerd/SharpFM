@@ -1,5 +1,4 @@
 using System;
-using System.Xml.Linq;
 using AvaloniaEdit.Document;
 
 namespace SharpFM.Editors;
@@ -7,79 +6,30 @@ namespace SharpFM.Editors;
 /// <summary>
 /// Editor for clips with no specialized editor (layouts, unknown formats).
 /// The user edits the raw XML directly via a TextDocument.
-/// Save validates the XML before accepting it — invalid XML stays dirty.
 /// </summary>
 public class FallbackXmlEditor : IClipEditor
 {
-    private string _savedXml;
-    private bool _suppressDirty;
+    private readonly DebouncedEventRaiser _debouncer;
 
-    public event EventHandler? BecameDirty;
-    public event EventHandler? Saved;
+    public event EventHandler? ContentChanged;
 
     /// <summary>The TextDocument bound to the AvaloniaEdit XML editor.</summary>
     public TextDocument Document { get; }
 
-    public bool IsDirty { get; private set; }
-    public bool IsPartial { get; private set; }
+    public bool IsPartial => false;
 
     public FallbackXmlEditor(string? xml)
     {
-        _savedXml = xml ?? "";
-        Document = new TextDocument(_savedXml);
+        Document = new TextDocument(xml ?? "");
 
-        Document.TextChanged += OnTextChanged;
+        _debouncer = new DebouncedEventRaiser(500, () => ContentChanged?.Invoke(this, EventArgs.Empty));
+        Document.TextChanged += (_, _) => _debouncer.Trigger();
     }
 
-    private void OnTextChanged(object? sender, EventArgs e)
-    {
-        if (_suppressDirty) return;
-        if (!IsDirty)
-        {
-            IsDirty = true;
-            BecameDirty?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    public bool Save()
-    {
-        var text = Document.Text;
-
-        // Validate XML before accepting
-        try
-        {
-            XDocument.Parse(text);
-        }
-        catch
-        {
-            IsPartial = true;
-            return false;
-        }
-
-        _savedXml = text;
-        IsPartial = false;
-        IsDirty = false;
-        Saved?.Invoke(this, EventArgs.Empty);
-        return true;
-    }
-
-    public string ToXml() => _savedXml;
+    public string ToXml() => Document.Text;
 
     public void FromXml(string xml)
     {
-        _savedXml = xml;
-
-        _suppressDirty = true;
-        try
-        {
-            Document.Text = xml;
-        }
-        finally
-        {
-            _suppressDirty = false;
-        }
-
-        IsDirty = false;
-        IsPartial = false;
+        Document.Text = xml;
     }
 }

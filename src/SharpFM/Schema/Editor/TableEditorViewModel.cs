@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 
 namespace SharpFM.Schema.Editor;
 
@@ -17,7 +17,7 @@ public class TableEditorViewModel : INotifyPropertyChanged
     }
 
     public FmTable Table { get; }
-    public ObservableCollection<FmField> Fields { get; }
+    public ObservableCollection<FmField> Fields => Table.Fields;
 
     private FmField? _selectedField;
     public FmField? SelectedField
@@ -52,7 +52,6 @@ public class TableEditorViewModel : INotifyPropertyChanged
     {
         Table = table;
         _tableName = table.Name;
-        Fields = new ObservableCollection<FmField>(table.Fields);
         AddFieldCommand = new RelayCommand(_ => AddField());
         RemoveFieldCommand = new RelayCommand(_ => RemoveSelectedField(), _ => SelectedField != null);
         EditCalculationCommand = new RelayCommand(_ => OpenCalculationEditor(),
@@ -68,7 +67,6 @@ public class TableEditorViewModel : INotifyPropertyChanged
             DataType = FieldDataType.Text,
             Kind = FieldKind.Normal
         };
-        Fields.Add(field);
         Table.AddField(field);
         SelectedField = field;
     }
@@ -76,9 +74,7 @@ public class TableEditorViewModel : INotifyPropertyChanged
     public void RemoveSelectedField()
     {
         if (SelectedField == null) return;
-        var field = SelectedField;
-        Fields.Remove(field);
-        Table.RemoveField(field);
+        Table.RemoveField(SelectedField);
         SelectedField = null;
     }
 
@@ -91,13 +87,4 @@ public class TableEditorViewModel : INotifyPropertyChanged
             ? desktop.MainWindow! : null!);
     }
 
-    /// <summary>
-    /// Sync the ObservableCollection back to the model (in case of reordering etc.)
-    /// </summary>
-    public void SyncToModel()
-    {
-        Table.Fields.Clear();
-        foreach (var f in Fields)
-            Table.Fields.Add(f);
-    }
 }

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Input;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 
 namespace SharpFM.Schema.Editor;
 

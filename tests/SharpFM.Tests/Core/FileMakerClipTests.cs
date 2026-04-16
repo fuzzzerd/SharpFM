@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text;
+using SharpFM.Model;
 using Xunit;
 
 namespace SharpFM.Tests.Core;

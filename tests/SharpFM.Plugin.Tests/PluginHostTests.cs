@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpFM.Model;
 using SharpFM.Plugin;
 using SharpFM.Services;
 using SharpFM.ViewModels;
@@ -32,16 +33,16 @@ public class PluginHostTests
     public void SelectedClip_ReturnsNull_WhenNoClipSelected()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         Assert.Null(host.SelectedClip);
     }
 
     [Fact]
-    public void SelectedClip_ReturnsClipInfo_WhenClipSelected()
+    public void SelectedClip_ReturnsClipData_WhenClipSelected()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         vm.NewScriptCommand();
 
@@ -54,8 +55,8 @@ public class PluginHostTests
     public void SelectedClipChanged_Fires_WhenSelectionChanges()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
-        ClipInfo? received = null;
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+        ClipData? received = null;
         host.SelectedClipChanged += (_, clip) => received = clip;
 
         vm.NewScriptCommand();
@@ -68,10 +69,10 @@ public class PluginHostTests
     public void SelectedClipChanged_FiresNull_WhenDeselected()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
         vm.NewScriptCommand();
 
-        ClipInfo? received = new ClipInfo("placeholder", "", "");
+        ClipData? received = new ClipData("placeholder", "", "");
         host.SelectedClipChanged += (_, clip) => received = clip;
         vm.SelectedClip = null;
 
@@ -82,42 +83,42 @@ public class PluginHostTests
     public void UpdateSelectedClipXml_UpdatesClipContent()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         vm.NewScriptCommand();
         var newXml = "<fmxmlsnippet type=\"FMObjectList\"><test /></fmxmlsnippet>";
         host.UpdateSelectedClipXml(newXml, "test-plugin");
 
-        Assert.Equal(newXml, vm.SelectedClip!.ClipXml);
+        Assert.Equal(newXml, vm.SelectedClip!.Clip.XmlData);
     }
 
     [Fact]
     public void UpdateSelectedClipXml_NoOp_WhenNoClipSelected()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         // Should not throw
         host.UpdateSelectedClipXml("<test />", "test-plugin");
     }
 
     [Fact]
-    public void RefreshSelectedClip_ReturnsNull_WhenNoClip()
+    public void SelectedClip_ReturnsNull_WhenNoClip()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
-        Assert.Null(host.RefreshSelectedClip());
+        Assert.Null(host.SelectedClip);
     }
 
     [Fact]
-    public void RefreshSelectedClip_ReturnsFreshClipInfo()
+    public void SelectedClip_ReturnsFreshClipData()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         vm.NewScriptCommand();
-        var clip = host.RefreshSelectedClip();
+        var clip = host.SelectedClip;
 
         Assert.NotNull(clip);
         Assert.Equal("New Script", clip!.Name);
@@ -128,7 +129,7 @@ public class PluginHostTests
     public void SelectedClipChanged_IncludesSyncedXml_AfterSwitch()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         // Create two clips
         vm.NewScriptCommand();
@@ -136,7 +137,7 @@ public class PluginHostTests
         vm.NewTableCommand();
 
         // Switch back to the script clip
-        ClipInfo? received = null;
+        ClipData? received = null;
         host.SelectedClipChanged += (_, clip) => received = clip;
         vm.SelectedClip = scriptClip;
 
@@ -150,7 +151,7 @@ public class PluginHostTests
     public void AllClips_ReturnsAllLoadedClips()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         var baseline = host.AllClips.Count;
         vm.NewScriptCommand();
@@ -163,7 +164,7 @@ public class PluginHostTests
     public void ClipCollectionChanged_Fires_WhenClipAdded()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
         var fired = false;
         host.ClipCollectionChanged += (_, _) => fired = true;
 
@@ -176,7 +177,7 @@ public class PluginHostTests
     public void ShowStatus_SetsViewModelStatus()
     {
         var vm = CreateVm();
-        var host = new PluginHost(vm);
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
 
         host.ShowStatus("Plugin says hello");
 

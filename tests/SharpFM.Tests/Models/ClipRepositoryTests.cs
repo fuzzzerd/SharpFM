@@ -1,7 +1,7 @@
 using System.IO;
 using System.Linq;
 using SharpFM.Models;
-using SharpFM.Plugin;
+using SharpFM.Model;
 using Xunit;
 
 namespace SharpFM.Tests.Models;

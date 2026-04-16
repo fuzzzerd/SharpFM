@@ -255,4 +255,35 @@ public class MainWindowViewModelTests
         public void Initialize(IPluginHost host) { }
         public void Dispose() { }
     }
+
+    [Fact]
+    public void DeleteSelectedClip_ClearsSelectionBeforeRemoval()
+    {
+        var vm = CreateVm();
+        vm.NewScriptCommand();
+        Assert.NotNull(vm.SelectedClip);
+
+        // Track that SelectedClip is nulled before collection changes
+        bool selectedWasNullDuringRemove = false;
+        vm.FileMakerClips.CollectionChanged += (_, _) =>
+        {
+            if (vm.SelectedClip == null)
+                selectedWasNullDuringRemove = true;
+        };
+
+        vm.DeleteSelectedClip();
+
+        Assert.Null(vm.SelectedClip);
+        Assert.True(selectedWasNullDuringRemove,
+            "SelectedClip should be null before the clip is removed from the collection");
+    }
+
+    [Fact]
+    public void DeleteSelectedClip_NoSelection_DoesNotThrow()
+    {
+        var vm = CreateVm();
+        vm.SelectedClip = null;
+        vm.DeleteSelectedClip();
+        Assert.Contains("No clip selected", vm.StatusMessage);
+    }
 }

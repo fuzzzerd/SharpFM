@@ -1,0 +1,42 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+    x:Class="SharpFM.Diagnostics.RawClipboardWindow"
+    Title="Raw Clipboard Viewer"
+    Width="800"
+    Height="600"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto">
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+            <Button x:Name="pasteButton" Classes="Fluent2Primary" Content="Paste from Clipboard" />
+            <Button x:Name="copyButton" Classes="Fluent2" Content="Copy XML" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+            <TextBlock Classes="Fluent2Body" VerticalAlignment="Center" Text="Format:" />
+            <TextBlock x:Name="formatLabel" Classes="Fluent2Body" FontWeight="SemiBold"
+                       VerticalAlignment="Center" Text="(none)" />
+            <TextBlock x:Name="warningLabel" Classes="Fluent2Caption"
+                       VerticalAlignment="Center" Foreground="#C08000" Text="" />
+        </StackPanel>
+
+        <Border Grid.Row="2" Classes="Fluent2SurfaceElevated">
+            <AvaloniaEdit:TextEditor
+                x:Name="xmlEditor"
+                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                ShowLineNumbers="True"
+                SyntaxHighlighting="Xml"
+                WordWrap="False" />
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+            <TextBlock x:Name="statusLabel" Classes="Fluent2Caption" VerticalAlignment="Center" Opacity="0.7" />
+            <Button x:Name="closeButton" Classes="Fluent2" Content="Close" />
+        </StackPanel>
+
+    </Grid>
+
+</Window>

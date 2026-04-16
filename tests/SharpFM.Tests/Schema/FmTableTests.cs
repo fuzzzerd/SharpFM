@@ -1,5 +1,5 @@
 using System.Xml.Linq;
-using SharpFM.Schema.Model;
+using SharpFM.Model.Schema;
 using Xunit;
 
 namespace SharpFM.Tests.Schema;
@@ -90,7 +90,7 @@ public class FmTableTests
     public void RemoveField_DecreasesCount()
     {
         var field = new FmField { Name = "ToRemove" };
-        var table = new FmTable("T", new() { field });
+        var table = new FmTable("T", new List<FmField> { field });
         Assert.Single(table.Fields);
         table.RemoveField(field);
         Assert.Empty(table.Fields);

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
+using SharpFM.Model;
 using SharpFM.Plugin;
 
 namespace SharpFM.Plugin.Sample;
@@ -29,7 +30,7 @@ public class ClipInspectorViewModel : INotifyPropertyChanged
     private bool _hasClip;
     public bool HasClip { get => _hasClip; private set { _hasClip = value; Notify(); } }
 
-    public void Update(ClipInfo? clip)
+    public void Update(ClipData? clip)
     {
         if (clip is null)
         {

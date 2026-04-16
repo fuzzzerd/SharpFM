@@ -3,6 +3,8 @@
 // Plugin Exception: You may create plugins that implement these interfaces without those
 // plugins being subject to the GPL. Such plugins may use any license, including proprietary.
 
+using SharpFM.Model;
+
 namespace SharpFM.Plugin;
 
 /// <summary>

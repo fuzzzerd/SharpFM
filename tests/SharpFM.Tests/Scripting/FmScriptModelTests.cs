@@ -60,7 +60,7 @@ public class FmScriptModelTests
     [Fact]
     public void FromDisplayText_ToXml_Comment()
     {
-        var script = FmScript.FromDisplayText("# hello");
+        var script = ScriptTextParser.FromDisplayText("# hello");
         var xml = script.ToXml();
         var doc = XDocument.Parse(xml);
         var step = doc.Root!.Element("Step")!;
@@ -71,7 +71,7 @@ public class FmScriptModelTests
     [Fact]
     public void FromDisplayText_ToXml_SetVariable()
     {
-        var script = FmScript.FromDisplayText("Set Variable [ $count ; Value: $count + 1 ]");
+        var script = ScriptTextParser.FromDisplayText("Set Variable [ $count ; Value: $count + 1 ]");
         var xml = script.ToXml();
         var doc = XDocument.Parse(xml);
         var step = doc.Root!.Element("Step")!;
@@ -93,7 +93,7 @@ public class FmScriptModelTests
 
         foreach (var text in scripts)
         {
-            var script = FmScript.FromDisplayText(text);
+            var script = ScriptTextParser.FromDisplayText(text);
             var xml = script.ToXml();
             XDocument.Parse(xml); // should not throw
         }
@@ -102,7 +102,7 @@ public class FmScriptModelTests
     [Fact]
     public void Validate_ValidScript_NoDiagnostics()
     {
-        var script = FmScript.FromDisplayText(
+        var script = ScriptTextParser.FromDisplayText(
             "# Comment\nSet Variable [ $x ; Value: 1 ]\nIf [ $x > 0 ]\n    Beep\nEnd If");
         var diagnostics = script.Validate();
         Assert.Empty(diagnostics);
@@ -141,7 +141,7 @@ public class FmScriptModelTests
             + "Go to Layout [ original layout ]";
 
         // Display text → model → XML → model → display text
-        var script1 = FmScript.FromDisplayText(original);
+        var script1 = ScriptTextParser.FromDisplayText(original);
         var xml = script1.ToXml();
         XDocument.Parse(xml); // valid XML
 
@@ -163,7 +163,7 @@ public class FmScriptModelTests
 
         var script = FmScript.FromXml(xml);
         var display = script.ToDisplayText();
-        var script2 = FmScript.FromDisplayText(display);
+        var script2 = ScriptTextParser.FromDisplayText(display);
 
         Assert.Equal(script.Steps.Count, script2.Steps.Count);
         for (int i = 0; i < script.Steps.Count; i++)
@@ -180,10 +180,10 @@ public class FmScriptModelTests
     [Fact]
     public void UpdateStep_ModifiesSingleStep()
     {
-        var script = FmScript.FromDisplayText("# line one\nBeep\n# line three");
+        var script = ScriptTextParser.FromDisplayText("# line one\nBeep\n# line three");
         Assert.Equal(3, script.Steps.Count);
 
-        script.UpdateStep(1, "Set Variable [ $x ; Value: 1 ]");
+        ScriptTextParser.UpdateStep(script, 1, "Set Variable [ $x ; Value: 1 ]");
         Assert.Equal("Set Variable", script.Steps[1].Definition?.Name);
         Assert.Equal("# (comment)", script.Steps[0].Definition?.Name);
         Assert.Equal("# (comment)", script.Steps[2].Definition?.Name);
@@ -192,7 +192,7 @@ public class FmScriptModelTests
     [Fact]
     public void EmptyInput_NoDiagnostics()
     {
-        var script = FmScript.FromDisplayText("");
+        var script = ScriptTextParser.FromDisplayText("");
         Assert.Empty(script.Steps);
         Assert.Empty(script.Validate());
     }

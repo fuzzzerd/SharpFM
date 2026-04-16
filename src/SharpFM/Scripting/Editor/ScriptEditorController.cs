@@ -7,12 +7,14 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
+using SharpFM.Diagnostics;
+using SharpFM.Editors;
+using SharpFM.Editors.SealedSteps;
 
 namespace SharpFM.Scripting.Editor;
 
 /// <summary>
 /// Manages script editor behavior: validation, completion, tooltips, and document tracking.
-/// Extracted from MainWindow to keep UI code thin and this logic independently testable.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public class ScriptEditorController : IDisposable
@@ -21,6 +23,23 @@ public class ScriptEditorController : IDisposable
     private readonly DispatcherTimer _validationTimer;
     private ErrorMarkerRenderer? _errorRenderer;
     private CompletionWindow? _completionWindow;
+    private ScriptClipEditor? _clipEditor;
+
+    // Sealed-step renderers are installed per clip and must be removed
+    // before the next AttachClipEditor call. Stale instances hold anchor
+    // references against their original document, and AvaloniaEdit will
+    // keep invoking them against whatever document the shared TextView
+    // is now displaying — offsets go out of range and throw.
+    private SealedStepSquiggleRenderer? _sealedSquiggleRenderer;
+    private SealedStepItalicColorizer? _sealedItalicColorizer;
+    private SealedStepCogGenerator? _cogGenerator;
+
+    /// <summary>
+    /// Raised when the controller wants to surface a transient message
+    /// (e.g. "copy blocked across sealed line"). Handled by MainWindow,
+    /// which routes to the view model's ShowStatusMessage.
+    /// </summary>
+    public event EventHandler<StatusMessageEventArgs>? StatusMessageRaised;
 
     public ScriptEditorController(TextEditor editor)
     {
@@ -40,6 +59,21 @@ public class ScriptEditorController : IDisposable
         // Multi-line statement highlighting
         var statementRenderer = new StatementHighlightRenderer(_editor.TextArea);
         _editor.TextArea.TextView.BackgroundRenderers.Add(statementRenderer);
+
+        // Continuation rail for multi-line calc steps
+        var continuationRenderer = new ContinuationLineRenderer(_editor.TextArea);
+        _editor.TextArea.TextView.BackgroundRenderers.Add(continuationRenderer);
+
+        // Replace AvaloniaEdit's built-in line-number margin with a step-index
+        // margin (FileMaker-style: one number per script step, regardless of
+        // physical line count).
+        InstallStepIndexMargin();
+
+        // Auto-indent on Enter inside multi-line calc regions.
+        _editor.TextArea.IndentationStrategy = new ContinuationIndentStrategy();
+
+        // Copy/Cut interception — block selections that span a sealed line.
+        _editor.KeyDown += OnKeyDownGuardSealed;
 
         // Wire events
         _editor.TextArea.TextEntered += OnTextEntered;
@@ -71,14 +105,24 @@ public class ScriptEditorController : IDisposable
         RunValidation();
     }
 
-    private void RunValidation()
+    private async void RunValidation()
     {
         if (_errorRenderer == null) return;
 
         var text = _editor.Document.Text;
-        var diagnostics = ScriptValidator.Validate(text);
-        _errorRenderer.UpdateDiagnostics(diagnostics);
-        _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
+
+        try
+        {
+            var diagnostics = await System.Threading.Tasks.Task.Run(
+                () => ScriptValidator.Validate(text));
+
+            _errorRenderer.UpdateDiagnostics(diagnostics);
+            _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
+        }
+        catch
+        {
+            // Validation failure during typing is non-fatal
+        }
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
@@ -110,6 +154,11 @@ public class ScriptEditorController : IDisposable
     {
         if (_completionWindow != null) return;
 
+        TryShowCompletions();
+    }
+
+    private void TryShowCompletions()
+    {
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
         var lineText = _editor.Document.GetText(line.Offset, line.Length);
@@ -125,6 +174,10 @@ public class ScriptEditorController : IDisposable
             var wordStart = lineText.Length - lineText.TrimStart().Length;
             _completionWindow.StartOffset = line.Offset + wordStart;
         }
+        else if (context == CompletionContext.ParamLabel)
+        {
+            _completionWindow.StartOffset = _editor.CaretOffset;
+        }
 
         foreach (var item in items)
             _completionWindow.CompletionList.CompletionData.Add(item);
@@ -133,10 +186,142 @@ public class ScriptEditorController : IDisposable
         _completionWindow.Closed += (_, _) => _completionWindow = null;
     }
 
+    private void InstallStepIndexMargin()
+    {
+        // Strip the default line-number margin (and its companion separator
+        // line) so we can replace them. AvaloniaEdit installs both when
+        // ShowLineNumbers is true. We leave any other left margins in place.
+        _editor.ShowLineNumbers = false;
+
+        var margins = _editor.TextArea.LeftMargins;
+        for (int i = margins.Count - 1; i >= 0; i--)
+        {
+            var m = margins[i];
+            if (m is AvaloniaEdit.Editing.LineNumberMargin
+                || m.GetType().Name == "Line") // separator line installed by AvaloniaEdit
+            {
+                margins.RemoveAt(i);
+            }
+        }
+
+        margins.Insert(0, new StepIndexMargin());
+    }
+
+    /// <summary>
+    /// Attach the controller to a <see cref="ScriptClipEditor"/> so the
+    /// sealed-step visuals (squiggle, italic, cog, read-only provider)
+    /// can find the anchor cache. Call whenever the underlying clip
+    /// editor is swapped (e.g. user selects a different script clip).
+    /// Previous-clip renderers are removed before new ones are installed
+    /// so stale anchors can't leak into the new document's render loop.
+    /// </summary>
+    public void AttachClipEditor(ScriptClipEditor clipEditor)
+    {
+        DetachSealedStepRenderers();
+
+        _clipEditor = clipEditor;
+
+        // Squiggle + italic renderers read from clipEditor.SealedAnchors.
+        _sealedSquiggleRenderer = new SealedStepSquiggleRenderer(_editor.TextArea, clipEditor);
+        _editor.TextArea.TextView.BackgroundRenderers.Add(_sealedSquiggleRenderer);
+
+        _sealedItalicColorizer = new SealedStepItalicColorizer(clipEditor);
+        _editor.TextArea.TextView.LineTransformers.Add(_sealedItalicColorizer);
+
+        // Cog-button inline element + click handler.
+        _cogGenerator = new SealedStepCogGenerator(clipEditor);
+        _cogGenerator.CogClicked += OnCogClicked;
+        _editor.TextArea.TextView.ElementGenerators.Add(_cogGenerator);
+
+        // Read-only protection: user can't type inside a sealed line.
+        _editor.TextArea.ReadOnlySectionProvider =
+            new SealedStepReadOnlyProvider(clipEditor.Document, clipEditor);
+    }
+
+    private void DetachSealedStepRenderers()
+    {
+        if (_sealedSquiggleRenderer != null)
+        {
+            _editor.TextArea.TextView.BackgroundRenderers.Remove(_sealedSquiggleRenderer);
+            _sealedSquiggleRenderer = null;
+        }
+        if (_sealedItalicColorizer != null)
+        {
+            _editor.TextArea.TextView.LineTransformers.Remove(_sealedItalicColorizer);
+            _sealedItalicColorizer = null;
+        }
+        if (_cogGenerator != null)
+        {
+            _cogGenerator.CogClicked -= OnCogClicked;
+            _editor.TextArea.TextView.ElementGenerators.Remove(_cogGenerator);
+            _cogGenerator = null;
+        }
+        // ReadOnlySectionProvider is a single-slot property — the caller
+        // (AttachClipEditor) assigns a fresh provider immediately after
+        // detach, so the old reference is replaced, not cleared here.
+    }
+
+    private async void OnCogClicked(object? sender, TextAnchor anchor)
+    {
+        if (_clipEditor == null) return;
+
+        // Locate the current XML for this sealed step.
+        if (!_clipEditor.TryGetSealedXml(anchor, out var xml)) return;
+
+        // Find the parent Window so the modal dialog gets a proper owner.
+        var owner = TopLevelWindow(_editor);
+        if (owner == null) return;
+
+        var edited = await RawStepEditorWindow.EditAsync(owner, xml);
+        if (edited != null)
+        {
+            _clipEditor.UpdateSealedXml(anchor, edited);
+        }
+    }
+
+    private static Window? TopLevelWindow(Avalonia.Controls.Control control)
+    {
+        var tl = Avalonia.Controls.TopLevel.GetTopLevel(control);
+        return tl as Window;
+    }
+
+    private void OnKeyDownGuardSealed(object? sender, KeyEventArgs e)
+    {
+        if (_clipEditor == null) return;
+        var modifier = e.KeyModifiers;
+        if ((modifier & KeyModifiers.Control) == 0) return;
+        if (e.Key != Key.C && e.Key != Key.X) return;
+
+        var sel = _editor.TextArea.Selection;
+        if (sel.IsEmpty) return;
+
+        var startOffset = _editor.Document.GetOffset(sel.StartPosition.Location);
+        var endOffset = _editor.Document.GetOffset(sel.EndPosition.Location);
+
+        // Collect sealed-line offsets for the overlap test.
+        var sealedRanges = new List<(int, int)>();
+        foreach (var anchor in _clipEditor.SealedAnchors)
+        {
+            if (anchor.IsDeleted) continue;
+            var line = _editor.Document.GetLineByOffset(anchor.Offset);
+            sealedRanges.Add((line.Offset, line.EndOffset));
+        }
+
+        if (SealedSelectionCheck.SpansSealed(startOffset, endOffset, sealedRanges))
+        {
+            e.Handled = true;
+            var action = e.Key == Key.X ? "Cut" : "Copy";
+            StatusMessageRaised?.Invoke(this, new StatusMessageEventArgs(
+                $"{action} blocked: selection crosses a sealed step. Edit it via the cog icon.",
+                isError: true));
+        }
+    }
+
     public void Dispose()
     {
         _validationTimer.Stop();
         _editor.TextArea.TextEntered -= OnTextEntered;
         _editor.PointerMoved -= OnPointerMoved;
+        _editor.KeyDown -= OnKeyDownGuardSealed;
     }
 }

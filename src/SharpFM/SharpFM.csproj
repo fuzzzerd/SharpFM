@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -14,12 +14,8 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="SharpFM.Tests" />
-    <InternalsVisibleTo Include="SharpFM.Plugin.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
+<ItemGroup>
+    <ProjectReference Include="..\SharpFM.Model\SharpFM.Model.csproj" />
     <ProjectReference Include="..\SharpFM.Plugin\SharpFM.Plugin.csproj" />
     <ProjectReference Include="..\SharpFM.Plugin.Sample\SharpFM.Plugin.Sample.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -31,8 +27,8 @@
 
   <Target Name="CopyPlugins" AfterTargets="Build">
     <ItemGroup>
-      <PluginFiles Include="$(MSBuildProjectDirectory)\..\SharpFM.Plugin.Sample\bin\$(Configuration)\net8.0\SharpFM.Plugin.Sample.dll" />
-      <PluginFiles Include="$(MSBuildProjectDirectory)\..\SharpFM.Plugin.XmlViewer\bin\$(Configuration)\net8.0\SharpFM.Plugin.XmlViewer.dll" />
+      <PluginFiles Include="$(MSBuildProjectDirectory)\..\SharpFM.Plugin.Sample\bin\$(Configuration)\net10.0\SharpFM.Plugin.Sample.dll" />
+      <PluginFiles Include="$(MSBuildProjectDirectory)\..\SharpFM.Plugin.XmlViewer\bin\$(Configuration)\net10.0\SharpFM.Plugin.XmlViewer.dll" />
     </ItemGroup>
     <MakeDir Directories="$(OutputPath)plugins" />
     <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(OutputPath)plugins" SkipUnchangedFiles="true" />
@@ -49,7 +45,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Scripting\Catalog\step-catalog-en.json" />
+    <InternalsVisibleTo Include="SharpFM.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Scripting\Editor\fmscript.tmLanguage.json" />
   </ItemGroup>
 

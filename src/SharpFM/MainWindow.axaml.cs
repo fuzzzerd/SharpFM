@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
+using SharpFM.Diagnostics;
 using SharpFM.Plugin;
 using SharpFM.PluginManager;
 using SharpFM.Scripting;
@@ -38,12 +39,18 @@ public partial class MainWindow : Window
             _scriptTextMateInstallation = scriptEditor.InstallTextMate(fmScriptRegistry);
             _scriptTextMateInstallation.SetGrammar(FmScriptRegistryOptions.ScopeName);
             _scriptController = new ScriptEditorController(scriptEditor);
+            _scriptController.StatusMessageRaised += OnScriptControllerStatusMessage;
         }
 
         // "Manage Plugins..." menu item
         var managePlugins = this.FindControl<MenuItem>("managePluginsMenuItem");
         if (managePlugins != null)
             managePlugins.Click += (_, _) => ShowPluginManager();
+
+        // "Raw Clipboard Viewer..." menu item
+        var rawClipboard = this.FindControl<MenuItem>("rawClipboardMenuItem");
+        if (rawClipboard != null)
+            rawClipboard.Click += (_, _) => new RawClipboardWindow().Show(this);
 
         // Wire up plugin UI when DataContext is set
         DataContextChanged += OnDataContextChanged;
@@ -69,6 +76,24 @@ public partial class MainWindow : Window
             UpdatePluginPanelVisibility();
         else if (e.PropertyName == nameof(MainWindowViewModel.PluginPanelControl))
             UpdatePluginPanelContent();
+        else if (e.PropertyName == nameof(MainWindowViewModel.SelectedClip))
+            AttachScriptClipEditorIfApplicable();
+    }
+
+    private void OnScriptControllerStatusMessage(object? sender, SharpFM.Scripting.Editor.StatusMessageEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+            vm.ShowStatusMessage(e.Message, e.IsError);
+    }
+
+    private void AttachScriptClipEditorIfApplicable()
+    {
+        if (_scriptController == null) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+        if (vm.SelectedClip?.Editor is SharpFM.Editors.ScriptClipEditor clipEditor)
+        {
+            _scriptController.AttachClipEditor(clipEditor);
+        }
     }
 
     private void BuildPluginMenuItems(MainWindowViewModel vm)

@@ -1,3 +1,6 @@
+using SharpFM.Model;
+using SharpFM.Model.Schema;
+using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
 using SharpFM.Plugin.XmlViewer;
 using Xunit;
@@ -33,7 +36,7 @@ public class XmlViewerPluginTests
 
         Assert.False(vm.HasClip);
 
-        var clip = new ClipInfo("Test", "Mac-XMSS", "<root/>");
+        var clip = new ClipData("Test", "Mac-XMSS", "<root/>");
         vm.LoadClip(clip);
 
         Assert.True(vm.HasClip);
@@ -46,7 +49,7 @@ public class XmlViewerPluginTests
     {
         var host = new MockPluginHost();
         var vm = new XmlViewerViewModel(host, "test");
-        vm.LoadClip(new ClipInfo("Test", "Mac-XMSS", "<root/>"));
+        vm.LoadClip(new ClipData("Test", "Mac-XMSS", "<root/>"));
 
         vm.LoadClip(null);
 
@@ -59,7 +62,7 @@ public class XmlViewerPluginTests
     {
         var host = new MockPluginHost
         {
-            SelectedClip = new ClipInfo("Synced", "Mac-XMTB", "<table/>")
+            SelectedClip = new ClipData("Synced", "Mac-XMTB", "<table/>")
         };
         var vm = new XmlViewerViewModel(host, "test");
 
@@ -74,7 +77,7 @@ public class XmlViewerPluginTests
     public void ViewModel_SyncToHost_PushesXmlWithOrigin()
     {
         var host = new TrackingPluginHost();
-        host.SelectedClip = new ClipInfo("Test", "Mac-XMSS", "<original/>");
+        host.SelectedClip = new ClipData("Test", "Mac-XMSS", "<original/>");
 
         var vm = new XmlViewerViewModel(host, "xml-viewer");
         vm.LoadClip(host.SelectedClip);
@@ -94,7 +97,7 @@ public class XmlViewerPluginTests
         plugin.Initialize(host);
 
         // Raising SelectedClipChanged should not throw even before CreatePanel
-        var clip = new ClipInfo("NewClip", "Mac-XMSC", "<script/>");
+        var clip = new ClipData("NewClip", "Mac-XMSC", "<script/>");
         host.RaiseChanged(clip);
     }
 
@@ -107,7 +110,7 @@ public class XmlViewerPluginTests
         plugin.Dispose();
 
         // After dispose, raising the event should be a no-op (no subscribers)
-        host.RaiseChanged(new ClipInfo("After", "Mac-XMSS", "<test/>"));
+        host.RaiseChanged(new ClipData("After", "Mac-XMSS", "<test/>"));
     }
 
     [Fact]
@@ -115,7 +118,7 @@ public class XmlViewerPluginTests
     {
         var host = new MockPluginHost
         {
-            SelectedClip = new ClipInfo("Test", "Mac-XMSS", "<original/>")
+            SelectedClip = new ClipData("Test", "Mac-XMSS", "<original/>")
         };
         var vm = new XmlViewerViewModel(host, "test");
         vm.LoadClip(host.SelectedClip);
@@ -123,7 +126,7 @@ public class XmlViewerPluginTests
         Assert.Equal("<original/>", vm.Document.Text);
 
         // Simulate a content change (e.g. user edited in script editor, host debounced and synced)
-        var updated = new ClipInfo("Test", "Mac-XMSS", "<updated-from-editor/>");
+        var updated = new ClipData("Test", "Mac-XMSS", "<updated-from-editor/>");
         vm.LoadClip(updated);
 
         Assert.Equal("<updated-from-editor/>", vm.Document.Text);
@@ -132,11 +135,11 @@ public class XmlViewerPluginTests
 
 public class TrackingPluginHost : IPluginHost
 {
-    public ClipInfo? SelectedClip { get; set; }
-    public IReadOnlyList<ClipInfo> AllClips { get; set; } = [];
+    public ClipData? SelectedClip { get; set; }
+    public IReadOnlyList<ClipData> AllClips { get; set; } = [];
     public string? LastUpdatedXml { get; private set; }
     public string? LastOriginPluginId { get; private set; }
-    public event EventHandler<ClipInfo?>? SelectedClipChanged;
+    public event EventHandler<ClipData?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
     public event EventHandler? ClipCollectionChanged;
 
@@ -146,8 +149,18 @@ public class TrackingPluginHost : IPluginHost
         LastOriginPluginId = originPluginId;
     }
 
-    public ClipInfo? RefreshSelectedClip() => SelectedClip;
+    public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+    public ClipData? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+    public IReadOnlyList<StepDefinition> GetAvailableSteps(string? category = null) => [];
+    public StepDefinition? GetStepDefinition(string stepName) => null;
+    public IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName) => null;
+    public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
+    public IReadOnlyList<FmField>? GetTableFields(string clipName) => null;
+    public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId) => [];
+    public void CreateClip(string name, string clipType, string? xml = null) { }
+    public bool RemoveClip(string clipName) => false;
+    public void UpdateClipXml(string clipName, string xml, string originPluginId) { LastUpdatedXml = xml; LastOriginPluginId = originPluginId; }
     public void ShowStatus(string message) { }
-    public void RaiseChanged(ClipInfo? clip) => SelectedClipChanged?.Invoke(this, clip);
+    public void RaiseChanged(ClipData? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
 }

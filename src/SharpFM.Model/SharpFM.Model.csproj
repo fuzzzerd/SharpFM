@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Scripting\Catalog\step-catalog-en.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Expose internal serialization helpers to the test project so
+         stateless catalog-driven logic can be unit-tested in isolation
+         without leaking implementation details to consumers. -->
+    <InternalsVisibleTo Include="SharpFM.Tests" />
+  </ItemGroup>
+</Project>

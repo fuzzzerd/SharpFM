@@ -1,3 +1,4 @@
+using SharpFM.Model;
 using SharpFM.Plugin;
 using SharpFM.Plugin.Sample;
 using Xunit;
@@ -25,13 +26,13 @@ public class ClipInspectorPluginTests
     }
 
     [Fact]
-    public void ViewModel_UpdatesFromClipInfo()
+    public void ViewModel_UpdatesFromClipData()
     {
         var vm = new ClipInspectorViewModel();
 
         Assert.False(vm.HasClip);
 
-        var clip = new ClipInfo("TestClip", "Mac-XMSS",
+        var clip = new ClipData("TestClip", "Mac-XMSS",
             "<fmxmlsnippet type=\"FMObjectList\"><Step enable=\"True\"><StepId>89</StepId></Step></fmxmlsnippet>");
         vm.Update(clip);
 
@@ -46,7 +47,7 @@ public class ClipInspectorPluginTests
     public void ViewModel_ClearsOnNull()
     {
         var vm = new ClipInspectorViewModel();
-        vm.Update(new ClipInfo("Test", "Mac-XMSS", "<root/>"));
+        vm.Update(new ClipData("Test", "Mac-XMSS", "<root/>"));
 
         Assert.True(vm.HasClip);
 
@@ -60,7 +61,7 @@ public class ClipInspectorPluginTests
     public void ViewModel_HandlesInvalidXml()
     {
         var vm = new ClipInspectorViewModel();
-        vm.Update(new ClipInfo("Bad", "Mac-XMSS", "not xml at all"));
+        vm.Update(new ClipData("Bad", "Mac-XMSS", "not xml at all"));
 
         Assert.Equal("(invalid XML)", vm.ElementCount);
     }
@@ -77,7 +78,7 @@ public class ClipInspectorPluginTests
         Assert.NotNull(panel);
 
         // Simulate clip change
-        var clip = new ClipInfo("Changed", "Mac-XMTB", "<root><child/></root>");
+        var clip = new ClipData("Changed", "Mac-XMTB", "<root><child/></root>");
         host.RaiseChanged(clip);
 
         // The plugin's internal ViewModel should have updated

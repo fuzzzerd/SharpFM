@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using NLog;
-using SharpFM.Plugin;
+using SharpFM.Model;
 
 namespace SharpFM.Models;
 

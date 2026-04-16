@@ -1,3 +1,4 @@
+using SharpFM.Model;
 using SharpFM.ViewModels;
 using Xunit;
 
@@ -42,53 +43,47 @@ public class ClipViewModelTests
     }
 
     [Fact]
-    public void SyncModelFromEditor_UpdatesXml()
+    public void EditorToXml_UpdatesClipXml()
     {
         var xml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>original</Text></Step>");
         var vm = CreateScriptClip(xml);
 
-        // Access the script document and modify it
         var doc = vm.ScriptDocument;
-        doc.Text = "# modified";
+        doc!.Text = "# modified";
 
-        vm.SyncModelFromEditor();
-
-        Assert.Contains("modified", vm.ClipXml);
-        Assert.Contains("modified", vm.Clip.XmlData);
+        // Editor.ToXml() gives fresh XML from current editor state
+        var freshXml = vm.Editor.ToXml();
+        Assert.Contains("modified", freshXml);
     }
 
     [Fact]
-    public void SyncEditorFromXml_UpdatesScriptDocument()
+    public void ReplaceEditor_UpdatesScriptDocument()
     {
         var xml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>original</Text></Step>");
         var vm = CreateScriptClip(xml);
 
-        // Access script document first
         _ = vm.ScriptDocument;
 
-        // Change the XML directly
-        vm.ClipXml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>changed via xml</Text></Step>");
+        var newXml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>changed via xml</Text></Step>");
+        vm.ReplaceEditor(newXml);
 
-        vm.SyncEditorFromXml();
-
-        Assert.Contains("changed via xml", vm.ScriptDocument.Text);
+        Assert.Contains("changed via xml", vm.ScriptDocument!.Text);
     }
 
     [Fact]
-    public void SyncModelFromEditor_TableClip_RoundTripsXml()
+    public void ReplaceEditor_TableClip_RoundTripsXml()
     {
         var clip = new FileMakerClip("Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"T\"></BaseTable></fmxmlsnippet>");
         var vm = new ClipViewModel(clip);
 
-        vm.SyncModelFromEditor();
+        vm.ReplaceEditor(vm.Clip.XmlData);
 
-        // Table XML round-trips through the model, so it gets normalized
         Assert.Contains("BaseTable", vm.Clip.XmlData);
         Assert.Contains("name=\"T\"", vm.Clip.XmlData);
     }
 
     [Fact]
-    public void ClipXml_UpdatesBothClipAndDocument()
+    public void Clip_XmlData_UpdatesBothClipAndDocument()
     {
         var xml = WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>");
         var vm = CreateScriptClip(xml);
@@ -97,20 +92,20 @@ public class ClipViewModelTests
         _ = vm.XmlDocument;
 
         var newXml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>new</Text></Step>");
-        vm.ClipXml = newXml;
+        vm.Clip.XmlData = newXml;
 
         Assert.Equal(newXml, vm.Clip.XmlData);
         Assert.Equal(newXml, vm.XmlDocument.Text);
     }
 
     [Fact]
-    public void Name_TwoWayBinding()
+    public void Clip_Name_FiresPropertyChanged()
     {
         var vm = CreateScriptClip(WrapXml(""));
         string? changed = null;
-        vm.PropertyChanged += (_, args) => changed = args.PropertyName;
+        vm.Clip.PropertyChanged += (_, args) => changed = args.PropertyName;
 
-        vm.Name = "Renamed";
+        vm.Clip.Name = "Renamed";
         Assert.Equal("Renamed", vm.Clip.Name);
         Assert.Equal("Name", changed);
     }
