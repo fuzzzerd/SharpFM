@@ -288,23 +288,15 @@ public static class CatalogXmlBuilder
 
     private static XElement BuildFieldXml(StepParam paramDef, string? value)
     {
-        if (value == null)
+        // Empty / null → degenerate empty field slot.
+        if (string.IsNullOrEmpty(value))
             return XElement.Parse($"<{paramDef.XmlElement} table=\"\" id=\"0\" name=\"\"/>");
 
-        if (value.Contains("::"))
-        {
-            var parts = value.Split("::", 2);
-            // NOTE: display-text-originated fields have no id; zero is
-            // accepted here as a known limitation. Typed POCOs carry the
-            // real id via FieldRef.
-            return new XElement(paramDef.XmlElement,
-                new XAttribute("table", parts[0]),
-                new XAttribute("id", "0"),
-                new XAttribute("name", parts[1]));
-        }
-
-        // Variable reference
-        return new XElement(paramDef.XmlElement, value);
+        // Delegate to FieldRef so the display-text (#id) suffix — if the
+        // user or source XML provided one — round-trips through the generic
+        // catalog path. Unresolved refs get id=0 (same sentinel as before);
+        // future DDL-dictionary integration can resolve those downstream.
+        return Values.FieldRef.FromDisplayToken(value).ToXml(paramDef.XmlElement);
     }
 
     private static XElement BuildNamedRefXml(StepParam paramDef, string? value)

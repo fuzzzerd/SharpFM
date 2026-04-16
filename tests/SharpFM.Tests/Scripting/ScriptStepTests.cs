@@ -60,7 +60,9 @@ public class ScriptStepTests
             + "<Calculation><![CDATA[\"Done\"]]></Calculation>"
             + "<Field table=\"Invoices\" id=\"3\" name=\"Status\"/></Step>");
         var step = ScriptStep.FromXml(el);
-        Assert.Equal("Set Field [ Invoices::Status ; \"Done\" ]", step.ToDisplayLine());
+        // Display now includes the (#id) lossless suffix on field refs —
+        // catalog-path and typed POCOs both preserve the field id on display.
+        Assert.Equal("Set Field [ Invoices::Status (#3) ; \"Done\" ]", step.ToDisplayLine());
     }
 
     [Fact]

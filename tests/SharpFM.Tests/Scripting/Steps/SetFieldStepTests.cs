@@ -36,7 +36,7 @@ public class SetFieldStepTests
     {
         var step = ScriptStep.FromXml(MakeStep(LiteralStringXml));
         Assert.Equal(
-            "Set Field [ ScriptDefinitionHelper::ModifiedBy ; \"just-a-string\" ]",
+            "Set Field [ ScriptDefinitionHelper::ModifiedBy (#5) ; \"just-a-string\" ]",
             step.ToDisplayLine());
     }
 
@@ -60,7 +60,7 @@ public class SetFieldStepTests
     {
         var step = ScriptStep.FromXml(MakeStep(VariableCalcXml));
         Assert.Equal(
-            "Set Field [ ScriptDefinitionHelper::ModifiedBy ; $variable + \" string\" ]",
+            "Set Field [ ScriptDefinitionHelper::ModifiedBy (#5) ; $variable + \" string\" ]",
             step.ToDisplayLine());
     }
 

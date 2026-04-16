@@ -39,6 +39,7 @@ public partial class MainWindow : Window
             _scriptTextMateInstallation = scriptEditor.InstallTextMate(fmScriptRegistry);
             _scriptTextMateInstallation.SetGrammar(FmScriptRegistryOptions.ScopeName);
             _scriptController = new ScriptEditorController(scriptEditor);
+            _scriptController.StatusMessageRaised += OnScriptControllerStatusMessage;
         }
 
         // "Manage Plugins..." menu item
@@ -75,6 +76,24 @@ public partial class MainWindow : Window
             UpdatePluginPanelVisibility();
         else if (e.PropertyName == nameof(MainWindowViewModel.PluginPanelControl))
             UpdatePluginPanelContent();
+        else if (e.PropertyName == nameof(MainWindowViewModel.SelectedClip))
+            AttachScriptClipEditorIfApplicable();
+    }
+
+    private void OnScriptControllerStatusMessage(object? sender, SharpFM.Scripting.Editor.StatusMessageEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+            vm.ShowStatusMessage(e.Message, e.IsError);
+    }
+
+    private void AttachScriptClipEditorIfApplicable()
+    {
+        if (_scriptController == null) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+        if (vm.SelectedClip?.Editor is SharpFM.Editors.ScriptClipEditor clipEditor)
+        {
+            _scriptController.AttachClipEditor(clipEditor);
+        }
     }
 
     private void BuildPluginMenuItems(MainWindowViewModel vm)

@@ -155,9 +155,17 @@ public sealed class ShowCustomDialogStep : ScriptStep
     {
         var labelText = input.Label?.Text ?? "\"\"";
         var password = input.UsePasswordCharacter ? "password" : "plain";
-        var target = input.Target.ToDisplayString();
+
+        // Compose the target in `Name[rep] (#id)` order: the [rep] suffix
+        // is part of the field reference itself, the (#id) is a trailing
+        // annotation. Call ToDisplayString with includeId: false so we
+        // can insert [rep] between the name and the id.
+        var target = input.Target.ToDisplayString(includeId: false);
         if (input.Repetition is { } rep)
             target += $"[{rep}]";
+        if (!input.Target.IsVariable && input.Target.Id > 0)
+            target += $" (#{input.Target.Id})";
+
         return $"{labelText} {password} {target}";
     }
 
@@ -219,28 +227,56 @@ public sealed class ShowCustomDialogStep : ScriptStep
         @"^(?<target>.*?)\[(?<rep>\d+)\]$",
         RegexOptions.Compiled);
 
+    private static readonly Regex InputIdSuffix = new(
+        @"\s*\(#(?<id>\d+)\)\s*$",
+        RegexOptions.Compiled);
+
     private static ShowCustomDialogInputField ParseInputSlot(string slot)
     {
-        // Input slot is "<calc> <plain|password> <target>". Take last two
-        // whitespace-separated tokens as keyword + target; everything
-        // before is the label calc. This lets calcs contain spaces.
+        // Slot format: `"Label" {plain|password} Name[rep] (#id)`. Strip the
+        // trailing (#id) first, then trailing [rep], and what remains is a
+        // FieldRef-parseable target.
         var trimmed = slot.Trim();
         if (string.IsNullOrEmpty(trimmed)) return ShowCustomDialogInputField.EmptySlot();
 
-        int lastSpace = trimmed.LastIndexOf(' ');
-        if (lastSpace < 0) return ShowCustomDialogInputField.EmptySlot();
+        // 1. Quoted label.
+        if (!trimmed.StartsWith("\"")) return ShowCustomDialogInputField.EmptySlot();
+        int end = -1;
+        for (int i = 1; i < trimmed.Length; i++)
+        {
+            if (trimmed[i] == '\\' && i + 1 < trimmed.Length) { i++; continue; }
+            if (trimmed[i] == '"') { end = i; break; }
+        }
+        if (end < 0) return ShowCustomDialogInputField.EmptySlot();
+        var labelText = trimmed.Substring(1, end - 1);
 
-        var targetText = trimmed.Substring(lastSpace + 1).Trim();
-        var rest = trimmed.Substring(0, lastSpace).Trim();
-
-        int kwSpace = rest.LastIndexOf(' ');
-        if (kwSpace < 0) return ShowCustomDialogInputField.EmptySlot();
-
-        var keyword = rest.Substring(kwSpace + 1).Trim();
-        var labelText = rest.Substring(0, kwSpace).Trim();
-
+        // 2. Keyword + target remainder.
+        var rest = trimmed.Substring(end + 1).TrimStart();
+        int spaceIdx = rest.IndexOf(' ');
+        string keyword;
+        string targetText;
+        if (spaceIdx < 0)
+        {
+            keyword = rest;
+            targetText = "";
+        }
+        else
+        {
+            keyword = rest.Substring(0, spaceIdx);
+            targetText = rest.Substring(spaceIdx + 1).Trim();
+        }
         var password = keyword.Equals("password", StringComparison.OrdinalIgnoreCase);
 
+        // 3. Strip trailing (#id) — that's the lossless id annotation.
+        int id = 0;
+        var idMatch = InputIdSuffix.Match(targetText);
+        if (idMatch.Success)
+        {
+            id = int.Parse(idMatch.Groups["id"].Value);
+            targetText = targetText.Substring(0, idMatch.Index).TrimEnd();
+        }
+
+        // 4. Strip trailing [rep] — that's the repetition number.
         int? rep = null;
         var repMatch = TargetWithRep.Match(targetText);
         if (repMatch.Success)
@@ -249,16 +285,19 @@ public sealed class ShowCustomDialogStep : ScriptStep
             targetText = repMatch.Groups["target"].Value.Trim();
         }
 
+        // 5. What's left is a FieldRef body: Table::Name or $var or empty.
         FieldRef target;
-        if (targetText.StartsWith("$"))
-            target = FieldRef.ForVariable(targetText);
+        if (string.IsNullOrEmpty(targetText))
+        {
+            target = FieldRef.ForField("", 0, "");
+        }
         else
         {
-            var sep = targetText.IndexOf("::");
-            if (sep > 0)
-                target = FieldRef.ForField(targetText.Substring(0, sep), 0, targetText.Substring(sep + 2));
-            else
-                target = FieldRef.ForField("", 0, "");
+            var parsed = FieldRef.FromDisplayToken(targetText);
+            // Re-apply id (FromDisplayToken got id=0 since we already stripped the suffix).
+            target = parsed.IsVariable || id == 0
+                ? parsed
+                : FieldRef.ForField(parsed.Table, id, parsed.Name);
         }
 
         Calculation? label = LabelTextToCalc(labelText);

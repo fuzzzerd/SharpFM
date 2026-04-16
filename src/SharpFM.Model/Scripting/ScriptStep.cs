@@ -54,6 +54,17 @@ public abstract class ScriptStep
     public virtual List<ScriptDiagnostic> Validate(int lineIndex) => new();
 
     /// <summary>
+    /// True when this step round-trips losslessly through the display-text
+    /// editor. Typed POCOs return <c>true</c> because they carry every
+    /// relevant field as typed state. <see cref="RawStep"/> overrides and
+    /// defers to <c>RawStepAllowList</c> — a catalog-path step is sealed
+    /// (read-only in the display editor) unless explicitly verified on
+    /// the allow-list. Sealed steps remain fully lossless at the XML
+    /// level; they just can't be edited as display text.
+    /// </summary>
+    public virtual bool IsFullyEditable => true;
+
+    /// <summary>
     /// Entry point for parsing a script step XML element into the
     /// domain model. Dispatches through <see cref="StepXmlFactory"/> to
     /// either a registered typed POCO or a <c>RawStep</c> fallback.

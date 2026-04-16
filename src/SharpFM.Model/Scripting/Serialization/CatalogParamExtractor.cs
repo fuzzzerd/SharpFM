@@ -87,14 +87,15 @@ internal static class CatalogParamExtractor
 
     private static string? ExtractField(XElement element)
     {
-        var table = element.Attribute("table")?.Value;
-        var name = element.Attribute("name")?.Value;
-        if (!string.IsNullOrEmpty(table) && !string.IsNullOrEmpty(name))
-            return $"{table}::{name}";
-        if (!string.IsNullOrEmpty(name))
-            return name;
-        var text = element.Value;
-        return string.IsNullOrEmpty(text) ? null : text;
+        // Delegate to FieldRef so every field-param render uses the same
+        // lossless display form (Table::Name (#id)) as typed POCOs like
+        // SetFieldStep and ShowCustomDialogStep.
+        var fr = Values.FieldRef.FromXml(element);
+        if (fr.IsVariable)
+            return string.IsNullOrEmpty(fr.VariableName) ? null : fr.VariableName;
+        if (string.IsNullOrEmpty(fr.Name))
+            return null;
+        return fr.ToDisplayString();
     }
 
     /// <summary>

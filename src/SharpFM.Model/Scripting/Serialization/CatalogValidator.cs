@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace SharpFM.Model.Scripting.Serialization;
@@ -20,6 +21,10 @@ namespace SharpFM.Model.Scripting.Serialization;
 /// </summary>
 internal static class CatalogValidator
 {
+    private static readonly Regex FieldIdSuffix = new(
+        @"\s*\(#\d+\)\s*$",
+        RegexOptions.Compiled);
+
     public static List<ScriptDiagnostic> Validate(XElement stepEl, StepDefinition def, int lineIndex)
     {
         var diagnostics = new List<ScriptDiagnostic>();
@@ -57,7 +62,10 @@ internal static class CatalogValidator
 
         if (paramDef.Type is "field" or "fieldOrVariable" && !string.IsNullOrEmpty(value))
         {
-            if (!value.Contains("::") && !value.StartsWith("$"))
+            // Strip an optional trailing "(#id)" annotation before checking
+            // shape. Valid forms: Table::Field (#N), Table::Field, $var.
+            var stripped = FieldIdSuffix.Replace(value, "").TrimEnd();
+            if (!stripped.Contains("::") && !stripped.StartsWith("$"))
             {
                 diagnostics.Add(new ScriptDiagnostic(
                     lineIndex, 0, 0,

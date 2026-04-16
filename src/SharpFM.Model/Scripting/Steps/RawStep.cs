@@ -40,6 +40,16 @@ public sealed class RawStep : ScriptStep
 
     public override XElement ToXml() => new XElement(_element);
 
+    /// <summary>
+    /// RawSteps are sealed (not fully editable as display text) by default
+    /// — display-text round-trip fidelity for catalog-path steps depends
+    /// on the shape of their params and must be verified per step. A step
+    /// name listed in <see cref="RawStepAllowList.Names"/> is considered
+    /// verified and therefore editable.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        Definition is { } def && RawStepAllowList.Names.Contains(def.Name);
+
     public override string ToDisplayLine()
     {
         if (Definition == null)

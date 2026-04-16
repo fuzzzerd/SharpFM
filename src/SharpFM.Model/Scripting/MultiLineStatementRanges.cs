@@ -68,31 +68,19 @@ public static class MultiLineStatementRanges
     /// <summary>
     /// Build a lookup mapping each step's first line to its 1-based step
     /// index (FileMaker-style numbering — one number per step regardless
-    /// of how many physical lines its calc spans). Blank lines are NOT
-    /// counted as steps. Continuation lines are absent from the map and
-    /// callers should treat their absence as "no number to render".
+    /// of how many physical lines its calc spans). Blank lines ARE counted
+    /// as steps — they correspond to empty <c># (comment)</c> steps in
+    /// FM Pro's script model. Continuation lines of a multi-line step
+    /// are absent from the map (no number rendered for them).
     /// </summary>
     public static IReadOnlyDictionary<int, int> BuildStepIndex(string text)
     {
-        var lines = text.Split('\n');
         var ranges = Compute(text);
         var lookup = new Dictionary<int, int>(capacity: ranges.Count);
         int stepIndex = 0;
 
-        foreach (var (start, end) in ranges)
+        foreach (var (start, _) in ranges)
         {
-            // Skip blank-line "ranges" — they aren't real steps.
-            if (start == end)
-            {
-                var lineIdx = start - 1;
-                if (lineIdx >= 0 && lineIdx < lines.Length)
-                {
-                    var lineText = lines[lineIdx].TrimEnd('\r');
-                    if (string.IsNullOrWhiteSpace(lineText))
-                        continue;
-                }
-            }
-
             stepIndex++;
             lookup[start] = stepIndex;
         }

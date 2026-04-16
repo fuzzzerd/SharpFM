@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace SharpFM.Model.Scripting.Values;
@@ -66,13 +67,67 @@ public sealed record FieldRef
     }
 
     /// <summary>
-    /// Canonical display form: <c>Table::Field</c>, bare <c>Field</c> when
-    /// table is absent, or <c>$variable</c> for variables.
+    /// Canonical lossless display form: <c>Table::Field (#id)</c> when the id
+    /// is known (non-zero), <c>Table::Field</c> otherwise. Variables render as
+    /// <c>$var</c> with no id. Matches the <c>(#id)</c> convention used by
+    /// GoToLayoutStep / PerformScriptStep for named refs.
     /// </summary>
-    public string ToDisplayString()
+    public string ToDisplayString() => ToDisplayString(includeId: true);
+
+    /// <summary>
+    /// Display form with optional <c>(#id)</c> suffix. Callers that need to
+    /// compose the field reference with an additional suffix (e.g. a
+    /// <c>[rep]</c> repetition marker that must sit between the name and
+    /// the id annotation) should use <c>includeId: false</c> and append the
+    /// id themselves.
+    /// </summary>
+    public string ToDisplayString(bool includeId)
     {
         if (IsVariable) return VariableName!;
-        if (!string.IsNullOrEmpty(Table)) return $"{Table}::{Name}";
-        return Name;
+        var baseText = !string.IsNullOrEmpty(Table) ? $"{Table}::{Name}" : Name;
+        return includeId && Id > 0 ? $"{baseText} (#{Id})" : baseText;
     }
+
+    /// <summary>
+    /// Parse a display-text token back into a <see cref="FieldRef"/>. Accepts:
+    /// <list type="bullet">
+    ///   <item><c>Table::Name (#id)</c> — table-qualified field with id</item>
+    ///   <item><c>Table::Name</c> — table-qualified field, id=0 (unresolved)</item>
+    ///   <item><c>Name (#id)</c> — bare field with id</item>
+    ///   <item><c>Name</c> — bare field, id=0</item>
+    ///   <item><c>$var</c> or <c>$$var</c> — variable</item>
+    /// </list>
+    /// Future work will allow threading an <c>INameResolver</c> to fill id=0
+    /// values from a loaded DDL dictionary; the signature accepts a trailing
+    /// optional parameter so call sites don't need to change.
+    /// </summary>
+    public static FieldRef FromDisplayToken(string token)
+    {
+        var t = token.Trim();
+
+        if (t.StartsWith("$"))
+            return ForVariable(t);
+
+        var idMatch = IdSuffix.Match(t);
+        int id = 0;
+        if (idMatch.Success)
+        {
+            id = int.Parse(idMatch.Groups["id"].Value);
+            t = t.Substring(0, idMatch.Index).TrimEnd();
+        }
+
+        var sep = t.IndexOf("::");
+        if (sep >= 0)
+        {
+            var table = t.Substring(0, sep);
+            var name = t.Substring(sep + 2);
+            return ForField(string.IsNullOrEmpty(table) ? null : table, id, name);
+        }
+
+        return ForField(null, id, t);
+    }
+
+    private static readonly Regex IdSuffix = new(
+        @"\s*\(#(?<id>\d+)\)\s*$",
+        RegexOptions.Compiled);
 }

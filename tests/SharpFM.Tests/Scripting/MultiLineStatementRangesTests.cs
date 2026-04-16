@@ -78,15 +78,19 @@ public class MultiLineStatementRangesTests
     }
 
     [Fact]
-    public void BuildStepIndex_BlankLines_DoNotConsumeStepNumbers()
+    public void BuildStepIndex_BlankLines_AreNumberedAsEmptyCommentSteps()
     {
+        // Blank lines in the display map to empty CommentSteps (FM Pro's
+        // convention: a blank line in the script editor is a <Step id="89">
+        // with empty Text). They consume step numbers just like any other
+        // step.
         var text = "If [ $x > 0 ]\n\n\nEnd If";
         var idx = MultiLineStatementRanges.BuildStepIndex(text);
 
         Assert.Equal(1, idx[1]);
-        Assert.False(idx.ContainsKey(2));
-        Assert.False(idx.ContainsKey(3));
-        Assert.Equal(2, idx[4]); // End If is step 2, not step 4
+        Assert.Equal(2, idx[2]);
+        Assert.Equal(3, idx[3]);
+        Assert.Equal(4, idx[4]);
     }
 
     [Fact]

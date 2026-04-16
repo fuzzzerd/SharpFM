@@ -7,6 +7,9 @@ using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
+using SharpFM.Diagnostics;
+using SharpFM.Editors;
+using SharpFM.Editors.SealedSteps;
 
 namespace SharpFM.Scripting.Editor;
 
@@ -20,6 +23,15 @@ public class ScriptEditorController : IDisposable
     private readonly DispatcherTimer _validationTimer;
     private ErrorMarkerRenderer? _errorRenderer;
     private CompletionWindow? _completionWindow;
+    private ScriptClipEditor? _clipEditor;
+    private SealedStepCogGenerator? _cogGenerator;
+
+    /// <summary>
+    /// Raised when the controller wants to surface a transient message
+    /// (e.g. "copy blocked across sealed line"). Handled by MainWindow,
+    /// which routes to the view model's ShowStatusMessage.
+    /// </summary>
+    public event EventHandler<StatusMessageEventArgs>? StatusMessageRaised;
 
     public ScriptEditorController(TextEditor editor)
     {
@@ -51,6 +63,9 @@ public class ScriptEditorController : IDisposable
 
         // Auto-indent on Enter inside multi-line calc regions.
         _editor.TextArea.IndentationStrategy = new ContinuationIndentStrategy();
+
+        // Copy/Cut interception — block selections that span a sealed line.
+        _editor.KeyDown += OnKeyDownGuardSealed;
 
         // Wire events
         _editor.TextArea.TextEntered += OnTextEntered;
@@ -184,10 +199,94 @@ public class ScriptEditorController : IDisposable
         margins.Insert(0, new StepIndexMargin());
     }
 
+    /// <summary>
+    /// Attach the controller to a <see cref="ScriptClipEditor"/> so the
+    /// sealed-step visuals (squiggle, italic, cog, read-only provider)
+    /// can find the anchor cache. Call whenever the underlying clip
+    /// editor is swapped (e.g. user selects a different script clip).
+    /// </summary>
+    public void AttachClipEditor(ScriptClipEditor clipEditor)
+    {
+        _clipEditor = clipEditor;
+
+        // Squiggle + italic renderers read from the clipEditor.SealedAnchors.
+        var squiggle = new SealedStepSquiggleRenderer(_editor.TextArea, clipEditor);
+        _editor.TextArea.TextView.BackgroundRenderers.Add(squiggle);
+
+        var italic = new SealedStepItalicColorizer(clipEditor);
+        _editor.TextArea.TextView.LineTransformers.Add(italic);
+
+        // Cog-button inline element + click handler.
+        _cogGenerator = new SealedStepCogGenerator(clipEditor);
+        _cogGenerator.CogClicked += OnCogClicked;
+        _editor.TextArea.TextView.ElementGenerators.Add(_cogGenerator);
+
+        // Read-only protection: user can't type inside a sealed line.
+        _editor.TextArea.ReadOnlySectionProvider =
+            new SealedStepReadOnlyProvider(clipEditor.Document, clipEditor);
+    }
+
+    private async void OnCogClicked(object? sender, TextAnchor anchor)
+    {
+        if (_clipEditor == null) return;
+
+        // Locate the current XML for this sealed step.
+        if (!_clipEditor.TryGetSealedXml(anchor, out var xml)) return;
+
+        // Find the parent Window so the modal dialog gets a proper owner.
+        var owner = TopLevelWindow(_editor);
+        if (owner == null) return;
+
+        var edited = await RawStepEditorWindow.EditAsync(owner, xml);
+        if (edited != null)
+        {
+            _clipEditor.UpdateSealedXml(anchor, edited);
+        }
+    }
+
+    private static Window? TopLevelWindow(Avalonia.Controls.Control control)
+    {
+        var tl = Avalonia.Controls.TopLevel.GetTopLevel(control);
+        return tl as Window;
+    }
+
+    private void OnKeyDownGuardSealed(object? sender, KeyEventArgs e)
+    {
+        if (_clipEditor == null) return;
+        var modifier = e.KeyModifiers;
+        if ((modifier & KeyModifiers.Control) == 0) return;
+        if (e.Key != Key.C && e.Key != Key.X) return;
+
+        var sel = _editor.TextArea.Selection;
+        if (sel.IsEmpty) return;
+
+        var startOffset = _editor.Document.GetOffset(sel.StartPosition.Location);
+        var endOffset = _editor.Document.GetOffset(sel.EndPosition.Location);
+
+        // Collect sealed-line offsets for the overlap test.
+        var sealedRanges = new List<(int, int)>();
+        foreach (var anchor in _clipEditor.SealedAnchors)
+        {
+            if (anchor.IsDeleted) continue;
+            var line = _editor.Document.GetLineByOffset(anchor.Offset);
+            sealedRanges.Add((line.Offset, line.EndOffset));
+        }
+
+        if (SealedSelectionCheck.SpansSealed(startOffset, endOffset, sealedRanges))
+        {
+            e.Handled = true;
+            var action = e.Key == Key.X ? "Cut" : "Copy";
+            StatusMessageRaised?.Invoke(this, new StatusMessageEventArgs(
+                $"{action} blocked: selection crosses a sealed step. Edit it via the cog icon.",
+                isError: true));
+        }
+    }
+
     public void Dispose()
     {
         _validationTimer.Stop();
         _editor.TextArea.TextEntered -= OnTextEntered;
         _editor.PointerMoved -= OnPointerMoved;
+        _editor.KeyDown -= OnKeyDownGuardSealed;
     }
 }

@@ -356,6 +356,13 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Public entry point for code outside this view model (e.g. the script
+    /// editor controller) to display a transient status-bar message.
+    /// </summary>
+    public void ShowStatusMessage(string message, bool isError = false) =>
+        ShowStatus(message, isError);
+
     private void ShowStatus(string message, bool isError = false)
     {
         StatusMessage = message;

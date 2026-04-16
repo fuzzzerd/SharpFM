@@ -34,6 +34,14 @@ public static class StepXmlFactory
     }
 
     /// <summary>
+    /// Names of step kinds that have typed POCOs registered. Used by the
+    /// allow-list contract test to enforce that a POCO-backed step is
+    /// never also listed as an allow-list exception — the two mechanisms
+    /// are mutually exclusive sources of the "fully editable" property.
+    /// </summary>
+    public static IReadOnlyCollection<string> RegisteredNames => _typed.Keys;
+
+    /// <summary>
     /// Build a <see cref="ScriptStep"/> from a raw <c>&lt;Step&gt;</c>
     /// element. Returns a typed POCO when the step name is registered,
     /// otherwise wraps the element in a <see cref="RawStep"/> (with the

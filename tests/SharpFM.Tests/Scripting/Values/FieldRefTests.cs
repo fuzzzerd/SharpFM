@@ -70,9 +70,27 @@ public class FieldRefTests
     }
 
     [Fact]
-    public void ToDisplayString_TableQualified_UsesDoubleColonSeparator()
+    public void ToDisplayString_TableQualified_IncludesLosslessIdSuffix()
     {
         var r = FieldRef.ForField("People", 1, "FirstName");
+        Assert.Equal("People::FirstName (#1)", r.ToDisplayString());
+    }
+
+    [Fact]
+    public void ToDisplayString_WithIncludeIdFalse_OmitsIdSuffix()
+    {
+        // Callers that need to insert additional annotation (e.g. a
+        // repetition [rep] suffix) between the name and the (#id) can
+        // opt out and append the id themselves.
+        var r = FieldRef.ForField("People", 1, "FirstName");
+        Assert.Equal("People::FirstName", r.ToDisplayString(includeId: false));
+    }
+
+    [Fact]
+    public void ToDisplayString_UnresolvedId_OmitsSuffix()
+    {
+        // Id = 0 is the "unresolved" sentinel — emitted as a bare name.
+        var r = FieldRef.ForField("People", 0, "FirstName");
         Assert.Equal("People::FirstName", r.ToDisplayString());
     }
 
@@ -88,6 +106,57 @@ public class FieldRefTests
     {
         var r = FieldRef.ForVariable("$count");
         Assert.Equal("$count", r.ToDisplayString());
+    }
+
+    [Fact]
+    public void FromDisplayToken_TableQualifiedWithId_PreservesId()
+    {
+        var r = FieldRef.FromDisplayToken("People::FirstName (#7)");
+        Assert.Equal("People", r.Table);
+        Assert.Equal(7, r.Id);
+        Assert.Equal("FirstName", r.Name);
+        Assert.False(r.IsVariable);
+    }
+
+    [Fact]
+    public void FromDisplayToken_TableQualifiedNoId_IdIsZero()
+    {
+        var r = FieldRef.FromDisplayToken("People::FirstName");
+        Assert.Equal("People", r.Table);
+        Assert.Equal(0, r.Id);
+    }
+
+    [Fact]
+    public void FromDisplayToken_Variable_IsVariable()
+    {
+        var r = FieldRef.FromDisplayToken("$count");
+        Assert.True(r.IsVariable);
+        Assert.Equal("$count", r.VariableName);
+    }
+
+    [Fact]
+    public void FromDisplayToken_GlobalVariable_IsVariable()
+    {
+        var r = FieldRef.FromDisplayToken("$$globalCount");
+        Assert.True(r.IsVariable);
+        Assert.Equal("$$globalCount", r.VariableName);
+    }
+
+    [Fact]
+    public void FromDisplayToken_BareFieldWithId_PreservesId()
+    {
+        var r = FieldRef.FromDisplayToken("MyField (#3)");
+        Assert.Null(r.Table);
+        Assert.Equal(3, r.Id);
+        Assert.Equal("MyField", r.Name);
+    }
+
+    [Fact]
+    public void FromDisplayToken_ThenToDisplayString_IsIdempotent()
+    {
+        var original = "People::FirstName (#7)";
+        var r = FieldRef.FromDisplayToken(original);
+        Assert.Equal(original, r.ToDisplayString());
     }
 
     [Fact]

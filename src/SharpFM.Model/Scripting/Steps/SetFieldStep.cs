@@ -67,27 +67,11 @@ public sealed class SetFieldStep : ScriptStep
         var expression = new Calculation("");
 
         if (hrParams.Length >= 1)
-            target = ParseFieldToken(hrParams[0].Trim());
+            target = FieldRef.FromDisplayToken(hrParams[0]);
 
         if (hrParams.Length >= 2)
             expression = new Calculation(hrParams[1].Trim());
 
         return new SetFieldStep(enabled, target, expression);
-    }
-
-    private static FieldRef ParseFieldToken(string token)
-    {
-        if (token.StartsWith("$"))
-            return FieldRef.ForVariable(token);
-
-        var sep = token.IndexOf("::");
-        if (sep > 0)
-        {
-            var table = token.Substring(0, sep);
-            var field = token.Substring(sep + 2);
-            return FieldRef.ForField(table, 0, field);
-        }
-
-        return FieldRef.ForField(null, 0, token);
     }
 }
