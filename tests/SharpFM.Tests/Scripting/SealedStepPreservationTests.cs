@@ -138,6 +138,26 @@ public class SealedStepPreservationTests
     }
 
     [Fact]
+    public void UpdateSealedXml_PreservesBlockIndentation()
+    {
+        // The Beep step is inside an If/End If block, so its display line
+        // is indented. Updating via the cog must preserve that indentation.
+        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+
+        var anchor = editor.SealedAnchors.First();
+        var beepLine = editor.Document.GetLineByOffset(anchor.Offset);
+        var beforeText = editor.Document.GetText(beepLine.Offset, beepLine.Length);
+        Assert.StartsWith("    ", beforeText); // 4-space indent inside If block
+
+        var replacement = XElement.Parse(
+            "<Step enable=\"True\" id=\"93\" name=\"Beep\"><SomeChild value=\"1\"/></Step>");
+        editor.UpdateSealedXml(anchor, replacement);
+
+        var afterText = editor.Document.GetText(beepLine.Offset, beepLine.Length);
+        Assert.StartsWith("    ", afterText); // indentation preserved
+    }
+
+    [Fact]
     public void UpdateSealedXml_DeadAnchor_ReturnsFalse()
     {
         var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);

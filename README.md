@@ -86,17 +86,13 @@ SharpFM supports plugins via the `SharpFM.Plugin` contract library. Plugins are 
 
 ### Writing a Plugin
 
-1. Create a .NET 8 class library referencing `SharpFM.Plugin`.
+1. Create a .NET 10 class library referencing `SharpFM.Plugin`.
 2. Implement `IPanelPlugin` -- provide an `Id`, `DisplayName`, `CreatePanel()` returning an Avalonia `Control`.
 3. Use `IPluginHost` in `Initialize()` to observe clip selection changes and content updates.
 4. Optionally register keyboard shortcuts via `KeyBindings` and custom menu actions via `MenuActions`.
 5. Build the DLL and drop it in the `plugins/` directory.
 
 See `src/SharpFM.Plugin.Sample/` for a complete working example.
-
-### Plugin License
-
-While SharpFM is licensed under GPL v3, plugins that communicate solely through the interfaces in `SharpFM.Plugin` are not required to be GPL-licensed. See the plugin interface source files for the full exception clause.
 
 ## Troubleshooting
 
