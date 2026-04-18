@@ -15,12 +15,12 @@ SharpFM supports four types of plugins, all sharing a common base interface (`IP
 
 ### 1. Create a Class Library
 
-Create a new .NET 8 class library and reference `SharpFM.Plugin`:
+Create a new .NET 10 class library and reference `SharpFM.Plugin`:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="path/to/SharpFM.Plugin.csproj" />
@@ -48,4 +48,4 @@ SharpFM scans the `plugins/` directory at startup for `.dll` files. Each assembl
 
 ## Licensing
 
-The `SharpFM.Plugin` project is GPL with a **plugin exception**: plugins that implement these interfaces are not subject to the GPL and may use any license, including proprietary.
+SharpFM and its plugin interfaces are licensed under the GNU General Public License v3.

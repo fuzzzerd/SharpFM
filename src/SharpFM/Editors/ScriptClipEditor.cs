@@ -101,8 +101,11 @@ public class ScriptClipEditor : IClipEditor
         if (!SignatureMatches(anchor, entry.Signature)) return false;
 
         var line = Document.GetLineByOffset(anchor.Offset);
+        var currentText = Document.GetText(line.Offset, line.Length);
+        var indent = currentText[..^currentText.AsSpan().TrimStart().Length];
+
         var newStep = ScriptStep.FromXml(newXml);
-        var newDisplay = newStep.ToDisplayLine();
+        var newDisplay = indent + newStep.ToDisplayLine();
 
         Document.Replace(line.Offset, line.Length, newDisplay);
 
