@@ -52,8 +52,7 @@ public partial class App : Application
             pluginService.LoadPlugins(pluginHost);
 
             // Wire up all plugin types
-            viewModel.PanelPlugins = pluginService.PanelPlugins;
-            viewModel.TransformPlugins = pluginService.TransformPlugins;
+            viewModel.AllPlugins = pluginService.AllPlugins;
 
             // Build repository list: built-in + plugin-provided
             var repos = new List<IClipRepository> { viewModel.ActiveRepository };

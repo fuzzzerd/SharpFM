@@ -180,11 +180,11 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void PanelPlugins_CanBeSet()
+    public void AllPlugins_PanelPluginsProjection()
     {
         var vm = CreateVm();
         var plugin = new StubPanelPlugin();
-        vm.PanelPlugins = [plugin];
+        vm.AllPlugins = [plugin];
         Assert.Single(vm.PanelPlugins);
     }
 
@@ -193,7 +193,7 @@ public class MainWindowViewModelTests
     {
         var vm = CreateVm();
         var plugin = new StubPanelPlugin();
-        vm.PanelPlugins = [plugin];
+        vm.AllPlugins = [plugin];
 
         vm.TogglePluginPanel(plugin);
 
@@ -207,7 +207,7 @@ public class MainWindowViewModelTests
     {
         var vm = CreateVm();
         var plugin = new StubPanelPlugin();
-        vm.PanelPlugins = [plugin];
+        vm.AllPlugins = [plugin];
 
         vm.TogglePluginPanel(plugin);
         vm.TogglePluginPanel(plugin);
@@ -222,7 +222,7 @@ public class MainWindowViewModelTests
         var vm = CreateVm();
         var plugin1 = new StubPanelPlugin { Id = "p1" };
         var plugin2 = new StubPanelPlugin { Id = "p2" };
-        vm.PanelPlugins = [plugin1, plugin2];
+        vm.AllPlugins = [plugin1, plugin2];
 
         vm.TogglePluginPanel(plugin1);
         Assert.Same(plugin1, vm.ActivePlugin);

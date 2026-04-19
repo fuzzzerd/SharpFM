@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
@@ -100,32 +101,50 @@ public partial class MainWindow : Window
     {
         var pluginsMenu = this.FindControl<MenuItem>("pluginsMenu");
         var manageItem = this.FindControl<MenuItem>("managePluginsMenuItem");
-        if (pluginsMenu is null || manageItem is null || vm.PanelPlugins.Count == 0)
+        if (pluginsMenu is null || manageItem is null || vm.AllPlugins.Count == 0)
         {
             RegisterPluginKeyBindings(vm);
             return;
         }
 
-        // Insert plugin items before the Manage Plugins item
         var insertIndex = pluginsMenu.Items.IndexOf(manageItem);
 
-        foreach (var plugin in vm.PanelPlugins)
+        foreach (var plugin in vm.AllPlugins)
         {
+            var isPanel = plugin is IPanelPlugin;
+            var hasActions = plugin.MenuActions.Count > 0;
+
+            if (!isPanel && !hasActions) continue;
+
             MenuItem pluginItem;
 
-            if (plugin.MenuActions.Count > 0)
+            if (isPanel && !hasActions)
             {
-                // Plugin has custom actions — create a submenu
+                // Panel with no custom actions — flat item that toggles the panel
+                pluginItem = new MenuItem { Header = plugin.DisplayName, Tag = plugin };
+                if (plugin.KeyBindings.Count > 0)
+                    pluginItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                pluginItem.Click += (_, _) =>
+                {
+                    if (pluginItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
+                };
+            }
+            else
+            {
+                // Submenu with actions (and toggle item for panels)
                 pluginItem = new MenuItem { Header = plugin.DisplayName };
 
-                var toggleItem = new MenuItem { Header = "Toggle Panel", Tag = plugin };
-                if (plugin.KeyBindings.Count > 0)
-                    toggleItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
-                toggleItem.Click += (_, _) =>
+                if (plugin is IPanelPlugin)
                 {
-                    if (toggleItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
-                };
-                pluginItem.Items.Add(toggleItem);
+                    var toggleItem = new MenuItem { Header = "Toggle Panel", Tag = plugin };
+                    if (plugin.KeyBindings.Count > 0)
+                        toggleItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                    toggleItem.Click += (_, _) =>
+                    {
+                        if (toggleItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
+                    };
+                    pluginItem.Items.Add(toggleItem);
+                }
 
                 foreach (var action in plugin.MenuActions)
                 {
@@ -137,44 +156,43 @@ public partial class MainWindow : Window
                     pluginItem.Items.Add(actionItem);
                 }
             }
-            else
-            {
-                // No custom actions — flat item that toggles the panel
-                pluginItem = new MenuItem { Header = plugin.DisplayName, Tag = plugin };
-                if (plugin.KeyBindings.Count > 0)
-                    pluginItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
-                pluginItem.Click += (_, _) =>
-                {
-                    if (pluginItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
-                };
-            }
 
             pluginsMenu.Items.Insert(insertIndex++, pluginItem);
         }
 
-        // Add separator before Manage Plugins
         pluginsMenu.Items.Insert(insertIndex, new Separator());
-
         RegisterPluginKeyBindings(vm);
     }
 
     private void RegisterPluginKeyBindings(MainWindowViewModel vm)
     {
-        foreach (var plugin in vm.PanelPlugins)
+        foreach (var plugin in vm.AllPlugins)
         {
             foreach (var binding in plugin.KeyBindings)
             {
                 var gesture = KeyGesture.Parse(binding.Gesture);
-                var pluginRef = plugin;
-                KeyBindings.Add(new KeyBinding
+                if (plugin is IPanelPlugin)
                 {
-                    Gesture = gesture,
-                    Command = new PluginKeyCommand(() =>
+                    var pluginRef = (IPanelPlugin)plugin;
+                    KeyBindings.Add(new KeyBinding
                     {
-                        vm.TogglePluginPanel(pluginRef);
-                        binding.Callback();
-                    })
-                });
+                        Gesture = gesture,
+                        Command = new PluginKeyCommand(() =>
+                        {
+                            vm.TogglePluginPanel(pluginRef);
+                            binding.Callback();
+                        })
+                    });
+                }
+                else
+                {
+                    var cb = binding.Callback;
+                    KeyBindings.Add(new KeyBinding
+                    {
+                        Gesture = gesture,
+                        Command = new PluginKeyCommand(cb)
+                    });
+                }
             }
         }
     }

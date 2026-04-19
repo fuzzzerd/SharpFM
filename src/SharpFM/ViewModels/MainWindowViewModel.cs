@@ -444,16 +444,24 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     // --- Plugin support ---
 
-    private IReadOnlyList<IPanelPlugin> _panelPlugins = [];
-    public IReadOnlyList<IPanelPlugin> PanelPlugins
+    private IReadOnlyList<IPlugin> _allPlugins = [];
+    public IReadOnlyList<IPlugin> AllPlugins
     {
-        get => _panelPlugins;
+        get => _allPlugins;
         set
         {
-            _panelPlugins = value;
+            _allPlugins = value;
             NotifyPropertyChanged();
+            NotifyPropertyChanged(nameof(PanelPlugins));
+            NotifyPropertyChanged(nameof(TransformPlugins));
         }
     }
+
+    public IReadOnlyList<IPanelPlugin> PanelPlugins =>
+        _allPlugins.OfType<IPanelPlugin>().ToList();
+
+    public IReadOnlyList<IClipTransformPlugin> TransformPlugins =>
+        _allPlugins.OfType<IClipTransformPlugin>().ToList();
 
     private IPanelPlugin? _activePlugin;
     public IPanelPlugin? ActivePlugin
@@ -481,12 +489,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private IReadOnlyList<IClipTransformPlugin> _transformPlugins = [];
-    public IReadOnlyList<IClipTransformPlugin> TransformPlugins
-    {
-        get => _transformPlugins;
-        set { _transformPlugins = value; NotifyPropertyChanged(); }
-    }
 
     private IReadOnlyList<IClipRepository> _availableRepositories = [];
     public IReadOnlyList<IClipRepository> AvailableRepositories

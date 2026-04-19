@@ -59,8 +59,7 @@ public partial class PluginManagerWindow : Window
         var newPlugins = _pluginService.InstallPlugin(path, _host);
         if (newPlugins.Count > 0)
         {
-            _mainVm.PanelPlugins = _pluginService.PanelPlugins;
-            _mainVm.TransformPlugins = _pluginService.TransformPlugins;
+            _mainVm.AllPlugins = _pluginService.AllPlugins;
             _viewModel.Refresh(_pluginService.AllPlugins, _mainVm.ActivePlugin);
         }
     }
@@ -77,8 +76,7 @@ public partial class PluginManagerWindow : Window
             _mainVm.TogglePluginPanel(panelPlugin);
 
         _pluginService.UninstallPlugin(entry.Plugin);
-        _mainVm.PanelPlugins = _pluginService.PanelPlugins;
-        _mainVm.TransformPlugins = _pluginService.TransformPlugins;
+        _mainVm.AllPlugins = _pluginService.AllPlugins;
         _viewModel.Refresh(_pluginService.AllPlugins, _mainVm.ActivePlugin);
     }
 }
