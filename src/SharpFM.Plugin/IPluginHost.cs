@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SharpFM.Model;
 using SharpFM.Model.Schema;
@@ -77,4 +78,28 @@ public interface IPluginHost
     /// Remove a clip from the loaded collection by name.
     /// </summary>
     bool RemoveClip(string clipName);
+
+    /// <summary>
+    /// Register a clip repository provided by this plugin.
+    /// The host adds it to the list of available storage backends.
+    /// </summary>
+    void RegisterRepository(IClipRepository repository);
+
+    /// <summary>
+    /// Register a clip transform provided by this plugin.
+    /// Transforms run during import/export in registration order.
+    /// </summary>
+    void RegisterTransform(IClipTransform transform);
+
+    /// <summary>
+    /// Show a simple modal dialog with a message and buttons.
+    /// Returns the label of the clicked button, or null if cancelled.
+    /// </summary>
+    Task<string?> ShowDialogAsync(string title, string message, string[] buttons);
+
+    /// <summary>
+    /// Show a modal input dialog prompting the user for text.
+    /// Returns the entered text, or null if cancelled.
+    /// </summary>
+    Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null);
 }

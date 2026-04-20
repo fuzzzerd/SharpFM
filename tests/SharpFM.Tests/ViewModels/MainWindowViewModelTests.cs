@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpFM.Plugin;
+using SharpFM.Plugin.UI;
 using SharpFM.Services;
 using SharpFM.ViewModels;
 using Xunit;
@@ -173,62 +174,62 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void PanelPlugins_DefaultsToEmpty()
+    public void AllPlugins_DefaultsToEmpty()
     {
         var vm = CreateVm();
-        Assert.Empty(vm.PanelPlugins);
+        Assert.Empty(vm.AllPlugins);
     }
 
     [Fact]
-    public void AllPlugins_PanelPluginsProjection()
-    {
-        var vm = CreateVm();
-        var plugin = new StubPanelPlugin();
-        vm.AllPlugins = [plugin];
-        Assert.Single(vm.PanelPlugins);
-    }
-
-    [Fact]
-    public void TogglePluginPanel_ActivatesPlugin()
+    public void PluginUI_TogglePanel_ActivatesPlugin()
     {
         var vm = CreateVm();
         var plugin = new StubPanelPlugin();
         vm.AllPlugins = [plugin];
+        var host = new MockPluginHost();
+        var uiHost = new PluginUIHost(host);
+        vm.PluginUI = uiHost;
 
-        vm.TogglePluginPanel(plugin);
+        uiHost.TogglePanel(plugin);
 
-        Assert.True(vm.IsPluginPanelVisible);
-        Assert.Same(plugin, vm.ActivePlugin);
-        Assert.NotNull(vm.PluginPanelControl);
+        Assert.True(uiHost.IsVisible);
+        Assert.Equal(plugin.Id, uiHost.ActivePluginId);
+        Assert.NotNull(uiHost.PanelControl);
     }
 
     [Fact]
-    public void TogglePluginPanel_DeactivatesSamePlugin()
+    public void PluginUI_TogglePanel_DeactivatesSamePlugin()
     {
         var vm = CreateVm();
         var plugin = new StubPanelPlugin();
         vm.AllPlugins = [plugin];
+        var host = new MockPluginHost();
+        var uiHost = new PluginUIHost(host);
+        vm.PluginUI = uiHost;
 
-        vm.TogglePluginPanel(plugin);
-        vm.TogglePluginPanel(plugin);
+        uiHost.TogglePanel(plugin);
+        uiHost.TogglePanel(plugin);
 
-        Assert.False(vm.IsPluginPanelVisible);
-        Assert.Null(vm.ActivePlugin);
+        Assert.False(uiHost.IsVisible);
+        Assert.Null(uiHost.ActivePluginId);
     }
 
     [Fact]
-    public void TogglePluginPanel_SwitchesPlugins()
+    public void PluginUI_TogglePanel_SwitchesPlugins()
     {
         var vm = CreateVm();
         var plugin1 = new StubPanelPlugin { Id = "p1" };
         var plugin2 = new StubPanelPlugin { Id = "p2" };
         vm.AllPlugins = [plugin1, plugin2];
+        var host = new MockPluginHost();
+        var uiHost = new PluginUIHost(host);
+        vm.PluginUI = uiHost;
 
-        vm.TogglePluginPanel(plugin1);
-        Assert.Same(plugin1, vm.ActivePlugin);
+        uiHost.TogglePanel(plugin1);
+        Assert.Equal("p1", uiHost.ActivePluginId);
 
-        vm.TogglePluginPanel(plugin2);
-        Assert.Same(plugin2, vm.ActivePlugin);
+        uiHost.TogglePanel(plugin2);
+        Assert.Equal("p2", uiHost.ActivePluginId);
     }
 
     [Fact]
@@ -243,10 +244,31 @@ public class MainWindowViewModelTests
         Assert.True(called);
     }
 
+    private class MockPluginHost : IPluginHost
+    {
+        public Model.ClipData? SelectedClip { get; set; }
+        public IReadOnlyList<Model.ClipData> AllClips { get; set; } = [];
+        public event EventHandler<Model.ClipData?>? SelectedClipChanged;
+        public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
+        public event EventHandler? ClipCollectionChanged;
+        public ILogger CreateLogger(string categoryName) => NullLogger.Instance;
+        public Model.ClipData? GetClip(string clipName) => null;
+        public void UpdateClipXml(string clipName, string xml, string originPluginId) { }
+        public void CreateClip(string name, string clipType, string? xml = null) { }
+        public bool RemoveClip(string clipName) => false;
+        public void UpdateSelectedClipXml(string xml, string originPluginId) { }
+        public void ShowStatus(string message) { }
+        public void RegisterRepository(Model.IClipRepository repository) { }
+        public void RegisterTransform(IClipTransform transform) { }
+        public Task<string?> ShowDialogAsync(string title, string message, string[] buttons) => Task.FromResult<string?>(null);
+        public Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null) => Task.FromResult<string?>(null);
+    }
+
     private class StubPanelPlugin : IPanelPlugin
     {
         public string Id { get; set; } = "stub";
         public string DisplayName => "Stub Plugin";
+        public string Description => "";
         public string Version => "1.0.0-test";
         public IReadOnlyList<PluginKeyBinding> TestKeyBindings { get; set; } = [];
         public IReadOnlyList<PluginKeyBinding> KeyBindings => TestKeyBindings;

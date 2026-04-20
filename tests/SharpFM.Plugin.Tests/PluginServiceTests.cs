@@ -1,9 +1,8 @@
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpFM.Model;
-using SharpFM.Model.Schema;
-using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
 using SharpFM.Services;
 using Xunit;
@@ -19,15 +18,15 @@ public class MockPluginHost : IPluginHost
     public event EventHandler? ClipCollectionChanged;
     public ILogger CreateLogger(string categoryName) => NullLogger.Instance;
     public ClipData? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
-    public IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName) => null;
-    public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
-    public IReadOnlyList<FmField>? GetTableFields(string clipName) => null;
-    public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId) => [];
     public void UpdateClipXml(string clipName, string xml, string originPluginId) { }
     public void CreateClip(string name, string clipType, string? xml = null) { }
     public bool RemoveClip(string clipName) => false;
     public void UpdateSelectedClipXml(string xml, string originPluginId) { }
     public void ShowStatus(string message) { LastStatus = message; }
+    public void RegisterRepository(IClipRepository repository) { }
+    public void RegisterTransform(IClipTransform transform) { }
+    public Task<string?> ShowDialogAsync(string title, string message, string[] buttons) => Task.FromResult<string?>(null);
+    public Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null) => Task.FromResult<string?>(null);
     public string? LastStatus { get; private set; }
     public void RaiseChanged(ClipData? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
@@ -51,7 +50,7 @@ public class PluginServiceTests
         // AppContext.BaseDirectory won't have a plugins/ dir in test
         service.LoadPlugins(host);
 
-        Assert.Empty(service.LoadedPlugins);
+        Assert.Empty(service.AllPlugins);
     }
 
     [Fact]
@@ -64,7 +63,7 @@ public class PluginServiceTests
         {
             var service = CreateService(dir);
             service.LoadPlugins(new MockPluginHost());
-            Assert.Empty(service.LoadedPlugins);
+            Assert.Empty(service.AllPlugins);
         }
         finally
         {
@@ -85,7 +84,7 @@ public class PluginServiceTests
             var service = CreateService(dir);
             service.LoadPlugins(new MockPluginHost());
 
-            Assert.Empty(service.LoadedPlugins);
+            Assert.Empty(service.AllPlugins);
         }
         finally
         {
@@ -119,23 +118,10 @@ public class PluginServiceTests
     }
 
     [Fact]
-    public void AllPlugins_AggregatesAllTypes()
+    public void AllPlugins_DefaultsToEmpty()
     {
         var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
-        // No plugins loaded, but verify the property returns empty aggregate
         Assert.Empty(service.AllPlugins);
-        Assert.Empty(service.PanelPlugins);
-        Assert.Empty(service.EventPlugins);
-        Assert.Empty(service.PersistencePlugins);
-        Assert.Empty(service.TransformPlugins);
-    }
-
-    [Fact]
-    public void LoadedPlugins_ReturnsPanelPlugins()
-    {
-        var service = CreateService("/tmp/nonexistent-" + Guid.NewGuid());
-        // LoadedPlugins is a backwards-compat alias for PanelPlugins
-        Assert.Same(service.PanelPlugins, service.LoadedPlugins);
     }
 
     [Fact]

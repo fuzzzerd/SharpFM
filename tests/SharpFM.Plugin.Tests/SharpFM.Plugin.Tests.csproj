@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SharpFM\SharpFM.csproj" />
     <ProjectReference Include="..\..\src\SharpFM.Plugin\SharpFM.Plugin.csproj" />
+    <ProjectReference Include="..\..\src\SharpFM.Plugin.UI\SharpFM.Plugin.UI.csproj" />
     <ProjectReference Include="..\..\src\SharpFM.Plugin.Sample\SharpFM.Plugin.Sample.csproj" />
     <ProjectReference Include="..\..\src\SharpFM.Plugin.XmlViewer\SharpFM.Plugin.XmlViewer.csproj" />
   </ItemGroup>

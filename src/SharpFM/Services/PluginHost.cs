@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Model;
@@ -21,6 +22,14 @@ public class PluginHost : IPluginHost
     private readonly MainWindowViewModel _viewModel;
     private readonly ILoggerFactory _loggerFactory;
     private ClipViewModel? _trackedClip;
+    private readonly List<IClipRepository> _repositories = [];
+    private readonly List<IClipTransform> _transforms = [];
+
+    /// <summary>Repositories registered by plugins.</summary>
+    public IReadOnlyList<IClipRepository> Repositories => _repositories;
+
+    /// <summary>Transforms registered by plugins.</summary>
+    public IReadOnlyList<IClipTransform> Transforms => _transforms;
 
     public PluginHost(MainWindowViewModel viewModel, ILoggerFactory loggerFactory)
     {
@@ -140,6 +149,23 @@ public class PluginHost : IPluginHost
             _viewModel.FileMakerClips.Remove(clip);
             return true;
         });
+
+    public void RegisterRepository(IClipRepository repository) => _repositories.Add(repository);
+    public void RegisterTransform(IClipTransform transform) => _transforms.Add(transform);
+
+    public Task<string?> ShowDialogAsync(string title, string message, string[] buttons)
+    {
+        // TODO: implement with Avalonia dialog
+        ShowStatus(message);
+        return Task.FromResult<string?>(null);
+    }
+
+    public Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null)
+    {
+        // TODO: implement with Avalonia dialog
+        ShowStatus(prompt);
+        return Task.FromResult(defaultValue);
+    }
 
     private ClipViewModel? FindClipByName(string clipName) =>
         _viewModel.FileMakerClips.FirstOrDefault(c =>

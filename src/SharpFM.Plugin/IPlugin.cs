@@ -19,6 +19,11 @@ public interface IPlugin : IDisposable
     string DisplayName { get; }
 
     /// <summary>
+    /// Short description of what this plugin does, shown in the Plugin Manager UI.
+    /// </summary>
+    string Description { get; }
+
+    /// <summary>
     /// Plugin version string (e.g. "2.0.0-beta.0"). Shown in the Plugin Manager UI.
     /// </summary>
     string Version { get; }

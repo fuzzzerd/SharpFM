@@ -15,17 +15,9 @@ public class PluginEntry : INotifyPropertyChanged
     public IPlugin Plugin { get; }
     public string Id => Plugin.Id;
     public string DisplayName => Plugin.DisplayName;
+    public string Description => Plugin.Description;
     public string PluginVersion => Plugin.Version;
     public string AssemblyName => Plugin.GetType().Assembly.GetName().Name ?? "(unknown)";
-
-    public string PluginType => Plugin switch
-    {
-        IPanelPlugin => "Panel",
-        IEventPlugin => "Event",
-        IPersistencePlugin => "Storage",
-        IClipTransformPlugin => "Transform",
-        _ => "Unknown"
-    };
 
     private bool _isActive;
     public bool IsActive
@@ -58,12 +50,12 @@ public class PluginManagerViewModel : INotifyPropertyChanged
 
     public bool HasSelection => _selectedPlugin is not null;
 
-    public void Refresh(IReadOnlyList<IPlugin> allPlugins, IPanelPlugin? activePlugin)
+    public void Refresh(IReadOnlyList<IPlugin> allPlugins, string? activePluginId)
     {
         Plugins.Clear();
         foreach (var plugin in allPlugins)
         {
-            Plugins.Add(new PluginEntry(plugin, plugin.Id == activePlugin?.Id));
+            Plugins.Add(new PluginEntry(plugin, plugin.Id == activePluginId));
         }
     }
 }

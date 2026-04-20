@@ -1,6 +1,5 @@
+using System.Threading.Tasks;
 using SharpFM.Model;
-using SharpFM.Model.Schema;
-using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
 using SharpFM.Plugin.XmlViewer;
 using Xunit;
@@ -151,14 +150,14 @@ public class TrackingPluginHost : IPluginHost
 
     public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
     public ClipData? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
-    public IReadOnlyList<ScriptStep>? GetScriptSteps(string clipName) => null;
-    public IReadOnlyList<string> UpdateScriptSteps(string clipName, IReadOnlyList<ScriptStepOperation> operations, string originPluginId) => [];
-    public IReadOnlyList<FmField>? GetTableFields(string clipName) => null;
-    public IReadOnlyList<string> UpdateTableFields(string clipName, IReadOnlyList<FieldOperation> operations, string originPluginId) => [];
     public void CreateClip(string name, string clipType, string? xml = null) { }
     public bool RemoveClip(string clipName) => false;
     public void UpdateClipXml(string clipName, string xml, string originPluginId) { LastUpdatedXml = xml; LastOriginPluginId = originPluginId; }
     public void ShowStatus(string message) { }
+    public void RegisterRepository(IClipRepository repository) { }
+    public void RegisterTransform(IClipTransform transform) { }
+    public Task<string?> ShowDialogAsync(string title, string message, string[] buttons) => Task.FromResult<string?>(null);
+    public Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null) => Task.FromResult<string?>(null);
     public void RaiseChanged(ClipData? clip) => SelectedClipChanged?.Invoke(this, clip);
     public void RaiseContentChanged(ClipContentChangedArgs args) => ClipContentChanged?.Invoke(this, args);
 }

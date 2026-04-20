@@ -4,6 +4,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using SharpFM.Model;
 using SharpFM.Plugin;
+using SharpFM.Plugin.UI;
 
 namespace SharpFM.Plugin.Sample;
 
@@ -11,6 +12,7 @@ public class ClipInspectorPlugin : IPanelPlugin
 {
     public string Id => "clip-inspector";
     public string DisplayName => "Clip Inspector";
+    public string Description => "Displays clip metadata including name, type, element count, and size.";
     public string Version => GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
     public IReadOnlyList<PluginKeyBinding> KeyBindings => [];
     public IReadOnlyList<PluginMenuAction> MenuActions => [];

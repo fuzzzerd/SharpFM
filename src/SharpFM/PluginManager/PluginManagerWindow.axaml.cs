@@ -15,7 +15,7 @@ public partial class PluginManagerWindow : Window
 {
     private readonly PluginManagerViewModel _viewModel = new();
     private PluginService? _pluginService;
-    private IPluginHost? _host;
+    private PluginUIHost? _host;
     private MainWindowViewModel? _mainVm;
 
     public PluginManagerWindow()
@@ -32,12 +32,12 @@ public partial class PluginManagerWindow : Window
         if (close is not null) close.Click += (_, _) => Close();
     }
 
-    public void Configure(PluginService pluginService, IPluginHost host, MainWindowViewModel mainVm)
+    public void Configure(PluginService pluginService, PluginUIHost host, MainWindowViewModel mainVm)
     {
         _pluginService = pluginService;
         _host = host;
         _mainVm = mainVm;
-        _viewModel.Refresh(pluginService.AllPlugins, mainVm.ActivePlugin);
+        _viewModel.Refresh(pluginService.AllPlugins, host.ActivePluginId);
     }
 
     private async void OnInstall(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -60,23 +60,23 @@ public partial class PluginManagerWindow : Window
         if (newPlugins.Count > 0)
         {
             _mainVm.AllPlugins = _pluginService.AllPlugins;
-            _viewModel.Refresh(_pluginService.AllPlugins, _mainVm.ActivePlugin);
+            _viewModel.Refresh(_pluginService.AllPlugins, _host.ActivePluginId);
         }
     }
 
     private void OnRemove(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (_pluginService is null || _mainVm is null) return;
+        if (_pluginService is null || _host is null || _mainVm is null) return;
 
         var entry = _viewModel.SelectedPlugin;
         if (entry is null) return;
 
         // Deactivate if this is the active panel plugin
-        if (entry.Plugin is IPanelPlugin panelPlugin && _mainVm.ActivePlugin?.Id == entry.Id)
-            _mainVm.TogglePluginPanel(panelPlugin);
+        if (_host.ActivePluginId == entry.Id)
+            _host.TogglePanel(entry.Plugin);
 
         _pluginService.UninstallPlugin(entry.Plugin);
         _mainVm.AllPlugins = _pluginService.AllPlugins;
-        _viewModel.Refresh(_pluginService.AllPlugins, _mainVm.ActivePlugin);
+        _viewModel.Refresh(_pluginService.AllPlugins, _host.ActivePluginId);
     }
 }

@@ -452,43 +452,8 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             _allPlugins = value;
             NotifyPropertyChanged();
-            NotifyPropertyChanged(nameof(PanelPlugins));
-            NotifyPropertyChanged(nameof(TransformPlugins));
         }
     }
-
-    public IReadOnlyList<IPanelPlugin> PanelPlugins =>
-        _allPlugins.OfType<IPanelPlugin>().ToList();
-
-    public IReadOnlyList<IClipTransformPlugin> TransformPlugins =>
-        _allPlugins.OfType<IClipTransformPlugin>().ToList();
-
-    private IPanelPlugin? _activePlugin;
-    public IPanelPlugin? ActivePlugin
-    {
-        get => _activePlugin;
-        private set
-        {
-            _activePlugin = value;
-            NotifyPropertyChanged();
-            NotifyPropertyChanged(nameof(IsPluginPanelVisible));
-            NotifyPropertyChanged(nameof(PluginPanelControl));
-        }
-    }
-
-    public bool IsPluginPanelVisible => _activePlugin is not null;
-
-    private Control? _pluginPanelControl;
-    public Control? PluginPanelControl
-    {
-        get => _pluginPanelControl;
-        private set
-        {
-            _pluginPanelControl = value;
-            NotifyPropertyChanged();
-        }
-    }
-
 
     private IReadOnlyList<IClipRepository> _availableRepositories = [];
     public IReadOnlyList<IClipRepository> AvailableRepositories
@@ -497,17 +462,11 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         set { _availableRepositories = value; NotifyPropertyChanged(); }
     }
 
-    public void TogglePluginPanel(IPanelPlugin plugin)
+    // Panel management is delegated to PluginUIHost (bound via PluginUI property)
+    private PluginUIHost? _pluginUI;
+    public PluginUIHost? PluginUI
     {
-        if (_activePlugin?.Id == plugin.Id)
-        {
-            ActivePlugin = null;
-            PluginPanelControl = null;
-        }
-        else
-        {
-            PluginPanelControl = plugin.CreatePanel();
-            ActivePlugin = plugin;
-        }
+        get => _pluginUI;
+        set { _pluginUI = value; NotifyPropertyChanged(); }
     }
 }

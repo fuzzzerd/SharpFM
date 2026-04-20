@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using SharpFM.Plugin;
+using SharpFM.Plugin.UI;
 using SharpFM.PluginManager;
 using Xunit;
 
@@ -11,6 +12,7 @@ public class PluginManagerViewModelTests
     {
         public string Id { get; set; } = "stub";
         public string DisplayName { get; set; } = "Stub";
+        public string Description => "";
         public string Version => "1.0.0-test";
         public IReadOnlyList<PluginKeyBinding> KeyBindings => [];
         public IReadOnlyList<PluginMenuAction> MenuActions => [];
@@ -25,7 +27,7 @@ public class PluginManagerViewModelTests
         var vm = new PluginManagerViewModel();
         var plugins = new List<IPlugin> { new StubPlugin() };
 
-        vm.Refresh(plugins, activePlugin: null);
+        vm.Refresh(plugins, activePluginId: null);
 
         Assert.Single(vm.Plugins);
         Assert.Equal("stub", vm.Plugins[0].Id);
@@ -39,7 +41,7 @@ public class PluginManagerViewModelTests
         var plugin = new StubPlugin { Id = "active-one" };
         var plugins = new List<IPlugin> { plugin, new StubPlugin { Id = "other" } };
 
-        vm.Refresh(plugins, activePlugin: plugin);
+        vm.Refresh(plugins, activePluginId: "active-one");
 
         Assert.True(vm.Plugins[0].IsActive);
         Assert.False(vm.Plugins[1].IsActive);
@@ -57,10 +59,10 @@ public class PluginManagerViewModelTests
     }
 
     [Fact]
-    public void PluginEntry_PluginType_Panel()
+    public void PluginEntry_Description()
     {
         var entry = new PluginEntry(new StubPlugin(), false);
-        Assert.Equal("Panel", entry.PluginType);
+        Assert.Equal("", entry.Description);
     }
 
     [Fact]
