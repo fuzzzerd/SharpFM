@@ -1,9 +1,7 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -15,27 +13,21 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;Repetition&gt;</c> is a full Calculation (not an integer) and is
 /// always emitted in XML even when "1" — the round-trip invariant.
 /// </summary>
-public sealed class SetVariableStep : ScriptStep
+public sealed class SetVariableStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 141;
+    public const string XmlName = "Set Variable";
+
     public string Name { get; set; }
     public Calculation Value { get; set; }
     public Calculation Repetition { get; set; }
 
     public SetVariableStep(bool enabled, string name, Calculation value, Calculation? repetition = null)
-        : base(StepCatalogLoader.ByName["Set Variable"], enabled)
+        : base(null, enabled)
     {
         Name = name;
         Value = value;
         Repetition = repetition ?? new Calculation("1");
-    }
-
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("Set Variable", FromXml);
-        StepDisplayFactory.Register("Set Variable", FromDisplayParams);
     }
 
     public static new ScriptStep FromXml(XElement step)
@@ -57,8 +49,8 @@ public sealed class SetVariableStep : ScriptStep
     {
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 141),
-            new XAttribute("name", "Set Variable"));
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName));
 
         step.Add(new XElement("Value", Value.ToXml()));
         step.Add(new XElement("Repetition", Repetition.ToXml()));
@@ -76,8 +68,6 @@ public sealed class SetVariableStep : ScriptStep
         return $"Set Variable [ {nameToken} ; Value: {Value.Text} ]";
     }
 
-    // Matches $name[rep] or $$name[rep]; rep can itself contain brackets for
-    // nested expressions, so we use non-greedy matching and bracket balance.
     private static readonly Regex VarNameWithRep = new(
         @"^(?<name>\$+[^\[]+)\[(?<rep>.*)\]$",
         RegexOptions.Compiled);
@@ -113,4 +103,20 @@ public sealed class SetVariableStep : ScriptStep
 
         return new SetVariableStep(enabled, name, value, repetition);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "control",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/set-variable.html",
+        Params =
+        [
+            new ParamMetadata { Name = "Name", XmlElement = "Name", Type = "text", Required = true },
+            new ParamMetadata { Name = "Value", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Value", Required = true },
+            new ParamMetadata { Name = "Repetition", XmlElement = "Calculation", Type = "namedCalc" },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 }

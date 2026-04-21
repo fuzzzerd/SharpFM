@@ -189,7 +189,7 @@ public class ScriptStepTests
     public void FromDisplayLine_SetVariable()
     {
         var step = ScriptTextParser.FromDisplayLine("Set Variable [ $x ; Value: 1 ]");
-        Assert.Equal("Set Variable", step.Definition?.Name);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.SetVariableStep>(step);
         var xml = step.ToXml();
         Assert.Equal("141", xml.Attribute("id")?.Value);
     }

@@ -28,10 +28,9 @@ public class CompletionProviderTests
     [Fact]
     public void NonPocoStep_NotSuggested()
     {
-        // Pilot-time regression is intentional: unmigrated steps are
-        // absent from completion until they gain a POCO.
+        // Unmigrated steps are absent from completion until they gain a POCO.
         var (_, items) = FmScriptCompletionProvider.GetCompletions("", 0);
-        Assert.DoesNotContain(items, i => i.Text == "Set Field");
+        Assert.DoesNotContain(items, i => i.Text == "Import Records");
         Assert.DoesNotContain(items, i => i.Text == "Go to Record/Request/Page");
     }
 
@@ -93,7 +92,7 @@ public class CompletionProviderTests
         Assert.Contains("Set Error Capture", names);
         Assert.Contains("If", names);
         // Guard the regression: catalog-only steps are absent until they migrate.
-        Assert.DoesNotContain("Set Field", names);
+        Assert.DoesNotContain("Import Records", names);
     }
 
     [Fact]

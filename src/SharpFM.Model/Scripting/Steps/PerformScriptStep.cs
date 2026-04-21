@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -15,25 +13,19 @@ namespace SharpFM.Model.Scripting.Steps;
 /// (ByReference / ByCalculation) and an optional parameter Calculation.
 /// Display uses the <c>(#id)</c> lossless-id convention for static refs.
 /// </summary>
-public sealed class PerformScriptStep : ScriptStep
+public sealed class PerformScriptStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 1;
+    public const string XmlName = "Perform Script";
+
     public PerformScriptTarget Target { get; set; }
     public Calculation? Parameter { get; set; }
 
     public PerformScriptStep(bool enabled, PerformScriptTarget target, Calculation? parameter = null)
-        : base(StepCatalogLoader.ByName["Perform Script"], enabled)
+        : base(null, enabled)
     {
         Target = target;
         Parameter = parameter;
-    }
-
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("Perform Script", FromXml);
-        StepDisplayFactory.Register("Perform Script", FromDisplayParams);
     }
 
     public static new ScriptStep FromXml(XElement step)
@@ -70,8 +62,8 @@ public sealed class PerformScriptStep : ScriptStep
     {
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 1),
-            new XAttribute("name", "Perform Script"));
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName));
 
         // FM Pro emits parameter before Script for ByReference,
         // but after Calculated for ByCalculation. Match per-variant
@@ -162,4 +154,19 @@ public sealed class PerformScriptStep : ScriptStep
 
         return new PerformScriptStep(enabled, target, parameter);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "control",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/perform-script.html",
+        Params =
+        [
+            new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },
+            new ParamMetadata { Name = "Parameter", XmlElement = "Calculation", Type = "calculation", HrLabel = "Parameter" },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 }

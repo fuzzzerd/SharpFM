@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -29,32 +27,19 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <see cref="FromDisplayParams"/> parser.
 /// </para>
 /// </summary>
-public sealed class GoToLayoutStep : ScriptStep
+public sealed class GoToLayoutStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 6;
+    public const string XmlName = "Go to Layout";
+
     public LayoutTarget Target { get; set; }
     public Animation? Animation { get; set; }
 
     public GoToLayoutStep(bool enabled, LayoutTarget target, Animation? animation = null)
-        : base(StepCatalogLoader.ByName["Go to Layout"], enabled)
+        : base(null, enabled)
     {
         Target = target;
         Animation = animation;
-    }
-
-    // --- Factory registration ---
-
-    // Ensures typed dispatch is wired up before the first call to
-    // ScriptStep.FromXml. Suppressed analyzer: CA2255 normally flags
-    // ModuleInitializer as application-only, but registering a step
-    // POCO's factory delegates is exactly the kind of lightweight,
-    // idempotent bootstrap ModuleInitializer exists for.
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("Go to Layout", FromXml);
-        StepDisplayFactory.Register("Go to Layout", FromDisplayParams);
     }
 
     // --- XML parse ---
@@ -102,8 +87,8 @@ public sealed class GoToLayoutStep : ScriptStep
     {
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 6),
-            new XAttribute("name", "Go to Layout"));
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName));
 
         step.Add(new XElement("LayoutDestination",
             new XAttribute("value", Target.WireValue)));
@@ -231,4 +216,20 @@ public sealed class GoToLayoutStep : ScriptStep
 
         return new GoToLayoutStep(enabled, target, animation);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "navigation",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-layout.html",
+        Params =
+        [
+            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum", ValidValues = ["OriginalLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc"], DefaultValue = "SelectedLayout" },
+            new ParamMetadata { Name = "Layout", XmlElement = "Layout", Type = "layout" },
+            new ParamMetadata { Name = "Animation", XmlElement = "Animation", Type = "enum" },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 }

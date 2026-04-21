@@ -184,9 +184,9 @@ public class FmScriptModelTests
         Assert.Equal(3, script.Steps.Count);
 
         ScriptTextParser.UpdateStep(script, 1, "Set Variable [ $x ; Value: 1 ]");
-        Assert.Equal("Set Variable", script.Steps[1].Definition?.Name);
-        Assert.Equal("# (comment)", script.Steps[0].Definition?.Name);
-        Assert.Equal("# (comment)", script.Steps[2].Definition?.Name);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.SetVariableStep>(script.Steps[1]);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.CommentStep>(script.Steps[0]);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.CommentStep>(script.Steps[2]);
     }
 
     [Fact]
