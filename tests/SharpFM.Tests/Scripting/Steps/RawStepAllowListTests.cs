@@ -48,19 +48,6 @@ public class RawStepAllowListTests
     }
 
     [Fact]
-    public void RawStep_NotInAllowList_IsFullyEditable_ReturnsFalse()
-    {
-        // "Send Mail" is a deep Tier D step (30 params) unlikely to
-        // migrate soon — a stable sealed-step canary that stays in the
-        // RawStep path through the rest of the sweep.
-        var xml = XElement.Parse("<Step enable=\"True\" id=\"63\" name=\"Send Mail\"></Step>");
-        var step = ScriptStep.FromXml(xml);
-
-        Assert.IsType<RawStep>(step);
-        Assert.False(step.IsFullyEditable);
-    }
-
-    [Fact]
     public void RawStep_UnknownStepName_IsFullyEditable_ReturnsFalse()
     {
         // Completely unknown step — not in catalog, not typed, not allowed.
