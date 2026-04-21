@@ -178,4 +178,25 @@ public class ScriptValidatorTests
         Assert.NotEmpty(diagnostics);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostics[0].Severity);
     }
+
+    [Fact]
+    public void InsertFromUrl_SelectFlagToken_NotFlagged()
+    {
+        // Regression: "Select" is a flag-style presence marker for the
+        // SelectAll boolean param, not a value. The validator used to
+        // check "Select" against ["On", "Off"] and fail.
+        var script = "Insert from URL [ Select ; With dialog: Off ; $url ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void InsertFromUrl_AllFlagTokens_NotFlagged()
+    {
+        // Every flag token on Insert from URL is a bare HrLabel: "Select",
+        // "Verify SSL Certificates". None should warn.
+        var script = "Insert from URL [ Select ; With dialog: Off ; $url ; Verify SSL Certificates ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
 }

@@ -15,7 +15,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
     public bool VerifySslCertificates { get; set; }
     public bool DontEncodeUrl { get; set; }
     public FieldRef? Target { get; set; }
-    public Calculation Url { get; set; }
+    public Calculation? Url { get; set; }
     public Calculation? CurlOptions { get; set; }
 
     public InsertFromUrlStep(
@@ -34,7 +34,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         VerifySslCertificates = verifySslCertificates;
         DontEncodeUrl = dontEncodeUrl;
         Target = target;
-        Url = url ?? new Calculation("");
+        Url = url;
         CurlOptions = curlOptions;
     }
 
@@ -50,7 +50,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
             new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")));
         if (CurlOptions is not null)
             step.Add(new XElement("CURLOptions", CurlOptions.ToXml("Calculation")));
-        step.Add(Url.ToXml("Calculation"));
+        if (Url is not null) step.Add(Url.ToXml("Calculation"));
         if (Target is not null)
         {
             if (Target.IsVariable) step.Add(new XElement("Text"));
@@ -65,9 +65,10 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         if (SelectAll) parts.Add("Select");
         parts.Add($"With dialog: {(WithDialog ? "On" : "Off")}");
         if (Target is not null) parts.Add($"Target: {Target.ToDisplayString()}");
-        parts.Add(Url.Text);
+        if (Url is not null) parts.Add(Url.Text);
         if (VerifySslCertificates) parts.Add("Verify SSL Certificates");
         if (CurlOptions is not null) parts.Add($"cURL options: {CurlOptions.Text}");
+        if (DontEncodeUrl) parts.Add("Don't encode URL");
         return $"Insert from URL [ {string.Join(" ; ", parts)} ]";
     }
 
@@ -81,7 +82,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         var curlEl = step.Element("CURLOptions")?.Element("Calculation");
         var curl = curlEl is not null ? Calculation.FromXml(curlEl) : null;
         var urlEl = step.Element("Calculation");
-        var url = urlEl is not null ? Calculation.FromXml(urlEl) : new Calculation("");
+        var url = urlEl is not null ? Calculation.FromXml(urlEl) : null;
         var fieldEl = step.Element("Field");
         var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
         return new InsertFromUrlStep(selectAll, withDialog, verify, dontEncode, target, url, curl, enabled);
@@ -92,8 +93,9 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         bool selectAll = false;
         bool withDialog = true;
         bool verify = false;
+        bool dontEncode = false;
         FieldRef? target = null;
-        Calculation url = new("");
+        Calculation? url = null;
         Calculation? curl = null;
         bool urlSeen = false;
         foreach (var tok in hrParams)
@@ -103,6 +105,8 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
                 selectAll = true;
             else if (t.Equals("Verify SSL Certificates", StringComparison.OrdinalIgnoreCase))
                 verify = true;
+            else if (t.Equals("Don't encode URL", StringComparison.OrdinalIgnoreCase))
+                dontEncode = true;
             else if (t.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))
                 withDialog = t.Substring(12).Trim().Equals("On", StringComparison.OrdinalIgnoreCase);
             else if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
@@ -115,7 +119,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
                 urlSeen = true;
             }
         }
-        return new InsertFromUrlStep(selectAll, withDialog, verify, false, target, url, curl, enabled);
+        return new InsertFromUrlStep(selectAll, withDialog, verify, dontEncode, target, url, curl, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

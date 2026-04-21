@@ -123,14 +123,36 @@ public static class ScriptValidator
                         break;
                     }
 
-                    // Second: positional match — consume the next available
-                    // param in order. Only validate the value when that
-                    // param has restricted values (enum/boolean). Non-enum
+                    // Flag-style match: a bare token that exactly equals
+                    // an unused boolean/flag param's HrLabel is a presence
+                    // marker (e.g. "Select", "Verify SSL Certificates",
+                    // "Append line feed"). Not a value — consume the
+                    // param and skip value validation.
+                    bool matchedFlag = false;
+                    if (!matchedLabel)
+                    {
+                        for (int pi = 0; pi < metadata.Params.Count; pi++)
+                        {
+                            if (usedParams[pi]) continue;
+                            var catalogParam = metadata.Params[pi];
+                            if (catalogParam.HrLabel is null) continue;
+                            if (catalogParam.Type is not ("boolean" or "flagBoolean" or "flagElement")) continue;
+                            if (!paramTrimmed.Equals(catalogParam.HrLabel, StringComparison.OrdinalIgnoreCase)) continue;
+
+                            usedParams[pi] = true;
+                            matchedFlag = true;
+                            break;
+                        }
+                    }
+
+                    // Positional match — consume the next available param
+                    // in order. Only validate the value when that param
+                    // has restricted values (enum/boolean). Non-enum
                     // params (field, calc, text) accept anything, so we
                     // must NOT keep searching past them looking for an
                     // enum — that produced false-positive warnings on
                     // field references like "Assets::Selected File".
-                    if (!matchedLabel && !LooksLikeCalculation(paramTrimmed))
+                    if (!matchedLabel && !matchedFlag && !LooksLikeCalculation(paramTrimmed))
                     {
                         for (int pi = 0; pi < metadata.Params.Count; pi++)
                         {
