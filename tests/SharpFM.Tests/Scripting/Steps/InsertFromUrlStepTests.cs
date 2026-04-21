@@ -64,6 +64,34 @@ public class InsertFromUrlStepTests
     }
 
     [Fact]
+    public void NoInteract_True_RendersAsWithDialogOff()
+    {
+        // FM Pro semantics: NoInteract state="True" suppresses the dialog.
+        // Display must say "With dialog: Off".
+        var source = XElement.Parse(
+            "<Step enable=\"True\" id=\"160\" name=\"Insert from URL\">"
+            + "<NoInteract state=\"True\" /><DontEncodeURL state=\"False\" />"
+            + "<SelectAll state=\"True\" /><VerifySSLCertificates state=\"False\" />"
+            + "</Step>");
+        var step = (InsertFromUrlStep)InsertFromUrlStep.Metadata.FromXml!(source);
+        Assert.False(step.WithDialog);
+        Assert.Contains("With dialog: Off", step.ToDisplayLine());
+    }
+
+    [Fact]
+    public void NoInteract_False_RendersAsWithDialogOn()
+    {
+        var source = XElement.Parse(
+            "<Step enable=\"True\" id=\"160\" name=\"Insert from URL\">"
+            + "<NoInteract state=\"False\" /><DontEncodeURL state=\"False\" />"
+            + "<SelectAll state=\"True\" /><VerifySSLCertificates state=\"False\" />"
+            + "</Step>");
+        var step = (InsertFromUrlStep)InsertFromUrlStep.Metadata.FromXml!(source);
+        Assert.True(step.WithDialog);
+        Assert.Contains("With dialog: On", step.ToDisplayLine());
+    }
+
+    [Fact]
     public void Display_BaseShape_IsValidatorClean()
     {
         // Sanity: render the display line for a typical shape and feed
