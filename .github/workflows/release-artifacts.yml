@@ -53,6 +53,10 @@ jobs:
       - name: Publish
         uses: softprops/action-gh-release@v2
         with:
-          files: "SharpFM*"
+          # Narrowed to the versioned archive pattern: SharpFM-v{tag}-{target}.{tar.gz|zip}.
+          # The previous "SharpFM*" glob also matched SharpFM.sln at the
+          # repo root, which three parallel matrix runners then raced to
+          # upload, producing "Not Found" errors on the update endpoint.
+          files: "SharpFM-*"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
