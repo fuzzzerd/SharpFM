@@ -8,23 +8,18 @@ using SharpFM.Model.Scripting.Values;
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Typed domain representation of FileMaker's "Go to Layout" script
-/// step. Carries a <see cref="LayoutTarget"/> discriminated union that
-/// matches FM's four LayoutDestination modes (Original, Selected /
-/// named, ByNameCalc, ByNumberCalc) plus an optional
-/// <see cref="Animation"/>. Serialization is a pure function of these
-/// typed fields, so round-trips through the domain model preserve the
-/// layout id, any nested Calculation, and the animation wire value
-/// byte-for-byte.
+/// Go to Layout. Carries a <see cref="LayoutTarget"/> discriminated union
+/// that matches FM's four LayoutDestination modes (Original, Selected /
+/// named, ByNameCalc, ByNumberCalc) plus an optional <see cref="Animation"/>.
+/// Serialization is a pure function of these typed fields; round-trips
+/// preserve the layout id, any nested Calculation, and the animation
+/// wire value byte-for-byte.
 ///
 /// <para>
-/// Display text uses a <c>(#id)</c> suffix for named layouts — this is
-/// a SharpFM extension that carries the layout id losslessly through
-/// the editor. FM Pro renders the layout's base table in that slot,
-/// but deriving the base table requires a schema lookup we don't have.
-/// When schema access is available in a future phase, the renderer can
-/// be extended to show <c>(BaseTable) (#id)</c> without breaking the
-/// <see cref="FromDisplayParams"/> parser.
+/// Display text uses a <c>(#id)</c> suffix for named layouts so the
+/// layout id survives display-text edits — FM Pro itself renders only
+/// the layout's base table in that slot, which we can't derive without
+/// schema access.
 /// </para>
 /// </summary>
 public sealed class GoToLayoutStep : ScriptStep, IStepFactory

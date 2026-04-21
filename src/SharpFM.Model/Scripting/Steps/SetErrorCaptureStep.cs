@@ -72,8 +72,6 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
                 Type = "boolean",
                 XmlAttr = "state",
                 ValidValues = ["On", "Off"],
-                // Sourced from agentic-fm's snippet_examples/steps/control/Set Error Capture.xml
-                // comment zone. Surfaces as a tooltip in hover-enabled UIs.
                 Description = "\"True\" (On) suppresses FileMaker Pro alert messages and some "
                     + "dialog boxes. \"False\" (Off) reenables the alert messages.",
                 DefaultValue = "True",

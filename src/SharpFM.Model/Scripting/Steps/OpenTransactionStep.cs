@@ -6,17 +6,17 @@ using SharpFM.Model.Scripting.Registry;
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Zero-loss audit for OpenTransactionStep:
-/// <list type="bullet">
-/// <item>&lt;Step&gt; attributes (enable/id/name) — round-tripped.</item>
-/// <item>&lt;SkipAutoEntry state/&gt;, &lt;Option state/&gt;,
-///   &lt;ESSForceCommit state/&gt; — round-tripped via typed bool props
-///   rendered as Form 2 labeled inline tokens.</item>
-/// <item>&lt;Restore state/&gt; — <b>intentionally dropped</b>. Upstream
-///   agentic-fm snippets include it with state="False"; FM Pro never
-///   changes the value and never shows it in display; no information to
-///   round-trip. See docs/advanced-filemaker-scripting-syntax.md.</item>
-/// </list>
+/// Open Transaction. Begins a record-level transaction. Three boolean
+/// flags control auto-enter, data-entry validation, and external SQL
+/// lock-conflict behavior; all render as inline labeled tokens in
+/// display text.
+///
+/// <para>
+/// Zero-loss audit: the <c>&lt;Restore state="False"/&gt;</c> child that
+/// appears in some upstream XML sources is <b>intentionally dropped</b>
+/// — FM Pro never writes or changes it, so it carries no information
+/// worth round-tripping. See <c>docs/advanced-filemaker-scripting-syntax.md</c>.
+/// </para>
 /// </summary>
 public sealed class OpenTransactionStep : ScriptStep, IStepFactory
 {

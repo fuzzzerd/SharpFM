@@ -6,20 +6,10 @@ using SharpFM.Model.Scripting.Registry;
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Zero-loss audit for CommitRecordsRequestsStep:
-/// <list type="bullet">
-/// <item>&lt;Step&gt; attributes (enable/id/name) — round-tripped.</item>
-/// <item>&lt;NoInteract state/&gt; — round-tripped as inverted Form 2
-///   token "With dialog: On|Off" (XML "True" = HR "Off" = suppress
-///   dialog).</item>
-/// <item>&lt;Option state/&gt; — round-tripped as "Skip data entry
-///   validation: On|Off".</item>
-/// <item>&lt;ESSForceCommit state/&gt; — round-tripped as "Force
-///   commit: On|Off".</item>
-/// </list>
-/// The upstream catalog entries lack hrLabel values for these params;
-/// the labels here are sourced from the agentic-fm snippet's comment
-/// zone and FM Pro's native rendering.
+/// Commit Records/Requests. Saves pending record/request changes. The
+/// <c>NoInteract</c> flag is inverted in display ("With dialog: On" maps
+/// to <c>state="False"</c>). Two additional flags skip data-entry
+/// validation and force-commit through external SQL lock conflicts.
 /// </summary>
 public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
 {

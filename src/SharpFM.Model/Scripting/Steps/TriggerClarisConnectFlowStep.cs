@@ -6,10 +6,15 @@ using SharpFM.Model.Scripting.Values;
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Trigger Claris Connect Flow. The agentic-fm catalog records this step
-/// with <c>id: null</c> (unconfirmed). Real FM Pro clipboard output may
-/// use a different id; we default to 0 and preserve whatever id appears
-/// on the source XML when round-tripping.
+/// Trigger Claris Connect Flow. Posts to a Claris Connect flow's HTTP
+/// endpoint with optional cURL options and captures the response into a
+/// target variable.
+///
+/// <para>
+/// The step id is defaulted to 0; the canonical id has not been confirmed
+/// from real FM Pro clipboard output. Whatever id appears on the source
+/// XML is preserved through round-trip.
+/// </para>
 /// </summary>
 public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
 {

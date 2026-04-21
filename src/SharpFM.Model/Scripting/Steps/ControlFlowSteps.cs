@@ -39,9 +39,9 @@ public sealed class IfStep : ScriptStep, IStepFactory
         Condition = condition;
     }
 
-    // Legacy consumers (FmScript.ToDisplayLines) still read step.Definition.BlockPair
-    // for indentation. Synthesize just enough StepDefinition to satisfy them until
-    // those consumers migrate to StepRegistry.
+    // FmScript.ToDisplayLines reads step.Definition.BlockPair to drive
+    // indentation. Control-flow steps synthesize just enough StepDefinition
+    // to satisfy that consumer.
     internal static StepDefinition BuildLegacyDefinition(string name, int id, BlockPairRole role, string[] partners) => new()
     {
         Name = name,
