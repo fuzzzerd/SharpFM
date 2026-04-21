@@ -5,19 +5,17 @@ using SharpFM.Model.Scripting.Serialization;
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Transitional catch-all step type that wraps a cloned source
-/// <see cref="XElement"/> for any script step that does not yet have a
-/// typed POCO. Serialization is verbatim (the element round-trips byte
-/// for byte, modulo whitespace), and display / validation delegate to
-/// the stateless catalog-driven helpers.
+/// Forward-compatibility fallback for step elements whose <c>name</c>
+/// attribute isn't in the catalog — e.g. a future FileMaker release
+/// introduces a step we don't yet know about. Wraps a cloned source
+/// <see cref="XElement"/> and round-trips it verbatim.
 ///
 /// <para>
-/// <see cref="RawStep"/> is the only class in the domain that holds an
-/// <see cref="XElement"/>. Every typed step (<c>GoToLayoutStep</c> and
-/// siblings added in later phases) owns typed fields and never reaches
-/// for raw XML. As more steps migrate to typed POCOs, <see cref="RawStep"/>
-/// carries fewer and fewer catalog entries, but it remains useful as the
-/// lossless fallback for unknown and long-tail steps.
+/// All known catalog steps are backed by typed POCOs. A <see cref="RawStep"/>
+/// in the output therefore signals either an unknown step name or a
+/// malformed element that slipped past the factory. Editable display
+/// text is not supported because there's no shape contract to parse
+/// against — the instance is sealed.
 /// </para>
 /// </summary>
 public sealed class RawStep : ScriptStep
@@ -41,14 +39,11 @@ public sealed class RawStep : ScriptStep
     public override XElement ToXml() => new XElement(_element);
 
     /// <summary>
-    /// RawSteps are sealed (not fully editable as display text) by default
-    /// — display-text round-trip fidelity for catalog-path steps depends
-    /// on the shape of their params and must be verified per step. A step
-    /// name listed in <see cref="RawStepAllowList.Names"/> is considered
-    /// verified and therefore editable.
+    /// RawSteps are sealed in the display editor — there's no typed
+    /// shape contract to parse edits against. They remain fully lossless
+    /// at the XML level; they just can't be edited as display text.
     /// </summary>
-    public override bool IsFullyEditable =>
-        Definition is { } def && RawStepAllowList.Names.Contains(def.Name);
+    public override bool IsFullyEditable => false;
 
     public override string ToDisplayLine()
     {
