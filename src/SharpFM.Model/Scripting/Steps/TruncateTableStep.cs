@@ -40,7 +40,7 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")),
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             baseTable);
     }
 
@@ -50,7 +50,7 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var tableEl = step.Element("BaseTable");
         var table = tableEl is not null ? NamedRef.FromXml(tableEl) : new NamedRef(-1, "<Current Table>");
         var comment = tableEl?.Attribute("comment")?.Value;

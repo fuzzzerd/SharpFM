@@ -26,7 +26,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")));
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")));
         if (Profile is not null) step.Add(Profile.ToXml());
         return step;
     }
@@ -43,7 +43,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var profileEl = step.Element("Profile");
         var profile = profileEl is not null ? SqlProfile.FromXml(profileEl) : null;
         return new ExecuteSqlStep(withDialog, profile, enabled);

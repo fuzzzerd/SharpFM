@@ -29,7 +29,7 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")),
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             new XElement("UniversalPathList", UniversalPathList));
 
     public override string ToDisplayLine() =>
@@ -38,7 +38,7 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var universalPathList_v = step.Element("UniversalPathList")?.Value ?? "";
         return new RecoverFileStep(withDialog_v, universalPathList_v, enabled);
     }

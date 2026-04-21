@@ -29,7 +29,7 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")),
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             Target.ToXml("Field"));
 
     public override string ToDisplayLine() =>
@@ -38,7 +38,7 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var fieldEl = step.Element("Field");
         var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField("", 0, "");
         return new RelookupFieldContentsStep(withDialog_v, target, enabled);

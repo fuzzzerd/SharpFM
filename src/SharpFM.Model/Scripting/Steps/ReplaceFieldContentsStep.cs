@@ -45,7 +45,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")),
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             new XElement("With", new XAttribute("value", Mode)));
         if (Calculation is not null) step.Add(Calculation.ToXml("Calculation"));
         if (SerialOptions is not null) step.Add(SerialOptions.ToXml());
@@ -75,7 +75,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var mode = step.Element("With")?.Attribute("value")?.Value ?? "Calculation";
         var calcEl = step.Element("Calculation");
         var calc = calcEl is not null ? Values.Calculation.FromXml(calcEl) : null;

@@ -35,7 +35,7 @@ public sealed class ChangePasswordStep : ScriptStep, IStepFactory
             new XAttribute("name", XmlName),
             new XElement("OldPassword", OldPassword.ToXml("Calculation")),
             new XElement("NewPassword", Password.ToXml("Calculation")),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")));
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")));
 
     public override string ToDisplayLine() =>
         "Change Password [ " + "Old Password: " + OldPassword.Text + " ; " + "Password: " + Password.Text + " ; " + "With dialog: " + (WithDialog ? "On" : "Off") + " ]";
@@ -49,7 +49,7 @@ public sealed class ChangePasswordStep : ScriptStep, IStepFactory
         var password_vWrapEl = step.Element("NewPassword");
         var password_vCalcEl = password_vWrapEl?.Element("Calculation");
         var password_v = password_vCalcEl is not null ? Calculation.FromXml(password_vCalcEl) : new Calculation("");
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         return new ChangePasswordStep(oldPassword_v, password_v, withDialog_v, enabled);
     }
 

@@ -37,7 +37,8 @@ public class ReplaceFieldContentsStepTests
     public void Display_EmitsDialogFieldAndCalculation()
     {
         var step = (ReplaceFieldContentsStep)ReplaceFieldContentsStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
-        Assert.Equal("Replace Field Contents [ With dialog: On ; Customer::id (#3) ; \"value\" ]", step.ToDisplayLine());
+        // NoInteract state="True" in the canonical XML ⇒ dialog suppressed ⇒ "With dialog: Off".
+        Assert.Equal("Replace Field Contents [ With dialog: Off ; Customer::id (#3) ; \"value\" ]", step.ToDisplayLine());
     }
 
     [Fact]

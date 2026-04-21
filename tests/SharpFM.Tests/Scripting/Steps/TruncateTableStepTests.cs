@@ -23,7 +23,8 @@ public class TruncateTableStepTests
     public void Display_EmitsDialogAndTable()
     {
         var step = (TruncateTableStep)TruncateTableStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
-        Assert.Equal("Truncate Table [ With dialog: On ; Table: Clients ]", step.ToDisplayLine());
+        // NoInteract state="True" in the canonical XML ⇒ dialog suppressed ⇒ "With dialog: Off".
+        Assert.Equal("Truncate Table [ With dialog: Off ; Table: Clients ]", step.ToDisplayLine());
     }
 
     [Fact]

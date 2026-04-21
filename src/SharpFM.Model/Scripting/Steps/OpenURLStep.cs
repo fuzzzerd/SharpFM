@@ -33,7 +33,7 @@ public sealed class OpenURLStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")),
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             new XElement("Option", new XAttribute("state", InExternalBrowser ? "True" : "False")),
             Calculation.ToXml("Calculation"));
 
@@ -43,7 +43,7 @@ public sealed class OpenURLStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var inExternalBrowser_v = step.Element("Option")?.Attribute("state")?.Value == "True";
         var calculation_vEl = step.Element("Calculation");
         var calculation_v = calculation_vEl is not null ? Calculation.FromXml(calculation_vEl) : new Calculation("");

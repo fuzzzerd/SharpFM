@@ -55,7 +55,7 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "True" : "False")),
+            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             new XElement("DontEncodeURL", new XAttribute("state", DontEncodeUrl ? "True" : "False")),
             new XElement("SelectAll", new XAttribute("state", SelectAll ? "True" : "False")),
             new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")),
@@ -80,7 +80,7 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var dontEncode = step.Element("DontEncodeURL")?.Attribute("state")?.Value == "True";
         var selectAll = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
         var verify = step.Element("VerifySSLCertificates")?.Attribute("state")?.Value == "True";

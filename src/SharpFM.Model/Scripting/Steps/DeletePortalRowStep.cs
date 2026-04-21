@@ -29,15 +29,15 @@ public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
             new XElement("NoInteract",
-                new XAttribute("state", WithDialog ? "True" : "False")));
+                new XAttribute("state", WithDialog ? "False" : "True")));
 
     public override string ToDisplayLine() =>
-        $"Delete Portal Row [ With dialog: {(WithDialog ? "Off" : "On")} ]";
+        $"Delete Portal Row [ With dialog: {(WithDialog ? "On" : "Off")} ]";
 
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
+        var state = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         return new DeletePortalRowStep(state, enabled);
     }
 
