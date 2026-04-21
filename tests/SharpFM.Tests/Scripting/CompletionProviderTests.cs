@@ -26,12 +26,14 @@ public class CompletionProviderTests
     }
 
     [Fact]
-    public void NonPocoStep_NotSuggested()
+    public void AllSweepPhaseStepsSuggested()
     {
-        // Unmigrated steps are absent from completion until they gain a POCO.
+        // With the POCO sweep complete, formerly-absent steps like
+        // Import Records and Go to Record/Request/Page should now appear.
         var (_, items) = FmScriptCompletionProvider.GetCompletions("", 0);
-        Assert.DoesNotContain(items, i => i.Text == "Import Records");
-        Assert.DoesNotContain(items, i => i.Text == "Go to Record/Request/Page");
+        Assert.Contains(items, i => i.Text == "Import Records");
+        Assert.Contains(items, i => i.Text == "Go to Record/Request/Page");
+        Assert.Contains(items, i => i.Text == "Send Mail");
     }
 
     [Fact]
@@ -91,8 +93,8 @@ public class CompletionProviderTests
         Assert.Contains("Beep", names);
         Assert.Contains("Set Error Capture", names);
         Assert.Contains("If", names);
-        // Guard the regression: catalog-only steps are absent until they migrate.
-        Assert.DoesNotContain("Import Records", names);
+        // Sweep complete: Import Records is now a migrated POCO.
+        Assert.Contains("Import Records", names);
     }
 
     [Fact]
