@@ -50,12 +50,10 @@ public class RawStepAllowListTests
     [Fact]
     public void RawStep_NotInAllowList_IsFullyEditable_ReturnsFalse()
     {
-        // "Refresh Window" is a catalog-known step with no typed POCO
-        // (earlier canaries — Beep, Halt Script, Allow User Abort — have
-        // all migrated). Multi-param Tier B steps stay RawStep-backed
-        // until the Tier B sweep completes. Not in the allow-list (which
-        // ships empty), so it must be sealed.
-        var xml = XElement.Parse("<Step enable=\"True\" id=\"80\" name=\"Refresh Window\"></Step>");
+        // "Send Mail" is a deep Tier D step (30 params) unlikely to
+        // migrate soon — a stable sealed-step canary that stays in the
+        // RawStep path through the rest of the sweep.
+        var xml = XElement.Parse("<Step enable=\"True\" id=\"63\" name=\"Send Mail\"></Step>");
         var step = ScriptStep.FromXml(xml);
 
         Assert.IsType<RawStep>(step);
