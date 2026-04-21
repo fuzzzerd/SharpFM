@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Models;
 using SharpFM.Plugin;
 using SharpFM.ViewModels;
@@ -27,6 +28,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // Reflection scan lands at a predictable moment; otherwise the
+        // same initialization runs lazily on first registry access.
+        StepRegistry.Initialize();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();

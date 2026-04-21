@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -27,8 +25,11 @@ namespace SharpFM.Model.Scripting.Steps;
 /// for hand-crafted fixtures that deviate from FM Pro's shape.
 /// </para>
 /// </summary>
-public sealed class ShowCustomDialogStep : ScriptStep
+public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 87;
+    public const string XmlName = "Show Custom Dialog";
+
     public Calculation Title { get; set; }
     public Calculation Message { get; set; }
     public IReadOnlyList<ShowCustomDialogButton> Buttons { get; set; }
@@ -40,21 +41,12 @@ public sealed class ShowCustomDialogStep : ScriptStep
         Calculation message,
         IReadOnlyList<ShowCustomDialogButton> buttons,
         IReadOnlyList<ShowCustomDialogInputField>? inputFields = null)
-        : base(StepCatalogLoader.ByName["Show Custom Dialog"], enabled)
+        : base(enabled)
     {
         Title = title;
         Message = message;
         Buttons = buttons;
         InputFields = inputFields;
-    }
-
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("Show Custom Dialog", FromXml);
-        StepDisplayFactory.Register("Show Custom Dialog", FromDisplayParams);
     }
 
     public static new ScriptStep FromXml(XElement step)
@@ -83,8 +75,8 @@ public sealed class ShowCustomDialogStep : ScriptStep
     {
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 87),
-            new XAttribute("name", "Show Custom Dialog"));
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName));
 
         step.Add(new XElement("Title", Title.ToXml()));
         step.Add(new XElement("Message", Message.ToXml()));
@@ -368,4 +360,21 @@ public sealed class ShowCustomDialogStep : ScriptStep
         if (string.IsNullOrEmpty(text) || text == "\"\"") return null;
         return new Calculation(text);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "miscellaneous",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/show-custom-dialog.html",
+        Params =
+        [
+            new ParamMetadata { Name = "Title", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Title" },
+            new ParamMetadata { Name = "Message", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Message" },
+            new ParamMetadata { Name = "Buttons", XmlElement = "Buttons", Type = "complex" },
+            new ParamMetadata { Name = "InputFields", XmlElement = "InputFields", Type = "complex" },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 }

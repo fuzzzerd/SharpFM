@@ -7,7 +7,7 @@ public class ScriptClipEditorTests
 {
     private const string SampleScriptXml =
         "<fmxmlsnippet type=\"FMObjectList\">" +
-        "<Step enable=\"True\" id=\"89\" name=\"Comment\">" +
+        "<Step enable=\"True\" id=\"89\" name=\"# (comment)\">" +
         "<Text>Hello</Text></Step></fmxmlsnippet>";
 
     [Fact]
@@ -63,5 +63,27 @@ public class ScriptClipEditorTests
 
         Assert.NotNull(editor.Document);
         Assert.NotNull(editor.ToXml());
+    }
+
+    [Fact]
+    public void UnknownStep_IsSealedForXmlEditorOnly()
+    {
+        // A step whose name isn't in the registry becomes a RawStep; the
+        // editor seals its display line so display-text edits can't
+        // silently corrupt the preserved XML. The cog icon / XML editor
+        // handles changes.
+        var xml =
+            "<fmxmlsnippet type=\"FMObjectList\">" +
+            "<Step enable=\"True\" id=\"9999\" name=\"FutureStep\"><Foo>bar</Foo></Step>" +
+            "</fmxmlsnippet>";
+        var editor = new ScriptClipEditor(xml);
+
+        Assert.Single(editor.SealedAnchors);
+
+        // Round-trip: the unknown element survives byte-intact through
+        // the editor even though it's just a line of display text.
+        var emitted = editor.ToXml();
+        Assert.Contains("<Foo>bar</Foo>", emitted);
+        Assert.Contains("FutureStep", emitted);
     }
 }

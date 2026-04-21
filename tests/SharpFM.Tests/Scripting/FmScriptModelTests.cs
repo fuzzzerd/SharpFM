@@ -168,9 +168,12 @@ public class FmScriptModelTests
         Assert.Equal(script.Steps.Count, script2.Steps.Count);
         for (int i = 0; i < script.Steps.Count; i++)
         {
+            // Each corresponding pair should share the same runtime POCO
+            // type — that's what round-tripping preserves now that every
+            // step has a typed factory.
             Assert.Equal(
-                script.Steps[i].Definition?.Name,
-                script2.Steps[i].Definition?.Name);
+                script.Steps[i].GetType(),
+                script2.Steps[i].GetType());
             Assert.Equal(
                 script.Steps[i].Enabled,
                 script2.Steps[i].Enabled);
@@ -184,9 +187,9 @@ public class FmScriptModelTests
         Assert.Equal(3, script.Steps.Count);
 
         ScriptTextParser.UpdateStep(script, 1, "Set Variable [ $x ; Value: 1 ]");
-        Assert.Equal("Set Variable", script.Steps[1].Definition?.Name);
-        Assert.Equal("# (comment)", script.Steps[0].Definition?.Name);
-        Assert.Equal("# (comment)", script.Steps[2].Definition?.Name);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.SetVariableStep>(script.Steps[1]);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.CommentStep>(script.Steps[0]);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.CommentStep>(script.Steps[2]);
     }
 
     [Fact]

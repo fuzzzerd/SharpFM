@@ -226,8 +226,8 @@ public class CommentStepTests
 
         // The multi-line comment must still be exactly ONE step after round-trip.
         Assert.Equal(4, script2.Steps.Count);
-        Assert.Equal("# (comment)", script2.Steps[0].Definition?.Name);
-        Assert.Equal("# (comment)", script2.Steps[2].Definition?.Name);
+        Assert.IsType<CommentStep>(script2.Steps[0]);
+        Assert.IsType<CommentStep>(script2.Steps[2]);
 
         var roundTrippedMultiLine = Assert.IsType<CommentStep>(script2.Steps[2]);
         Assert.Equal("line1\nline2\nline3", roundTrippedMultiLine.Text);

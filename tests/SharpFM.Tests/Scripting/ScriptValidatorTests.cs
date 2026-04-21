@@ -15,12 +15,16 @@ public class ScriptValidatorTests
     }
 
     [Fact]
-    public void UnknownStep_ProducesError()
+    public void UnknownStep_ProducesWarning()
     {
+        // Unknown steps are preserved verbatim via RawStep; the warning
+        // alerts the user that display-text edits won't round-trip and
+        // they should go through the XML editor instead.
         var diagnostics = ScriptValidator.Validate("FakeStep [ param ]");
         Assert.Single(diagnostics);
-        Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostics[0].Severity);
         Assert.Contains("Unknown script step", diagnostics[0].Message);
+        Assert.Contains("XML editor", diagnostics[0].Message);
     }
 
     [Fact]
@@ -73,28 +77,25 @@ public class ScriptValidatorTests
     [Fact]
     public void GetValidValues_BooleanParam_ReturnsOnOff()
     {
-        var param = new StepParam { Type = "boolean" };
-        var valid = ScriptValidator.GetValidValues(param);
+        var param = new SharpFM.Model.Scripting.Registry.ParamMetadata
+        {
+            Name = "x", XmlElement = "X", Type = "boolean",
+        };
+        var valid = SharpFM.Model.Scripting.Registry.StepRegistry.GetValidValues(param);
         Assert.Contains("On", valid);
         Assert.Contains("Off", valid);
     }
 
     [Fact]
-    public void GetValidValues_BooleanWithHrEnumValues_ReturnsThose()
+    public void GetValidValues_ExplicitValidValues_ReturnsThose()
     {
-        var param = new StepParam
+        var param = new SharpFM.Model.Scripting.Registry.ParamMetadata
         {
-            Type = "boolean",
-            HrEnumValues = new System.Collections.Generic.Dictionary<string, string?>
-            {
-                { "True", "On" },
-                { "False", "Off" }
-            }
+            Name = "x", XmlElement = "X", Type = "enum",
+            ValidValues = ["Alpha", "Beta"],
         };
-        var valid = ScriptValidator.GetValidValues(param);
-        Assert.Contains("On", valid);
-        Assert.Contains("Off", valid);
-        Assert.DoesNotContain("True", valid);
+        var valid = SharpFM.Model.Scripting.Registry.StepRegistry.GetValidValues(param);
+        Assert.Equal(new[] { "Alpha", "Beta" }, valid);
     }
 
     [Fact]
@@ -151,6 +152,50 @@ public class ScriptValidatorTests
             "    Set Variable [ $y ; Value: Let ( a = 1 ;\n" +
             "                                     a + 1 ) ]\n" +
             "End If";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void ExportFieldContents_FieldReference_NotFlagged()
+    {
+        // Regression: positional-match validator used to skip non-enum
+        // params and check the field reference against a later enum's
+        // valid values, producing a false-positive warning on
+        // "Assets::Selected File Container".
+        var script = "Export Field Contents [ Assets::Selected File Container ; $PATH ; Create folders: Off ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void PositionalEnum_StillFlaggedWhenInvalid()
+    {
+        // Counter-check: a truly invalid enum value still flags. Find
+        // Matching Records's first positional is Replace/Constrain/Extend.
+        var script = "Find Matching Records [ Bogus ; Customer::name ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void InsertFromUrl_SelectFlagToken_NotFlagged()
+    {
+        // Regression: "Select" is a flag-style presence marker for the
+        // SelectAll boolean param, not a value. The validator used to
+        // check "Select" against ["On", "Off"] and fail.
+        var script = "Insert from URL [ Select ; With dialog: Off ; $url ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void InsertFromUrl_AllFlagTokens_NotFlagged()
+    {
+        // Every flag token on Insert from URL is a bare HrLabel: "Select",
+        // "Verify SSL Certificates". None should warn.
+        var script = "Insert from URL [ Select ; With dialog: Off ; $url ; Verify SSL Certificates ]";
         var diagnostics = ScriptValidator.Validate(script);
         Assert.Empty(diagnostics);
     }

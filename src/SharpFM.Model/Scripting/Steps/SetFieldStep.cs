@@ -1,7 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,25 +9,19 @@ namespace SharpFM.Model.Scripting.Steps;
 /// FM Pro emits the source XML as <c>[Calculation, Field]</c> but renders
 /// display as <c>[ Field ; Calculation ]</c>; this step honors both.
 /// </summary>
-public sealed class SetFieldStep : ScriptStep
+public sealed class SetFieldStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 76;
+    public const string XmlName = "Set Field";
+
     public FieldRef Target { get; set; }
     public Calculation Expression { get; set; }
 
     public SetFieldStep(bool enabled, FieldRef target, Calculation expression)
-        : base(StepCatalogLoader.ByName["Set Field"], enabled)
+        : base(enabled)
     {
         Target = target;
         Expression = expression;
-    }
-
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("Set Field", FromXml);
-        StepDisplayFactory.Register("Set Field", FromDisplayParams);
     }
 
     public static new ScriptStep FromXml(XElement step)
@@ -49,8 +41,8 @@ public sealed class SetFieldStep : ScriptStep
     {
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 76),
-            new XAttribute("name", "Set Field"));
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName));
 
         step.Add(Expression.ToXml());
         step.Add(Target.ToXml("Field"));
@@ -74,4 +66,19 @@ public sealed class SetFieldStep : ScriptStep
 
         return new SetFieldStep(enabled, target, expression);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "fields",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/set-field.html",
+        Params =
+        [
+            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", Required = true },
+            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", Required = true },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 }

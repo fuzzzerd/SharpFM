@@ -5,15 +5,14 @@ namespace SharpFM.Model.Scripting.Serialization;
 
 /// <summary>
 /// Dispatches display-text parsing to typed <see cref="ScriptStep"/>
-/// POCOs when a step name is registered, allowing each migrated step to
-/// own its own display-to-domain parsing without reaching through the
-/// generic catalog-driven path.
+/// POCOs. Each POCO owns its display-to-domain parsing. Registrations
+/// are bridged in from <c>StepRegistry</c>'s reflection scan of
+/// <c>IStepFactory</c> implementers.
 ///
 /// <para>
-/// Unregistered step names return <c>null</c> from
-/// <see cref="TryCreate"/>, and the caller (<c>ScriptTextParser</c>)
-/// falls through to <see cref="CatalogXmlBuilder.BuildStep"/> + a
-/// <see cref="Steps.RawStep"/> wrapper.
+/// Unregistered step names return <c>null</c> from <see cref="TryCreate"/>
+/// so the caller can fall through to the catalog-driven build path for
+/// forward-compat support of unknown step names.
 /// </para>
 /// </summary>
 public static class StepDisplayFactory
@@ -22,8 +21,7 @@ public static class StepDisplayFactory
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Register a typed POCO's display-text factory delegate. Called
-    /// once per migrated step at module initialization.
+    /// Register a typed POCO's display-text factory delegate.
     /// </summary>
     public static void Register(string stepName, Func<bool, string[], ScriptStep> creator)
     {

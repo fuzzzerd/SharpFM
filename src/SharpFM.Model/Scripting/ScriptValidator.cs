@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
+using SharpFM.Model.Scripting.Registry;
 
 namespace SharpFM.Model.Scripting;
 
@@ -24,13 +24,10 @@ public static class ScriptValidator
         var continuationLineZeroIndexed = new HashSet<int>();
         foreach (var (start, end) in ranges)
         {
-            // start/end are 1-indexed in ranges. Continuation lines are
-            // (start+1)..end inclusive — converted to 0-indexed = start..(end-1).
             for (int ln = start; ln <= end - 1; ln++)
                 continuationLineZeroIndexed.Add(ln);
         }
 
-        // Walk actual text lines for correct positions
         int stepIndex = 0;
         for (int lineNum = 0; lineNum < textLines.Length; lineNum++)
         {
@@ -38,66 +35,60 @@ public static class ScriptValidator
             if (string.IsNullOrWhiteSpace(rawLine))
                 continue;
 
-            // Skip continuation lines of a multi-line step — they are
-            // parsed as part of the owning step's calc, not standalone steps.
             if (continuationLineZeroIndexed.Contains(lineNum))
                 continue;
 
             var trimmed = rawLine.TrimStart();
             var indent = rawLine.Length - trimmed.Length;
 
-            // Strip disabled prefix for step name lookup
             var forLookup = trimmed;
             if (forLookup.StartsWith("//"))
                 forLookup = forLookup.Substring(2).TrimStart();
 
-            // Comments are always valid
             if (forLookup.StartsWith("#"))
             {
                 stepIndex++;
                 continue;
             }
 
-            // Extract step name (text before '[' or end of line)
             var bracketPos = BracketMatcher.FindTopLevelOpenBracket(forLookup);
             var stepName = bracketPos >= 0
                 ? forLookup.Substring(0, bracketPos).Trim()
                 : forLookup.Trim();
 
-            // Check if step exists
-            if (!StepCatalogLoader.ByName.TryGetValue(stepName, out var definition))
+            if (!StepRegistry.ByName.TryGetValue(stepName, out var metadata))
             {
-                // Underline the step name portion of the line
                 var nameStart = rawLine.IndexOf(stepName, StringComparison.Ordinal);
                 if (nameStart < 0) nameStart = indent;
                 diagnostics.Add(new ScriptDiagnostic(
                     lineNum, nameStart, nameStart + stepName.Length,
-                    $"Unknown script step: '{stepName}'",
-                    DiagnosticSeverity.Error));
+                    $"Unknown script step '{stepName}' — preserved verbatim as a RawStep. "
+                    + "Edit the underlying XML via the XML editor; display-text edits here won't round-trip.",
+                    DiagnosticSeverity.Warning));
                 stepIndex++;
                 continue;
             }
 
             // Block pair validation
-            if (definition.BlockPair != null)
+            if (metadata.BlockPair != null)
             {
-                switch (definition.BlockPair.Role)
+                switch (metadata.BlockPair.Role)
                 {
                     case BlockPairRole.Open:
-                        blockStack.Push((definition.Name, lineNum));
+                        blockStack.Push((metadata.Name, lineNum));
                         break;
                     case BlockPairRole.Middle:
                         if (blockStack.Count == 0)
                             diagnostics.Add(new ScriptDiagnostic(
-                                lineNum, indent, indent + definition.Name.Length,
-                                $"'{definition.Name}' without matching opening step",
+                                lineNum, indent, indent + metadata.Name.Length,
+                                $"'{metadata.Name}' without matching opening step",
                                 DiagnosticSeverity.Error));
                         break;
                     case BlockPairRole.Close:
                         if (blockStack.Count == 0)
                             diagnostics.Add(new ScriptDiagnostic(
-                                lineNum, indent, indent + definition.Name.Length,
-                                $"'{definition.Name}' without matching opening step",
+                                lineNum, indent, indent + metadata.Name.Length,
+                                $"'{metadata.Name}' without matching opening step",
                                 DiagnosticSeverity.Error));
                         else
                             blockStack.Pop();
@@ -109,7 +100,7 @@ public static class ScriptValidator
             if (bracketPos >= 0)
             {
                 var parsed = ScriptLineParser.ParseRaw(rawLine);
-                var usedParams = new bool[definition.Params.Length];
+                var usedParams = new bool[metadata.Params.Count];
 
                 foreach (var hrParam in parsed.Params)
                 {
@@ -117,12 +108,10 @@ public static class ScriptValidator
                     bool matchedLabel = false;
 
                     // First: try labeled match
-                    for (int pi = 0; pi < definition.Params.Length; pi++)
+                    for (int pi = 0; pi < metadata.Params.Count; pi++)
                     {
-                        var catalogParam = definition.Params[pi];
-                        var label = catalogParam.HrLabel
-                            ?? (catalogParam.Type == "namedCalc" && catalogParam.WrapperElement != null
-                                ? catalogParam.WrapperElement : null);
+                        var catalogParam = metadata.Params[pi];
+                        var label = catalogParam.HrLabel;
                         if (label == null) continue;
                         if (!paramTrimmed.StartsWith(label + ":", StringComparison.OrdinalIgnoreCase))
                             continue;
@@ -134,18 +123,44 @@ public static class ScriptValidator
                         break;
                     }
 
-                    // Second: positional match for unlabeled enum/boolean params
-                    if (!matchedLabel && !LooksLikeCalculation(paramTrimmed))
+                    // Flag-style match: a bare token that exactly equals
+                    // an unused boolean/flag param's HrLabel is a presence
+                    // marker (e.g. "Select", "Verify SSL Certificates",
+                    // "Append line feed"). Not a value — consume the
+                    // param and skip value validation.
+                    bool matchedFlag = false;
+                    if (!matchedLabel)
                     {
-                        for (int pi = 0; pi < definition.Params.Length; pi++)
+                        for (int pi = 0; pi < metadata.Params.Count; pi++)
                         {
                             if (usedParams[pi]) continue;
-                            var catalogParam = definition.Params[pi];
-                            var validValues = GetValidValues(catalogParam);
-                            if (validValues.Count == 0) continue;
+                            var catalogParam = metadata.Params[pi];
+                            if (catalogParam.HrLabel is null) continue;
+                            if (catalogParam.Type is not ("boolean" or "flagBoolean" or "flagElement")) continue;
+                            if (!paramTrimmed.Equals(catalogParam.HrLabel, StringComparison.OrdinalIgnoreCase)) continue;
 
-                            // This param has restricted values — check
-                            if (!validValues.Contains(paramTrimmed, StringComparer.OrdinalIgnoreCase))
+                            usedParams[pi] = true;
+                            matchedFlag = true;
+                            break;
+                        }
+                    }
+
+                    // Positional match — consume the next available param
+                    // in order. Only validate the value when that param
+                    // has restricted values (enum/boolean). Non-enum
+                    // params (field, calc, text) accept anything, so we
+                    // must NOT keep searching past them looking for an
+                    // enum — that produced false-positive warnings on
+                    // field references like "Assets::Selected File".
+                    if (!matchedLabel && !matchedFlag && !LooksLikeCalculation(paramTrimmed))
+                    {
+                        for (int pi = 0; pi < metadata.Params.Count; pi++)
+                        {
+                            if (usedParams[pi]) continue;
+                            var catalogParam = metadata.Params[pi];
+                            var validValues = StepRegistry.GetValidValues(catalogParam);
+                            if (validValues.Count > 0
+                                && !validValues.Contains(paramTrimmed, StringComparer.OrdinalIgnoreCase))
                             {
                                 var paramLabel = catalogParam.HrLabel ?? catalogParam.XmlElement;
                                 ValidateParamValue(paramTrimmed, paramLabel, catalogParam, rawLine, lineNum, diagnostics);
@@ -174,10 +189,10 @@ public static class ScriptValidator
     }
 
     private static void ValidateParamValue(
-        string value, string label, StepParam catalogParam,
+        string value, string label, ParamMetadata catalogParam,
         string rawLine, int lineNum, List<ScriptDiagnostic> diagnostics)
     {
-        var validValues = GetValidValues(catalogParam);
+        var validValues = StepRegistry.GetValidValues(catalogParam);
         if (validValues.Count > 0 && !validValues.Contains(value, StringComparer.OrdinalIgnoreCase))
         {
             var bracketStart = rawLine.IndexOf('[');
@@ -194,50 +209,10 @@ public static class ScriptValidator
 
     private static bool LooksLikeCalculation(string value)
     {
-        // Skip validation for values that appear to be calculations, expressions, or literals
-        if (value.Length > 0 && char.IsDigit(value[0])) return true; // numeric literal
+        if (value.Length > 0 && char.IsDigit(value[0])) return true;
         return value.Contains('$') || value.Contains('(') || value.Contains('"')
             || value.Contains('>') || value.Contains('<') || value.Contains('=')
             || value.Contains('&') || value.Contains('+') || value.Contains('-')
             || value.Contains('*') || value.Contains('/');
-    }
-
-    public static List<string> GetValidValues(StepParam param)
-    {
-        var valid = new List<string>();
-
-        if (param.Type is "boolean" or "flagBoolean" or "flagElement")
-        {
-            if (param.HrEnumValues != null)
-                valid.AddRange(param.HrEnumValues.Values.Where(v => v != null)!);
-            else if (param.HrValues is { Length: > 0 })
-                valid.AddRange(param.HrValues);
-            else
-            {
-                valid.Add("On");
-                valid.Add("Off");
-            }
-        }
-        else if (param.Type == "enum")
-        {
-            if (param.HrEnumValues != null)
-                valid.AddRange(param.HrEnumValues.Values.Where(v => v != null)!);
-            else if (param.EnumValues != null)
-            {
-                foreach (var ev in param.EnumValues)
-                {
-                    if (ev.ValueKind == JsonValueKind.String)
-                        valid.Add(ev.GetString()!);
-                    else if (ev.ValueKind == JsonValueKind.Object && ev.TryGetProperty("hr", out var hr))
-                    {
-                        var hrStr = hr.GetString();
-                        if (!string.IsNullOrEmpty(hrStr))
-                            valid.Add(hrStr);
-                    }
-                }
-            }
-        }
-
-        return valid;
     }
 }

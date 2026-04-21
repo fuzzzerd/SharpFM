@@ -1,31 +1,28 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Typed domain representation of FileMaker's "Go to Record/Request/Page"
-/// script step.
+/// Go to Record/Request/Page. Navigates to First / Last / Previous /
+/// Next / ByCalculation.
+///
 /// <para>
-/// Display form is driven by <c>RowPageLocation</c> plus element-presence:
-/// First / Last render bare; Next / Previous always render <c>Exit after
-/// last: On|Off</c> (FM Pro always emits the element for those locations);
-/// ByCalculation renders <c>With dialog: On|Off</c> (inverted from
-/// <c>NoInteract</c> state) plus the target calculation.
-/// </para>
-/// <para>
-/// Zero-loss on NoInteract for non-calc locations is proven by construction:
-/// FM Pro always emits <c>state="False"</c> there and provides no UI to
-/// toggle it, so display-text round-trip defaulting to False matches FM Pro.
+/// Display is driven by <see cref="Location"/> plus element-presence:
+/// First / Last render bare; Next / Previous always render
+/// <c>Exit after last: On|Off</c> (FM Pro always emits the element for
+/// those locations); ByCalculation renders <c>With dialog: On|Off</c>
+/// (inverted from <c>NoInteract</c> state) and the target calculation.
 /// </para>
 /// </summary>
-public sealed class GoToRecordStep : ScriptStep
+public sealed class GoToRecordStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 16;
+    public const string XmlName = "Go to Record/Request/Page";
+
     public RowPageLocationKind Location { get; set; }
     public Calculation? LocationCalc { get; set; }
     public bool ExitAfterLast { get; set; }
@@ -37,21 +34,12 @@ public sealed class GoToRecordStep : ScriptStep
         Calculation? locationCalc = null,
         bool exitAfterLast = false,
         bool noInteract = false)
-        : base(StepCatalogLoader.ByName["Go to Record/Request/Page"], enabled)
+        : base(enabled)
     {
         Location = location;
         LocationCalc = locationCalc;
         ExitAfterLast = exitAfterLast;
         NoInteract = noInteract;
-    }
-
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("Go to Record/Request/Page", FromXml);
-        StepDisplayFactory.Register("Go to Record/Request/Page", FromDisplayParams);
     }
 
     public static new ScriptStep FromXml(XElement step)
@@ -78,8 +66,8 @@ public sealed class GoToRecordStep : ScriptStep
     {
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 16),
-            new XAttribute("name", "Go to Record/Request/Page"));
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName));
 
         // FM Pro always emits <NoInteract> regardless of location.
         step.Add(new XElement("NoInteract",
@@ -168,6 +156,23 @@ public sealed class GoToRecordStep : ScriptStep
 
         return new GoToRecordStep(enabled, location, locationCalc, exitAfterLast, noInteract);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "navigation",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-record-request-page.html",
+        Params =
+        [
+            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
+            new ParamMetadata { Name = "RowPageLocation", XmlElement = "RowPageLocation", XmlAttr = "value", Type = "enum", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"], DefaultValue = "Next" },
+            new ParamMetadata { Name = "Exit", XmlElement = "Exit", XmlAttr = "state", Type = "boolean", HrLabel = "Exit after last" },
+            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 
     private static RowPageLocationKind ParseLocation(string wire) => wire switch
     {

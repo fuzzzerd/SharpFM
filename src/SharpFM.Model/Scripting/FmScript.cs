@@ -103,7 +103,8 @@ public class FmScript
         foreach (var step in Steps)
         {
             // Decrease indent before close/middle blocks
-            if (step.Definition?.BlockPair?.Role is BlockPairRole.Close or BlockPairRole.Middle && indentLevel > 0)
+            var metadata = Registry.StepRegistry.MetadataFor(step);
+            if (metadata?.BlockPair?.Role is BlockPairRole.Close or BlockPairRole.Middle && indentLevel > 0)
                 indentLevel--;
 
             var displayLine = step.ToDisplayLine();
@@ -142,7 +143,7 @@ public class FmScript
             }
 
             // Increase indent after open/middle blocks
-            if (step.Definition?.BlockPair?.Role is BlockPairRole.Open or BlockPairRole.Middle)
+            if (metadata?.BlockPair?.Role is BlockPairRole.Open or BlockPairRole.Middle)
                 indentLevel++;
         }
 
@@ -180,14 +181,16 @@ public class FmScript
     private List<string> ApplyAdd(ScriptStepOperation op)
     {
         if (op.StepName is null) return ["StepName is required for add operations."];
-        if (!StepCatalogLoader.ByName.TryGetValue(op.StepName, out var definition))
+        if (!Registry.StepRegistry.ByName.ContainsKey(op.StepName))
             return [$"Unknown step name '{op.StepName}'."];
 
-        // Build the step element via the stateless catalog builder from the
-        // caller-supplied param map. Wrap the result in a RawStep —
-        // typed POCOs will override this arm as they migrate.
-        var element = CatalogXmlBuilder.BuildStepFromMap(definition, op.Enabled ?? true, op.Params);
-        var step = new RawStep(element, definition);
+        // Route through each POCO's FromDisplay factory with the caller's
+        // param map synthesized into labeled HR tokens. POCOs that take
+        // unlabeled positional params parse them in order.
+        var hrParams = SynthesizeHrParams(op.Params);
+        var step = StepDisplayFactory.TryCreate(op.StepName, op.Enabled ?? true, hrParams);
+        if (step is null)
+            return [$"No typed POCO factory registered for '{op.StepName}'."];
 
         var index = op.Index < 0 || op.Index >= Steps.Count ? Steps.Count : op.Index;
         Steps.Insert(index, step);
@@ -203,27 +206,35 @@ public class FmScript
 
         if (op.Params is null) return [];
 
-        // Only RawStep currently supports in-place param updates via the
-        // generic catalog path. Typed POCOs will need their own update
-        // branches as they migrate — for now, those step kinds can't be
-        // edited through the MCP apply API, which is an accepted
-        // transitional limitation.
-        if (step is not RawStep rawStep || step.Definition is null)
-        {
-            return [$"Apply/update is not yet supported for step '{step.Definition?.Name ?? "unknown"}'."];
-        }
+        // Param updates are rebuilt by re-parsing the display form with the
+        // new param map overlaid onto the old. This uses the POCO's own
+        // FromDisplay factory — the same path ApplyAdd takes — so the
+        // update never leaves the typed-POCO world.
+        var metadata = Registry.StepRegistry.MetadataFor(step);
+        if (metadata is null)
+            return [$"Apply/update is not supported for step kind '{step.GetType().Name}'."];
 
-        var updatedElement = rawStep.ToXml();
-        foreach (var (name, value) in op.Params)
-        {
-            var next = CatalogXmlBuilder.UpdateParam(updatedElement, step.Definition, name, value);
-            if (next is null)
-                return [$"Parameter '{name}' not found on step '{step.Definition.Name}'."];
-            updatedElement = next;
-        }
+        var hrParams = SynthesizeHrParams(op.Params);
+        var updated = StepDisplayFactory.TryCreate(metadata.Name, step.Enabled, hrParams);
+        if (updated is null)
+            return [$"No typed POCO factory registered for '{metadata.Name}'."];
 
-        Steps[op.Index] = new RawStep(updatedElement, step.Definition);
+        Steps[op.Index] = updated;
         return [];
+    }
+
+    private static string[] SynthesizeHrParams(IReadOnlyDictionary<string, string>? map)
+    {
+        if (map is null || map.Count == 0) return [];
+        var result = new List<string>(map.Count);
+        foreach (var (k, v) in map)
+        {
+            // Bare values (key is empty) are positional tokens; labeled
+            // entries become "Label: value" tokens which each POCO's
+            // FromDisplay parser recognizes.
+            result.Add(string.IsNullOrEmpty(k) ? v : $"{k}: {v}");
+        }
+        return result.ToArray();
     }
 
     private List<string> ApplyRemove(ScriptStepOperation op)
