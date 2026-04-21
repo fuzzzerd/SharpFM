@@ -17,33 +17,33 @@ namespace SharpFM.Tests.Scripting;
 /// </summary>
 public class SealedStepPreservationTests
 {
-    // Beep is catalog-known, has no typed POCO, and (with the allow-list
+    // HaltScript is catalog-known, has no typed POCO, and (with the allow-list
     // empty at launch) is sealed. Perfect canary.
-    private const string ScriptWithSealedBeepXml = @"<fmxmlsnippet type=""FMObjectList"">
+    private const string ScriptWithSealedHaltScriptXml = @"<fmxmlsnippet type=""FMObjectList"">
         <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-        <Step enable=""True"" id=""93"" name=""Beep""></Step>
+        <Step enable=""True"" id=""90"" name=""Halt Script""></Step>
         <Step enable=""True"" id=""70"" name=""End If""></Step>
     </fmxmlsnippet>";
 
     [Fact]
     public void NoEdits_ToXml_ProducesOriginalScriptWithSealedStepIntact()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var xml = editor.ToXml();
         var doc = XDocument.Parse(xml);
         var steps = doc.Root!.Elements("Step").ToArray();
 
         Assert.Equal(3, steps.Length);
-        Assert.Equal("Beep", steps[1].Attribute("name")!.Value);
-        Assert.Equal("93", steps[1].Attribute("id")!.Value);
+        Assert.Equal("Halt Script", steps[1].Attribute("name")!.Value);
+        Assert.Equal("90", steps[1].Attribute("id")!.Value);
     }
 
     [Fact]
     public void EditNonSealedLine_SealedStepPreservedByAnchor()
     {
-        // User edits the If step's calculation — the Beep step's XML
+        // User edits the If step's calculation — the HaltScript step's XML
         // must survive unchanged via the anchor cache.
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
 
         // Change the If calc from "$x > 0" to "$x > 10" via document edit.
         var line1 = editor.Document.GetLineByNumber(1);
@@ -57,9 +57,9 @@ public class SealedStepPreservationTests
 
         // If step reflects the edit
         Assert.Contains("$x > 10", steps[0].Element("Calculation")!.Value);
-        // Beep step still present with id
-        Assert.Equal("Beep", steps[1].Attribute("name")!.Value);
-        Assert.Equal("93", steps[1].Attribute("id")!.Value);
+        // HaltScript step still present with id
+        Assert.Equal("Halt Script", steps[1].Attribute("name")!.Value);
+        Assert.Equal("90", steps[1].Attribute("id")!.Value);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class SealedStepPreservationTests
         // Deleting a sealed line entirely is allowed — the anchor
         // invalidates and the step is gone from the output. Intentional
         // per the design: delete OK, edit-in-place not OK.
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
 
         var line2 = editor.Document.GetLineByNumber(2);
         // Include the trailing newline so we delete the whole line
@@ -87,25 +87,25 @@ public class SealedStepPreservationTests
     [Fact]
     public void InsertNewLineBeforeSealed_SealedStepSurvivesAtNewPosition()
     {
-        // Insert a new If step above Beep. Beep must still be preserved
+        // Insert a new If step above HaltScript. HaltScript must still be preserved
         // via the anchor (which moves with the line).
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
 
-        var line2 = editor.Document.GetLineByNumber(2); // Beep
-        editor.Document.Insert(line2.Offset, "Beep\n");
+        var line2 = editor.Document.GetLineByNumber(2); // HaltScript
+        editor.Document.Insert(line2.Offset, "HaltScript\n");
 
         var xml = editor.ToXml();
         var doc = XDocument.Parse(xml);
         var steps = doc.Root!.Elements("Step").ToArray();
 
-        // Four steps now; the original Beep (the one at the original
+        // Four steps now; the original HaltScript (the one at the original
         // anchor position) must still have its id preserved.
         Assert.Equal(4, steps.Length);
 
-        // Find all Beep steps. The one with id=93 is the original sealed one.
-        var originalBeep = steps.FirstOrDefault(s => s.Attribute("id")?.Value == "93");
-        Assert.NotNull(originalBeep);
-        Assert.Equal("Beep", originalBeep!.Attribute("name")!.Value);
+        // Find all HaltScript steps. The one with id=93 is the original sealed one.
+        var originalHaltScript = steps.FirstOrDefault(s => s.Attribute("id")?.Value == "90");
+        Assert.NotNull(originalHaltScript);
+        Assert.Equal("Halt Script", originalHaltScript!.Attribute("name")!.Value);
     }
 
     // --- UpdateSealedXml (cog-edit write-back) ---
@@ -113,15 +113,15 @@ public class SealedStepPreservationTests
     [Fact]
     public void UpdateSealedXml_ReplacesCachedXmlAndRerendersLine()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
 
-        // Find the Beep anchor and edit its XML in place — simulating what
-        // RawStepEditorWindow does after the user saves. Replace the Beep
-        // step with a hypothetical different-id Beep to prove the cache
+        // Find the HaltScript anchor and edit its XML in place — simulating what
+        // RawStepEditorWindow does after the user saves. Replace the HaltScript
+        // step with a hypothetical different-id HaltScript to prove the cache
         // update propagates to ToXml output.
         var anchor = editor.SealedAnchors.First();
         var replacement = XElement.Parse(
-            "<Step enable=\"True\" id=\"93\" name=\"Beep\"><SomeChild value=\"42\"/></Step>");
+            "<Step enable=\"True\" id=\"90\" name=\"Halt Script\"><SomeChild value=\"42\"/></Step>");
 
         var updated = editor.UpdateSealedXml(anchor, replacement);
         Assert.True(updated);
@@ -131,7 +131,7 @@ public class SealedStepPreservationTests
         var beep = doc.Root!.Elements("Step").ElementAt(1);
 
         // The cached XML now reflects the replacement — <SomeChild> is
-        // present even though the display line (still "Beep") hasn't
+        // present even though the display line (still "Halt Script") hasn't
         // exposed it.
         Assert.NotNull(beep.Element("SomeChild"));
         Assert.Equal("42", beep.Element("SomeChild")!.Attribute("value")!.Value);
@@ -140,9 +140,9 @@ public class SealedStepPreservationTests
     [Fact]
     public void UpdateSealedXml_PreservesBlockIndentation()
     {
-        // The Beep step is inside an If/End If block, so its display line
+        // The HaltScript step is inside an If/End If block, so its display line
         // is indented. Updating via the cog must preserve that indentation.
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
 
         var anchor = editor.SealedAnchors.First();
         var beepLine = editor.Document.GetLineByOffset(anchor.Offset);
@@ -150,7 +150,7 @@ public class SealedStepPreservationTests
         Assert.StartsWith("    ", beforeText); // 4-space indent inside If block
 
         var replacement = XElement.Parse(
-            "<Step enable=\"True\" id=\"93\" name=\"Beep\"><SomeChild value=\"1\"/></Step>");
+            "<Step enable=\"True\" id=\"90\" name=\"Halt Script\"><SomeChild value=\"1\"/></Step>");
         editor.UpdateSealedXml(anchor, replacement);
 
         var afterText = editor.Document.GetText(beepLine.Offset, beepLine.Length);
@@ -160,14 +160,14 @@ public class SealedStepPreservationTests
     [Fact]
     public void UpdateSealedXml_DeadAnchor_ReturnsFalse()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var anchor = editor.SealedAnchors.First();
 
         // Delete the sealed line — anchor is now dead.
         var line2 = editor.Document.GetLineByNumber(2);
         editor.Document.Remove(line2.Offset, line2.TotalLength);
 
-        var replacement = XElement.Parse("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>");
+        var replacement = XElement.Parse("<Step enable=\"True\" id=\"90\" name=\"Halt Script\"/>");
         Assert.False(editor.UpdateSealedXml(anchor, replacement));
     }
 
@@ -176,10 +176,10 @@ public class SealedStepPreservationTests
     {
         // The cog-edit must survive a subsequent non-sealed edit: the
         // rebuild loop must NOT drop the updated XML when it re-runs.
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var anchor = editor.SealedAnchors.First();
         var replacement = XElement.Parse(
-            "<Step enable=\"True\" id=\"93\" name=\"Beep\"><SomeChild value=\"99\"/></Step>");
+            "<Step enable=\"True\" id=\"90\" name=\"Halt Script\"><SomeChild value=\"99\"/></Step>");
         editor.UpdateSealedXml(anchor, replacement);
 
         // Now edit the If step's calc.
@@ -200,18 +200,18 @@ public class SealedStepPreservationTests
     [Fact]
     public void TryGetSealedXml_LiveAnchor_ReturnsCachedXml()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var anchor = editor.SealedAnchors.First();
 
         Assert.True(editor.TryGetSealedXml(anchor, out var xml));
-        Assert.Equal("Beep", xml.Attribute("name")!.Value);
-        Assert.Equal("93", xml.Attribute("id")!.Value);
+        Assert.Equal("Halt Script", xml.Attribute("name")!.Value);
+        Assert.Equal("90", xml.Attribute("id")!.Value);
     }
 
     [Fact]
     public void TryGetSealedXml_DeadAnchor_ReturnsFalse()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var anchor = editor.SealedAnchors.First();
 
         var line2 = editor.Document.GetLineByNumber(2);
@@ -225,13 +225,13 @@ public class SealedStepPreservationTests
     [Fact]
     public void MultipleSealedSteps_EachPreservedIndependently()
     {
-        // Two Beeps + a comment (all non-POCO-except-comment) — comment
-        // has a POCO so it stays editable. The two Beeps are sealed.
+        // Two HaltScripts + a comment (all non-POCO-except-comment) — comment
+        // has a POCO so it stays editable. The two HaltScripts are sealed.
         var xml = @"<fmxmlsnippet type=""FMObjectList"">
             <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-            <Step enable=""True"" id=""93"" name=""Beep""><FirstMarker/></Step>
+            <Step enable=""True"" id=""90"" name=""Halt Script""><FirstMarker/></Step>
             <Step enable=""True"" id=""89"" name=""# (comment)""><Text>between</Text></Step>
-            <Step enable=""True"" id=""93"" name=""Beep""><SecondMarker/></Step>
+            <Step enable=""True"" id=""90"" name=""Halt Script""><SecondMarker/></Step>
             <Step enable=""True"" id=""70"" name=""End If""></Step>
         </fmxmlsnippet>";
 
@@ -245,7 +245,7 @@ public class SealedStepPreservationTests
         var outDoc = XDocument.Parse(outXml);
         var steps = outDoc.Root!.Elements("Step").ToArray();
 
-        // Two Beeps each with their distinguishing marker child intact.
+        // Two HaltScripts each with their distinguishing marker child intact.
         var beepsWithFirst = steps.Count(s => s.Element("FirstMarker") != null);
         var beepsWithSecond = steps.Count(s => s.Element("SecondMarker") != null);
 
@@ -261,7 +261,7 @@ public class SealedStepPreservationTests
         var xml = @"<fmxmlsnippet type=""FMObjectList"">
             <Script includeInMenu=""True"" runFullAccess=""False"" id=""42"" name=""MyScript"">
                 <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-                <Step enable=""True"" id=""93"" name=""Beep""><WrapperPreserved/></Step>
+                <Step enable=""True"" id=""90"" name=""Halt Script""><WrapperPreserved/></Step>
                 <Step enable=""True"" id=""70"" name=""End If""></Step>
             </Script>
         </fmxmlsnippet>";
@@ -281,8 +281,8 @@ public class SealedStepPreservationTests
         Assert.Equal("42", scriptEl!.Attribute("id")!.Value);
         Assert.Equal("MyScript", scriptEl.Attribute("name")!.Value);
 
-        // Sealed Beep's custom child preserved
-        var beep = scriptEl.Elements("Step").FirstOrDefault(s => s.Attribute("id")?.Value == "93");
+        // Sealed HaltScript's custom child preserved
+        var beep = scriptEl.Elements("Step").FirstOrDefault(s => s.Attribute("id")?.Value == "90");
         Assert.NotNull(beep);
         Assert.NotNull(beep!.Element("WrapperPreserved"));
     }
@@ -292,7 +292,7 @@ public class SealedStepPreservationTests
     [Fact]
     public void ToXml_CalledTwice_ProducesIdenticalOutput()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var first = editor.ToXml();
         var second = editor.ToXml();
         Assert.Equal(first, second);
@@ -305,7 +305,7 @@ public class SealedStepPreservationTests
     {
         var xml = @"<fmxmlsnippet type=""FMObjectList"">
             <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-            <Step enable=""True"" id=""93"" name=""Beep""><EofCanary/></Step>
+            <Step enable=""True"" id=""90"" name=""Halt Script""><EofCanary/></Step>
         </fmxmlsnippet>";
 
         var editor = new ScriptClipEditor(xml);
@@ -313,7 +313,7 @@ public class SealedStepPreservationTests
         var outDoc = XDocument.Parse(outXml);
         var beep = outDoc.Root!.Elements("Step").Last();
 
-        Assert.Equal("Beep", beep.Attribute("name")!.Value);
+        Assert.Equal("Halt Script", beep.Attribute("name")!.Value);
         Assert.NotNull(beep.Element("EofCanary"));
     }
 
@@ -329,7 +329,7 @@ public class SealedStepPreservationTests
         // context to test. This covers the defensive side: the editor's
         // own SealedAnchors iterator must never yield an anchor whose
         // offset lies past the current document length.
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         Assert.Single(editor.SealedAnchors);
 
         // Drastically shrink the document — clears every line the
@@ -347,7 +347,7 @@ public class SealedStepPreservationTests
     {
         // Same invariant but with content that has steps — proves the
         // iterator stays safe when the TextView swaps documents too.
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         Assert.Single(editor.SealedAnchors);
 
         editor.Document.Replace(0, editor.Document.TextLength, "If [ $x > 0 ]");
@@ -361,7 +361,7 @@ public class SealedStepPreservationTests
     [Fact]
     public void FromXml_Reload_RebuildsAnchorCacheFreshForNewContent()
     {
-        var editor = new ScriptClipEditor(ScriptWithSealedBeepXml);
+        var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         Assert.Single(editor.SealedAnchors);
 
         // Reload with different content — previous anchor should be gone,
@@ -376,7 +376,7 @@ public class SealedStepPreservationTests
         Assert.Empty(editor.SealedAnchors);
 
         // Reload with a sealed step back — a fresh anchor appears.
-        editor.FromXml(ScriptWithSealedBeepXml);
+        editor.FromXml(ScriptWithSealedHaltScriptXml);
         Assert.Single(editor.SealedAnchors);
     }
 }

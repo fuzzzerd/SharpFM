@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Values;
 
@@ -26,23 +27,52 @@ namespace SharpFM.Model.Scripting.Steps;
 /// by the individual POCOs.
 /// </para>
 /// </summary>
-public sealed class IfStep : ScriptStep
+/// <summary>
+/// Zero-loss audit for <see cref="IfStep"/>:
+/// <list type="bullet">
+/// <item><c>Step</c> attributes (<c>enable</c>, <c>id</c>, <c>name</c>) — round-tripped.</item>
+/// <item><c>&lt;Calculation&gt;</c> CDATA body — round-tripped via <see cref="Calculation"/>.</item>
+/// <item><c>&lt;Restore state="..."/&gt;</c> — <b>intentionally dropped</b>. Upstream agentic-fm
+/// snippets include it, but FM Pro never changes the value and never emits the element in
+/// clipboard output; it carries no information worth round-tripping. See
+/// <c>docs/advanced-filemaker-scripting-syntax.md</c> for the "what to drop vs. surface"
+/// guidance this follows.</item>
+/// </list>
+/// </summary>
+public sealed class IfStep : ScriptStep, IStepFactory
 {
     public Calculation Condition { get; set; }
 
     public IfStep(bool enabled, Calculation condition)
-        : base(StepCatalogLoader.ByName["If"], enabled)
+        : base(BuildLegacyDefinition(), enabled)
     {
         Condition = condition;
     }
 
+    // Transitional: legacy consumers (FmScript.ToDisplayLines, etc.) still
+    // read step.Definition.BlockPair for indent decisions. Project the
+    // pieces Metadata carries into a synthesized StepDefinition until those
+    // consumers migrate to StepRegistry in a later phase.
+    private static StepDefinition BuildLegacyDefinition() => new()
+    {
+        Name = "If",
+        Id = 68,
+        BlockPair = new StepBlockPair
+        {
+            Role = BlockPairRole.Open,
+            Partners = ["Else", "Else If", "End If"],
+        },
+    };
+
     [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
+        Justification = "Register sibling control-flow steps that haven't migrated to IStepFactory yet.")]
     [ModuleInitializer]
     internal static void Register()
     {
-        StepXmlFactory.Register("If", FromXml);
-        StepDisplayFactory.Register("If", FromDisplayParams);
+        // IfStep itself registers via StepRegistry's reflection scan (IStepFactory).
+        // The siblings below migrate in the sweep phase; for now their factory
+        // registrations stay here so the legacy StepXmlFactory / StepDisplayFactory
+        // surfaces continue to return typed POCOs.
 
         StepXmlFactory.Register("Else If", ElseIfStep.FromXml);
         StepDisplayFactory.Register("Else If", ElseIfStep.FromDisplayParams);
@@ -75,6 +105,40 @@ public sealed class IfStep : ScriptStep
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
         new IfStep(enabled, ParseCondition(hrParams));
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = "If",
+        Id = 68,
+        Category = "control",
+        HelpUrl = "https://help.claris.com/en/pro-help/content/if-script-step.html",
+        HrSignature = "[ condition ]",
+        BlockPair = new StepBlockPair
+        {
+            Role = BlockPairRole.Open,
+            Partners = ["Else", "Else If", "End If"],
+        },
+        Params =
+        [
+            new ParamMetadata
+            {
+                Name = "condition",
+                XmlElement = "Calculation",
+                Type = "calculation",
+                // Intentionally no HrLabel — FM Pro's display renders the
+                // calc without a label prefix (e.g. "If [ $x > 0 ]"). The
+                // completion snippet synthesizer uses Name as the
+                // placeholder hint so it reads "If [ ${1:condition} ]".
+                Required = true,
+            },
+        ],
+        Notes = new StepNotes
+        {
+            Constraints = "Requires a matching End If step.",
+        },
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 
     internal static Calculation ReadCalculation(XElement step)
     {

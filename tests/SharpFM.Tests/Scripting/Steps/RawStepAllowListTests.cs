@@ -50,9 +50,10 @@ public class RawStepAllowListTests
     [Fact]
     public void RawStep_NotInAllowList_IsFullyEditable_ReturnsFalse()
     {
-        // "Beep" is a catalog-known step with no typed POCO. Not in the
-        // allow-list (which ships empty), so it must be sealed.
-        var xml = XElement.Parse("<Step enable=\"True\" id=\"93\" name=\"Beep\"></Step>");
+        // "Halt Script" is a catalog-known step with no typed POCO (Beep
+        // was the original canary but has migrated to BeepStep). Not in
+        // the allow-list (which ships empty), so it must be sealed.
+        var xml = XElement.Parse("<Step enable=\"True\" id=\"90\" name=\"Halt Script\"></Step>");
         var step = ScriptStep.FromXml(xml);
 
         Assert.IsType<RawStep>(step);
