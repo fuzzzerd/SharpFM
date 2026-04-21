@@ -34,20 +34,10 @@ public sealed class IfStep : ScriptStep, IStepFactory
     public Calculation Condition { get; set; }
 
     public IfStep(bool enabled, Calculation condition)
-        : base(BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Open, ["Else", "Else If", "End If"]), enabled)
+        : base(enabled)
     {
         Condition = condition;
     }
-
-    // FmScript.ToDisplayLines reads step.Definition.BlockPair to drive
-    // indentation. Control-flow steps synthesize just enough StepDefinition
-    // to satisfy that consumer.
-    internal static StepDefinition BuildLegacyDefinition(string name, int id, BlockPairRole role, string[] partners) => new()
-    {
-        Name = name,
-        Id = id,
-        BlockPair = new StepBlockPair { Role = role, Partners = partners },
-    };
 
     public static new ScriptStep FromXml(XElement step) =>
         new IfStep(
@@ -117,7 +107,7 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
     public Calculation Condition { get; set; }
 
     public ElseIfStep(bool enabled, Calculation condition)
-        : base(IfStep.BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Middle, ["If", "End If"]), enabled)
+        : base(enabled)
     {
         Condition = condition;
     }
@@ -168,7 +158,7 @@ public sealed class ElseStep : ScriptStep, IStepFactory
     public const string XmlName = "Else";
 
     public ElseStep(bool enabled)
-        : base(IfStep.BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Middle, ["If", "End If"]), enabled) { }
+        : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
         new ElseStep(step.Attribute("enable")?.Value != "False");
@@ -209,7 +199,7 @@ public sealed class EndIfStep : ScriptStep, IStepFactory
     public const string XmlName = "End If";
 
     public EndIfStep(bool enabled)
-        : base(IfStep.BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Close, ["If"]), enabled) { }
+        : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
         new EndIfStep(step.Attribute("enable")?.Value != "False");
@@ -244,7 +234,7 @@ public sealed class LoopStep : ScriptStep, IStepFactory
     public const string XmlName = "Loop";
 
     public LoopStep(bool enabled)
-        : base(IfStep.BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Open, ["End Loop"]), enabled) { }
+        : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
         new LoopStep(step.Attribute("enable")?.Value != "False");
@@ -279,7 +269,7 @@ public sealed class EndLoopStep : ScriptStep, IStepFactory
     public const string XmlName = "End Loop";
 
     public EndLoopStep(bool enabled)
-        : base(IfStep.BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Close, ["Loop"]), enabled) { }
+        : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
         new EndLoopStep(step.Attribute("enable")?.Value != "False");
@@ -316,7 +306,7 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
     public Calculation Condition { get; set; }
 
     public ExitLoopIfStep(bool enabled, Calculation condition)
-        : base(IfStep.BuildLegacyDefinition(XmlName, XmlId, BlockPairRole.Middle, ["Loop", "End Loop"]), enabled)
+        : base(enabled)
     {
         Condition = condition;
     }

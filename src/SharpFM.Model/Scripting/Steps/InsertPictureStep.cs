@@ -17,7 +17,7 @@ public sealed class InsertPictureStep : ScriptStep, IStepFactory
     public string StorageType { get; set; }
 
     public InsertPictureStep(string path = "", string storageType = "Embedded", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Path = path;
         StorageType = storageType;

@@ -17,16 +17,8 @@ public enum CompletionContext
 /// <summary>
 /// Completion provider for the script editor. Reads exclusively from
 /// <see cref="StepRegistry"/> — the typed POCO registry populated by
-/// reflection. The legacy <c>StepCatalogLoader</c> path has been cut
-/// from this consumer entirely.
-///
-/// <para>
-/// <b>Pilot-time regression:</b> only step names with a typed POCO appear
-/// in completions. During the big-bang migration, that's a small subset
-/// of the 206-entry FileMaker catalog; coverage grows to full as more
-/// POCOs land. Documented in
-/// <c>docs/plans/script-step-poco-sweep.md</c>.
-/// </para>
+/// reflection over <c>IStepFactory</c> implementers in the model
+/// assembly.
 /// </summary>
 public static class FmScriptCompletionProvider
 {

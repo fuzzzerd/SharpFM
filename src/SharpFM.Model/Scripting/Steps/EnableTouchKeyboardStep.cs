@@ -20,7 +20,7 @@ public sealed class EnableTouchKeyboardStep : ScriptStep, IStepFactory
     public string ShowHide { get; set; }
 
     public EnableTouchKeyboardStep(string showHide = "Show", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ShowHide = showHide;
     }

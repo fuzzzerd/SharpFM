@@ -13,7 +13,7 @@ public sealed class SpellingOptionsStep : ScriptStep, IStepFactory
     public const int XmlId = 107;
     public const string XmlName = "Spelling Options";
 
-    public SpellingOptionsStep(bool enabled = true) : base(null, enabled) { }
+    public SpellingOptionsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

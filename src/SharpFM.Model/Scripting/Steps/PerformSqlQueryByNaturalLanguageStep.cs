@@ -12,7 +12,7 @@ public sealed class PerformSqlQueryByNaturalLanguageStep : ScriptStep, IStepFact
     public StepChildBag Children { get; set; }
 
     public PerformSqlQueryByNaturalLanguageStep(StepChildBag? children = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Children = children ?? new StepChildBag();
     }

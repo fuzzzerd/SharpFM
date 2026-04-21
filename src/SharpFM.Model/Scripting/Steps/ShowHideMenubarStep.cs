@@ -24,7 +24,7 @@ public sealed class ShowHideMenubarStep : ScriptStep, IStepFactory
         bool @lock = false,
         string action = "Hide",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Lock = @lock;
         Action = action;

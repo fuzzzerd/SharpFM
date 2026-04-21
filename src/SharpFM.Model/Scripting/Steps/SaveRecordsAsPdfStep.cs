@@ -30,7 +30,7 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         Calculation? storedLabel = null,
         PdfOptions? options = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Append = append;

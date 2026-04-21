@@ -19,7 +19,7 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
     public string StorageType { get; set; }
 
     public InsertPdfStep(string path = "", string storageType = "Embedded", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Path = path;
         StorageType = storageType;

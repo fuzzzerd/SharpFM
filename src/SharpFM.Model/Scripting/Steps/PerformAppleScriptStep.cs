@@ -21,7 +21,7 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
         Calculation? calculation = null,
         string text = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ContentType = contentType;
         Calculation = calculation ?? new Calculation("");

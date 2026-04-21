@@ -19,7 +19,7 @@ public sealed class OmitMultipleRecordsStep : ScriptStep, IStepFactory
         bool withDialog = true,
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Calculation = calculation ?? new Calculation("");

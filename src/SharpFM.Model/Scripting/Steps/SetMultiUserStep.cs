@@ -20,7 +20,7 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
     public string NetworkAccess { get; set; }
 
     public SetMultiUserStep(string networkAccess = "True", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         NetworkAccess = networkAccess;
     }

@@ -21,7 +21,7 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
         string window = "ByName",
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         LimitToWindowsOfCurrentFile = limitToWindowsOfCurrentFile;
         Window = window;

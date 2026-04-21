@@ -31,7 +31,7 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         bool hideControls = false,
         bool disableInteraction = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Source = source;
         Repetition = repetition ?? new Calculation("");

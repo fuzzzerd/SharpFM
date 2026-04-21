@@ -34,7 +34,7 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
         Calculation? locationCalc = null,
         bool exitAfterLast = false,
         bool noInteract = false)
-        : base(null, enabled)
+        : base(enabled)
     {
         Location = location;
         LocationCalc = locationCalc;

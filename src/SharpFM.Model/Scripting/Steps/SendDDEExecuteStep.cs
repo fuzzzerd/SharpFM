@@ -20,7 +20,7 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
     public string ContentType { get; set; }
 
     public SendDDEExecuteStep(string contentType = "File", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ContentType = contentType;
     }

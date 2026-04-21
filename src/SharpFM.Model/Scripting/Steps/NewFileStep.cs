@@ -13,7 +13,7 @@ public sealed class NewFileStep : ScriptStep, IStepFactory
     public const int XmlId = 82;
     public const string XmlName = "New File";
 
-    public NewFileStep(bool enabled = true) : base(null, enabled) { }
+    public NewFileStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

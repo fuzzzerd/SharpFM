@@ -22,7 +22,7 @@ public sealed class PasteStep : ScriptStep, IStepFactory
         bool linkIfAvailable = false,
         FieldRef? target = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Select = select;
         NoStyle = noStyle;

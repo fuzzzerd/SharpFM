@@ -14,7 +14,7 @@ public sealed class GetDataFilePositionStep : ScriptStep, IStepFactory
     public FieldRef? Target { get; set; }
 
     public GetDataFilePositionStep(Calculation? fileId = null, FieldRef? target = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         FileId = fileId ?? new Calculation("");
         Target = target;

@@ -13,7 +13,7 @@ public sealed class SelectDictionariesStep : ScriptStep, IStepFactory
     public const int XmlId = 108;
     public const string XmlName = "Select Dictionaries";
 
-    public SelectDictionariesStep(bool enabled = true) : base(null, enabled) { }
+    public SelectDictionariesStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

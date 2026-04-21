@@ -25,7 +25,7 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
         bool verifySSLCertificates = false,
         Calculation? aPIKey = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AccountName = accountName ?? new Calculation("");
         ModelProvider = modelProvider;

@@ -17,7 +17,7 @@ public sealed class RefreshPortalStep : ScriptStep, IStepFactory
     public RefreshPortalStep(
         Calculation? objectName = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ObjectName = objectName ?? new Calculation("");
     }

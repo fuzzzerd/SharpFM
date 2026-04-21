@@ -20,7 +20,7 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
     public string View { get; set; }
 
     public ViewAsStep(string view = "Cycle", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         View = view;
     }

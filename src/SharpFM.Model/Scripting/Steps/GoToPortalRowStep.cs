@@ -23,7 +23,7 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
         bool exitAfterLast = false,
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         SelectAll = selectAll;

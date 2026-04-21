@@ -13,7 +13,7 @@ public sealed class HaltScriptStep : ScriptStep, IStepFactory
     public const int XmlId = 90;
     public const string XmlName = "Halt Script";
 
-    public HaltScriptStep(bool enabled = true) : base(null, enabled) { }
+    public HaltScriptStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

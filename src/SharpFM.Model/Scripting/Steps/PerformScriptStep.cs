@@ -22,7 +22,7 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
     public Calculation? Parameter { get; set; }
 
     public PerformScriptStep(bool enabled, PerformScriptTarget target, Calculation? parameter = null)
-        : base(null, enabled)
+        : base(enabled)
     {
         Target = target;
         Parameter = parameter;

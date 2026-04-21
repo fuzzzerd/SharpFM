@@ -23,7 +23,7 @@ public sealed class ConfigureRAGAccountStep : ScriptStep, IStepFactory
         Calculation? aPIKey = null,
         bool verifySSLCertificates = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         RAGAccountName = rAGAccountName ?? new Calculation("");
         Endpoint = endpoint ?? new Calculation("");

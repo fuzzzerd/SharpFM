@@ -18,7 +18,7 @@ public sealed class CheckSelectionStep : ScriptStep, IStepFactory
         bool select = true,
         FieldRef? target = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Select = select;
         Target = target ?? FieldRef.ForField("", 0, "");

@@ -23,7 +23,7 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
         string path = "",
         string reference = "Embedded",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Path = path;
         Reference = reference;

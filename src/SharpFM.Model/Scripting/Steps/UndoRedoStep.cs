@@ -20,7 +20,7 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
     public string Action { get; set; }
 
     public UndoRedoStep(string action = "Undo", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Action = action;
     }

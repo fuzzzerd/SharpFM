@@ -18,7 +18,7 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
         bool restoreStoredRequests = true,
         FindRequestList? query = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithoutIndexes = withoutIndexes;
         RestoreStoredRequests = restoreStoredRequests;

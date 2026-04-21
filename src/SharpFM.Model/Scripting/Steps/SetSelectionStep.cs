@@ -20,7 +20,7 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
     public Calculation EndPosition { get; set; }
 
     public SetSelectionStep(FieldRef? field = null, Calculation? startPosition = null, Calculation? endPosition = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Field = field;
         StartPosition = startPosition ?? new Calculation("");

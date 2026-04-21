@@ -12,7 +12,7 @@ public sealed class ConfigureRegressionModelStep : ScriptStep, IStepFactory
     public StepChildBag Children { get; set; }
 
     public ConfigureRegressionModelStep(StepChildBag? children = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Children = children ?? new StepChildBag();
     }

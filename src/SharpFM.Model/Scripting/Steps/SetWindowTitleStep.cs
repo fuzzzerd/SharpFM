@@ -23,7 +23,7 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
         bool currentFile = true,
         Calculation? newTitle = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Window = window;
         OfWindow = ofWindow ?? new Calculation("");

@@ -40,7 +40,7 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
         Calculation? workSheet = null, Calculation? title = null, Calculation? subject = null, Calculation? author = null,
         string saveType = "BrowsedRecords", bool useFieldNames = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         CreateDirectories = createDirectories;

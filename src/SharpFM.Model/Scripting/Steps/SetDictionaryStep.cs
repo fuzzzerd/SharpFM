@@ -18,7 +18,7 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
         string spellingLanguage = "US English",
         string userDictionary = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SpellingLanguage = spellingLanguage;
         UserDictionary = userDictionary;

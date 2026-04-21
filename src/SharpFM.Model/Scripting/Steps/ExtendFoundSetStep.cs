@@ -13,7 +13,7 @@ public sealed class ExtendFoundSetStep : ScriptStep, IStepFactory
     public FindRequestList? Query { get; set; }
 
     public ExtendFoundSetStep(bool restoreStoredRequests = true, FindRequestList? query = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         RestoreStoredRequests = restoreStoredRequests;
         Query = query;

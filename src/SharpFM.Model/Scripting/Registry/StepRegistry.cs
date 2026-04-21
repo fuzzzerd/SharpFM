@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Steps;
 
 namespace SharpFM.Model.Scripting.Registry;
 
@@ -17,12 +18,10 @@ namespace SharpFM.Model.Scripting.Registry;
 /// <see cref="StepMetadata"/> property.
 ///
 /// <para>
-/// Replaces <c>StepCatalogLoader</c> as migration progresses. While both
-/// systems coexist, the registry also <b>bridges</b> POCO factory
-/// delegates into the legacy <see cref="StepXmlFactory"/> and
-/// <see cref="StepDisplayFactory"/> surfaces, so callers that read the
-/// legacy factories see POCO-backed steps without each POCO needing its
-/// own <c>ModuleInitializer</c>.
+/// The registry bridges each POCO's factory delegates into
+/// <see cref="StepXmlFactory"/> and <see cref="StepDisplayFactory"/> so
+/// XML-parse and display-parse dispatch find the typed POCO without
+/// each POCO needing its own <c>ModuleInitializer</c>.
 /// </para>
 /// </summary>
 public static class StepRegistry
@@ -33,6 +32,7 @@ public static class StepRegistry
     private static readonly Dictionary<string, StepMetadata> _byName =
         new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<int, StepMetadata> _byId = [];
+    private static readonly Dictionary<Type, StepMetadata> _byType = [];
 
     /// <summary>
     /// All registered step metadata records, in discovery order.
@@ -52,6 +52,17 @@ public static class StepRegistry
     public static IReadOnlyDictionary<int, StepMetadata> ById
     {
         get { EnsureInitialized(); return _byId; }
+    }
+
+    /// <summary>
+    /// Returns the metadata associated with a step instance's runtime
+    /// type, or <c>null</c> when the type is not a registered POCO
+    /// (e.g. <see cref="RawStep"/>, which wraps unknown elements).
+    /// </summary>
+    public static StepMetadata? MetadataFor(ScriptStep step)
+    {
+        EnsureInitialized();
+        return _byType.TryGetValue(step.GetType(), out var m) ? m : null;
     }
 
     /// <summary>
@@ -77,9 +88,9 @@ public static class StepRegistry
 
     /// <summary>
     /// Surface valid values for a parameter in completion / validation
-    /// contexts. Mirrors the role of the legacy
-    /// <c>ScriptValidator.GetValidValues(StepParam)</c> for the typed
-    /// <see cref="ParamMetadata"/> shape.
+    /// contexts. Returns the explicit <see cref="ParamMetadata.ValidValues"/>
+    /// when present; otherwise defaults boolean-like params to
+    /// <c>["On", "Off"]</c>.
     /// </summary>
     public static IReadOnlyList<string> GetValidValues(ParamMetadata param)
     {
@@ -115,6 +126,7 @@ public static class StepRegistry
             if (prop?.GetValue(null) is not StepMetadata metadata) continue;
 
             _all.Add(metadata);
+            _byType[type] = metadata;
             if (!string.IsNullOrEmpty(metadata.Name))
                 _byName[metadata.Name] = metadata;
             if (metadata.Id != 0)

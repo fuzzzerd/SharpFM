@@ -13,7 +13,7 @@ public sealed class OpenManageThemesStep : ScriptStep, IStepFactory
     public const int XmlId = 165;
     public const string XmlName = "Open Manage Themes";
 
-    public OpenManageThemesStep(bool enabled = true) : base(null, enabled) { }
+    public OpenManageThemesStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

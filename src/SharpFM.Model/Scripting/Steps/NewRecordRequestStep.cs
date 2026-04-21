@@ -13,7 +13,7 @@ public sealed class NewRecordRequestStep : ScriptStep, IStepFactory
     public const int XmlId = 7;
     public const string XmlName = "New Record/Request";
 
-    public NewRecordRequestStep(bool enabled = true) : base(null, enabled) { }
+    public NewRecordRequestStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

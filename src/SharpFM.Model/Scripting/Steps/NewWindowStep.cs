@@ -29,7 +29,7 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
         Calculation? calculation5 = null,
         string newWndStyles = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         LayoutDestination = layoutDestination;
         Calculation = calculation ?? new Calculation("");

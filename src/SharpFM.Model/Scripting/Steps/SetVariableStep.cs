@@ -23,7 +23,7 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
     public Calculation Repetition { get; set; }
 
     public SetVariableStep(bool enabled, string name, Calculation value, Calculation? repetition = null)
-        : base(null, enabled)
+        : base(enabled)
     {
         Name = name;
         Value = value;

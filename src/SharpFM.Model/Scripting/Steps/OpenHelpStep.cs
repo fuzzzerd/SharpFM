@@ -13,7 +13,7 @@ public sealed class OpenHelpStep : ScriptStep, IStepFactory
     public const int XmlId = 32;
     public const string XmlName = "Open Help";
 
-    public OpenHelpStep(bool enabled = true) : base(null, enabled) { }
+    public OpenHelpStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

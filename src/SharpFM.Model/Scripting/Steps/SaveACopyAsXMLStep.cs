@@ -21,7 +21,7 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
         string destinationFile = "",
         Calculation? windowName = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         IncludeDetailsForAnalysisTools = includeDetailsForAnalysisTools;
         DestinationFile = destinationFile;

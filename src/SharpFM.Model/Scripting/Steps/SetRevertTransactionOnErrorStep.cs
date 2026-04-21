@@ -18,7 +18,7 @@ public sealed class SetRevertTransactionOnErrorStep : ScriptStep, IStepFactory
     public bool RevertOnError { get; set; }
 
     public SetRevertTransactionOnErrorStep(bool revertonerror = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         RevertOnError = revertonerror;
     }

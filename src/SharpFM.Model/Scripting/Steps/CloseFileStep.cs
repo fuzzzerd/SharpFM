@@ -12,7 +12,7 @@ public sealed class CloseFileStep : ScriptStep, IStepFactory
     public FileReference? File { get; set; }
 
     public CloseFileStep(FileReference? file = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         File = file;
     }

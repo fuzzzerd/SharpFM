@@ -18,7 +18,7 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
         bool withDialog = true,
         string universalPathList = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         UniversalPathList = universalPathList;

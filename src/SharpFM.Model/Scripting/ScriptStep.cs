@@ -20,12 +20,10 @@ namespace SharpFM.Model.Scripting;
 /// </summary>
 public abstract class ScriptStep
 {
-    public StepDefinition? Definition { get; }
     public bool Enabled { get; set; }
 
-    protected ScriptStep(StepDefinition? definition, bool enabled)
+    protected ScriptStep(bool enabled)
     {
-        Definition = definition;
         Enabled = enabled;
     }
 

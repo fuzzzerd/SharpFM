@@ -27,7 +27,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         Calculation? url = null,
         Calculation? curlOptions = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SelectAll = selectAll;
         WithDialog = withDialog;

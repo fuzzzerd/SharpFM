@@ -18,7 +18,7 @@ public sealed class DeleteAllRecordsStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
 
     public DeleteAllRecordsStep(bool withdialog = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withdialog;
     }

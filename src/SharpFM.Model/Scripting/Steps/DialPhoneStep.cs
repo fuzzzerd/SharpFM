@@ -21,7 +21,7 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
         bool useDialPreferences = false,
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         UseDialPreferences = useDialPreferences;

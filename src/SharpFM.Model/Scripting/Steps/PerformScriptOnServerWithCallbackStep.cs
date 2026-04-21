@@ -28,7 +28,7 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
         NamedRef? callbackScript = null,
         Calculation? callbackParameter = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         State = state;
         Target = target ?? new PerformScriptTarget.ByReference(new NamedRef(0, ""));

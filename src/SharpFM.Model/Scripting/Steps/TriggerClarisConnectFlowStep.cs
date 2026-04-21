@@ -38,7 +38,7 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
         Calculation? curlOptions = null,
         string targetVariable = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         DontEncodeUrl = dontEncodeUrl;

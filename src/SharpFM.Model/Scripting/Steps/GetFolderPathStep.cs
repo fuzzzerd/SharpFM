@@ -25,7 +25,7 @@ public sealed class GetFolderPathStep : ScriptStep, IStepFactory
         Calculation? calculation2 = null,
         Calculation? calculation3 = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AllowFolderCreation = allowFolderCreation;
         Name = name;

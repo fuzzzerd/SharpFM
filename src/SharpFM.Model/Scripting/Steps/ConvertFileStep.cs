@@ -29,7 +29,7 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
         string dataSourceType = "File",
         bool verifySSLCertificates = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         OpenFile = openFile;
         SkipIndexes = skipIndexes;

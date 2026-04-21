@@ -23,7 +23,7 @@ public sealed class RevertTransactionStep : ScriptStep, IStepFactory
         Calculation? errorCode = null,
         Calculation? errorMessage = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Option = option;
         Condition = condition ?? new Calculation("");

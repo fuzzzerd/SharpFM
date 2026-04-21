@@ -21,7 +21,7 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
         string dataSourceType = "2",
         bool appendLineFeed = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         FileId = fileId ?? new Calculation("");
         DataSource = dataSource;

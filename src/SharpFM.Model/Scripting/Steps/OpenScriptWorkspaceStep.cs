@@ -13,7 +13,7 @@ public sealed class OpenScriptWorkspaceStep : ScriptStep, IStepFactory
     public const int XmlId = 88;
     public const string XmlName = "Open Script Workspace";
 
-    public OpenScriptWorkspaceStep(bool enabled = true) : base(null, enabled) { }
+    public OpenScriptWorkspaceStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

@@ -14,7 +14,7 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
     public bool UseAsFileDefault { get; set; }
 
     public InstallMenuSetStep(NamedRef? menuSet = null, bool useAsFileDefault = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         MenuSet = menuSet ?? new NamedRef(0, "");
         UseAsFileDefault = useAsFileDefault;

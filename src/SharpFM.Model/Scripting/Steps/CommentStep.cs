@@ -1,20 +1,19 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Xml.Linq;
-using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Registry;
 
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Typed domain representation of FileMaker's <c># (comment)</c> script
-/// step. A comment is always a single <c>Step</c> element whose
-/// <c>Text</c> may contain embedded newlines. SharpFM's display keeps
-/// the comment on a single editor line by substituting each <c>\n</c>
-/// with the visible <c>⏎</c> (U+23CE) return glyph — users never see
-/// a multi-line comment split across physical editor lines.
+/// <c># (comment)</c> script step. A comment's <c>Text</c> may contain
+/// embedded newlines; the display form substitutes each <c>\n</c> with a
+/// visible <c>⏎</c> (U+23CE) return glyph so the comment stays on a
+/// single editor line. The glyph is reversed to a real newline on parse.
 /// </summary>
-public sealed class CommentStep : ScriptStep
+public sealed class CommentStep : ScriptStep, IStepFactory
 {
+    public const int XmlId = 89;
+    public const string XmlName = "# (comment)";
+
     /// <summary>Canonical separator in the display form. Authored newlines
     /// in the XML <c>Text</c> element are substituted with this glyph when
     /// rendering display text, and reversed when parsing.</summary>
@@ -23,18 +22,9 @@ public sealed class CommentStep : ScriptStep
     public string Text { get; set; }
 
     public CommentStep(bool enabled, string text)
-        : base(StepCatalogLoader.ByName["# (comment)"], enabled)
+        : base(enabled)
     {
         Text = text;
-    }
-
-    [SuppressMessage("Usage", "CA2255:The 'ModuleInitializer' attribute should not be used in libraries",
-        Justification = "Register typed step factories on assembly load.")]
-    [ModuleInitializer]
-    internal static void Register()
-    {
-        StepXmlFactory.Register("# (comment)", FromXml);
-        StepDisplayFactory.Register("# (comment)", FromDisplayParams);
     }
 
     public static new ScriptStep FromXml(XElement step)
@@ -53,8 +43,8 @@ public sealed class CommentStep : ScriptStep
     public override XElement ToXml() =>
         new("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", 89),
-            new XAttribute("name", "# (comment)"),
+            new XAttribute("id", XmlId),
+            new XAttribute("name", XmlName),
             new XElement("Text", Text));
 
     public override string ToDisplayLine() =>
@@ -74,6 +64,19 @@ public sealed class CommentStep : ScriptStep
         var text = raw.Replace(ReturnGlyph.ToString(), "\n");
         return new CommentStep(enabled, text);
     }
+
+    public static StepMetadata Metadata { get; } = new()
+    {
+        Name = XmlName,
+        Id = XmlId,
+        Category = "control",
+        Params =
+        [
+            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text" },
+        ],
+        FromXml = FromXml,
+        FromDisplay = FromDisplayParams,
+    };
 
     // CR/LF/CRLF → LF. Critical because any raw CR leaking into the
     // display document would be interpreted as a visual line break by

@@ -14,7 +14,7 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
     public Calculation NextValue { get; set; }
 
     public SetNextSerialValueStep(FieldRef? field = null, Calculation? nextValue = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Field = field ?? FieldRef.ForField("", 0, "");
         NextValue = nextValue ?? new Calculation("");

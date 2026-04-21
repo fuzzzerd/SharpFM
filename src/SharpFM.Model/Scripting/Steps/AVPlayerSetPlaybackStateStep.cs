@@ -20,7 +20,7 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
     public string PlaybackState { get; set; }
 
     public AVPlayerSetPlaybackStateStep(string playbackState = "Stopped", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         PlaybackState = playbackState;
     }

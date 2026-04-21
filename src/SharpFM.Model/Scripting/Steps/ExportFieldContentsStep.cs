@@ -23,7 +23,7 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         bool createEmail = false,
         bool createDirectories = true,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Field = field;
         Path = path;

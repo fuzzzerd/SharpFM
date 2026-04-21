@@ -13,7 +13,7 @@ public sealed class ExitApplicationStep : ScriptStep, IStepFactory
     public const int XmlId = 44;
     public const string XmlName = "Exit Application";
 
-    public ExitApplicationStep(bool enabled = true) : base(null, enabled) { }
+    public ExitApplicationStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

@@ -13,7 +13,7 @@ public sealed class CopyAllRecordsRequestsStep : ScriptStep, IStepFactory
     public const int XmlId = 98;
     public const string XmlName = "Copy All Records/Requests";
 
-    public CopyAllRecordsRequestsStep(bool enabled = true) : base(null, enabled) { }
+    public CopyAllRecordsRequestsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

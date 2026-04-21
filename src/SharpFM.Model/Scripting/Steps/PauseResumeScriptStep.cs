@@ -19,7 +19,7 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         string pauseTime = "ForDuration",
         Calculation? durationSeconds = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         PauseTime = pauseTime;
         DurationSeconds = durationSeconds ?? new Calculation("");

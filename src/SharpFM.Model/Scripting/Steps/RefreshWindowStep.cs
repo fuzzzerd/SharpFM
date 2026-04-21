@@ -24,7 +24,7 @@ public sealed class RefreshWindowStep : ScriptStep, IStepFactory
         bool flushCachedJoinResults = false,
         bool flushCachedExternalData = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         FlushCachedJoinResults = flushCachedJoinResults;
         FlushCachedExternalData = flushCachedExternalData;

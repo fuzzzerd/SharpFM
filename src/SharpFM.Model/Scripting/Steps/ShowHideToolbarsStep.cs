@@ -26,7 +26,7 @@ public sealed class ShowHideToolbarsStep : ScriptStep, IStepFactory
         bool @lock = false,
         string action = "Hide",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         IncludeEditRecordToolbar = includeEditRecordToolbar;
         Lock = @lock;

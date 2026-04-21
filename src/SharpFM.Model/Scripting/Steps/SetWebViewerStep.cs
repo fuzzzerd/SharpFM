@@ -21,7 +21,7 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
         string action = "GoToURL",
         Calculation? uRL = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ObjectName = objectName ?? new Calculation("");
         Action = action;

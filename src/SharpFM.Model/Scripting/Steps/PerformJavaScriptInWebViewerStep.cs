@@ -26,7 +26,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         Calculation? functionName = null,
         IReadOnlyList<Calculation>? parameters = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ObjectName = objectName;
         FunctionName = functionName ?? new Calculation("\"\"");

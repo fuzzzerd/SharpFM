@@ -13,7 +13,7 @@ public sealed class UnsortRecordsStep : ScriptStep, IStepFactory
     public const int XmlId = 21;
     public const string XmlName = "Unsort Records";
 
-    public UnsortRecordsStep(bool enabled = true) : base(null, enabled) { }
+    public UnsortRecordsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

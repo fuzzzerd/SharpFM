@@ -13,7 +13,7 @@ public sealed class CheckFoundSetStep : ScriptStep, IStepFactory
     public const int XmlId = 20;
     public const string XmlName = "Check Found Set";
 
-    public CheckFoundSetStep(bool enabled = true) : base(null, enabled) { }
+    public CheckFoundSetStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

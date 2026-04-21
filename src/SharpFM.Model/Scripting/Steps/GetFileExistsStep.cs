@@ -14,7 +14,7 @@ public sealed class GetFileExistsStep : ScriptStep, IStepFactory
     public FieldRef? Target { get; set; }
 
     public GetFileExistsStep(string path = "", FieldRef? target = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Path = path;
         Target = target;

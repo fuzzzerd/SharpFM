@@ -13,7 +13,7 @@ public sealed class OmitRecordStep : ScriptStep, IStepFactory
     public const int XmlId = 25;
     public const string XmlName = "Omit Record";
 
-    public OmitRecordStep(bool enabled = true) : base(null, enabled) { }
+    public OmitRecordStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

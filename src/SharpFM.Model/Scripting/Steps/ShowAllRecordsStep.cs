@@ -13,7 +13,7 @@ public sealed class ShowAllRecordsStep : ScriptStep, IStepFactory
     public const int XmlId = 23;
     public const string XmlName = "Show All Records";
 
-    public ShowAllRecordsStep(bool enabled = true) : base(null, enabled) { }
+    public ShowAllRecordsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

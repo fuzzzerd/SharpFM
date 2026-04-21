@@ -20,7 +20,7 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
     public string Direction { get; set; }
 
     public ScrollWindowStep(string direction = "Home", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Direction = direction;
     }

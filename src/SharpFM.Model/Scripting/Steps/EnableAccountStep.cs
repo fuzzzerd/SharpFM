@@ -19,7 +19,7 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
         Calculation? accountName = null,
         string accountOperation = "Activate",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AccountName = accountName ?? new Calculation("");
         AccountOperation = accountOperation;

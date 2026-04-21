@@ -18,7 +18,7 @@ public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
 
     public DeletePortalRowStep(bool withdialog = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withdialog;
     }

@@ -13,7 +13,7 @@ public sealed class OpenFileOptionsStep : ScriptStep, IStepFactory
     public const int XmlId = 114;
     public const string XmlName = "Open File Options";
 
-    public OpenFileOptionsStep(bool enabled = true) : base(null, enabled) { }
+    public OpenFileOptionsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

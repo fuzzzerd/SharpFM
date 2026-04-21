@@ -18,7 +18,7 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
         bool withDialog = true,
         FieldRef? target = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Target = target ?? FieldRef.ForField("", 0, "");

@@ -16,7 +16,7 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
     public InstallPlugInFileStep(
         FieldRef? target = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Target = target ?? FieldRef.ForField("", 0, "");
     }

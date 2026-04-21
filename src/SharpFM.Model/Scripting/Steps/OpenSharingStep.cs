@@ -13,7 +13,7 @@ public sealed class OpenSharingStep : ScriptStep, IStepFactory
     public const int XmlId = 113;
     public const string XmlName = "Open Sharing";
 
-    public OpenSharingStep(bool enabled = true) : base(null, enabled) { }
+    public OpenSharingStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

@@ -22,7 +22,7 @@ public sealed class SaveRecordsAsSnapshotLinkStep : ScriptStep, IStepFactory
         string records = "BrowsedRecords",
         string outputPath = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         CreateFolders = createFolders;
         CreateEmail = createEmail;

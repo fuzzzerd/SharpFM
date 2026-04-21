@@ -18,7 +18,7 @@ public sealed class EnterPreviewModeStep : ScriptStep, IStepFactory
     public bool Pause { get; set; }
 
     public EnterPreviewModeStep(bool pause = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Pause = pause;
     }

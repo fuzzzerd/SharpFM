@@ -18,7 +18,7 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
         bool restoreStoredSettings = true,
         PageFormat? format = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         RestoreStoredSettings = restoreStoredSettings;

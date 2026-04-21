@@ -18,7 +18,7 @@ public sealed class EnterBrowseModeStep : ScriptStep, IStepFactory
     public bool Pause { get; set; }
 
     public EnterBrowseModeStep(bool pause = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Pause = pause;
     }

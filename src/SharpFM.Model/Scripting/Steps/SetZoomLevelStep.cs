@@ -24,7 +24,7 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
         bool @lock = false,
         string zoomLevel = "100",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Lock = @lock;
         ZoomLevel = zoomLevel;

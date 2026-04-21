@@ -25,7 +25,7 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
         FieldRef? target = null,
         StepChildBag? deviceOptions = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         InsertFrom = insertFrom;
         Target = target ?? FieldRef.ForField("", 0, "");

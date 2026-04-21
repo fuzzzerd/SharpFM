@@ -20,7 +20,7 @@ public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
     public string Action { get; set; }
 
     public ShowHideTextRulerStep(string action = "Show", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Action = action;
     }

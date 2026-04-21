@@ -13,7 +13,7 @@ public sealed class SelectAllStep : ScriptStep, IStepFactory
     public const int XmlId = 50;
     public const string XmlName = "Select All";
 
-    public SelectAllStep(bool enabled = true) : base(null, enabled) { }
+    public SelectAllStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

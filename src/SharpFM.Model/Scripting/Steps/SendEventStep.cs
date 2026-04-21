@@ -30,7 +30,7 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         string text = "",
         SendEventTarget? evt = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ContentType = contentType;
         Calculation = calculation;

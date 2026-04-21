@@ -19,7 +19,7 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
         FieldRef? target = null,
         Calculation? query = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Select = select;
         Target = target;

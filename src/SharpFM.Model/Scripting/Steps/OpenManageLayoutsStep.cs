@@ -13,7 +13,7 @@ public sealed class OpenManageLayoutsStep : ScriptStep, IStepFactory
     public const int XmlId = 151;
     public const string XmlName = "Open Manage Layouts";
 
-    public OpenManageLayoutsStep(bool enabled = true) : base(null, enabled) { }
+    public OpenManageLayoutsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

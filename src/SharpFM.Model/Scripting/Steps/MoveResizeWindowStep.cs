@@ -29,7 +29,7 @@ public sealed class MoveResizeWindowStep : ScriptStep, IStepFactory
         Calculation? top = null,
         Calculation? left = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Window = window;
         Name = name ?? new Calculation("");

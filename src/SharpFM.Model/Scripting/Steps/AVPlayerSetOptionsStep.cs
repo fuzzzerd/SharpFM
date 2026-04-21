@@ -37,7 +37,7 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
         string zoom = "Fit",
         string sequence = "None",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Presentation = presentation;
         DisableInteraction = disableInteraction;

@@ -13,7 +13,7 @@ public sealed class ShowOmittedOnlyStep : ScriptStep, IStepFactory
     public const int XmlId = 27;
     public const string XmlName = "Show Omitted Only";
 
-    public ShowOmittedOnlyStep(bool enabled = true) : base(null, enabled) { }
+    public ShowOmittedOnlyStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

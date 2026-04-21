@@ -21,7 +21,7 @@ public sealed class ReLoginStep : ScriptStep, IStepFactory
         Calculation? accountName = null,
         Calculation? password = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         AccountName = accountName ?? new Calculation("");

@@ -33,7 +33,7 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
         NamedRef? table = null,
         IReadOnlyList<ImportTargetField>? targetFields = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         RestoreStoredOrder = restoreStoredOrder;

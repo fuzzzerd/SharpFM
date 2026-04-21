@@ -13,7 +13,7 @@ public sealed class CorrectWordStep : ScriptStep, IStepFactory
     public const int XmlId = 106;
     public const string XmlName = "Correct Word";
 
-    public CorrectWordStep(bool enabled = true) : base(null, enabled) { }
+    public CorrectWordStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

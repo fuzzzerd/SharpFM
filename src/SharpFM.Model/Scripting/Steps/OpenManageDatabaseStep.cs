@@ -13,7 +13,7 @@ public sealed class OpenManageDatabaseStep : ScriptStep, IStepFactory
     public const int XmlId = 38;
     public const string XmlName = "Open Manage Database";
 
-    public OpenManageDatabaseStep(bool enabled = true) : base(null, enabled) { }
+    public OpenManageDatabaseStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

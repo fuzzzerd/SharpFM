@@ -13,7 +13,7 @@ public sealed class OpenHostsStep : ScriptStep, IStepFactory
     public const int XmlId = 118;
     public const string XmlName = "Open Hosts";
 
-    public OpenHostsStep(bool enabled = true) : base(null, enabled) { }
+    public OpenHostsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

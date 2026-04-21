@@ -25,7 +25,7 @@ public sealed class AddAccountStep : ScriptStep, IStepFactory
         string privilegeSet = "",
         bool expirePassword = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AuthenticateVia = authenticateVia;
         AccountName = accountName ?? new Calculation("");

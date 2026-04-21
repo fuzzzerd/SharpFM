@@ -18,7 +18,7 @@ public sealed class AllowFormattingBarStep : ScriptStep, IStepFactory
     public bool Set { get; set; }
 
     public AllowFormattingBarStep(bool set = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Set = set;
     }

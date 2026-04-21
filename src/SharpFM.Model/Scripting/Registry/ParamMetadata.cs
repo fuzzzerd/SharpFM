@@ -4,12 +4,9 @@ namespace SharpFM.Model.Scripting.Registry;
 
 /// <summary>
 /// Typed description of a single script-step parameter, owned by the
-/// parent POCO's <see cref="StepMetadata"/>. Intentionally leaner than
-/// the legacy <c>StepParam</c> — fields that only catalog-driven helpers
-/// consumed (<c>flagStyle</c>, <c>hrValues</c>, <c>hrEnumValues</c>,
-/// <c>wrapperElement</c>, <c>parentElement</c>, <c>invertedHr</c>,
-/// <c>monacoSnippet</c>, <c>snippetFile</c>, <c>status</c>) are dropped.
-/// Add them back per-POCO if a concrete step needs them.
+/// parent POCO's <see cref="StepMetadata"/>. Each POCO populates only
+/// the fields relevant to its own wire shape; consumers (completion,
+/// validation) read whatever's present.
 /// </summary>
 public sealed record ParamMetadata
 {

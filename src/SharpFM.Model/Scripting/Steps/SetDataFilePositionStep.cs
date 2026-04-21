@@ -19,7 +19,7 @@ public sealed class SetDataFilePositionStep : ScriptStep, IStepFactory
         Calculation? fileID = null,
         Calculation? newPosition = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         FileID = fileID ?? new Calculation("");
         NewPosition = newPosition ?? new Calculation("");

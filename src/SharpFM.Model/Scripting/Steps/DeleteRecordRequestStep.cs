@@ -18,7 +18,7 @@ public sealed class DeleteRecordRequestStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
 
     public DeleteRecordRequestStep(bool withdialog = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withdialog;
     }

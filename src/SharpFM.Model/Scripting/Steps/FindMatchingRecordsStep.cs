@@ -13,7 +13,7 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
     public FieldRef? Field { get; set; }
 
     public FindMatchingRecordsStep(string mode = "FindMatchingReplace", FieldRef? field = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Mode = mode;
         Field = field;

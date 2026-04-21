@@ -12,7 +12,7 @@ public sealed class PerformFindByNaturalLanguageStep : ScriptStep, IStepFactory
     public StepChildBag Children { get; set; }
 
     public PerformFindByNaturalLanguageStep(StepChildBag? children = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Children = children ?? new StepChildBag();
     }

@@ -34,8 +34,8 @@ public static class StepXmlFactory
     /// <summary>
     /// Build a <see cref="ScriptStep"/> from a raw <c>&lt;Step&gt;</c>
     /// element. Returns a typed POCO when the step name is registered,
-    /// otherwise wraps the element in a <see cref="RawStep"/> (with the
-    /// catalog definition attached when available).
+    /// otherwise wraps the element in a <see cref="RawStep"/> for
+    /// forward-compat preservation of unknown step elements.
     /// </summary>
     public static ScriptStep Create(XElement stepElement)
     {
@@ -44,17 +44,6 @@ public static class StepXmlFactory
         if (_typed.TryGetValue(name, out var creator))
             return creator(stepElement);
 
-        var definition = LookupDefinition(name, stepElement.Attribute("id")?.Value);
-        return new RawStep(stepElement, definition);
-    }
-
-    private static StepDefinition? LookupDefinition(string name, string? idStr)
-    {
-        if (StepCatalogLoader.ByName.TryGetValue(name, out var byName))
-            return byName;
-        if (idStr != null && int.TryParse(idStr, out var id) &&
-            StepCatalogLoader.ById.TryGetValue(id, out var byId))
-            return byId;
-        return null;
+        return new RawStep(stepElement);
     }
 }

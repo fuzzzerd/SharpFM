@@ -21,7 +21,7 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
         Calculation? inputText = null,
         FieldRef? target = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AccountName = accountName ?? new Calculation("");
         Model = model ?? new Calculation("");

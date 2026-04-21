@@ -18,7 +18,7 @@ public sealed class AllowUserAbortStep : ScriptStep, IStepFactory
     public bool Set { get; set; }
 
     public AllowUserAbortStep(bool set = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Set = set;
     }

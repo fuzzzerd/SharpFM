@@ -19,7 +19,7 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
         Calculation? calculation = null,
         Calculation? calculation2 = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Calculation = calculation ?? new Calculation("");
         Calculation2 = calculation2 ?? new Calculation("");

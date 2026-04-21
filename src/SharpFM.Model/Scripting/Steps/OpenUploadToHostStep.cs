@@ -13,7 +13,7 @@ public sealed class OpenUploadToHostStep : ScriptStep, IStepFactory
     public const int XmlId = 172;
     public const string XmlName = "Open Upload to Host";
 
-    public OpenUploadToHostStep(bool enabled = true) : base(null, enabled) { }
+    public OpenUploadToHostStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

@@ -13,7 +13,7 @@ public sealed class PerformFindStep : ScriptStep, IStepFactory
     public FindRequestList? Query { get; set; }
 
     public PerformFindStep(bool restoreStoredRequests = true, FindRequestList? query = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         RestoreStoredRequests = restoreStoredRequests;
         Query = query;

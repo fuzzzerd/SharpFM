@@ -19,7 +19,7 @@ public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
         bool logging = false,
         Calculation? customDebugInfo = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Logging = logging;
         CustomDebugInfo = customDebugInfo ?? new Calculation("");

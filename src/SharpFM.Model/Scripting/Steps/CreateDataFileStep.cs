@@ -18,7 +18,7 @@ public sealed class CreateDataFileStep : ScriptStep, IStepFactory
         string universalPathList = "",
         bool createFolders = true,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         UniversalPathList = universalPathList;
         CreateFolders = createFolders;

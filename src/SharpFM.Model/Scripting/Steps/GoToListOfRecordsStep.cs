@@ -25,7 +25,7 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
         Calculation? rowList = null,
         NewWindowStyles? windowStyles = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ShowInNewWindow = showInNewWindow;
         LayoutDestination = layoutDestination;

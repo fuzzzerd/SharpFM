@@ -31,7 +31,7 @@ public sealed class ConfigurePromptTemplateStep : ScriptStep, IStepFactory
         Calculation? rAGPrompt = null,
         bool option = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         TemplateName = templateName ?? new Calculation("");
         ModelProvider = modelProvider;

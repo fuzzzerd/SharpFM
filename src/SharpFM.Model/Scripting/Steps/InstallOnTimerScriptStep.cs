@@ -19,7 +19,7 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
     public Calculation? Interval { get; set; }
 
     public InstallOnTimerScriptStep(NamedRef? script = null, Calculation? interval = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Script = script;
         Interval = interval;

@@ -30,7 +30,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         Calculation? calculation = null,
         SerialNumberOptions? serialOptions = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Field = field ?? FieldRef.ForField("", 0, "");

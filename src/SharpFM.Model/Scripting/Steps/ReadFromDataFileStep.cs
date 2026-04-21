@@ -21,7 +21,7 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
         FieldRef? target = null,
         string dataSourceType = "3",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         FileId = fileId ?? new Calculation("");
         Count = count;

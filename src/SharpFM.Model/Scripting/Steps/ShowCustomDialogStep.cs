@@ -41,7 +41,7 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         Calculation message,
         IReadOnlyList<ShowCustomDialogButton> buttons,
         IReadOnlyList<ShowCustomDialogInputField>? inputFields = null)
-        : base(null, enabled)
+        : base(enabled)
     {
         Title = title;
         Message = message;

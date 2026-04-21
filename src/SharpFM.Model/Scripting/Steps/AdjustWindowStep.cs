@@ -20,7 +20,7 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
     public string WindowState { get; set; }
 
     public AdjustWindowStep(string windowState = "ResizeToFit", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WindowState = windowState;
     }

@@ -19,7 +19,7 @@ public sealed class RefreshObjectStep : ScriptStep, IStepFactory
         Calculation? objectName = null,
         Calculation? repetition = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ObjectName = objectName ?? new Calculation("");
         Repetition = repetition ?? new Calculation("");

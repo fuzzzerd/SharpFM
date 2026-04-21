@@ -32,7 +32,7 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
     public StepChildBag Children { get; set; }
 
     public SendMailStep(bool withDialog = true, StepChildBag? children = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Children = children ?? new StepChildBag();

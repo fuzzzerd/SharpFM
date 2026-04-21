@@ -18,7 +18,7 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
         bool restoreStoredOrder = true,
         SortList? sort = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         RestoreStoredOrder = restoreStoredOrder;

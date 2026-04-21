@@ -20,7 +20,7 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
     public string Text { get; set; }
 
     public InsertTextStep(bool selectAll = true, FieldRef? target = null, string text = "", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SelectAll = selectAll;
         Target = target;

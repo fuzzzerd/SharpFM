@@ -27,7 +27,7 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
         bool verbose = false,
         bool truncateMessages = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Logging = logging;
         FileName = fileName;

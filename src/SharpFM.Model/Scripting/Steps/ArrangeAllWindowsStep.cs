@@ -20,7 +20,7 @@ public sealed class ArrangeAllWindowsStep : ScriptStep, IStepFactory
     public string WindowArrangement { get; set; }
 
     public ArrangeAllWindowsStep(string windowArrangement = "Cascade Window", bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WindowArrangement = windowArrangement;
     }

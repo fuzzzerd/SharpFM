@@ -31,7 +31,7 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
     public Animation? Animation { get; set; }
 
     public GoToLayoutStep(bool enabled, LayoutTarget target, Animation? animation = null)
-        : base(null, enabled)
+        : base(enabled)
     {
         Target = target;
         Animation = animation;

@@ -13,7 +13,7 @@ public sealed class CheckRecordStep : ScriptStep, IStepFactory
     public const int XmlId = 19;
     public const string XmlName = "Check Record";
 
-    public CheckRecordStep(bool enabled = true) : base(null, enabled) { }
+    public CheckRecordStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

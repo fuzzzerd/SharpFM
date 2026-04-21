@@ -24,7 +24,7 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         PerformScriptTarget? target = null,
         Calculation? parameter = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WaitForCompletion = waitForCompletion;
         Target = target ?? new PerformScriptTarget.ByReference(new NamedRef(0, ""));

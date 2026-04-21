@@ -13,7 +13,7 @@ public sealed class OpenFindReplaceStep : ScriptStep, IStepFactory
     public const int XmlId = 129;
     public const string XmlName = "Open Find/Replace";
 
-    public OpenFindReplaceStep(bool enabled = true) : base(null, enabled) { }
+    public OpenFindReplaceStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

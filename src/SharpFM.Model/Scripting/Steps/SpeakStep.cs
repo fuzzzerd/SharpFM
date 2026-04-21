@@ -14,7 +14,7 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
     public SpeechOptions? Options { get; set; }
 
     public SpeakStep(Calculation? text = null, SpeechOptions? options = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Text = text ?? new Calculation("");
         Options = options;

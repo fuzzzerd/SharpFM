@@ -14,7 +14,7 @@ public sealed class SortRecordsByFieldStep : ScriptStep, IStepFactory
     public FieldRef? Field { get; set; }
 
     public SortRecordsByFieldStep(string sortOrder = "SortAscending", FieldRef? field = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SortOrder = sortOrder;
         Field = field;

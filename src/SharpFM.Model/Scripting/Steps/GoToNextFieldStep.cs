@@ -13,7 +13,7 @@ public sealed class GoToNextFieldStep : ScriptStep, IStepFactory
     public const int XmlId = 5;
     public const string XmlName = "Go to Next Field";
 
-    public GoToNextFieldStep(bool enabled = true) : base(null, enabled) { }
+    public GoToNextFieldStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

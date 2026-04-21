@@ -27,7 +27,7 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
         FieldRef? target = null,
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SelectAll = selectAll;
         Target = target;

@@ -15,12 +15,16 @@ public class ScriptValidatorTests
     }
 
     [Fact]
-    public void UnknownStep_ProducesError()
+    public void UnknownStep_ProducesWarning()
     {
+        // Unknown steps are preserved verbatim via RawStep; the warning
+        // alerts the user that display-text edits won't round-trip and
+        // they should go through the XML editor instead.
         var diagnostics = ScriptValidator.Validate("FakeStep [ param ]");
         Assert.Single(diagnostics);
-        Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostics[0].Severity);
         Assert.Contains("Unknown script step", diagnostics[0].Message);
+        Assert.Contains("XML editor", diagnostics[0].Message);
     }
 
     [Fact]
@@ -73,28 +77,25 @@ public class ScriptValidatorTests
     [Fact]
     public void GetValidValues_BooleanParam_ReturnsOnOff()
     {
-        var param = new StepParam { Type = "boolean" };
-        var valid = ScriptValidator.GetValidValues(param);
+        var param = new SharpFM.Model.Scripting.Registry.ParamMetadata
+        {
+            Name = "x", XmlElement = "X", Type = "boolean",
+        };
+        var valid = SharpFM.Model.Scripting.Registry.StepRegistry.GetValidValues(param);
         Assert.Contains("On", valid);
         Assert.Contains("Off", valid);
     }
 
     [Fact]
-    public void GetValidValues_BooleanWithHrEnumValues_ReturnsThose()
+    public void GetValidValues_ExplicitValidValues_ReturnsThose()
     {
-        var param = new StepParam
+        var param = new SharpFM.Model.Scripting.Registry.ParamMetadata
         {
-            Type = "boolean",
-            HrEnumValues = new System.Collections.Generic.Dictionary<string, string?>
-            {
-                { "True", "On" },
-                { "False", "Off" }
-            }
+            Name = "x", XmlElement = "X", Type = "enum",
+            ValidValues = ["Alpha", "Beta"],
         };
-        var valid = ScriptValidator.GetValidValues(param);
-        Assert.Contains("On", valid);
-        Assert.Contains("Off", valid);
-        Assert.DoesNotContain("True", valid);
+        var valid = SharpFM.Model.Scripting.Registry.StepRegistry.GetValidValues(param);
+        Assert.Equal(new[] { "Alpha", "Beta" }, valid);
     }
 
     [Fact]

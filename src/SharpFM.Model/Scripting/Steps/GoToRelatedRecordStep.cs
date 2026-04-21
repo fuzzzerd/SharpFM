@@ -37,7 +37,7 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         NamedRef? layout = null,
         string animation = "None",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ShowOnlyRelated = showOnlyRelated;
         MatchAllRecords = matchAllRecords;

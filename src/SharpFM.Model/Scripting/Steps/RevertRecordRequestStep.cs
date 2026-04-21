@@ -18,7 +18,7 @@ public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
 
     public RevertRecordRequestStep(bool withdialog = true, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withdialog;
     }

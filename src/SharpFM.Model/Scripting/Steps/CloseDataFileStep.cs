@@ -17,7 +17,7 @@ public sealed class CloseDataFileStep : ScriptStep, IStepFactory
     public CloseDataFileStep(
         Calculation? fileID = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         FileID = fileID ?? new Calculation("");
     }

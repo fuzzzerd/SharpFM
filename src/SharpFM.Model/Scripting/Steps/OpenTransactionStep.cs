@@ -32,7 +32,7 @@ public sealed class OpenTransactionStep : ScriptStep, IStepFactory
         bool skipDataEntryValidation = false,
         bool overrideESSLockingConflicts = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SkipAutoEnterOptions = skipAutoEnterOptions;
         SkipDataEntryValidation = skipDataEntryValidation;

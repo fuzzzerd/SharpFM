@@ -18,7 +18,7 @@ public sealed class SetLayoutObjectAnimationStep : ScriptStep, IStepFactory
     public bool Animation { get; set; }
 
     public SetLayoutObjectAnimationStep(bool animation = true, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Animation = animation;
     }

@@ -17,7 +17,7 @@ public sealed class DeleteAccountStep : ScriptStep, IStepFactory
     public DeleteAccountStep(
         Calculation? accountName = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AccountName = accountName ?? new Calculation("");
     }

@@ -21,7 +21,7 @@ public sealed class ResetAccountPasswordStep : ScriptStep, IStepFactory
         Calculation? password = null,
         bool expirePassword = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AccountName = accountName ?? new Calculation("");
         Password = password ?? new Calculation("");

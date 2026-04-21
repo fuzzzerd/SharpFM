@@ -13,7 +13,7 @@ public sealed class FlushCacheToDiskStep : ScriptStep, IStepFactory
     public const int XmlId = 102;
     public const string XmlName = "Flush Cache to Disk";
 
-    public FlushCacheToDiskStep(bool enabled = true) : base(null, enabled) { }
+    public FlushCacheToDiskStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

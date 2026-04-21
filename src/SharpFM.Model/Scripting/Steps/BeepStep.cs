@@ -19,7 +19,7 @@ public sealed class BeepStep : ScriptStep, IStepFactory
     public const int XmlId = 93;
     public const string XmlName = "Beep";
 
-    public BeepStep(bool enabled = true) : base(null, enabled) { }
+    public BeepStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

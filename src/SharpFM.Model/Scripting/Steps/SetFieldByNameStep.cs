@@ -19,7 +19,7 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
         Calculation? targetFieldName = null,
         Calculation? calculatedResult = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         TargetFieldName = targetFieldName ?? new Calculation("");
         CalculatedResult = calculatedResult ?? new Calculation("");

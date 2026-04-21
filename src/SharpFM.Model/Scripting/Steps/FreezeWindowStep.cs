@@ -13,7 +13,7 @@ public sealed class FreezeWindowStep : ScriptStep, IStepFactory
     public const int XmlId = 79;
     public const string XmlName = "Freeze Window";
 
-    public FreezeWindowStep(bool enabled = true) : base(null, enabled) { }
+    public FreezeWindowStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

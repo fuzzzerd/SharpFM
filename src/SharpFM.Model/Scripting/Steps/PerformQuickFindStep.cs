@@ -17,7 +17,7 @@ public sealed class PerformQuickFindStep : ScriptStep, IStepFactory
     public PerformQuickFindStep(
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Calculation = calculation ?? new Calculation("");
     }

@@ -13,7 +13,7 @@ public sealed class ClosePopoverStep : ScriptStep, IStepFactory
     public const int XmlId = 169;
     public const string XmlName = "Close Popover";
 
-    public ClosePopoverStep(bool enabled = true) : base(null, enabled) { }
+    public ClosePopoverStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

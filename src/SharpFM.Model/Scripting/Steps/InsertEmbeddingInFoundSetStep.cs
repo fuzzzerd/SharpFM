@@ -36,7 +36,7 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         bool showSummary = false,
         Calculation? parameters = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         AccountName = accountName ?? new Calculation("");
         Model = model ?? new Calculation("");

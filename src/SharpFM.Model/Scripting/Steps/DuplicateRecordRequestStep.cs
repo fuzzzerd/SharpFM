@@ -13,7 +13,7 @@ public sealed class DuplicateRecordRequestStep : ScriptStep, IStepFactory
     public const int XmlId = 8;
     public const string XmlName = "Duplicate Record/Request";
 
-    public DuplicateRecordRequestStep(bool enabled = true) : base(null, enabled) { }
+    public DuplicateRecordRequestStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

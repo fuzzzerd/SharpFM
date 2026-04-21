@@ -13,7 +13,7 @@ public sealed class EditUserDictionaryStep : ScriptStep, IStepFactory
     public const int XmlId = 109;
     public const string XmlName = "Edit User Dictionary";
 
-    public EditUserDictionaryStep(bool enabled = true) : base(null, enabled) { }
+    public EditUserDictionaryStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

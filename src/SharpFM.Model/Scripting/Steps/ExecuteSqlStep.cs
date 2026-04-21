@@ -14,7 +14,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
     public SqlProfile? Profile { get; set; }
 
     public ExecuteSqlStep(bool withDialog = true, SqlProfile? profile = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Profile = profile;

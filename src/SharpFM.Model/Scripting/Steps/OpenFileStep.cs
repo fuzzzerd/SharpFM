@@ -14,7 +14,7 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
     public FileReference? File { get; set; }
 
     public OpenFileStep(bool openHidden = false, FileReference? file = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         OpenHidden = openHidden;
         File = file;

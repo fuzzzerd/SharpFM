@@ -37,7 +37,7 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
         Calculation? systemPrompt = null, Calculation? userPrompt = null, Calculation? assistantPrompt = null,
         FieldRef? completionField = null, FieldRef? sourceField = null, NamedRef? table = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         OptionEnableTable = optionEnableTable;
         CreateDirectories = createDirectories;

@@ -21,7 +21,7 @@ public sealed class SelectWindowStep : ScriptStep, IStepFactory
         string window = "ByName",
         Calculation? name = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         CurrentFile = currentFile;
         Window = window;

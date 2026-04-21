@@ -12,7 +12,7 @@ public sealed class ConfigureRegionMonitorScriptStep : ScriptStep, IStepFactory
     public StepChildBag Children { get; set; }
 
     public ConfigureRegionMonitorScriptStep(StepChildBag? children = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Children = children ?? new StepChildBag();
     }

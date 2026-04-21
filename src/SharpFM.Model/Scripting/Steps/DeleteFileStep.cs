@@ -18,7 +18,7 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
 
     public string TargetFile { get; set; }
 
-    public DeleteFileStep(string targetFile = "", bool enabled = true) : base(null, enabled)
+    public DeleteFileStep(string targetFile = "", bool enabled = true) : base(enabled)
     {
         TargetFile = targetFile;
     }

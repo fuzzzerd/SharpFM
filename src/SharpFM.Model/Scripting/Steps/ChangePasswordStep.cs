@@ -21,7 +21,7 @@ public sealed class ChangePasswordStep : ScriptStep, IStepFactory
         Calculation? password = null,
         bool withDialog = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         OldPassword = oldPassword ?? new Calculation("");
         Password = password ?? new Calculation("");

@@ -18,7 +18,7 @@ public sealed class SetUseSystemFormatsStep : ScriptStep, IStepFactory
     public bool UseSystemFormats { get; set; }
 
     public SetUseSystemFormatsStep(bool usesystemformats = true, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         UseSystemFormats = usesystemformats;
     }

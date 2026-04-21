@@ -13,7 +13,7 @@ public sealed class OpenManageContainersStep : ScriptStep, IStepFactory
     public const int XmlId = 156;
     public const string XmlName = "Open Manage Containers";
 
-    public OpenManageContainersStep(bool enabled = true) : base(null, enabled) { }
+    public OpenManageContainersStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

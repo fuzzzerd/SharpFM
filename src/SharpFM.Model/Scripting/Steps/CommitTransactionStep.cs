@@ -13,7 +13,7 @@ public sealed class CommitTransactionStep : ScriptStep, IStepFactory
     public const int XmlId = 206;
     public const string XmlName = "Commit Transaction";
 
-    public CommitTransactionStep(bool enabled = true) : base(null, enabled) { }
+    public CommitTransactionStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

@@ -13,7 +13,7 @@ public sealed class OpenEditSavedFindsStep : ScriptStep, IStepFactory
     public const int XmlId = 149;
     public const string XmlName = "Open Edit Saved Finds";
 
-    public OpenEditSavedFindsStep(bool enabled = true) : base(null, enabled) { }
+    public OpenEditSavedFindsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

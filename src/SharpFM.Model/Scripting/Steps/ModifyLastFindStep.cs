@@ -13,7 +13,7 @@ public sealed class ModifyLastFindStep : ScriptStep, IStepFactory
     public const int XmlId = 24;
     public const string XmlName = "Modify Last Find";
 
-    public ModifyLastFindStep(bool enabled = true) : base(null, enabled) { }
+    public ModifyLastFindStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

@@ -13,7 +13,7 @@ public sealed class OpenRecordRequestStep : ScriptStep, IStepFactory
     public const int XmlId = 133;
     public const string XmlName = "Open Record/Request";
 
-    public OpenRecordRequestStep(bool enabled = true) : base(null, enabled) { }
+    public OpenRecordRequestStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

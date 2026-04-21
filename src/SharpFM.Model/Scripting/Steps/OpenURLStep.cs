@@ -21,7 +21,7 @@ public sealed class OpenURLStep : ScriptStep, IStepFactory
         bool inExternalBrowser = false,
         Calculation? calculation = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         InExternalBrowser = inExternalBrowser;

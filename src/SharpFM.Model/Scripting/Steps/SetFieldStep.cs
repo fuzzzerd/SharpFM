@@ -18,7 +18,7 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
     public Calculation Expression { get; set; }
 
     public SetFieldStep(bool enabled, FieldRef target, Calculation expression)
-        : base(null, enabled)
+        : base(enabled)
     {
         Target = target;
         Expression = expression;

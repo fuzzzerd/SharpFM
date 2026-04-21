@@ -26,7 +26,7 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
     public bool CaptureErrors { get; set; }
 
     public SetErrorCaptureStep(bool captureErrors = false, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         CaptureErrors = captureErrors;
     }

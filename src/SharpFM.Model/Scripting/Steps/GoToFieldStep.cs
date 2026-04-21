@@ -18,7 +18,7 @@ public sealed class GoToFieldStep : ScriptStep, IStepFactory
         bool selectPerform = true,
         FieldRef? target = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SelectPerform = selectPerform;
         Target = target ?? FieldRef.ForField("", 0, "");

@@ -28,7 +28,7 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
         bool skipDataEntryValidation = false,
         bool forceCommit = false,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         SkipDataEntryValidation = skipDataEntryValidation;

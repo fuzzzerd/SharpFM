@@ -168,9 +168,12 @@ public class FmScriptModelTests
         Assert.Equal(script.Steps.Count, script2.Steps.Count);
         for (int i = 0; i < script.Steps.Count; i++)
         {
+            // Each corresponding pair should share the same runtime POCO
+            // type — that's what round-tripping preserves now that every
+            // step has a typed factory.
             Assert.Equal(
-                script.Steps[i].Definition?.Name,
-                script2.Steps[i].Definition?.Name);
+                script.Steps[i].GetType(),
+                script2.Steps[i].GetType());
             Assert.Equal(
                 script.Steps[i].Enabled,
                 script2.Steps[i].Enabled);

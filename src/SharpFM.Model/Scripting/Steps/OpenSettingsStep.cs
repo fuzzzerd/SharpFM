@@ -13,7 +13,7 @@ public sealed class OpenSettingsStep : ScriptStep, IStepFactory
     public const int XmlId = 105;
     public const string XmlName = "Open Settings";
 
-    public OpenSettingsStep(bool enabled = true) : base(null, enabled) { }
+    public OpenSettingsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

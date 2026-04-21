@@ -15,7 +15,7 @@ public class ScriptStepTests
     {
         var el = MakeStep("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>hello world</Text></Step>");
         var step = ScriptStep.FromXml(el);
-        Assert.Equal("# (comment)", step.Definition?.Name);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.CommentStep>(step);
         Assert.Equal("# hello world", step.ToDisplayLine());
     }
 
@@ -23,7 +23,7 @@ public class ScriptStepTests
     public void Comment_FromDisplayLine_ToXml()
     {
         var step = ScriptTextParser.FromDisplayLine("# hello world");
-        Assert.Equal("# (comment)", step.Definition?.Name);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.CommentStep>(step);
         var xml = step.ToXml();
         Assert.Equal("hello world", xml.Element("Text")?.Value);
     }
@@ -168,15 +168,14 @@ public class ScriptStepTests
     [Fact]
     public void UnknownStep_RawStep_RoundTripsVerbatim()
     {
-        // Unknown steps (not present in the catalog) are wrapped in a
-        // RawStep with a null Definition. The source element is cloned
-        // and preserved, so ToXml returns a structurally identical
-        // element — name, id, children, and all — rather than being
-        // rewritten as a placeholder comment.
+        // Unknown step names are wrapped in a RawStep. The source element
+        // is cloned and preserved, so ToXml returns a structurally
+        // identical element — name, id, children, and all — rather than
+        // being rewritten as a placeholder comment.
         var el = MakeStep("<Step enable=\"True\" id=\"9999\" name=\"FutureStep\"><Foo>bar</Foo></Step>");
         var step = ScriptStep.FromXml(el);
 
-        Assert.Null(step.Definition);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.RawStep>(step);
         Assert.Contains("FutureStep", step.ToDisplayLine());
 
         var xml = step.ToXml();
@@ -202,19 +201,23 @@ public class ScriptStepTests
         // the original text as a <RawText> child. ToXml emits the
         // RawStep verbatim — no silent rewriting as a comment.
         var step = ScriptTextParser.FromDisplayLine("some random text");
-        Assert.Null(step.Definition);
+        Assert.IsType<SharpFM.Model.Scripting.Steps.RawStep>(step);
 
         var xml = step.ToXml();
         Assert.Equal("some random text", xml.Element("RawText")?.Value);
     }
 
     [Fact]
-    public void Validate_UnknownStep_ProducesError()
+    public void Validate_UnknownStep_ProducesWarning()
     {
+        // Unknown steps are preserved as RawStep and flagged with a
+        // yellow-underline Warning that points the user at the XML
+        // editor for edits. Display-text edits won't round-trip.
         var el = MakeStep("<Step enable=\"True\" id=\"9999\" name=\"FutureStep\"/>");
         var step = ScriptStep.FromXml(el);
         var diagnostics = step.Validate(0);
         Assert.Single(diagnostics);
-        Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostics[0].Severity);
+        Assert.Contains("XML editor", diagnostics[0].Message);
     }
 }

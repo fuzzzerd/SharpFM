@@ -19,7 +19,7 @@ public sealed class RenameFileStep : ScriptStep, IStepFactory
         string sourceFile = "",
         Calculation? newName = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SourceFile = sourceFile;
         NewName = newName ?? new Calculation("");

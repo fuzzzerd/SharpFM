@@ -26,7 +26,7 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         Calculation? findText = null,
         Calculation? replaceText = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Operation = operation ?? FindReplaceOperation.Default();

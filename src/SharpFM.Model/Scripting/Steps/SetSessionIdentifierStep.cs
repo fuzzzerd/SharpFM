@@ -17,7 +17,7 @@ public sealed class SetSessionIdentifierStep : ScriptStep, IStepFactory
     public SetSessionIdentifierStep(
         Calculation? sessionIdentifier = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         SessionIdentifier = sessionIdentifier ?? new Calculation("");
     }

@@ -37,7 +37,7 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
         IReadOnlyList<ExportEntry>? exportEntries = null,
         IReadOnlyList<SummaryFieldEntry>? summaryFields = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         CreateDirectories = createDirectories;

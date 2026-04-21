@@ -13,7 +13,7 @@ public sealed class OpenFavoritesStep : ScriptStep, IStepFactory
     public const int XmlId = 183;
     public const string XmlName = "Open Favorites";
 
-    public OpenFavoritesStep(bool enabled = true) : base(null, enabled) { }
+    public OpenFavoritesStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

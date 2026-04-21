@@ -21,7 +21,7 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
     public string? TableComment { get; set; }
 
     public TruncateTableStep(bool withDialog = true, NamedRef? table = null, string? tableComment = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         WithDialog = withDialog;
         Table = table ?? new NamedRef(-1, "<Current Table>");

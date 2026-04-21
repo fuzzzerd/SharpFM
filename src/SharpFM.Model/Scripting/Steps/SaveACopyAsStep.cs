@@ -24,7 +24,7 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
         string copyType = "Copy",
         string outputPath = "",
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         CreateFolders = createFolders;
         AutomaticallyOpen = automaticallyOpen;

@@ -13,7 +13,7 @@ public sealed class OpenManageValueListsStep : ScriptStep, IStepFactory
     public const int XmlId = 112;
     public const string XmlName = "Open Manage Value Lists";
 
-    public OpenManageValueListsStep(bool enabled = true) : base(null, enabled) { }
+    public OpenManageValueListsStep(bool enabled = true) : base(enabled) { }
 
     public override XElement ToXml() =>
         new("Step",

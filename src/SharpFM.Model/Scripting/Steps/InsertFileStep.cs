@@ -21,7 +21,7 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         FieldRef? target = null,
         InsertFileDialogOptions? dialogOptions = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Path = path;
         PathType = pathType;

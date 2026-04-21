@@ -19,7 +19,7 @@ public sealed class SaveACopyAsAddOnPackageStep : ScriptStep, IStepFactory
         bool replaceUUIDs = false,
         Calculation? windowName = null,
         bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         ReplaceUUIDs = replaceUUIDs;
         WindowName = windowName ?? new Calculation("");

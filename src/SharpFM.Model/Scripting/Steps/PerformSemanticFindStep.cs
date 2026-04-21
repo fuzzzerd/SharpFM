@@ -12,7 +12,7 @@ public sealed class PerformSemanticFindStep : ScriptStep, IStepFactory
     public StepChildBag Children { get; set; }
 
     public PerformSemanticFindStep(StepChildBag? children = null, bool enabled = true)
-        : base(null, enabled)
+        : base(enabled)
     {
         Children = children ?? new StepChildBag();
     }
