@@ -21,7 +21,7 @@ public class SealedStepPreservationTests
     // empty at launch) is sealed. Perfect canary.
     private const string ScriptWithSealedHaltScriptXml = @"<fmxmlsnippet type=""FMObjectList"">
         <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-        <Step enable=""True"" id=""90"" name=""Halt Script""></Step>
+        <Step enable=""True"" id=""85"" name=""Allow User Abort""></Step>
         <Step enable=""True"" id=""70"" name=""End If""></Step>
     </fmxmlsnippet>";
 
@@ -34,8 +34,8 @@ public class SealedStepPreservationTests
         var steps = doc.Root!.Elements("Step").ToArray();
 
         Assert.Equal(3, steps.Length);
-        Assert.Equal("Halt Script", steps[1].Attribute("name")!.Value);
-        Assert.Equal("90", steps[1].Attribute("id")!.Value);
+        Assert.Equal("Allow User Abort", steps[1].Attribute("name")!.Value);
+        Assert.Equal("85", steps[1].Attribute("id")!.Value);
     }
 
     [Fact]
@@ -58,8 +58,8 @@ public class SealedStepPreservationTests
         // If step reflects the edit
         Assert.Contains("$x > 10", steps[0].Element("Calculation")!.Value);
         // HaltScript step still present with id
-        Assert.Equal("Halt Script", steps[1].Attribute("name")!.Value);
-        Assert.Equal("90", steps[1].Attribute("id")!.Value);
+        Assert.Equal("Allow User Abort", steps[1].Attribute("name")!.Value);
+        Assert.Equal("85", steps[1].Attribute("id")!.Value);
     }
 
     [Fact]
@@ -103,9 +103,9 @@ public class SealedStepPreservationTests
         Assert.Equal(4, steps.Length);
 
         // Find all HaltScript steps. The one with id=93 is the original sealed one.
-        var originalHaltScript = steps.FirstOrDefault(s => s.Attribute("id")?.Value == "90");
+        var originalHaltScript = steps.FirstOrDefault(s => s.Attribute("id")?.Value == "85");
         Assert.NotNull(originalHaltScript);
-        Assert.Equal("Halt Script", originalHaltScript!.Attribute("name")!.Value);
+        Assert.Equal("Allow User Abort", originalHaltScript!.Attribute("name")!.Value);
     }
 
     // --- UpdateSealedXml (cog-edit write-back) ---
@@ -121,7 +121,7 @@ public class SealedStepPreservationTests
         // update propagates to ToXml output.
         var anchor = editor.SealedAnchors.First();
         var replacement = XElement.Parse(
-            "<Step enable=\"True\" id=\"90\" name=\"Halt Script\"><SomeChild value=\"42\"/></Step>");
+            "<Step enable=\"True\" id=\"85\" name=\"Allow User Abort\"><SomeChild value=\"42\"/></Step>");
 
         var updated = editor.UpdateSealedXml(anchor, replacement);
         Assert.True(updated);
@@ -131,7 +131,7 @@ public class SealedStepPreservationTests
         var beep = doc.Root!.Elements("Step").ElementAt(1);
 
         // The cached XML now reflects the replacement — <SomeChild> is
-        // present even though the display line (still "Halt Script") hasn't
+        // present even though the display line (still "Allow User Abort") hasn't
         // exposed it.
         Assert.NotNull(beep.Element("SomeChild"));
         Assert.Equal("42", beep.Element("SomeChild")!.Attribute("value")!.Value);
@@ -150,7 +150,7 @@ public class SealedStepPreservationTests
         Assert.StartsWith("    ", beforeText); // 4-space indent inside If block
 
         var replacement = XElement.Parse(
-            "<Step enable=\"True\" id=\"90\" name=\"Halt Script\"><SomeChild value=\"1\"/></Step>");
+            "<Step enable=\"True\" id=\"85\" name=\"Allow User Abort\"><SomeChild value=\"1\"/></Step>");
         editor.UpdateSealedXml(anchor, replacement);
 
         var afterText = editor.Document.GetText(beepLine.Offset, beepLine.Length);
@@ -167,7 +167,7 @@ public class SealedStepPreservationTests
         var line2 = editor.Document.GetLineByNumber(2);
         editor.Document.Remove(line2.Offset, line2.TotalLength);
 
-        var replacement = XElement.Parse("<Step enable=\"True\" id=\"90\" name=\"Halt Script\"/>");
+        var replacement = XElement.Parse("<Step enable=\"True\" id=\"85\" name=\"Allow User Abort\"/>");
         Assert.False(editor.UpdateSealedXml(anchor, replacement));
     }
 
@@ -179,7 +179,7 @@ public class SealedStepPreservationTests
         var editor = new ScriptClipEditor(ScriptWithSealedHaltScriptXml);
         var anchor = editor.SealedAnchors.First();
         var replacement = XElement.Parse(
-            "<Step enable=\"True\" id=\"90\" name=\"Halt Script\"><SomeChild value=\"99\"/></Step>");
+            "<Step enable=\"True\" id=\"85\" name=\"Allow User Abort\"><SomeChild value=\"99\"/></Step>");
         editor.UpdateSealedXml(anchor, replacement);
 
         // Now edit the If step's calc.
@@ -204,8 +204,8 @@ public class SealedStepPreservationTests
         var anchor = editor.SealedAnchors.First();
 
         Assert.True(editor.TryGetSealedXml(anchor, out var xml));
-        Assert.Equal("Halt Script", xml.Attribute("name")!.Value);
-        Assert.Equal("90", xml.Attribute("id")!.Value);
+        Assert.Equal("Allow User Abort", xml.Attribute("name")!.Value);
+        Assert.Equal("85", xml.Attribute("id")!.Value);
     }
 
     [Fact]
@@ -229,9 +229,9 @@ public class SealedStepPreservationTests
         // has a POCO so it stays editable. The two HaltScripts are sealed.
         var xml = @"<fmxmlsnippet type=""FMObjectList"">
             <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-            <Step enable=""True"" id=""90"" name=""Halt Script""><FirstMarker/></Step>
+            <Step enable=""True"" id=""85"" name=""Allow User Abort""><FirstMarker/></Step>
             <Step enable=""True"" id=""89"" name=""# (comment)""><Text>between</Text></Step>
-            <Step enable=""True"" id=""90"" name=""Halt Script""><SecondMarker/></Step>
+            <Step enable=""True"" id=""85"" name=""Allow User Abort""><SecondMarker/></Step>
             <Step enable=""True"" id=""70"" name=""End If""></Step>
         </fmxmlsnippet>";
 
@@ -261,7 +261,7 @@ public class SealedStepPreservationTests
         var xml = @"<fmxmlsnippet type=""FMObjectList"">
             <Script includeInMenu=""True"" runFullAccess=""False"" id=""42"" name=""MyScript"">
                 <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-                <Step enable=""True"" id=""90"" name=""Halt Script""><WrapperPreserved/></Step>
+                <Step enable=""True"" id=""85"" name=""Allow User Abort""><WrapperPreserved/></Step>
                 <Step enable=""True"" id=""70"" name=""End If""></Step>
             </Script>
         </fmxmlsnippet>";
@@ -282,7 +282,7 @@ public class SealedStepPreservationTests
         Assert.Equal("MyScript", scriptEl.Attribute("name")!.Value);
 
         // Sealed HaltScript's custom child preserved
-        var beep = scriptEl.Elements("Step").FirstOrDefault(s => s.Attribute("id")?.Value == "90");
+        var beep = scriptEl.Elements("Step").FirstOrDefault(s => s.Attribute("id")?.Value == "85");
         Assert.NotNull(beep);
         Assert.NotNull(beep!.Element("WrapperPreserved"));
     }
@@ -305,7 +305,7 @@ public class SealedStepPreservationTests
     {
         var xml = @"<fmxmlsnippet type=""FMObjectList"">
             <Step enable=""True"" id=""68"" name=""If""><Calculation><![CDATA[$x > 0]]></Calculation></Step>
-            <Step enable=""True"" id=""90"" name=""Halt Script""><EofCanary/></Step>
+            <Step enable=""True"" id=""85"" name=""Allow User Abort""><EofCanary/></Step>
         </fmxmlsnippet>";
 
         var editor = new ScriptClipEditor(xml);
@@ -313,7 +313,7 @@ public class SealedStepPreservationTests
         var outDoc = XDocument.Parse(outXml);
         var beep = outDoc.Root!.Elements("Step").Last();
 
-        Assert.Equal("Halt Script", beep.Attribute("name")!.Value);
+        Assert.Equal("Allow User Abort", beep.Attribute("name")!.Value);
         Assert.NotNull(beep.Element("EofCanary"));
     }
 
