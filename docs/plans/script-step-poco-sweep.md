@@ -1,6 +1,10 @@
 # Script Step POCO Migration — Sweep-Phase Plan
 
-Status: plan. Executes after the pilot (`fuzzz/all-pocos`) merges.
+Status: completed on `fuzzz/all-pocos`. All 205 script steps are typed
+`IStepFactory` POCOs discovered via `StepRegistry`. This doc is kept as
+a record of the sweep's approach; new step POCOs (e.g. after a FileMaker
+release that adds a step) should follow the same per-step TDD workflow
+below.
 
 ## Context
 
