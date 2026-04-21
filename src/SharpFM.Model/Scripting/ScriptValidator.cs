@@ -134,7 +134,13 @@ public static class ScriptValidator
                         break;
                     }
 
-                    // Second: positional match for unlabeled enum/boolean params
+                    // Second: positional match — consume the next available
+                    // param in order. Only validate the value when that
+                    // param has restricted values (enum/boolean). Non-enum
+                    // params (field, calc, text) accept anything, so we
+                    // must NOT keep searching past them looking for an
+                    // enum — that produced false-positive warnings on
+                    // field references like "Assets::Selected File".
                     if (!matchedLabel && !LooksLikeCalculation(paramTrimmed))
                     {
                         for (int pi = 0; pi < definition.Params.Length; pi++)
@@ -142,10 +148,8 @@ public static class ScriptValidator
                             if (usedParams[pi]) continue;
                             var catalogParam = definition.Params[pi];
                             var validValues = GetValidValues(catalogParam);
-                            if (validValues.Count == 0) continue;
-
-                            // This param has restricted values — check
-                            if (!validValues.Contains(paramTrimmed, StringComparer.OrdinalIgnoreCase))
+                            if (validValues.Count > 0
+                                && !validValues.Contains(paramTrimmed, StringComparer.OrdinalIgnoreCase))
                             {
                                 var paramLabel = catalogParam.HrLabel ?? catalogParam.XmlElement;
                                 ValidateParamValue(paramTrimmed, paramLabel, catalogParam, rawLine, lineNum, diagnostics);

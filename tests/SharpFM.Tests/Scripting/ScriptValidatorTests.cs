@@ -154,4 +154,27 @@ public class ScriptValidatorTests
         var diagnostics = ScriptValidator.Validate(script);
         Assert.Empty(diagnostics);
     }
+
+    [Fact]
+    public void ExportFieldContents_FieldReference_NotFlagged()
+    {
+        // Regression: positional-match validator used to skip non-enum
+        // params and check the field reference against a later enum's
+        // valid values, producing a false-positive warning on
+        // "Assets::Selected File Container".
+        var script = "Export Field Contents [ Assets::Selected File Container ; $PATH ; Create folders: Off ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void PositionalEnum_StillFlaggedWhenInvalid()
+    {
+        // Counter-check: a truly invalid enum value still flags. Find
+        // Matching Records's first positional is Replace/Constrain/Extend.
+        var script = "Find Matching Records [ Bogus ; Customer::name ]";
+        var diagnostics = ScriptValidator.Validate(script);
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostics[0].Severity);
+    }
 }
