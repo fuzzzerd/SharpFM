@@ -15,6 +15,7 @@ namespace SharpFM.Services;
 public class PluginService
 {
     private readonly ILogger _logger;
+    private readonly PluginConfigService _configService;
     private readonly List<IPlugin> _plugins = [];
 
     /// <summary>All loaded plugins.</summary>
@@ -22,14 +23,15 @@ public class PluginService
 
     public string PluginsDirectory { get; }
 
-    public PluginService(ILogger logger)
-        : this(logger, Path.Combine(AppContext.BaseDirectory, "plugins"))
+    public PluginService(ILogger logger, PluginConfigService configService)
+        : this(logger, configService, Path.Combine(AppContext.BaseDirectory, "plugins"))
     {
     }
 
-    public PluginService(ILogger logger, string pluginsDirectory)
+    public PluginService(ILogger logger, PluginConfigService configService, string pluginsDirectory)
     {
         _logger = logger;
+        _configService = configService;
         PluginsDirectory = pluginsDirectory;
     }
 
@@ -187,6 +189,7 @@ public class PluginService
             if (Activator.CreateInstance(type) is not IPlugin plugin) continue;
 
             plugin.Initialize(host);
+            _configService.Apply(plugin);
             _plugins.Add(plugin);
 
             _logger.LogInformation("Loaded plugin: {Id} ({DisplayName})", plugin.Id, plugin.DisplayName);

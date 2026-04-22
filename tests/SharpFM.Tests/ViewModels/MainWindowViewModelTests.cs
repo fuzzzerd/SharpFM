@@ -273,6 +273,8 @@ public class MainWindowViewModelTests
         public IReadOnlyList<PluginKeyBinding> TestKeyBindings { get; set; } = [];
         public IReadOnlyList<PluginKeyBinding> KeyBindings => TestKeyBindings;
         public IReadOnlyList<PluginMenuAction> MenuActions => [];
+        public PluginConfigSchema ConfigSchema => PluginConfigSchema.Empty;
+        public void OnConfigChanged(IReadOnlyDictionary<string, object?> values) { }
         public Control CreatePanel() => new TextBlock { Text = "stub" };
         public void Initialize(IPluginHost host) { }
         public void Dispose() { }

@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private TextMate.Installation? _scriptTextMateInstallation;
     private PluginService? _pluginService;
     private PluginUIHost? _pluginHost;
+    private PluginConfigService? _pluginConfigService;
 
     public MainWindow()
     {
@@ -58,10 +59,11 @@ public partial class MainWindow : Window
         DataContextChanged += OnDataContextChanged;
     }
 
-    public void SetPluginServices(PluginService pluginService, PluginUIHost pluginHost)
+    public void SetPluginServices(PluginService pluginService, PluginUIHost pluginHost, PluginConfigService pluginConfigService)
     {
         _pluginService = pluginService;
         _pluginHost = pluginHost;
+        _pluginConfigService = pluginConfigService;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -229,11 +231,11 @@ public partial class MainWindow : Window
 
     private void ShowPluginManager()
     {
-        if (_pluginService is null || _pluginHost is null) return;
+        if (_pluginService is null || _pluginHost is null || _pluginConfigService is null) return;
         if (DataContext is not MainWindowViewModel vm) return;
 
         var window = new PluginManagerWindow();
-        window.Configure(_pluginService, _pluginHost, vm);
+        window.Configure(_pluginService, _pluginHost, vm, _pluginConfigService);
         window.ShowDialog(this);
     }
 

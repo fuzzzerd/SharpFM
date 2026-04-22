@@ -30,6 +30,12 @@ public class ClipInspectorViewModel : INotifyPropertyChanged
     private bool _hasClip;
     public bool HasClip { get => _hasClip; private set { _hasClip = value; Notify(); } }
 
+    private bool _showElementCount = true;
+    public bool ShowElementCount { get => _showElementCount; set { _showElementCount = value; Notify(); } }
+
+    private bool _showXmlSize = true;
+    public bool ShowXmlSize { get => _showXmlSize; set { _showXmlSize = value; Notify(); } }
+
     public void Update(ClipData? clip)
     {
         if (clip is null)

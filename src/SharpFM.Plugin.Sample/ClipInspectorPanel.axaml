@@ -19,12 +19,12 @@
                 <TextBlock Classes="Fluent2Body" Text="{Binding ClipType}" />
             </StackPanel>
 
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="2" IsVisible="{Binding ShowElementCount}">
                 <TextBlock Classes="Fluent2Caption" Opacity="0.7" Text="XML Elements" />
                 <TextBlock Classes="Fluent2Body" Text="{Binding ElementCount}" />
             </StackPanel>
 
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="2" IsVisible="{Binding ShowXmlSize}">
                 <TextBlock Classes="Fluent2Caption" Opacity="0.7" Text="Approx. Size" />
                 <TextBlock Classes="Fluent2Body" Text="{Binding XmlSize}" />
             </StackPanel>

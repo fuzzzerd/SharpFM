@@ -46,4 +46,20 @@ public interface IPlugin : IDisposable
     /// as a submenu with "Toggle Panel" plus these custom actions.
     /// </summary>
     IReadOnlyList<PluginMenuAction> MenuActions { get; }
+
+    /// <summary>
+    /// Schema for user-tunable configuration values. The host persists these on the
+    /// plugin's behalf and renders a generic settings UI from the schema. Return
+    /// <see cref="PluginConfigSchema.Empty"/> if the plugin has no configuration.
+    /// </summary>
+    PluginConfigSchema ConfigSchema { get; }
+
+    /// <summary>
+    /// Called by the host with the current values for fields declared in
+    /// <see cref="ConfigSchema"/>: once after <see cref="Initialize"/> with the
+    /// persisted (or default) values, and again whenever the user saves edits in the
+    /// Plugin Manager. Keys match <see cref="PluginConfigField.Key"/>; values are
+    /// coerced to the CLR type implied by <see cref="PluginConfigField.Type"/>.
+    /// </summary>
+    void OnConfigChanged(IReadOnlyDictionary<string, object?> values);
 }

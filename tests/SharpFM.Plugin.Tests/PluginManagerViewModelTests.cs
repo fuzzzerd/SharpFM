@@ -16,6 +16,8 @@ public class PluginManagerViewModelTests
         public string Version => "1.0.0-test";
         public IReadOnlyList<PluginKeyBinding> KeyBindings => [];
         public IReadOnlyList<PluginMenuAction> MenuActions => [];
+        public PluginConfigSchema ConfigSchema { get; set; } = PluginConfigSchema.Empty;
+        public void OnConfigChanged(IReadOnlyDictionary<string, object?> values) { }
         public Control CreatePanel() => new TextBlock();
         public void Initialize(IPluginHost host) { }
         public void Dispose() { }

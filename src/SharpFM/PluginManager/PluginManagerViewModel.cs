@@ -18,6 +18,7 @@ public class PluginEntry : INotifyPropertyChanged
     public string Description => Plugin.Description;
     public string PluginVersion => Plugin.Version;
     public string AssemblyName => Plugin.GetType().Assembly.GetName().Name ?? "(unknown)";
+    public bool CanConfigure => Plugin.ConfigSchema.Fields.Count > 0;
 
     private bool _isActive;
     public bool IsActive
@@ -45,10 +46,17 @@ public class PluginManagerViewModel : INotifyPropertyChanged
     public PluginEntry? SelectedPlugin
     {
         get => _selectedPlugin;
-        set { _selectedPlugin = value; Notify(); Notify(nameof(HasSelection)); }
+        set
+        {
+            _selectedPlugin = value;
+            Notify();
+            Notify(nameof(HasSelection));
+            Notify(nameof(CanConfigureSelected));
+        }
     }
 
     public bool HasSelection => _selectedPlugin is not null;
+    public bool CanConfigureSelected => _selectedPlugin?.CanConfigure ?? false;
 
     public void Refresh(IReadOnlyList<IPlugin> allPlugins, string? activePluginId)
     {
