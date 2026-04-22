@@ -17,6 +17,7 @@
 <ItemGroup>
     <ProjectReference Include="..\SharpFM.Model\SharpFM.Model.csproj" />
     <ProjectReference Include="..\SharpFM.Plugin\SharpFM.Plugin.csproj" />
+    <ProjectReference Include="..\SharpFM.Plugin.UI\SharpFM.Plugin.UI.csproj" />
     <ProjectReference Include="..\SharpFM.Plugin.Sample\SharpFM.Plugin.Sample.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

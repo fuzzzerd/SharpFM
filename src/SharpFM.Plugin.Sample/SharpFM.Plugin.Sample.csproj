@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpFM.Plugin\SharpFM.Plugin.csproj" />
+    <ProjectReference Include="..\SharpFM.Plugin.UI\SharpFM.Plugin.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

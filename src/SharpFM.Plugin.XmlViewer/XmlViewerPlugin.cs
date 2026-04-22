@@ -4,6 +4,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using SharpFM.Model;
 using SharpFM.Plugin;
+using SharpFM.Plugin.UI;
 
 namespace SharpFM.Plugin.XmlViewer;
 
@@ -11,6 +12,7 @@ public class XmlViewerPlugin : IPanelPlugin
 {
     public string Id => "xml-viewer";
     public string DisplayName => "XML Viewer";
+    public string Description => "Live XML panel with syntax highlighting and bidirectional sync.";
     public string Version => GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
 
     private IPluginHost? _host;

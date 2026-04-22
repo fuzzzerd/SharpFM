@@ -11,34 +11,14 @@ namespace SharpFM.Services;
 
 /// <summary>
 /// Discovers, loads, and manages plugin implementations from the plugins/ directory.
-/// Supports all plugin types: panel, event, persistence, and transform.
 /// </summary>
 public class PluginService
 {
     private readonly ILogger _logger;
-    private readonly List<IPanelPlugin> _panelPlugins = [];
-    private readonly List<IEventPlugin> _eventPlugins = [];
-    private readonly List<IPersistencePlugin> _persistencePlugins = [];
-    private readonly List<IClipTransformPlugin> _transformPlugins = [];
+    private readonly List<IPlugin> _plugins = [];
 
-    /// <summary>Panel plugins that provide sidebar UI.</summary>
-    public IReadOnlyList<IPanelPlugin> PanelPlugins => _panelPlugins;
-
-    /// <summary>Headless event handler plugins.</summary>
-    public IReadOnlyList<IEventPlugin> EventPlugins => _eventPlugins;
-
-    /// <summary>Storage backend plugins.</summary>
-    public IReadOnlyList<IPersistencePlugin> PersistencePlugins => _persistencePlugins;
-
-    /// <summary>Clip transform plugins for import/export pipeline.</summary>
-    public IReadOnlyList<IClipTransformPlugin> TransformPlugins => _transformPlugins;
-
-    /// <summary>All loaded plugins across all types.</summary>
-    public IReadOnlyList<IPlugin> AllPlugins =>
-        [.. _panelPlugins, .. _eventPlugins, .. _persistencePlugins, .. _transformPlugins];
-
-    /// <summary>Backwards compat: returns panel plugins only.</summary>
-    public IReadOnlyList<IPanelPlugin> LoadedPlugins => _panelPlugins;
+    /// <summary>All loaded plugins.</summary>
+    public IReadOnlyList<IPlugin> AllPlugins => _plugins;
 
     public string PluginsDirectory { get; }
 
@@ -92,10 +72,7 @@ public class PluginService
             }
         }
 
-        _logger.LogInformation(
-            "Loaded {Count} plugin(s): {Panel} panel, {Event} event, {Persistence} persistence, {Transform} transform.",
-            AllPlugins.Count, _panelPlugins.Count, _eventPlugins.Count,
-            _persistencePlugins.Count, _transformPlugins.Count);
+        _logger.LogInformation("Loaded {Count} plugin(s).", _plugins.Count);
     }
 
     /// <summary>
@@ -116,7 +93,7 @@ public class PluginService
         File.Copy(sourceDllPath, destPath, overwrite: true);
         _logger.LogInformation("Copied plugin to {Path}.", destPath);
 
-        var beforeCount = AllPlugins.Count;
+        var beforeCount = _plugins.Count;
         try
         {
             LoadPluginAssembly(destPath, host);
@@ -127,7 +104,7 @@ public class PluginService
             return [];
         }
 
-        return AllPlugins.Skip(beforeCount).ToList();
+        return _plugins.Skip(beforeCount).ToList();
     }
 
     /// <summary>
@@ -146,7 +123,7 @@ public class PluginService
         try
         {
             plugin.Dispose();
-            RemoveFromTypedList(plugin);
+            _plugins.Remove(plugin);
             File.Delete(dllPath);
             _logger.LogInformation("Uninstalled plugin {Id} from {Path}.", plugin.Id, dllPath);
             return true;
@@ -182,17 +159,6 @@ public class PluginService
         return File.Exists(candidate) ? candidate : null;
     }
 
-    private void RemoveFromTypedList(IPlugin plugin)
-    {
-        switch (plugin)
-        {
-            case IPanelPlugin p: _panelPlugins.Remove(p); break;
-            case IEventPlugin p: _eventPlugins.Remove(p); break;
-            case IPersistencePlugin p: _persistencePlugins.Remove(p); break;
-            case IClipTransformPlugin p: _transformPlugins.Remove(p); break;
-        }
-    }
-
     private void LoadPluginAssembly(string dllPath, IPluginHost host)
     {
         var fullPath = Path.GetFullPath(dllPath);
@@ -221,29 +187,9 @@ public class PluginService
             if (Activator.CreateInstance(type) is not IPlugin plugin) continue;
 
             plugin.Initialize(host);
+            _plugins.Add(plugin);
 
-            switch (plugin)
-            {
-                case IPanelPlugin p:
-                    _panelPlugins.Add(p);
-                    break;
-                case IEventPlugin p:
-                    _eventPlugins.Add(p);
-                    break;
-                case IPersistencePlugin p:
-                    _persistencePlugins.Add(p);
-                    break;
-                case IClipTransformPlugin p:
-                    _transformPlugins.Add(p);
-                    break;
-                default:
-                    _logger.LogWarning("Plugin {Id} implements IPlugin but no known subtype, skipping.", plugin.Id);
-                    plugin.Dispose();
-                    continue;
-            }
-
-            _logger.LogInformation("Loaded {Type} plugin: {Id} ({DisplayName})",
-                plugin.GetType().BaseType?.Name ?? plugin.GetType().Name, plugin.Id, plugin.DisplayName);
+            _logger.LogInformation("Loaded plugin: {Id} ({DisplayName})", plugin.Id, plugin.DisplayName);
         }
     }
 }

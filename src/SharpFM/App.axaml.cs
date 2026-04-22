@@ -48,22 +48,21 @@ public partial class App : Application
 
             // Load plugins
             var pluginHost = new PluginHost(viewModel, loggerFactory);
+            var pluginUIHost = new PluginUIHost(pluginHost);
             var pluginService = new PluginService(logger);
-            pluginService.LoadPlugins(pluginHost);
+            pluginService.LoadPlugins(pluginUIHost);
 
-            // Wire up all plugin types
-            viewModel.PanelPlugins = pluginService.PanelPlugins;
-            viewModel.TransformPlugins = pluginService.TransformPlugins;
+            viewModel.AllPlugins = pluginService.AllPlugins;
+            viewModel.PluginUI = pluginUIHost;
 
-            // Build repository list: built-in + plugin-provided
+            // Build repository list: built-in + plugin-registered
             var repos = new List<IClipRepository> { viewModel.ActiveRepository };
-            foreach (var pp in pluginService.PersistencePlugins)
-                repos.Add(pp.CreateRepository());
+            repos.AddRange(pluginHost.Repositories);
             viewModel.AvailableRepositories = repos;
 
             // Give the window access to plugin services for the manager dialog
             if (desktop.MainWindow is MainWindow mainWindow)
-                mainWindow.SetPluginServices(pluginService, pluginHost);
+                mainWindow.SetPluginServices(pluginService, pluginUIHost);
 
             desktop.MainWindow.DataContext = viewModel;
 

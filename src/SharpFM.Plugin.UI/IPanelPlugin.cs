@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace SharpFM.Plugin;
+namespace SharpFM.Plugin.UI;
 
 /// <summary>
 /// A plugin that provides a dockable side panel in the SharpFM UI.

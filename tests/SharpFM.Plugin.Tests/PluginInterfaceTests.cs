@@ -1,5 +1,6 @@
 using SharpFM.Model;
 using SharpFM.Plugin;
+using SharpFM.Plugin.UI;
 using Xunit;
 
 namespace SharpFM.Plugin.Tests;
@@ -15,33 +16,15 @@ public class PluginInterfaceTests
     }
 
     [Fact]
-    public void IEventPlugin_Extends_IPlugin()
+    public void IPlugin_Extends_IDisposable()
     {
-        Assert.True(typeof(IPlugin).IsAssignableFrom(typeof(IEventPlugin)));
-    }
-
-    [Fact]
-    public void IPersistencePlugin_Extends_IPlugin()
-    {
-        Assert.True(typeof(IPlugin).IsAssignableFrom(typeof(IPersistencePlugin)));
-    }
-
-    [Fact]
-    public void IClipTransformPlugin_Extends_IPlugin()
-    {
-        Assert.True(typeof(IPlugin).IsAssignableFrom(typeof(IClipTransformPlugin)));
+        Assert.True(typeof(IDisposable).IsAssignableFrom(typeof(IPlugin)));
     }
 
     [Fact]
     public void IPanelPlugin_Extends_IDisposable()
     {
         Assert.True(typeof(IDisposable).IsAssignableFrom(typeof(IPanelPlugin)));
-    }
-
-    [Fact]
-    public void IEventPlugin_Extends_IDisposable()
-    {
-        Assert.True(typeof(IDisposable).IsAssignableFrom(typeof(IEventPlugin)));
     }
 
     // --- ClipData record ---

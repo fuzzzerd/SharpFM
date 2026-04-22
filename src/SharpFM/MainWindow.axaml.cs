@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
@@ -8,6 +9,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.TextMate;
 using SharpFM.Diagnostics;
 using SharpFM.Plugin;
+using SharpFM.Plugin.UI;
 using SharpFM.PluginManager;
 using SharpFM.Scripting;
 using SharpFM.Services;
@@ -23,7 +25,7 @@ public partial class MainWindow : Window
     private ScriptEditorController? _scriptController;
     private TextMate.Installation? _scriptTextMateInstallation;
     private PluginService? _pluginService;
-    private IPluginHost? _pluginHost;
+    private PluginUIHost? _pluginHost;
 
     public MainWindow()
     {
@@ -56,7 +58,7 @@ public partial class MainWindow : Window
         DataContextChanged += OnDataContextChanged;
     }
 
-    public void SetPluginServices(PluginService pluginService, IPluginHost pluginHost)
+    public void SetPluginServices(PluginService pluginService, PluginUIHost pluginHost)
     {
         _pluginService = pluginService;
         _pluginHost = pluginHost;
@@ -68,16 +70,23 @@ public partial class MainWindow : Window
 
         BuildPluginMenuItems(vm);
         vm.PropertyChanged += OnViewModelPropertyChanged;
+
+        if (vm.PluginUI is { } pluginUI)
+            pluginUI.PropertyChanged += OnPluginUIPropertyChanged;
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainWindowViewModel.IsPluginPanelVisible))
-            UpdatePluginPanelVisibility();
-        else if (e.PropertyName == nameof(MainWindowViewModel.PluginPanelControl))
-            UpdatePluginPanelContent();
-        else if (e.PropertyName == nameof(MainWindowViewModel.SelectedClip))
+        if (e.PropertyName == nameof(MainWindowViewModel.SelectedClip))
             AttachScriptClipEditorIfApplicable();
+    }
+
+    private void OnPluginUIPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PluginUIHost.IsVisible))
+            UpdatePluginPanelVisibility();
+        else if (e.PropertyName == nameof(PluginUIHost.PanelControl))
+            UpdatePluginPanelContent();
     }
 
     private void OnScriptControllerStatusMessage(object? sender, SharpFM.Scripting.Editor.StatusMessageEventArgs e)
@@ -100,32 +109,47 @@ public partial class MainWindow : Window
     {
         var pluginsMenu = this.FindControl<MenuItem>("pluginsMenu");
         var manageItem = this.FindControl<MenuItem>("managePluginsMenuItem");
-        if (pluginsMenu is null || manageItem is null || vm.PanelPlugins.Count == 0)
+        var pluginUI = vm.PluginUI;
+        if (pluginsMenu is null || manageItem is null || vm.AllPlugins.Count == 0)
         {
             RegisterPluginKeyBindings(vm);
             return;
         }
 
-        // Insert plugin items before the Manage Plugins item
         var insertIndex = pluginsMenu.Items.IndexOf(manageItem);
 
-        foreach (var plugin in vm.PanelPlugins)
+        foreach (var plugin in vm.AllPlugins)
         {
+            var isPanel = pluginUI?.HasPanel(plugin) ?? false;
+            var hasActions = plugin.MenuActions.Count > 0;
+
+            if (!isPanel && !hasActions) continue;
+
             MenuItem pluginItem;
 
-            if (plugin.MenuActions.Count > 0)
+            if (isPanel && !hasActions)
             {
-                // Plugin has custom actions — create a submenu
+                // Panel with no custom actions — flat item that toggles the panel
+                pluginItem = new MenuItem { Header = plugin.DisplayName, Tag = plugin };
+                if (plugin.KeyBindings.Count > 0)
+                    pluginItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                var p = plugin;
+                pluginItem.Click += (_, _) => pluginUI?.TogglePanel(p);
+            }
+            else
+            {
+                // Submenu with actions (and toggle item for panels)
                 pluginItem = new MenuItem { Header = plugin.DisplayName };
 
-                var toggleItem = new MenuItem { Header = "Toggle Panel", Tag = plugin };
-                if (plugin.KeyBindings.Count > 0)
-                    toggleItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
-                toggleItem.Click += (_, _) =>
+                if (isPanel)
                 {
-                    if (toggleItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
-                };
-                pluginItem.Items.Add(toggleItem);
+                    var toggleItem = new MenuItem { Header = "Toggle Panel" };
+                    if (plugin.KeyBindings.Count > 0)
+                        toggleItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
+                    var p = plugin;
+                    toggleItem.Click += (_, _) => pluginUI?.TogglePanel(p);
+                    pluginItem.Items.Add(toggleItem);
+                }
 
                 foreach (var action in plugin.MenuActions)
                 {
@@ -137,42 +161,34 @@ public partial class MainWindow : Window
                     pluginItem.Items.Add(actionItem);
                 }
             }
-            else
-            {
-                // No custom actions — flat item that toggles the panel
-                pluginItem = new MenuItem { Header = plugin.DisplayName, Tag = plugin };
-                if (plugin.KeyBindings.Count > 0)
-                    pluginItem.InputGesture = KeyGesture.Parse(plugin.KeyBindings[0].Gesture);
-                pluginItem.Click += (_, _) =>
-                {
-                    if (pluginItem.Tag is IPanelPlugin p) vm.TogglePluginPanel(p);
-                };
-            }
 
             pluginsMenu.Items.Insert(insertIndex++, pluginItem);
         }
 
-        // Add separator before Manage Plugins
         pluginsMenu.Items.Insert(insertIndex, new Separator());
-
         RegisterPluginKeyBindings(vm);
     }
 
     private void RegisterPluginKeyBindings(MainWindowViewModel vm)
     {
-        foreach (var plugin in vm.PanelPlugins)
+        var pluginUI = vm.PluginUI;
+
+        foreach (var plugin in vm.AllPlugins)
         {
             foreach (var binding in plugin.KeyBindings)
             {
                 var gesture = KeyGesture.Parse(binding.Gesture);
-                var pluginRef = plugin;
+                var p = plugin;
+                var cb = binding.Callback;
+
                 KeyBindings.Add(new KeyBinding
                 {
                     Gesture = gesture,
                     Command = new PluginKeyCommand(() =>
                     {
-                        vm.TogglePluginPanel(pluginRef);
-                        binding.Callback();
+                        if (pluginUI?.HasPanel(p) == true)
+                            pluginUI.TogglePanel(p);
+                        cb();
                     })
                 });
             }
@@ -195,7 +211,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainWindowViewModel vm) return;
 
-        var visible = vm.IsPluginPanelVisible;
+        var visible = vm.PluginUI?.IsVisible ?? false;
         pluginSplitter.IsVisible = visible;
         pluginPanelBorder.IsVisible = visible;
         editorPluginGrid.ColumnDefinitions[1].Width = visible ? new GridLength(16) : new GridLength(0);
@@ -208,7 +224,7 @@ public partial class MainWindow : Window
 
         var host = this.FindControl<ContentControl>("pluginPanelHost");
         if (host is not null)
-            host.Content = vm.PluginPanelControl;
+            host.Content = vm.PluginUI?.PanelControl;
     }
 
     private void ShowPluginManager()
