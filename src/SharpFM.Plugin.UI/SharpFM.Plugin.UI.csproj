@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.4" />
-    <PackageReference Include="MinVer" Version="6.0.0">
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="MinVer">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
