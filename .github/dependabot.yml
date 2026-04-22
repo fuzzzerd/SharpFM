@@ -14,6 +14,10 @@ updates:
     MicrosoftCodeAnalysis:
       patterns:
         - "Microsoft.CodeAnalysis.*"
+- package-ecosystem: "nuget"
+  directory: "/.config"
+  schedule:
+    interval: "daily"
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
