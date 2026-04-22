@@ -51,7 +51,7 @@ jobs:
           rm -r "$release_name"
 
       - name: Publish
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           # Narrowed to the versioned archive pattern: SharpFM-v{tag}-{target}.{tar.gz|zip}.
           # The previous "SharpFM*" glob also matched SharpFM.sln at the
