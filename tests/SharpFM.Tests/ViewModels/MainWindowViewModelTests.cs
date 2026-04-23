@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
@@ -21,7 +23,7 @@ public class MockClipboardService : IClipboardService
 
     public Task SetTextAsync(string text) { LastText = text; return Task.CompletedTask; }
     public Task SetDataAsync(string format, byte[] data) { LastFormat = format; LastData = data; return Task.CompletedTask; }
-    public Task<string[]> GetFormatsAsync() => Task.FromResult(Array.Empty<string>());
+    public Task<string[]> GetFormatsAsync() => Task.FromResult(ClipboardData.Keys.ToArray());
     public Task<object?> GetDataAsync(string format) =>
         Task.FromResult(ClipboardData.TryGetValue(format, out var v) ? v : null);
 }
@@ -111,6 +113,29 @@ public class MainWindowViewModelTests
         var vm = CreateVm(clipboard);
         await vm.PasteFileMakerClipData();
         Assert.Contains("No FileMaker clips found", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_SelectsLastPastedClip()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes("<fmxmlsnippet><Script name=\"FirstPasted\"></Script></fmxmlsnippet>");
+        clipboard.ClipboardData["Mac-XMSS"] = BuildClipBytes("<fmxmlsnippet><Step name=\"SecondPasted\"></Step></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        var initialCount = vm.FileMakerClips.Count;
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.NotNull(vm.SelectedClip);
+        Assert.Equal(initialCount + 2, vm.FileMakerClips.Count);
+        Assert.Same(vm.FileMakerClips[^1], vm.SelectedClip);
+        Assert.Contains("Pasted 2 clip(s)", vm.StatusMessage);
+    }
+
+    private static byte[] BuildClipBytes(string xml)
+    {
+        var payload = Encoding.UTF8.GetBytes(xml);
+        return BitConverter.GetBytes(payload.Length).Concat(payload).ToArray();
     }
 
     [Fact]

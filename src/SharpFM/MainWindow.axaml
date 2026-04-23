@@ -22,6 +22,7 @@
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewScriptCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewTableCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding CopySelectedToClip}" />
+        <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteFileMakerClipData}" />
     </Window.KeyBindings>
 
     <DockPanel>
