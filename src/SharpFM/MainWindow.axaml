@@ -22,7 +22,6 @@
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewScriptCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewTableCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding CopySelectedToClip}" />
-        <KeyBinding Gesture="Delete" Command="{Binding DeleteSelectedClip}" />
     </Window.KeyBindings>
 
     <DockPanel>
@@ -44,7 +43,7 @@
                 <Separator />
                 <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
                 <Separator />
-                <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" InputGesture="Delete" />
+                <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" />
             </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem x:Name="rawClipboardMenuItem" Header="Raw Clipboard Viewer..." />
