@@ -64,7 +64,6 @@
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="TextMateSharp.Grammars" />
     <PackageReference Include="AvaloniaEdit.TextMate" />
-    <PackageReference Include="FluentAvaloniaUI" />
 
     <PackageReference Include="MinVer">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
