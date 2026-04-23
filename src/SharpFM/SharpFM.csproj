@@ -57,6 +57,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
 
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Xaml.Interactions" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
