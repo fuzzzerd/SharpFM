@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vm="using:SharpFM.ViewModels"
+    xmlns:editors="using:SharpFM.Editors"
     xmlns:schema="using:SharpFM.Schema.Editor"
     Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
     Title="SharpFM"
@@ -206,33 +207,40 @@
                         <ColumnDefinition Width="0" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Code editor with Fluent 2 surface treatment -->
+                    <!-- Code editor with Fluent 2 surface treatment. The editor is
+                         selected by the runtime type of ClipViewModel.Editor: no
+                         binding resolves through a null SelectedClip, and no editor
+                         instance exists when no clip is selected. -->
                     <Border
                         Grid.Column="0"
                         Classes="Fluent2SurfaceElevated">
-                        <Grid x:DataType="vm:MainWindowViewModel">
-                            <!-- Script editor for script clips -->
-                            <AvaloniaEdit:TextEditor
-                                x:Name="scriptEditor"
-                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                ShowLineNumbers="True"
-                                WordWrap="False"
-                                IsVisible="{Binding SelectedClip.IsScriptClip, FallbackValue=False}"
-                                Document="{Binding SelectedClip.ScriptDocument}" />
-                            <!-- Table editor for table/field clips -->
-                            <Border IsVisible="{Binding SelectedClip.IsTableClip, FallbackValue=False}">
-                                <schema:TableEditorControl DataContext="{Binding SelectedClip.TableEditor}" />
-                            </Border>
-                            <!-- Fallback XML editor for other clips -->
-                            <AvaloniaEdit:TextEditor
-                                x:Name="fallbackXmlEditor"
-                                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                                ShowLineNumbers="True"
-                                SyntaxHighlighting="Xml"
-                                WordWrap="False"
-                                IsVisible="{Binding SelectedClip.IsFallbackClip, FallbackValue=False}"
-                                Document="{Binding SelectedClip.XmlDocument}" />
-                        </Grid>
+                        <ContentControl Content="{Binding SelectedClip}">
+                            <ContentControl.DataTemplates>
+                                <DataTemplate DataType="vm:ClipViewModel">
+                                    <ContentControl Content="{Binding Editor}">
+                                        <ContentControl.DataTemplates>
+                                            <DataTemplate DataType="editors:ScriptClipEditor">
+                                                <editors:ScriptTextEditor
+                                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                                    ShowLineNumbers="True"
+                                                    WordWrap="False" />
+                                            </DataTemplate>
+                                            <DataTemplate DataType="editors:TableClipEditor">
+                                                <schema:TableEditorControl DataContext="{Binding ViewModel}" />
+                                            </DataTemplate>
+                                            <DataTemplate DataType="editors:FallbackXmlEditor">
+                                                <AvaloniaEdit:TextEditor
+                                                    FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
+                                                    ShowLineNumbers="True"
+                                                    SyntaxHighlighting="Xml"
+                                                    WordWrap="False"
+                                                    Document="{Binding Document}" />
+                                            </DataTemplate>
+                                        </ContentControl.DataTemplates>
+                                    </ContentControl>
+                                </DataTemplate>
+                            </ContentControl.DataTemplates>
+                        </ContentControl>
                     </Border>
 
                     <!-- Plugin panel splitter -->
