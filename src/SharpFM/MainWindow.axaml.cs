@@ -1,29 +1,21 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using AvaloniaEdit;
-using AvaloniaEdit.TextMate;
 using SharpFM.Diagnostics;
 using SharpFM.Plugin;
 using SharpFM.Plugin.UI;
 using SharpFM.PluginManager;
-using SharpFM.Scripting;
 using SharpFM.Services;
 using SharpFM.ViewModels;
-using TextMateSharp.Grammars;
 
 namespace SharpFM;
 
 [ExcludeFromCodeCoverage]
 public partial class MainWindow : Window
 {
-    private readonly RegistryOptions _registryOptions;
-    private ScriptEditorController? _scriptController;
-    private TextMate.Installation? _scriptTextMateInstallation;
     private PluginService? _pluginService;
     private PluginUIHost? _pluginHost;
     private PluginConfigService? _pluginConfigService;
@@ -31,19 +23,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-
-        _registryOptions = new RegistryOptions((ThemeName)(int)ThemeName.DarkPlus);
-
-        // Script editor
-        var scriptEditor = this.FindControl<TextEditor>("scriptEditor");
-        if (scriptEditor != null)
-        {
-            var fmScriptRegistry = new FmScriptRegistryOptions(_registryOptions);
-            _scriptTextMateInstallation = scriptEditor.InstallTextMate(fmScriptRegistry);
-            _scriptTextMateInstallation.SetGrammar(FmScriptRegistryOptions.ScopeName);
-            _scriptController = new ScriptEditorController(scriptEditor);
-            _scriptController.StatusMessageRaised += OnScriptControllerStatusMessage;
-        }
 
         // "Manage Plugins..." menu item
         var managePlugins = this.FindControl<MenuItem>("managePluginsMenuItem");
@@ -71,16 +50,9 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel vm) return;
 
         BuildPluginMenuItems(vm);
-        vm.PropertyChanged += OnViewModelPropertyChanged;
 
         if (vm.PluginUI is { } pluginUI)
             pluginUI.PropertyChanged += OnPluginUIPropertyChanged;
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainWindowViewModel.SelectedClip))
-            AttachScriptClipEditorIfApplicable();
     }
 
     private void OnPluginUIPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -89,22 +61,6 @@ public partial class MainWindow : Window
             UpdatePluginPanelVisibility();
         else if (e.PropertyName == nameof(PluginUIHost.PanelControl))
             UpdatePluginPanelContent();
-    }
-
-    private void OnScriptControllerStatusMessage(object? sender, SharpFM.Scripting.Editor.StatusMessageEventArgs e)
-    {
-        if (DataContext is MainWindowViewModel vm)
-            vm.ShowStatusMessage(e.Message, e.IsError);
-    }
-
-    private void AttachScriptClipEditorIfApplicable()
-    {
-        if (_scriptController == null) return;
-        if (DataContext is not MainWindowViewModel vm) return;
-        if (vm.SelectedClip?.Editor is SharpFM.Editors.ScriptClipEditor clipEditor)
-        {
-            _scriptController.AttachClipEditor(clipEditor);
-        }
     }
 
     private void BuildPluginMenuItems(MainWindowViewModel vm)
@@ -237,12 +193,5 @@ public partial class MainWindow : Window
         var window = new PluginManagerWindow();
         window.Configure(_pluginService, _pluginHost, vm, _pluginConfigService);
         window.ShowDialog(this);
-    }
-
-    protected override void OnClosed(EventArgs e)
-    {
-        base.OnClosed(e);
-        _scriptController?.Dispose();
-        _scriptTextMateInstallation?.Dispose();
     }
 }
