@@ -1,9 +1,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
-using FluentAvalonia.UI.Data;
+using Avalonia.Input.Platform;
 
 namespace SharpFM.Services;
 
@@ -19,31 +20,35 @@ public class ClipboardService : IClipboardService
 
     public async Task SetTextAsync(string text)
     {
-        var clipboard = _window.Clipboard
-            ?? throw new InvalidOperationException("Clipboard is not available.");
+        var clipboard = GetClipboard();
         await clipboard.SetTextAsync(text);
     }
 
     public async Task SetDataAsync(string format, byte[] data)
     {
-        var clipboard = _window.Clipboard
-            ?? throw new InvalidOperationException("Clipboard is not available.");
-        var dp = new DataPackage();
-        dp.SetData(format, data);
-        await clipboard.SetDataObjectAsync(dp);
+        var clipboard = GetClipboard();
+        var dataFormat = DataFormat.CreateBytesPlatformFormat(format);
+        var transfer = new DataTransfer();
+        transfer.Add(DataTransferItem.Create(dataFormat, data));
+        await clipboard.SetDataAsync(transfer);
     }
 
     public async Task<string[]> GetFormatsAsync()
     {
-        var clipboard = _window.Clipboard
-            ?? throw new InvalidOperationException("Clipboard is not available.");
-        return await clipboard.GetFormatsAsync();
+        var clipboard = GetClipboard();
+        var formats = await clipboard.GetDataFormatsAsync();
+        return formats.Select(f => f.Identifier).ToArray();
     }
 
     public async Task<object?> GetDataAsync(string format)
     {
-        var clipboard = _window.Clipboard
-            ?? throw new InvalidOperationException("Clipboard is not available.");
-        return await clipboard.GetDataAsync(format);
+        var clipboard = GetClipboard();
+        using var transfer = await clipboard.TryGetDataAsync();
+        if (transfer is null) return null;
+        var dataFormat = DataFormat.CreateBytesPlatformFormat(format);
+        return await transfer.TryGetValueAsync(dataFormat);
     }
+
+    private IClipboard GetClipboard() =>
+        _window.Clipboard ?? throw new InvalidOperationException("Clipboard is not available.");
 }
