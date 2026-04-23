@@ -230,6 +230,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             var formats = await _clipboard.GetFormatsAsync();
             int count = 0;
+            ClipViewModel? lastAdded = null;
 
             foreach (var format in formats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct())
             {
@@ -244,8 +245,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 // don't add duplicates
                 if (FileMakerClips.Any(k => k.Clip.XmlData == clip.XmlData)) continue;
 
-                FileMakerClips.Add(new ClipViewModel(clip));
+                lastAdded = new ClipViewModel(clip);
+                FileMakerClips.Add(lastAdded);
                 count++;
+            }
+
+            if (lastAdded is not null)
+            {
+                SelectedClip = lastAdded;
             }
 
             ShowStatus(count > 0 ? $"Pasted {count} clip(s) from FileMaker" : "No FileMaker clips found on clipboard");
