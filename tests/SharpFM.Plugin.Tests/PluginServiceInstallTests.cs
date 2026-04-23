@@ -1,5 +1,6 @@
 using System.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SharpFM.Services;
 using Xunit;
 
@@ -10,7 +11,9 @@ public class PluginServiceInstallTests
     private static PluginService CreateService(string pluginsDir)
     {
         var logger = LoggerFactory.Create(_ => { }).CreateLogger<PluginService>();
-        return new PluginService(logger, pluginsDir);
+        var configDir = Path.Combine(Path.GetTempPath(), $"sharpfm-cfg-{Guid.NewGuid()}");
+        var configService = new PluginConfigService(NullLogger.Instance, configDir);
+        return new PluginService(logger, configService, pluginsDir);
     }
 
     [Fact]

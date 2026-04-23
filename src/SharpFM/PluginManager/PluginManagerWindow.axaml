@@ -63,6 +63,8 @@
         <!-- Actions -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button x:Name="installButton" Classes="Fluent2" Content="Install from File..." />
+            <Button x:Name="configureButton" Classes="Fluent2" Content="Configure..."
+                    IsEnabled="{Binding CanConfigureSelected}" />
             <Button x:Name="removeButton" Classes="Fluent2" Content="Remove"
                     IsEnabled="{Binding HasSelection}" />
             <Button x:Name="closeButton" Classes="Fluent2Primary" Content="Close" />

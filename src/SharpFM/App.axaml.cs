@@ -49,7 +49,8 @@ public partial class App : Application
             // Load plugins
             var pluginHost = new PluginHost(viewModel, loggerFactory);
             var pluginUIHost = new PluginUIHost(pluginHost);
-            var pluginService = new PluginService(logger);
+            var pluginConfigService = new PluginConfigService(logger);
+            var pluginService = new PluginService(logger, pluginConfigService);
             pluginService.LoadPlugins(pluginUIHost);
 
             viewModel.AllPlugins = pluginService.AllPlugins;
@@ -62,7 +63,7 @@ public partial class App : Application
 
             // Give the window access to plugin services for the manager dialog
             if (desktop.MainWindow is MainWindow mainWindow)
-                mainWindow.SetPluginServices(pluginService, pluginUIHost);
+                mainWindow.SetPluginServices(pluginService, pluginUIHost, pluginConfigService);
 
             desktop.MainWindow.DataContext = viewModel;
 

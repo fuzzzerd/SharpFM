@@ -138,9 +138,11 @@ public class TrackingPluginHost : IPluginHost
     public IReadOnlyList<ClipData> AllClips { get; set; } = [];
     public string? LastUpdatedXml { get; private set; }
     public string? LastOriginPluginId { get; private set; }
+#pragma warning disable CS0067 // Events required by IPluginHost, not raised by this mock.
     public event EventHandler<ClipData?>? SelectedClipChanged;
     public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
     public event EventHandler? ClipCollectionChanged;
+#pragma warning restore CS0067
 
     public void UpdateSelectedClipXml(string xml, string originPluginId)
     {

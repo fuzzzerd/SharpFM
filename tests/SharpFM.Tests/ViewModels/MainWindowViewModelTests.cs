@@ -248,9 +248,11 @@ public class MainWindowViewModelTests
     {
         public Model.ClipData? SelectedClip { get; set; }
         public IReadOnlyList<Model.ClipData> AllClips { get; set; } = [];
+#pragma warning disable CS0067 // Events required by IPluginHost, not raised by this mock.
         public event EventHandler<Model.ClipData?>? SelectedClipChanged;
         public event EventHandler<ClipContentChangedArgs>? ClipContentChanged;
         public event EventHandler? ClipCollectionChanged;
+#pragma warning restore CS0067
         public ILogger CreateLogger(string categoryName) => NullLogger.Instance;
         public Model.ClipData? GetClip(string clipName) => null;
         public void UpdateClipXml(string clipName, string xml, string originPluginId) { }
@@ -273,6 +275,8 @@ public class MainWindowViewModelTests
         public IReadOnlyList<PluginKeyBinding> TestKeyBindings { get; set; } = [];
         public IReadOnlyList<PluginKeyBinding> KeyBindings => TestKeyBindings;
         public IReadOnlyList<PluginMenuAction> MenuActions => [];
+        public PluginConfigSchema ConfigSchema => PluginConfigSchema.Empty;
+        public void OnConfigChanged(IReadOnlyDictionary<string, object?> values) { }
         public Control CreatePanel() => new TextBlock { Text = "stub" };
         public void Initialize(IPluginHost host) { }
         public void Dispose() { }

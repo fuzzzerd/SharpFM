@@ -38,13 +38,17 @@ public class PluginServiceTests
     private static PluginService CreateService(string pluginsDir)
     {
         var logger = LoggerFactory.Create(_ => { }).CreateLogger<PluginService>();
-        return new PluginService(logger, pluginsDir);
+        var configDir = Path.Combine(Path.GetTempPath(), $"sharpfm-cfg-{Guid.NewGuid()}");
+        var configService = new PluginConfigService(NullLogger.Instance, configDir);
+        return new PluginService(logger, configService, pluginsDir);
     }
 
     [Fact]
     public void LoadPlugins_NoPluginsDir_LoadsZero()
     {
-        var service = new PluginService(NullLogger.Instance);
+        var configDir = Path.Combine(Path.GetTempPath(), $"sharpfm-cfg-{Guid.NewGuid()}");
+        var configService = new PluginConfigService(NullLogger.Instance, configDir);
+        var service = new PluginService(NullLogger.Instance, configService);
         var host = new MockPluginHost();
 
         // AppContext.BaseDirectory won't have a plugins/ dir in test
