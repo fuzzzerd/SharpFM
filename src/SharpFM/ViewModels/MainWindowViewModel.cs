@@ -26,6 +26,13 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private readonly IFolderService _folderService;
     private readonly DispatcherTimer _statusTimer;
     private IClipRepository _repository;
+    private OpenTabViewModel? _trackedActiveTab;
+
+    private void OnActiveTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(OpenTabViewModel.Clip))
+            NotifyPropertyChanged(nameof(SelectedClip));
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -56,15 +63,45 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             path2: Path.Join("SharpFM", "Clips")
         );
 
+        OpenTabs = new OpenTabsViewModel();
+        OpenTabs.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(OpenTabsViewModel.ActiveTab)) return;
+
+            // Re-subscribe to the new active tab so preview-slot clip swaps
+            // also surface as SelectedClip changes (the tab instance stays
+            // the same, but Clip changes underneath).
+            if (_trackedActiveTab is not null)
+                _trackedActiveTab.PropertyChanged -= OnActiveTabPropertyChanged;
+            _trackedActiveTab = OpenTabs.ActiveTab;
+            if (_trackedActiveTab is not null)
+                _trackedActiveTab.PropertyChanged += OnActiveTabPropertyChanged;
+
+            NotifyPropertyChanged(nameof(SelectedClip));
+        };
+
+        RootNodes = [];
+
         FileMakerClips = [];
         FileMakerClips.CollectionChanged += (sender, e) =>
         {
-            // reset search text, which will trigger a property notify changed
-            // that will re-run the search with empty value (which shows all)
-            SearchText = string.Empty;
-        };
+            // A flat-list change invalidates the tree; rebuilding respects the
+            // current search filter.
+            RebuildTree();
 
-        FilteredClips = [];
+            // When a clip is removed from the catalog (e.g., DeleteSelectedClip),
+            // close any tabs that still point at it and dispose the cached
+            // editor view so resources (e.g. TextMate installation) don't leak.
+            if (e.OldItems is not null)
+            {
+                foreach (var item in e.OldItems)
+                {
+                    if (item is not ClipViewModel vm) continue;
+                    OpenTabs.CloseClip(vm);
+                    vm.Dispose();
+                }
+            }
+        };
 
         _repository = new ClipRepository(_currentPath);
         LoadClipsFromRepository();
@@ -75,26 +112,33 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private void LoadClipsFromRepository()
     {
         var clips = _repository.LoadClipsAsync().GetAwaiter().GetResult();
-
-        FileMakerClips.Clear();
-
-        foreach (var clip in clips)
-        {
-            FileMakerClips.Add(new ClipViewModel(
-                new FileMakerClip(clip.Name, clip.ClipType, clip.Xml)));
-        }
+        PopulateClips(clips);
     }
 
     private async Task LoadClipsFromRepositoryAsync()
     {
         var clips = await _repository.LoadClipsAsync();
+        PopulateClips(clips);
+    }
 
+    private void PopulateClips(IReadOnlyList<ClipData> clips)
+    {
+        // Closing the tab strip first keeps the editor area from holding refs
+        // to clips that are about to be replaced.
+        OpenTabs.Tabs.Clear();
+        OpenTabs.ActiveTab = null;
+
+        // Clear fires CollectionChanged with Reset (no OldItems), so dispose
+        // the outgoing clips explicitly.
+        foreach (var c in FileMakerClips) c.Dispose();
         FileMakerClips.Clear();
-
         foreach (var clip in clips)
         {
             FileMakerClips.Add(new ClipViewModel(
-                new FileMakerClip(clip.Name, clip.ClipType, clip.Xml)));
+                new FileMakerClip(clip.Name, clip.ClipType, clip.Xml))
+            {
+                FolderPath = clip.FolderPath,
+            });
         }
     }
 
@@ -131,10 +175,17 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 clip.Clip.XmlData = clip.Editor.ToXml();
 
             var clipData = FileMakerClips
-                .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.XmlData))
+                .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.XmlData)
+                {
+                    FolderPath = c.FolderPath,
+                })
                 .ToList();
 
             await _repository.SaveClipsAsync(clipData);
+
+            // Clip is now known-persisted — rebase the dirty snapshot so the
+            // tab dirty dots clear.
+            foreach (var c in FileMakerClips) c.MarkSaved();
 
             ShowStatus($"Saved {clipData.Count} clip(s) to {_repository.CurrentLocation}");
         }
@@ -173,9 +224,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        var name = SelectedClip.Clip.Name;
         var clip = SelectedClip;
-        SelectedClip = null;
+        var name = clip.Clip.Name;
+        OpenTabs.CloseClip(clip);
         FileMakerClips.Remove(clip);
         ShowStatus($"Deleted clip '{name}'");
     }
@@ -393,19 +444,43 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public ObservableCollection<ClipViewModel> FileMakerClips { get; set; }
 
-    public ObservableCollection<ClipViewModel> FilteredClips { get; set; }
+    /// <summary>
+    /// VS Code-style open tabs — the right-side editor area binds to this.
+    /// </summary>
+    public OpenTabsViewModel OpenTabs { get; }
 
-    private ClipViewModel? _selectedClip;
+    /// <summary>
+    /// Tree nodes shown in the left-side clip browser. Rebuilt whenever
+    /// <see cref="FileMakerClips"/> or <see cref="SearchText"/> changes.
+    /// </summary>
+    public ObservableCollection<ClipTreeNodeViewModel> RootNodes { get; set; }
+
+    /// <summary>
+    /// The clip backing the active tab, if any. Kept as a property so existing
+    /// commands (copy/paste/delete) and tests that reasoned about a single
+    /// "current" clip continue to work with the tabbed UI.
+    /// </summary>
     public ClipViewModel? SelectedClip
     {
-        get => _selectedClip;
+        get => OpenTabs.ActiveTab?.Clip;
         set
         {
-            _selectedClip = value;
             StatusMessage = "";
+            if (value is null) { OpenTabs.ActiveTab = null; NotifyPropertyChanged(); return; }
+            OpenTabs.OpenAsPermanent(value);
             NotifyPropertyChanged();
         }
     }
+
+    /// <summary>
+    /// Open a clip as a preview tab (single-click in the tree).
+    /// </summary>
+    public void OpenClipAsPreview(ClipViewModel clip) => OpenTabs.OpenAsPreview(clip);
+
+    /// <summary>
+    /// Open a clip as a permanent tab (double-click in the tree).
+    /// </summary>
+    public void OpenClipAsPermanent(ClipViewModel clip) => OpenTabs.OpenAsPermanent(clip);
 
     private string _searchText = string.Empty;
     public string SearchText
@@ -414,17 +489,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         set
         {
             _searchText = value;
-            var previousSelection = _selectedClip;
-            FilteredClips.Clear();
-            foreach (var c in FileMakerClips.Where(c => c.Clip.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase)))
-            {
-                FilteredClips.Add(c);
-            }
-            // Preserve selection if still visible in filtered results
-            if (previousSelection != null && FilteredClips.Contains(previousSelection))
-                SelectedClip = previousSelection;
+            RebuildTree();
             NotifyPropertyChanged();
         }
+    }
+
+    private void RebuildTree()
+    {
+        var nodes = ClipTreeNodeViewModel.Build(FileMakerClips, _searchText);
+        RootNodes.Clear();
+        foreach (var n in nodes) RootNodes.Add(n);
     }
 
     private string _currentPath;

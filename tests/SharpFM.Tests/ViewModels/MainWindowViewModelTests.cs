@@ -175,27 +175,29 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void DeleteSelectedClip_RemovesFromFilteredClips()
+    public void DeleteSelectedClip_RemovesFromCatalogAndTree()
     {
         var vm = CreateVm();
         vm.NewScriptCommand();
         var clip = vm.SelectedClip!;
-        Assert.Contains(clip, vm.FilteredClips);
+        Assert.Contains(clip, vm.FileMakerClips);
+        Assert.Contains(vm.RootNodes, n => n.IsClip && ReferenceEquals(n.Clip, clip));
 
         vm.DeleteSelectedClip();
 
-        Assert.DoesNotContain(clip, vm.FilteredClips);
+        Assert.DoesNotContain(clip, vm.FileMakerClips);
+        Assert.DoesNotContain(vm.RootNodes, n => n.IsClip && ReferenceEquals(n.Clip, clip));
     }
 
     [Fact]
-    public void SearchText_FiltersClips()
+    public void SearchText_FiltersTree()
     {
         var vm = CreateVm();
         vm.NewScriptCommand(); // adds a clip named "New Script"
         vm.SearchText = "zzz_nonexistent";
-        Assert.Empty(vm.FilteredClips);
+        Assert.Empty(vm.RootNodes);
         vm.SearchText = "";
-        Assert.NotEmpty(vm.FilteredClips);
+        Assert.NotEmpty(vm.RootNodes);
     }
 
     [Fact]

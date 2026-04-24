@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using TextMateSharp.Grammars;
 using TextMateSharp.Internal.Grammars.Reader;
 using TextMateSharp.Internal.Types;
@@ -17,6 +19,12 @@ public class FmScriptRegistryOptions : IRegistryOptions
 
     private readonly RegistryOptions _inner;
 
+    // The embedded .tmLanguage.json is immutable; parsing it is not free. Cache
+    // the parsed grammar once per process so repeated TextMate installs (e.g.
+    // fresh script-editor instances) don't reparse ~KB of JSON each time.
+    private static readonly Lazy<IRawGrammar> CachedGrammar =
+        new(LoadFmScriptGrammar, LazyThreadSafetyMode.ExecutionAndPublication);
+
     public FmScriptRegistryOptions(RegistryOptions inner)
     {
         _inner = inner;
@@ -31,7 +39,7 @@ public class FmScriptRegistryOptions : IRegistryOptions
     public IRawGrammar GetGrammar(string scopeName)
     {
         if (scopeName == ScopeName)
-            return LoadFmScriptGrammar();
+            return CachedGrammar.Value;
 
         return _inner.GetGrammar(scopeName);
     }

@@ -109,4 +109,45 @@ public class ClipViewModelTests
         Assert.Equal("Renamed", vm.Clip.Name);
         Assert.Equal("Name", changed);
     }
+
+    [Fact]
+    public void IsDirty_FalseImmediatelyAfterConstruction()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>"));
+        Assert.False(vm.IsDirty);
+    }
+
+    [Fact]
+    public void IsDirty_TrueAfterEditorEdit()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>a</Text></Step>"));
+        vm.ScriptDocument!.Text += "\n# new line";
+
+        // IsDirty is computed live — no need to pump the ContentChanged
+        // debouncer; a UI binding watching IsDirty gets notified when
+        // ContentChanged fires, but the value itself is always fresh.
+        Assert.True(vm.IsDirty);
+    }
+
+    [Fact]
+    public void MarkSaved_ClearsIsDirty()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>a</Text></Step>"));
+        vm.ScriptDocument!.Text += "\n# edited";
+        Assert.True(vm.IsDirty);
+
+        vm.MarkSaved();
+        Assert.False(vm.IsDirty);
+    }
+
+    [Fact]
+    public void ReplaceEditor_ResetsIsDirty()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>a</Text></Step>"));
+        vm.ScriptDocument!.Text += "\n# edited";
+        Assert.True(vm.IsDirty);
+
+        vm.ReplaceEditor(vm.Editor.ToXml());
+        Assert.False(vm.IsDirty);
+    }
 }

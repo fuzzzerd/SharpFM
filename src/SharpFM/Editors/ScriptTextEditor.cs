@@ -19,21 +19,28 @@ namespace SharpFM.Editors;
 /// DataContext is expected to be a <see cref="ScriptClipEditor"/>.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class ScriptTextEditor : TextEditor
+public class ScriptTextEditor : TextEditor, IDisposable
 {
     // Avalonia 12 matches styles by exact type. Without this, a subclass of
     // TextEditor gets no control template and renders blank — the editor's
     // TextArea/TextView visual tree is never built.
     protected override Type StyleKeyOverride => typeof(TextEditor);
 
+    // Shared across every script editor in the process. Building RegistryOptions
+    // pulls bundled themes into memory; doing that once (and reusing the result)
+    // measurably improves the hitch on first tab realisation for new clips.
+    private static readonly RegistryOptions SharedRegistry =
+        new((ThemeName)(int)ThemeName.DarkPlus);
+
+    private static readonly FmScriptRegistryOptions SharedFmRegistry =
+        new(SharedRegistry);
+
     private readonly TextMate.Installation _textMate;
     private readonly ScriptEditorController _controller;
 
     public ScriptTextEditor()
     {
-        var registry = new RegistryOptions((ThemeName)(int)ThemeName.DarkPlus);
-        var fmScriptRegistry = new FmScriptRegistryOptions(registry);
-        _textMate = this.InstallTextMate(fmScriptRegistry);
+        _textMate = this.InstallTextMate(SharedFmRegistry);
         _textMate.SetGrammar(FmScriptRegistryOptions.ScopeName);
 
         _controller = new ScriptEditorController(this);
@@ -50,10 +57,17 @@ public class ScriptTextEditor : TextEditor
         _controller.AttachClipEditor(clipEditor);
     }
 
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
+    // Intentionally no dispose-on-detach. Tab switches reparent this control
+    // many times; tearing down TextMate on each detach would force a full
+    // grammar/theme reinstall on every reattach. Lifetime is owned by the
+    // ClipViewModel, which calls <see cref="Dispose"/> when the clip is
+    // removed or its editor is replaced.
 
+    private bool _disposed;
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
         _controller.StatusMessageRaised -= OnStatusMessageRaised;
         _controller.Dispose();
         _textMate.Dispose();

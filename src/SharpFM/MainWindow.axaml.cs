@@ -194,4 +194,53 @@ public partial class MainWindow : Window
         window.Configure(_pluginService, _pluginHost, vm, _pluginConfigService);
         window.ShowDialog(this);
     }
+
+    // --- Tree / tab interaction ---
+
+    // Walk the visual tree up from the tapped item to find the clip node that
+    // was hit. TreeView raises Tapped with e.Source pointing at the innermost
+    // text/border; we need the DataContext of the enclosing TreeViewItem.
+    private static ClipTreeNodeViewModel? FindClipNode(object? source)
+    {
+        var current = source as Control;
+        while (current is not null)
+        {
+            if (current is TreeViewItem tvi && tvi.DataContext is ClipTreeNodeViewModel node)
+                return node;
+            if (current.DataContext is ClipTreeNodeViewModel d)
+                return d;
+            current = current.Parent as Control;
+        }
+        return null;
+    }
+
+    private void ClipsTree_Tapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        var node = FindClipNode(e.Source);
+        if (node?.Clip is null) return;
+        vm.OpenClipAsPreview(node.Clip);
+    }
+
+    private void ClipsTree_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        var node = FindClipNode(e.Source);
+        if (node?.Clip is null) return;
+        vm.OpenClipAsPermanent(node.Clip);
+    }
+
+    private void TabHeader_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        if ((sender as Control)?.DataContext is OpenTabViewModel tab)
+            vm.OpenTabs.Graduate(tab);
+    }
+
+    private void CloseTab_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        if ((sender as Button)?.Tag is OpenTabViewModel tab)
+            vm.OpenTabs.Close(tab);
+    }
 }
