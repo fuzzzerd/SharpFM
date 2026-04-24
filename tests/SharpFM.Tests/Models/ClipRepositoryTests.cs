@@ -168,7 +168,100 @@ public class ClipRepositoryTests
             Assert.Equal("Script", loaded[0].Name);
             Assert.Equal("Mac-XMSS", loaded[0].ClipType);
             Assert.Equal("<xml>data</xml>", loaded[0].Xml);
+            Assert.Empty(loaded[0].FolderPath);
         }
         finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task LoadClipsAsync_Recurses_IntoSubdirectories()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var sub = Path.Combine(dir, "Scripts", "Utilities");
+            Directory.CreateDirectory(sub);
+            File.WriteAllText(Path.Combine(sub, "Log.Mac-XMSS"), "<xml/>");
+            File.WriteAllText(Path.Combine(dir, "RootClip.Mac-XMTB"), "<xml/>");
+
+            var repo = new ClipRepository(dir);
+            var clips = await repo.LoadClipsAsync();
+
+            var nested = Assert.Single(clips, c => c.Name == "Log");
+            Assert.Equal(new[] { "Scripts", "Utilities" }, nested.FolderPath);
+
+            var rooted = Assert.Single(clips, c => c.Name == "RootClip");
+            Assert.Empty(rooted.FolderPath);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_RoundTripsFolderPath()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            var clips = new List<ClipData>
+            {
+                new("A", "Mac-XMSS", "<a/>") { FolderPath = new[] { "Group1", "Sub" } },
+                new("B", "Mac-XMTB", "<b/>") { FolderPath = Array.Empty<string>() }
+            };
+
+            await repo.SaveClipsAsync(clips);
+            Assert.True(File.Exists(Path.Combine(dir, "Group1", "Sub", "A.Mac-XMSS")));
+            Assert.True(File.Exists(Path.Combine(dir, "B.Mac-XMTB")));
+
+            var loaded = await repo.LoadClipsAsync();
+            var a = Assert.Single(loaded, c => c.Name == "A");
+            Assert.Equal(new[] { "Group1", "Sub" }, a.FolderPath);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_DeletesOrphans_AcrossSubdirectories()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var sub = Path.Combine(dir, "Old");
+            Directory.CreateDirectory(sub);
+            File.WriteAllText(Path.Combine(sub, "Gone.Mac-XMSS"), "<x/>");
+
+            var repo = new ClipRepository(dir);
+            await repo.SaveClipsAsync([new("Keep", "Mac-XMSS", "<k/>")]);
+
+            Assert.False(File.Exists(Path.Combine(sub, "Gone.Mac-XMSS")));
+            Assert.False(Directory.Exists(sub));
+            Assert.True(File.Exists(Path.Combine(dir, "Keep.Mac-XMSS")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_RejectsTraversalSegments()
+    {
+        var dir = CreateTempDir();
+        var sibling = Path.Combine(Path.GetTempPath(), $"sharpfm-sibling-{Guid.NewGuid()}");
+        try
+        {
+            Directory.CreateDirectory(sibling);
+            var repo = new ClipRepository(dir);
+
+            await repo.SaveClipsAsync([new("Evil", "Mac-XMSS", "<x/>")
+                { FolderPath = new[] { "..", Path.GetFileName(sibling) } }]);
+
+            Assert.False(File.Exists(Path.Combine(sibling, "Evil.Mac-XMSS")));
+            // ".." is stripped; any remaining safe segments stay under dir.
+            var written = Directory.EnumerateFiles(dir, "Evil.Mac-XMSS", SearchOption.AllDirectories).Single();
+            Assert.StartsWith(dir, written);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+            if (Directory.Exists(sibling)) Directory.Delete(sibling, true);
+        }
     }
 }
