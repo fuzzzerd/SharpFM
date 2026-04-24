@@ -68,7 +68,9 @@ Bulk or structured state that doesn't reduce to a single flag:
 
 - `; Buttons: ["OK" commit; "Cancel" nocommit; "" nocommit]` — used by
   Show Custom Dialog for its button configuration.
-- Future bulk state (Input Field specs, etc.) takes this form.
+- `; Inputs: [Table::Field "Label" password; ...]` — used by Show
+  Custom Dialog for its input field specs.
+- Additional bulk state surfaced in the future takes this same shape.
 
 ## Parsing precedence
 
@@ -177,10 +179,3 @@ per-step extension. Covered here for completeness.
 - `PerformScriptStep.FromDisplayParams`,
   `GoToLayoutStep.FromDisplayParams` — Form 1 regex parsers for named
   refs with `(#id)` suffixes.
-
-## Change log
-
-- **2026-04** — Extracted from `docs/step-definitions.md:44-69` into
-  its own document as part of the POCO big-bang migration. Rationale
-  section ("what to drop vs. surface") added with `Restore` on `If` as
-  the canonical drop example.
