@@ -1,107 +1,65 @@
 # SharpFM
 
-SharpFM is a cross-platform (Mac, Windows, Linux) FileMaker Pro Developer Utility for migrating FileMaker code between files, sharing code with other developers, or inspecting what's happening under the hood. Copy scripts, layouts, tables, and fields from FileMaker Pro, edit them in structured editors, and paste them back -- across machine barriers like Remote Desktop, Citrix, or anything that supports plain text.
+**Get FileMaker objects out of FileMaker, edit or share them, and paste them back.**
+
+SharpFM is a cross-platform (Windows, macOS, Linux) developer utility for FileMaker Pro. It captures the proprietary clipboard format FileMaker uses for scripts, tables, fields, and layouts, exposes it as plain XML plus structured editors, and lets you paste the result back into FileMaker when you're done.
+
+If you've ever wanted to diff two scripts, commit a table definition to git, or move code across a Remote Desktop / Citrix boundary that strips custom clipboard formats — that's what SharpFM is for.
+
+## Why SharpFM
+
+FileMaker's clipboard is a closed format. Scripts, tables, and layouts never really leave FileMaker — the only way out is a copy/paste into another FileMaker session on the same machine. SharpFM sits in the middle of that copy/paste: it decodes the clipboard into plain XML, gives you real editors to work with it, and re-encodes it on the way back. Whatever you do in between — edit, save, diff, share — is up to you.
+
+That middle step unlocks a few things:
+
+- **Version control FileMaker code.** Save clips as XML files, drop them in a git repo, review diffs like any other source.
+- **Share snippets with other developers.** XML files travel through any text-based channel — chat, gists, shared folders.
+- **Cross Remote Desktop / Citrix boundaries.** Those environments often strip custom clipboard data. Plain text survives.
+- **Edit in a real editor.** Scripts get syntax highlighting, autocomplete, and validation. Tables get a spreadsheet-style grid with a calculation editor.
+- **Inspect what FileMaker is actually doing.** See the raw XML behind any clip and learn the underlying structure.
+
+## How It Works
+
+1. **Copy from FileMaker.** Select a script, table, field set, or layout in FileMaker and copy it.
+2. **Paste into SharpFM** (`Ctrl+V` / `Edit > Paste from FileMaker`). The clip appears in the tree on the left; the matching editor opens on the right.
+3. **Edit or save.** Modify the script text, tweak field definitions, or save the clip as an XML file to share or commit.
+4. **Copy back to FileMaker** (`Ctrl+Shift+C` / `Edit > Copy to FileMaker`), then paste into the Script Workspace, Database Manager, or Layout mode.
+
+SharpFM and FileMaker need to run on the same machine for clipboard hand-off. To move clips between machines, share the XML files directly.
 
 ## Getting Started
 
-Head over to [Releases](https://github.com/fuzzzerd/SharpFM/releases) and grab the latest version for your platform (Windows, Mac, Linux).
+Grab the latest build for your platform from [Releases](https://github.com/fuzzzerd/SharpFM/releases).
 
-SharpFM and FileMaker must be running on the same computer. To share clips across machines, use the XML files directly.
+## Features
 
-### Importing Clips from FileMaker
-
-1. Open SharpFM and FileMaker side by side.
-2. In FileMaker, copy something to the clipboard (scripts, tables, layouts, etc).
-3. In SharpFM, use **Edit > Paste from FileMaker** (`Ctrl+V`).
-4. The clip appears in the left panel with the appropriate editor on the right.
-
-### Exporting Clips to FileMaker
-
-1. Select a clip in the left panel.
-2. Use **Edit > Copy to FileMaker** (`Ctrl+Shift+C`).
-3. Switch to FileMaker and open the appropriate destination (Database Manager, Script Workspace, Layout mode, etc).
-4. Paste as you normally would.
-
-### Creating New Clips
-
-- **File > New Script** (`Ctrl+N`) -- creates an empty script clip with the FmScript editor.
-- **File > New Table** (`Ctrl+Shift+N`) -- creates an empty table clip with the DataGrid editor.
-
-### Editing Scripts
-
-Select a script clip to open the plain-text script editor with FmScript syntax highlighting, autocomplete, bracket matching, and validation diagnostics. Edit the script text directly -- changes sync to the underlying XML automatically.
-
-### Editing Tables
-
-Select a table clip to open the DataGrid editor with columns for Field Name, Type, Kind, Required, Unique, and Comment. Use **+ Add Field** to add fields, **Remove** or `Delete` to remove them. Change a field's Kind to Calculated or Summary, then click **Edit Calculation...** for the calculation editor.
-
-### Viewing Raw XML
-
-Use the **XML Viewer** plugin (`Ctrl+Shift+X`) to open a live XML panel alongside any structured editor. Edits in either direction sync automatically -- change the script and the XML updates, edit the XML and the script rebuilds.
-
-### Saving and Loading Clips
-
-SharpFM persists clips as XML files in a local folder.
-
-- **File > Save All** (`Ctrl+S`) -- saves all clips to the current folder.
-- **File > Open Folder...** -- load clips from a different folder.
-- Clip files are plain XML and can be shared via git, email, or any text-based tool.
+- **Round-trip clipboard support** for FileMaker scripts, tables, fields, and layouts.
+- **FmScript editor** with syntax highlighting, autocomplete, bracket matching, and inline validation diagnostics.
+- **Table/field grid editor** with inline editing, type and kind selection, and a dedicated calculation editor for calculated and summary fields.
+- **Live XML view** (`Ctrl+Shift+X`) — structured edits and raw XML stay in sync, either direction.
+- **New clips from scratch** — start an empty script (`Ctrl+N`) or table (`Ctrl+Shift+N`) without needing to copy from FileMaker first.
+- **Tree browser with VS Code-style tabs** for working across multiple clips at once.
+- **Plain-XML storage** — clips are files on disk, shareable by any text-based channel.
 
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+N` | New Script |
-| `Ctrl+Shift+N` | New Table |
 | `Ctrl+V` | Paste from FileMaker |
 | `Ctrl+Shift+C` | Copy to FileMaker |
+| `Ctrl+N` | New Script |
+| `Ctrl+Shift+N` | New Table |
 | `Ctrl+S` | Save All |
 | `Ctrl+Shift+X` | Toggle XML Viewer |
 
-## Menu Reference
-
-| Menu | Items |
-|------|-------|
-| **File** | New Script, New Table, Open Folder..., Save All, Exit |
-| **Edit** | Paste from FileMaker, Copy to FileMaker, Copy as C# Class |
-| **Plugins** | Loaded plugins (toggle panels), Manage Plugins... |
-
-## Features
-
-- Copy FileMaker Scripts, Tables, Fields, and Layouts to their XML representation and back.
-- Persist clips as XML files shareable via git, email, or other text-based tools.
-- Plain-text script editor with FmScript syntax highlighting, autocomplete, and validation.
-- DataGrid table/field editor with inline editing, calculation editor, and type/kind selection.
-- Live bidirectional XML viewer -- edit XML or structured data, both stay in sync.
-- Extensible plugin architecture for adding custom panels and tools.
-
-## Plugins
-
-SharpFM supports plugins via the `SharpFM.Plugin` contract library. Plugins are loaded from the `plugins/` directory at startup and can be managed from **Plugins > Manage Plugins...**.
-
-### Bundled Plugins
-
-- **XML Viewer** -- Live XML panel with syntax highlighting and bidirectional sync (`Ctrl+Shift+X`).
-- **Clip Inspector** -- Displays clip metadata (name, type, element count, size).
-
-### Writing a Plugin
-
-1. Create a .NET 10 class library referencing `SharpFM.Plugin`.
-2. Implement `IPanelPlugin` -- provide an `Id`, `DisplayName`, `CreatePanel()` returning an Avalonia `Control`.
-3. Use `IPluginHost` in `Initialize()` to observe clip selection changes and content updates.
-4. Optionally register keyboard shortcuts via `KeyBindings` and custom menu actions via `MenuActions`.
-5. Build the DLL and drop it in the `plugins/` directory.
-
-See `src/SharpFM.Plugin.Sample/` for a complete working example.
-
 ## Troubleshooting
 
-Logs are stored in `${specialfolder:folder=CommonApplicationData}\SharpFM` and are automatically rotated after thirty days.
+Logs are stored in `${specialfolder:folder=CommonApplicationData}\SharpFM` and rotate after thirty days.
 
-## Similar Mac OS / Apple Based Developer Utilities
+## Similar Tools
 
-- Apple Script utility: <https://github.com/DanShockley/FmClipTools>
-- FileMaker based Generator: <https://github.com/proofgeist/generator>
+- [FmClipTools](https://github.com/DanShockley/FmClipTools) — AppleScript-based clipboard utilities (macOS only).
+- [Generator](https://github.com/proofgeist/generator) — FileMaker-based code generator.
 
 ## App Icon
 
