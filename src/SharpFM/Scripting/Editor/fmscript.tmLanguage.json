@@ -49,14 +49,58 @@
         "0": { "name": "punctuation.bracket.close.fmscript" }
       },
       "patterns": [
+        { "include": "#string" },
+        { "include": "#variable" },
         { "include": "#param-label" },
-        { "include": "source.fmcalc" }
+        { "include": "#semicolon" },
+        { "include": "#number" },
+        { "include": "#boolean-value" },
+        { "include": "#operator" },
+        { "include": "#function-call" },
+        { "include": "#field-reference" }
       ]
+    },
+    "string": {
+      "match": "\"[^\"]*\"",
+      "name": "string.quoted.double.fmscript"
+    },
+    "variable": {
+      "match": "\\${1,2}[A-Za-z_][A-Za-z0-9_.]*",
+      "name": "variable.other.fmscript"
     },
     "param-label": {
       "match": "\\b(Value|With dialog|Select|Exit after last|Perform without dialog|Target|Specify|Output File|Animation)\\s*:",
       "captures": {
         "1": { "name": "support.type.property-name.fmscript" }
+      }
+    },
+    "semicolon": {
+      "match": ";",
+      "name": "punctuation.separator.fmscript"
+    },
+    "number": {
+      "match": "\\b\\d+(\\.\\d+)?\\b",
+      "name": "constant.numeric.fmscript"
+    },
+    "boolean-value": {
+      "match": "\\b(On|Off|True|False)\\b",
+      "name": "constant.language.fmscript"
+    },
+    "operator": {
+      "match": "(>=|<=|<>|>|<|=|&|\\band\\b|\\bor\\b|\\bnot\\b|\\bxor\\b)",
+      "name": "keyword.operator.fmscript"
+    },
+    "function-call": {
+      "match": "\\b(Get|GetValue|Let|If|Case|Evaluate|ExecuteSQL|GetAsText|GetAsNumber|GetAsDate|GetAsTime|GetAsTimestamp|List|FilterValues|ValueCount|PatternCount|Position|Length|Left|Right|Middle|Substitute|Trim|Upper|Lower|Proper|Char|Code|Date|Time|Timestamp|Year|Month|Day|Hour|Minute|Seconds|Round|Abs|Int|Mod|Ceiling|Floor|Sqrt|Exp|Log|Ln|Pi|Random|Count|Sum|Average|Min|Max|GetNthRecord|Last|GetSummary|Self|GetField|SetField|JSONSetElement|JSONGetElement|JSONListKeys|JSONListValues|JSONDeleteElement|JSONFormatElements|Base64Encode|Base64Decode|CryptEncrypt|CryptDecrypt|CryptDigest|CryptGenerateSignature|CryptVerifySignature|HexEncode|HexDecode|GetContainerAttribute|GetHeight|GetWidth|GetThumbnail|VerifyContainer|UniqueValues|SortValues|While)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "support.function.fmscript" }
+      }
+    },
+    "field-reference": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_ ]*)::([A-Za-z_][A-Za-z0-9_ ]*)",
+      "captures": {
+        "1": { "name": "entity.name.type.fmscript" },
+        "2": { "name": "variable.other.member.fmscript" }
       }
     }
   }
