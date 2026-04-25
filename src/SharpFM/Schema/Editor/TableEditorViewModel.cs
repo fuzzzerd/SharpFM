@@ -81,7 +81,7 @@ public class TableEditorViewModel : INotifyPropertyChanged
     public void OpenCalculationEditor()
     {
         if (SelectedField == null) return;
-        var window = new CalculationEditorWindow(SelectedField);
+        var window = new CalculationEditorWindow(SelectedField, Table);
         window.ShowDialog(Avalonia.Application.Current?.ApplicationLifetime
             is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
             ? desktop.MainWindow! : null!);
