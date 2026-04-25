@@ -37,10 +37,21 @@ public class BracketMatchRenderer : IBackgroundRenderer
         var offset = _textArea.Caret.Offset;
         if (offset <= 0 || offset > doc.TextLength) return;
 
-        // Check character before caret and at caret
-        var text = doc.Text;
+        // Check character before caret and at caret. Defer reading doc.Text
+        // (full-document allocation) until we know we're actually on a
+        // bracket — most caret positions aren't, and this fires per
+        // keystroke / per arrow key.
         var charBefore = offset > 0 ? doc.GetCharAt(offset - 1) : '\0';
         var charAt = offset < doc.TextLength ? doc.GetCharAt(offset) : '\0';
+
+        if (charBefore != '[' && charBefore != ']' && charAt != '[' && charAt != ']')
+        {
+            if (_openOffset != oldOpen || _closeOffset != oldClose)
+                _textArea.TextView.InvalidateLayer(Layer);
+            return;
+        }
+
+        var text = doc.Text;
 
         if (charBefore == '[')
         {
