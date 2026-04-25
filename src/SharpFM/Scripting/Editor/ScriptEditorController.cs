@@ -10,6 +10,7 @@ using AvaloniaEdit.Document;
 using SharpFM.Diagnostics;
 using SharpFM.Editors;
 using SharpFM.Editors.SealedSteps;
+using SharpFM.Scripting.Editor.Pipeline;
 
 namespace SharpFM.Scripting.Editor;
 
@@ -21,7 +22,7 @@ public class ScriptEditorController : IDisposable
 {
     private readonly TextEditor _editor;
     private readonly DispatcherTimer _validationTimer;
-    private ErrorMarkerRenderer? _errorRenderer;
+    private readonly ScriptEditorRenderPipeline _renderPipeline;
     private CompletionWindow? _completionWindow;
     private ScriptClipEditor? _clipEditor;
 
@@ -52,17 +53,12 @@ public class ScriptEditorController : IDisposable
             RunValidation();
         };
 
-        // Bracket matching
-        var bracketRenderer = new BracketMatchRenderer(_editor.TextArea);
-        _editor.TextArea.TextView.BackgroundRenderers.Add(bracketRenderer);
-
-        // Multi-line statement highlighting
-        var statementRenderer = new StatementHighlightRenderer(_editor.TextArea);
-        _editor.TextArea.TextView.BackgroundRenderers.Add(statementRenderer);
-
-        // Continuation rail for multi-line calc steps
-        var continuationRenderer = new ContinuationLineRenderer(_editor.TextArea);
-        _editor.TextArea.TextView.BackgroundRenderers.Add(continuationRenderer);
+        // Single shared render pipeline. Hosts bracket-match,
+        // statement-highlight, continuation-rail, and error-marker
+        // layers on two IBackgroundRenderer instances (one per
+        // KnownLayer), with one Caret.PositionChanged subscription
+        // and at most one InvalidateLayer call per layer per event.
+        _renderPipeline = new ScriptEditorRenderPipeline(_editor.TextArea);
 
         // Replace AvaloniaEdit's built-in line-number margin with a step-index
         // margin (FileMaker-style: one number per script step, regardless of
@@ -90,12 +86,6 @@ public class ScriptEditorController : IDisposable
 
     private void AttachToDocument(TextDocument document)
     {
-        if (_errorRenderer != null)
-            _editor.TextArea.TextView.BackgroundRenderers.Remove(_errorRenderer);
-
-        _errorRenderer = new ErrorMarkerRenderer(document);
-        _editor.TextArea.TextView.BackgroundRenderers.Add(_errorRenderer);
-
         document.TextChanged += (_, _) =>
         {
             _validationTimer.Stop();
@@ -107,8 +97,6 @@ public class ScriptEditorController : IDisposable
 
     private async void RunValidation()
     {
-        if (_errorRenderer == null) return;
-
         var text = _editor.Document.Text;
 
         try
@@ -116,12 +104,10 @@ public class ScriptEditorController : IDisposable
             var diagnostics = await System.Threading.Tasks.Task.Run(
                 () => ScriptValidator.Validate(text));
 
-            // Only invalidate when the diagnostics actually changed —
-            // typing inside a line that's still good (or still bad in
-            // the same way) returns identical lists every cycle, and an
-            // invalidation here forces a full TextView render pass.
-            if (_errorRenderer.UpdateDiagnostics(diagnostics))
-                _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
+            // Pipeline.UpdateDiagnostics returns true only when the
+            // list actually changed; the pipeline performs the
+            // single InvalidateLayer call internally.
+            _renderPipeline.UpdateDiagnostics(diagnostics);
         }
         catch
         {
@@ -131,8 +117,6 @@ public class ScriptEditorController : IDisposable
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_errorRenderer == null) return;
-
         var pos = _editor.GetPositionFromPoint(e.GetPosition(_editor));
         if (pos == null)
         {
@@ -141,7 +125,7 @@ public class ScriptEditorController : IDisposable
         }
 
         var offset = _editor.Document.GetOffset(pos.Value.Location);
-        var diag = _errorRenderer.GetDiagnosticAtOffset(offset);
+        var diag = _renderPipeline.GetDiagnosticAtOffset(offset);
 
         if (diag != null)
         {
@@ -356,5 +340,6 @@ public class ScriptEditorController : IDisposable
         _editor.TextArea.TextEntered -= OnTextEntered;
         _editor.PointerMoved -= OnPointerMoved;
         _editor.KeyDown -= OnKeyDownGuardSealed;
+        _renderPipeline.Dispose();
     }
 }
