@@ -32,7 +32,7 @@ public class ScriptTextEditor : TextEditor, IDisposable
     private static readonly RegistryOptions SharedRegistry =
         new((ThemeName)(int)ThemeName.DarkPlus);
 
-    private static readonly FmScriptRegistryOptions SharedFmRegistry =
+    private static readonly FmLanguageRegistryOptions SharedFmRegistry =
         new(SharedRegistry);
 
     private readonly TextMate.Installation _textMate;
@@ -41,7 +41,7 @@ public class ScriptTextEditor : TextEditor, IDisposable
     public ScriptTextEditor()
     {
         _textMate = this.InstallTextMate(SharedFmRegistry);
-        _textMate.SetGrammar(FmScriptRegistryOptions.ScopeName);
+        _textMate.SetGrammar(FmLanguageRegistryOptions.ScriptScopeName);
 
         _controller = new ScriptEditorController(this);
         _controller.StatusMessageRaised += OnStatusMessageRaised;
