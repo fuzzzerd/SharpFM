@@ -29,6 +29,11 @@ public class SealedStepCogGenerator : VisualLineElementGenerator
 
     public override int GetFirstInterestedOffset(int startOffset)
     {
+        // Fast exit: skip the SealedAnchors enumerator when no sealed
+        // steps exist. AvaloniaEdit calls this per visual line during
+        // line construction.
+        if (!_editor.HasSealedAnchors) return -1;
+
         // The cog sits at the end of each sealed line. Return the
         // earliest end-of-line offset that belongs to a sealed anchor
         // and is >= startOffset; -1 when no more.

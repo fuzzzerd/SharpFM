@@ -70,6 +70,17 @@ public class ScriptClipEditor : IClipEditor
             .Select(kv => kv.Key);
 
     /// <summary>
+    /// Cheap predicate for sealed-step renderers / colorizers to fast-exit
+    /// when no sealed anchors exist. The full <see cref="SealedAnchors"/>
+    /// enumerator is a Where+Select chain that calls <c>Document.GetText</c>
+    /// per anchor — fine when the loop body runs, expensive when it never
+    /// does because the script has zero sealed steps. Sealed-step
+    /// components fire per visible line per layout, so even an empty
+    /// iteration adds up.
+    /// </summary>
+    internal bool HasSealedAnchors => _sealedAnchors.Count > 0;
+
+    /// <summary>
     /// Retrieve the cached XML for a sealed anchor. Returns false if the
     /// anchor is dead, evicted, or whose underlying line no longer matches
     /// the signature captured at seal time (whole-line deletion case).
