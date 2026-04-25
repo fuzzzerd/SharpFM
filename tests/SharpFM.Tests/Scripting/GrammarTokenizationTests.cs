@@ -139,21 +139,26 @@ public class GrammarTokenizationTests
     }
 
     [Fact]
-    public void FmScript_BracketCalc_UsesCalcGrammar_FieldRef()
+    public void FmScript_BracketParams_FieldRefUsesScriptScope()
     {
+        // The script grammar's bracket-params highlight calc fragments
+        // with its own native scopes — it intentionally does NOT include
+        // source.fmcalc, since the embedded grammar's pattern fan-out is
+        // measurably expensive on long scripts. The calc editor still
+        // uses source.fmcalc for full per-category function highlighting.
         var g = LoadGrammar(FmLanguageRegistryOptions.ScriptScopeName);
         var line = "Set Field [ Customer::Name ; \"Bob\" ]";
-        Assert.True(LineHasScope(g, line, "entity.name.type.fmcalc"));
-        Assert.True(LineHasScope(g, line, "string.quoted.double.fmcalc"));
+        Assert.True(LineHasScope(g, line, "entity.name.type.fmscript"));
+        Assert.True(LineHasScope(g, line, "string.quoted.double.fmscript"));
     }
 
     [Fact]
-    public void FmScript_BracketCalc_UsesCalcGrammar_BuiltinFunction()
+    public void FmScript_BracketParams_FunctionAndVariableUseScriptScope()
     {
         var g = LoadGrammar(FmLanguageRegistryOptions.ScriptScopeName);
         var line = "Set Variable [ $x ; Value: Length ( $name ) ]";
-        Assert.True(LineHasScope(g, line, "support.function.text.fmcalc"));
-        Assert.True(LineHasScope(g, line, "variable.other.fmcalc"));
+        Assert.True(LineHasScope(g, line, "support.function.fmscript"));
+        Assert.True(LineHasScope(g, line, "variable.other.fmscript"));
     }
 
     [Fact]

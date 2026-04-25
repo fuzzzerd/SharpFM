@@ -150,6 +150,15 @@ public class ScriptEditorController : IDisposable
         }
     }
 
+    /// <summary>
+    /// Minimum identifier-prefix length before the script editor pops the
+    /// completion window automatically. Two characters is enough for the
+    /// list to narrow meaningfully (Set, Sho, Lay…) and keeps the popup
+    /// out of the way on the first keystroke when the user often isn't
+    /// looking for a step name suggestion.
+    /// </summary>
+    private const int AutoCompleteMinPrefix = 2;
+
     private void OnTextEntered(object? sender, TextInputEventArgs e)
     {
         if (_completionWindow != null) return;
@@ -166,12 +175,23 @@ public class ScriptEditorController : IDisposable
     private static bool IsTriggerChar(char c) =>
         char.IsLetter(c) || c == '_';
 
+    private static bool IsIdentifierChar(char c) =>
+        char.IsLetterOrDigit(c) || c == '_';
+
     private void TryShowCompletions()
     {
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
         var lineText = _editor.Document.GetText(line.Offset, line.Length);
         var col = caret.Column - 1;
+
+        // Require AutoCompleteMinPrefix consecutive identifier characters
+        // immediately before the caret before showing. Skips the
+        // 60-item-empty-prefix popup on the very first keystroke.
+        var prefixStart = col;
+        while (prefixStart > 0 && IsIdentifierChar(lineText[prefixStart - 1]))
+            prefixStart--;
+        if (col - prefixStart < AutoCompleteMinPrefix) return;
 
         var (context, items) = FmScriptCompletionProvider.GetCompletions(lineText, col);
         if (context == CompletionContext.None || items.Count == 0) return;
