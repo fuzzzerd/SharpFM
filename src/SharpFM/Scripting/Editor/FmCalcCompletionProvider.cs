@@ -234,7 +234,8 @@ public static class FmCalcCompletionProvider
         {
             items.Add(new FmScriptCompletionData(
                 f.Name,
-                $"{f.Signature} — {f.Description}"));
+                $"{f.Signature} — {f.Description}",
+                snippet: BuildFunctionSnippet(f)));
         }
 
         foreach (var k in FmCalcCatalog.Constants)
@@ -243,6 +244,29 @@ public static class FmCalcCompletionProvider
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// Build a Monaco-style snippet for a function so accepting its
+    /// completion inserts <c>Func ( ${1:p1} ; ${2:p2} )</c> with the first
+    /// param selected and Tab navigating through the rest. Functions with
+    /// no parsed params (e.g. <c>Random</c>) collapse to the bare name.
+    /// </summary>
+    private static string? BuildFunctionSnippet(FmCalcFunction f)
+    {
+        if (f.Params.Count == 0) return null;
+
+        var parts = new List<string>(f.Params.Count);
+        for (int i = 0; i < f.Params.Count; i++)
+        {
+            // Use the first valid value as the placeholder when the param
+            // takes an enumerated keyword — gives the user a real example
+            // (e.g. AccountName for Get) rather than the generic param name.
+            var p = f.Params[i];
+            var placeholder = p.ValidValues is { Count: > 0 } vs ? vs[0].Name : p.Name;
+            parts.Add($"${{{i + 1}:{placeholder}}}");
+        }
+        return $"{f.Name} ( {string.Join(" ; ", parts)} )";
     }
 
     private static IList<ICompletionData> BuildIdentifierCompletions(
