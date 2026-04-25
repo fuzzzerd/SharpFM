@@ -31,7 +31,7 @@ public class ContinuationLineRenderer : IBackgroundRenderer
         var doc = _textArea.Document;
         if (doc == null) return;
 
-        var ranges = MultiLineStatementRanges.Compute(doc.Text);
+        var ranges = CachedMultiLineRanges.Compute(doc);
         var charWidth = textView.WideSpaceWidth;
 
         foreach (var (startLine, endLine) in ranges)

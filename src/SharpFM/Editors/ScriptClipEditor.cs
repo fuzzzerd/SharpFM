@@ -154,8 +154,7 @@ public class ScriptClipEditor : IClipEditor
     /// </summary>
     private void RebuildFromDocument()
     {
-        var text = Document.Text;
-        var ranges = MultiLineStatementRanges.Compute(text);
+        var ranges = SharpFM.Scripting.Editor.CachedMultiLineRanges.Compute(Document);
 
         var newSteps = new List<ScriptStep>();
         var consumedAnchors = new HashSet<TextAnchor>();
@@ -223,8 +222,7 @@ public class ScriptClipEditor : IClipEditor
     {
         _sealedAnchors.Clear();
 
-        var text = Document.Text;
-        var ranges = MultiLineStatementRanges.Compute(text);
+        var ranges = SharpFM.Scripting.Editor.CachedMultiLineRanges.Compute(Document);
         int stepIdx = 0;
 
         foreach (var (startLine, endLine) in ranges)
