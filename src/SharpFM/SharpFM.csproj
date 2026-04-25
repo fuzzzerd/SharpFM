@@ -52,7 +52,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Scripting\Editor\fmscript.tmLanguage.json" />
-    <EmbeddedResource Include="Scripting\Editor\fmcalc.tmLanguage.json" />
   </ItemGroup>
 
   <ItemGroup>
