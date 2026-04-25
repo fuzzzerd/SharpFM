@@ -16,6 +16,14 @@ namespace SharpFM.Model.Scripting.Calc;
 /// </summary>
 public static class FmCalcCatalog
 {
+    // Enum-value lists referenced from BuildFunctions(). Declared before
+    // Functions so they're initialised first — C# static field init runs
+    // in textual order, and BuildFunctions() reads these.
+    private static readonly IReadOnlyList<FmCalcEnumValue> GetSelectorKeywords = BuildGetSelectorKeywords();
+    private static readonly IReadOnlyList<FmCalcEnumValue> TextStyles = BuildTextStyles();
+    private static readonly IReadOnlyList<FmCalcEnumValue> HashAlgorithms = BuildHashAlgorithms();
+    private static readonly IReadOnlyList<FmCalcEnumValue> JsonElementTypes = BuildJsonElementTypes();
+
     public static IReadOnlyList<FmCalcFunction> Functions { get; } = BuildFunctions();
     public static IReadOnlyList<FmCalcControlForm> ControlForms { get; } = BuildControlForms();
     public static IReadOnlyList<string> Constants { get; } = new ReadOnlyCollection<string>(
@@ -29,8 +37,9 @@ public static class FmCalcCatalog
     {
         var list = new List<FmCalcFunction>();
 
-        void Add(string n, FunctionCategory c, string sig, string desc) =>
-            list.Add(new FmCalcFunction(n, c, sig, desc));
+        void Add(string n, FunctionCategory c, string sig, string desc,
+            params FmCalcFunctionParam[] ps) =>
+            list.Add(new FmCalcFunction(n, c, sig, desc, ps));
 
         // Text
         Add("Char", FunctionCategory.Text, "Char(number)", "Returns the character for a Unicode code point.");
@@ -90,8 +99,14 @@ public static class FmCalcCatalog
         Add("TextFormatRemove", FunctionCategory.TextFormatting, "TextFormatRemove(text)", "Removes all formatting from text.");
         Add("TextSize", FunctionCategory.TextFormatting, "TextSize(text; size)", "Returns text at the given size.");
         Add("TextSizeRemove", FunctionCategory.TextFormatting, "TextSizeRemove(text; size)", "Removes size from text.");
-        Add("TextStyleAdd", FunctionCategory.TextFormatting, "TextStyleAdd(text; style)", "Returns text with the given style applied.");
-        Add("TextStyleRemove", FunctionCategory.TextFormatting, "TextStyleRemove(text; style)", "Removes style from text.");
+        Add("TextStyleAdd", FunctionCategory.TextFormatting, "TextStyleAdd(text; style)",
+            "Returns text with the given style applied.",
+            new FmCalcFunctionParam("text"),
+            new FmCalcFunctionParam("style", "Style flag", TextStyles));
+        Add("TextStyleRemove", FunctionCategory.TextFormatting, "TextStyleRemove(text; style)",
+            "Removes style from text.",
+            new FmCalcFunctionParam("text"),
+            new FmCalcFunctionParam("style", "Style flag", TextStyles));
 
         // Number
         Add("Abs", FunctionCategory.Number, "Abs(number)", "Returns the absolute value of number.");
@@ -185,7 +200,9 @@ public static class FmCalcCatalog
         Add("SetField", FunctionCategory.Logical, "SetField(fieldName; value)", "Sets the field whose name is fieldName.");
 
         // Get
-        Add("Get", FunctionCategory.Get, "Get(parameter)", "Returns information about the FileMaker environment.");
+        Add("Get", FunctionCategory.Get, "Get(parameter)",
+            "Returns information about the FileMaker environment.",
+            new FmCalcFunctionParam("parameter", "Selector keyword", GetSelectorKeywords));
 
         // Container
         Add("Base64Decode", FunctionCategory.Container, "Base64Decode(text {; fileNameWithExtension})", "Decodes base64 to container or text.");
@@ -194,7 +211,10 @@ public static class FmCalcCatalog
         Add("CryptAuthCode", FunctionCategory.Container, "CryptAuthCode(data; algorithm; key)", "Returns an HMAC authentication code.");
         Add("CryptDecrypt", FunctionCategory.Container, "CryptDecrypt(data; key)", "Decrypts data with key.");
         Add("CryptDecryptBase64", FunctionCategory.Container, "CryptDecryptBase64(text; key)", "Decrypts base64-encoded data with key.");
-        Add("CryptDigest", FunctionCategory.Container, "CryptDigest(data; algorithm)", "Returns a cryptographic digest of data.");
+        Add("CryptDigest", FunctionCategory.Container, "CryptDigest(data; algorithm)",
+            "Returns a cryptographic digest of data.",
+            new FmCalcFunctionParam("data"),
+            new FmCalcFunctionParam("algorithm", "Hash algorithm", HashAlgorithms));
         Add("CryptEncrypt", FunctionCategory.Container, "CryptEncrypt(data; key)", "Encrypts data with key.");
         Add("CryptEncryptBase64", FunctionCategory.Container, "CryptEncryptBase64(data; key)", "Encrypts data with key and returns base64.");
         Add("CryptGenerateSignature", FunctionCategory.Container, "CryptGenerateSignature(data; algorithm; privateRSAKey; password)", "Generates an RSA signature.");
@@ -213,7 +233,12 @@ public static class FmCalcCatalog
         Add("JSONGetElement", FunctionCategory.Json, "JSONGetElement(json; keyOrIndexOrPath)", "Returns an element at the given path.");
         Add("JSONListKeys", FunctionCategory.Json, "JSONListKeys(json; keyOrIndexOrPath)", "Returns the keys of an object element.");
         Add("JSONListValues", FunctionCategory.Json, "JSONListValues(json; keyOrIndexOrPath)", "Returns the values of an object/array element.");
-        Add("JSONSetElement", FunctionCategory.Json, "JSONSetElement(json; keyOrIndexOrPath; value; type)", "Sets an element at the given path.");
+        Add("JSONSetElement", FunctionCategory.Json, "JSONSetElement(json; keyOrIndexOrPath; value; type)",
+            "Sets an element at the given path.",
+            new FmCalcFunctionParam("json"),
+            new FmCalcFunctionParam("keyOrIndexOrPath"),
+            new FmCalcFunctionParam("value"),
+            new FmCalcFunctionParam("type", "JSON value type", JsonElementTypes));
 
         // SQL
         Add("ExecuteSQL", FunctionCategory.Sql, "ExecuteSQL(sql; fieldSeparator; rowSeparator {; arguments...})", "Executes an SQL query against the open database.");
@@ -279,5 +304,243 @@ public static class FmCalcCatalog
                 "Returns the Nth result based on test (0-indexed).",
                 "Choose ( ${1:test} ; ${2:result0} ; ${3:result1} )"),
         });
+    }
+
+    /// <summary>
+    /// JSON value-type keywords accepted by <c>JSONSetElement</c>'s last argument.
+    /// </summary>
+    private static IReadOnlyList<FmCalcEnumValue> BuildJsonElementTypes() => new ReadOnlyCollection<FmCalcEnumValue>(new[]
+    {
+        new FmCalcEnumValue("JSONString",  "Quoted string."),
+        new FmCalcEnumValue("JSONNumber",  "Numeric value."),
+        new FmCalcEnumValue("JSONObject",  "Object literal."),
+        new FmCalcEnumValue("JSONArray",   "Array literal."),
+        new FmCalcEnumValue("JSONBoolean", "true or false."),
+        new FmCalcEnumValue("JSONNull",    "Null literal."),
+        new FmCalcEnumValue("JSONRaw",     "Raw, unquoted JSON fragment."),
+    });
+
+    /// <summary>
+    /// Style keywords accepted by <c>TextStyleAdd</c> / <c>TextStyleRemove</c>.
+    /// </summary>
+    private static IReadOnlyList<FmCalcEnumValue> BuildTextStyles() => new ReadOnlyCollection<FmCalcEnumValue>(new[]
+    {
+        new FmCalcEnumValue("Plain"),
+        new FmCalcEnumValue("Bold"),
+        new FmCalcEnumValue("Italic"),
+        new FmCalcEnumValue("Underline"),
+        new FmCalcEnumValue("Condense"),
+        new FmCalcEnumValue("Extend"),
+        new FmCalcEnumValue("Strikethrough"),
+        new FmCalcEnumValue("SmallCaps"),
+        new FmCalcEnumValue("Superscript"),
+        new FmCalcEnumValue("Subscript"),
+        new FmCalcEnumValue("Uppercase"),
+        new FmCalcEnumValue("Lowercase"),
+        new FmCalcEnumValue("Titlecase"),
+        new FmCalcEnumValue("WordUnderline"),
+        new FmCalcEnumValue("DoubleUnderline"),
+        new FmCalcEnumValue("AllStyles"),
+    });
+
+    /// <summary>
+    /// Hash algorithm keywords accepted by <c>CryptDigest</c>.
+    /// </summary>
+    private static IReadOnlyList<FmCalcEnumValue> BuildHashAlgorithms() => new ReadOnlyCollection<FmCalcEnumValue>(new[]
+    {
+        new FmCalcEnumValue("MD5"),
+        new FmCalcEnumValue("SHA1"),
+        new FmCalcEnumValue("SHA256"),
+        new FmCalcEnumValue("SHA512"),
+        new FmCalcEnumValue("SHA224"),
+        new FmCalcEnumValue("SHA384"),
+    });
+
+    /// <summary>
+    /// Selector keywords accepted by <c>Get(...)</c>. Common subset from
+    /// FileMaker's Get function reference; rare/edge keywords can be appended
+    /// without further wiring.
+    /// </summary>
+    private static IReadOnlyList<FmCalcEnumValue> BuildGetSelectorKeywords()
+    {
+        var list = new List<FmCalcEnumValue>();
+        void Add(string n, string d) => list.Add(new FmCalcEnumValue(n, d));
+
+        // Account / privileges
+        Add("AccountName", "Name of the account used to log in.");
+        Add("AccountPrivilegeSetName", "Privilege set name for the current account.");
+        Add("AccountExtendedPrivileges", "Extended privileges for the current account.");
+        Add("AccountGroupName", "Group name of the current externally authenticated account.");
+
+        // Active selection / field
+        Add("ActiveFieldName", "Name of the field with focus.");
+        Add("ActiveFieldContents", "Contents of the field with focus.");
+        Add("ActiveFieldTableName", "Table occurrence of the field with focus.");
+        Add("ActiveLayoutObjectName", "Object name of the layout object with focus.");
+        Add("ActiveModifierKeys", "Bitmask of modifier keys currently held.");
+        Add("ActivePortalRowNumber", "Row number of the active portal.");
+        Add("ActiveRecordNumber", "Record number of the active record in the found set.");
+        Add("ActiveRepetitionNumber", "Active repetition of a repeating field.");
+        Add("ActiveSelectionSize", "Size of the current text selection.");
+        Add("ActiveSelectionStart", "Start position of the current text selection.");
+
+        // App
+        Add("ApplicationArchitecture", "Architecture of the running FileMaker (x86_64, arm64, etc.).");
+        Add("ApplicationLanguage", "Language of the running FileMaker.");
+        Add("ApplicationVersion", "Version string of the running FileMaker.");
+
+        // Calculation / scripting
+        Add("CalculationRepetitionNumber", "Current repetition during calculation evaluation.");
+        Add("ScriptName", "Name of the currently running script.");
+        Add("ScriptParameter", "Parameter passed to the running script.");
+        Add("ScriptResult", "Result returned by the most recently completed sub-script.");
+        Add("ScriptAnimationState", "Whether script animations are currently allowed.");
+
+        // Connection
+        Add("ConnectionAttributes", "Attributes of the current network connection.");
+        Add("ConnectionState", "Encrypted/unencrypted state of the current connection.");
+
+        // Date / time
+        Add("CurrentDate", "Current date.");
+        Add("CurrentTime", "Current time.");
+        Add("CurrentTimestamp", "Current timestamp.");
+        Add("CurrentHostTimestamp", "Current timestamp from the host (sync-safe).");
+        Add("CurrentTimeUTCMilliseconds", "Current UTC time in milliseconds.");
+        Add("CurrentExtendedPrivileges", "Extended privileges for the current session.");
+        Add("CurrentPrivilegeSetName", "Privilege set name in effect for the current session.");
+
+        // Custom menus
+        Add("CustomMenuSetName", "Name of the active custom menu set.");
+
+        // Device / paths
+        Add("Device", "Type of the device running FileMaker.");
+        Add("DocumentsPath", "Path to the user's Documents folder.");
+        Add("DocumentsPathListing", "Listing of files in the Documents folder.");
+        Add("DesktopPath", "Path to the user's Desktop folder.");
+        Add("FileMakerPath", "Path to the running FileMaker application.");
+        Add("PreferencesPath", "Path to the FileMaker preferences folder.");
+        Add("TemporaryPath", "Path to a temporary folder unique to this session.");
+
+        // Encryption
+        Add("EncryptionState", "Encryption state of the current file.");
+
+        // Errors
+        Add("LastError", "Most recent script-step error number.");
+        Add("LastErrorDetail", "Detail string for the most recent error.");
+        Add("LastErrorLocation", "File/script/line of the most recent error.");
+        Add("LastExternalErrorDetail", "Detail from the most recent external error.");
+        Add("LastODBCError", "Most recent ODBC error.");
+        Add("LastMessageChoice", "User's choice from the most recent Show Custom Dialog.");
+        Add("ErrorCaptureState", "Whether error capture is enabled.");
+
+        // File
+        Add("FileName", "Name of the current file.");
+        Add("FilePath", "Full path to the current file.");
+        Add("FileSize", "Size of the current file in bytes.");
+        Add("FileLocaleName", "Locale name for the current file.");
+        Add("FileLocaleElements", "Locale elements for the current file.");
+
+        // Found set / records
+        Add("FoundCount", "Number of records in the current found set.");
+        Add("ModifiedCount", "Number of modified records in the current found set.");
+        Add("RecordID", "Internal record ID of the current record.");
+        Add("RecordNumber", "Record number of the current record.");
+        Add("RecordOpenCount", "Number of open records.");
+        Add("RecordOpenState", "Open state of the current record (0/1/2).");
+        Add("RecordModificationCount", "Number of times the current record has been modified.");
+        Add("RecordAccess", "Access privilege for the current record.");
+        Add("RequestCount", "Number of find requests in the current found set.");
+        Add("RequestOmitState", "Whether the current find request has the omit flag set.");
+        Add("TotalRecordCount", "Total record count for the current table.");
+
+        // Host / network
+        Add("HostApplicationVersion", "Version of the host FileMaker application.");
+        Add("HostIPAddress", "IP address of the host.");
+        Add("HostName", "Name of the host.");
+        Add("MultiUserState", "Multi-user (network sharing) state.");
+        Add("NetworkProtocol", "Network protocol in use.");
+        Add("NetworkType", "Type of network connection.");
+
+        // Layouts
+        Add("LayoutAccess", "Access privilege for the current layout.");
+        Add("LayoutCount", "Number of layouts in the file.");
+        Add("LayoutName", "Name of the current layout.");
+        Add("LayoutNumber", "Number of the current layout.");
+        Add("LayoutTableName", "Table occurrence of the current layout.");
+        Add("LayoutViewState", "Current view state (form/list/table).");
+
+        // Plugins
+        Add("InstalledFMPlugins", "List of installed FileMaker plugins.");
+
+        // Quick find
+        Add("QuickFindText", "Most recent quick find text.");
+
+        // Screen / printer / display
+        Add("ScreenDepth", "Color depth of the screen.");
+        Add("ScreenHeight", "Pixel height of the screen.");
+        Add("ScreenWidth", "Pixel width of the screen.");
+        Add("ScreenScaleFactor", "Scale factor of the screen.");
+        Add("HighContrastColor", "Current high-contrast color.");
+        Add("HighContrastState", "Whether high-contrast mode is enabled.");
+        Add("PrinterName", "Name of the default printer.");
+
+        // System
+        Add("SystemDrive", "Drive letter the OS is installed on.");
+        Add("SystemIPAddress", "IP address of the local machine.");
+        Add("SystemLanguage", "Language code of the OS.");
+        Add("SystemNICAddress", "NIC (MAC) address of the local machine.");
+        Add("SystemPlatform", "OS platform (1=Mac, -2=Windows, etc.).");
+        Add("SystemTimeZoneOffset", "Time zone offset from UTC, in seconds.");
+        Add("SystemVersion", "OS version string.");
+        Add("PersistentID", "Persistent device identifier.");
+        Add("UUID", "A new UUID string.");
+        Add("UUIDNumber", "A new UUID expressed as a number.");
+
+        // Sort / preview / status
+        Add("SortState", "Whether the found set is sorted.");
+        Add("StatusAreaState", "Visibility/locked state of the status area.");
+        Add("PreviewState", "Whether preview mode is active.");
+        Add("PageNumber", "Current page in preview/print.");
+
+        // Triggers
+        Add("TriggerCurrentPanel", "Index of the current panel for OnPanelSwitch triggers.");
+        Add("TriggerTargetPanel", "Index of the target panel for OnPanelSwitch triggers.");
+        Add("TriggerCurrentTabPanel", "Current tab panel index.");
+        Add("TriggerTargetTabPanel", "Target tab panel index.");
+        Add("TriggerKeystroke", "Keystroke that fired the trigger.");
+        Add("TriggerModifierKeys", "Modifiers held when the trigger fired.");
+        Add("TriggerExternalEvent", "External event that fired the trigger.");
+        Add("TriggerGestureInfo", "Gesture info for the trigger.");
+
+        // Window
+        Add("WindowContentHeight", "Height of the window content area.");
+        Add("WindowContentWidth", "Width of the window content area.");
+        Add("WindowDesktopHeight", "Height of the desktop area.");
+        Add("WindowDesktopWidth", "Width of the desktop area.");
+        Add("WindowHeight", "Height of the current window.");
+        Add("WindowWidth", "Width of the current window.");
+        Add("WindowLeft", "Left coordinate of the current window.");
+        Add("WindowTop", "Top coordinate of the current window.");
+        Add("WindowMode", "Mode of the current window.");
+        Add("WindowName", "Name of the current window.");
+        Add("WindowOrientation", "Orientation of the current window.");
+        Add("WindowStyle", "Style of the current window.");
+        Add("WindowTitle", "Title of the current window.");
+        Add("WindowVisible", "Whether the window is visible.");
+        Add("WindowZoomLevel", "Zoom level of the current window.");
+
+        // Misc
+        Add("AllowAbortState", "Whether script abort is currently allowed.");
+        Add("AllowFormattingBarState", "Whether the formatting bar is allowed.");
+        Add("AllowToolbarState", "Whether toolbars are allowed.");
+        Add("OpenDataFileInfo", "Information about open data files.");
+        Add("RegionMonitorEvents", "Region-monitor event flags.");
+        Add("TextRulerVisible", "Whether the text ruler is visible.");
+        Add("TimerEventsCount", "Count of timer events.");
+        Add("TouchKeyboardState", "Whether the touch keyboard is shown.");
+        Add("UserCount", "Count of users connected to the file.");
+        Add("UserName", "Name of the current user (FileMaker preferences).");
+
+        return new ReadOnlyCollection<FmCalcEnumValue>(list);
     }
 }

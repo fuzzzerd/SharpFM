@@ -12,6 +12,7 @@ public enum CalcCompletionContext
     Identifier,
     Variable,
     FieldRef,
+    FunctionParam,
     String,
     Comment,
 }
@@ -82,11 +83,120 @@ public static class FmCalcCompletionProvider
             return (CalcCompletionContext.FieldRef, items);
         }
 
+        // Inside Func(...) on an argument that takes enumerated keywords
+        // (e.g. Get(<here>) → AccountName, …; JSONSetElement(j;k;v;<here>)
+        // → JSONString, JSONNumber, …). Detection walks back through the
+        // line looking for an unmatched `(` and counting `;` separators.
+        var enclosing = DetectEnclosingCall(lineText, prefixStart);
+        if (enclosing.HasValue)
+        {
+            var key = (enclosing.Value.FunctionName.ToLowerInvariant(), enclosing.Value.ArgIndex);
+            if (ParamValueCompletions.TryGetValue(key, out var paramItems))
+            {
+                var filtered = new List<ICompletionData>();
+                foreach (var item in paramItems)
+                {
+                    if (Matches(item.Text, prefix)) filtered.Add(item);
+                }
+                return (CalcCompletionContext.FunctionParam, filtered);
+            }
+        }
+
         // Default: identifier — functions, control forms, constants.
         // (Plus tables for the head of a Table::Field, when phase-3 context
         // is wired up.)
         var identifierItems = BuildIdentifierCompletions(prefix, contextProvider);
         return (CalcCompletionContext.Identifier, identifierItems);
+    }
+
+    /// <summary>
+    /// Walk backward from <paramref name="caretPos"/> through
+    /// <paramref name="text"/> tracking paren depth and string state to
+    /// find the call we're directly inside, plus which positional argument
+    /// (0-based) the caret sits in. Returns <c>null</c> if there's no
+    /// enclosing call on this line.
+    /// </summary>
+    internal static (string FunctionName, int ArgIndex)? DetectEnclosingCall(string text, int caretPos)
+    {
+        // Stack frames track each unmatched `(` we've passed and the arg
+        // index at that level. The top of stack at the caret is the call
+        // we're directly inside.
+        var stack = new Stack<(int Position, int ArgIndex)>();
+        bool inString = false;
+
+        for (int i = 0; i < caretPos && i < text.Length; i++)
+        {
+            char ch = text[i];
+
+            if (inString)
+            {
+                if (ch == '\\' && i + 1 < caretPos) { i++; continue; }
+                if (ch == '"') inString = false;
+                continue;
+            }
+
+            if (ch == '"') { inString = true; continue; }
+            if (ch == '/' && i + 1 < caretPos && text[i + 1] == '/') return null; // line comment kills detection
+
+            if (ch == '(')
+            {
+                stack.Push((i, 0));
+            }
+            else if (ch == ')')
+            {
+                if (stack.Count > 0) stack.Pop();
+            }
+            else if (ch == ';' && stack.Count > 0)
+            {
+                var top = stack.Pop();
+                stack.Push((top.Position, top.ArgIndex + 1));
+            }
+        }
+
+        if (stack.Count == 0) return null;
+        var enclosing = stack.Peek();
+
+        // Read function name immediately before the matching `(`. Skip
+        // whitespace then walk back over identifier characters.
+        int j = enclosing.Position - 1;
+        while (j >= 0 && char.IsWhiteSpace(text[j])) j--;
+        int nameEnd = j + 1;
+        while (j >= 0 && IsIdentifierChar(text[j])) j--;
+        int nameStart = j + 1;
+        if (nameStart == nameEnd) return null;
+
+        return (text.Substring(nameStart, nameEnd - nameStart), enclosing.ArgIndex);
+    }
+
+    /// <summary>
+    /// Per-(function, argIndex) prebuilt completion lists for parameters
+    /// that accept enumerated keywords. Built once at type init from the
+    /// catalog so per-trigger work is just a prefix filter.
+    /// </summary>
+    private static readonly Dictionary<(string FuncName, int ArgIndex), IReadOnlyList<ICompletionData>>
+        ParamValueCompletions = BuildParamValueCompletions();
+
+    private static Dictionary<(string, int), IReadOnlyList<ICompletionData>> BuildParamValueCompletions()
+    {
+        var d = new Dictionary<(string, int), IReadOnlyList<ICompletionData>>();
+        foreach (var fn in FmCalcCatalog.Functions)
+        {
+            for (int i = 0; i < fn.Params.Count; i++)
+            {
+                var p = fn.Params[i];
+                if (p.ValidValues == null || p.ValidValues.Count == 0) continue;
+
+                var items = new List<ICompletionData>(p.ValidValues.Count);
+                foreach (var v in p.ValidValues)
+                {
+                    items.Add(new FmScriptCompletionData(
+                        v.Name,
+                        v.Description ?? p.Name));
+                }
+                d[(fn.Name.ToLowerInvariant(), i)] = items;
+            }
+        }
+        return d;
     }
 
     /// <summary>
