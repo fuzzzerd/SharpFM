@@ -66,12 +66,17 @@ public partial class CalculationEditorWindow : Window
     private void OnTextEntered(object? sender, TextInputEventArgs e)
     {
         if (_completionWindow != null) return;
+        if (string.IsNullOrEmpty(e.Text)) return;
 
-        // Only auto-trigger on characters that begin or extend an identifier
-        // (incl. the $ that introduces a variable). Otherwise typing ( ; ,
-        // space and similar would each pop a fresh window — the perceived
-        // lag the user reports comes from those spurious triggers.
-        if (string.IsNullOrEmpty(e.Text) || !IsTriggerChar(e.Text[0])) return;
+        var ch = e.Text[0];
+        var isIdentifierTrigger = IsTriggerChar(ch);
+        // Argument-boundary characters: ( and ; should pop the menu *only*
+        // when we end up in a FunctionParam context (e.g. Get( →
+        // selectors, JSONSetElement(j;k;v; → JSON types). Without this,
+        // every ( and ; would spam the window with the full identifier
+        // catalog.
+        var isArgBoundary = ch == '(' || ch == ';';
+        if (!isIdentifierTrigger && !isArgBoundary) return;
 
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
@@ -80,6 +85,7 @@ public partial class CalculationEditorWindow : Window
 
         var (context, items) = FmCalcCompletionProvider.GetCompletions(lineText, col, _completionContext);
         if (context == CalcCompletionContext.None || items.Count == 0) return;
+        if (isArgBoundary && context != CalcCompletionContext.FunctionParam) return;
 
         // Anchor the completion window to the start of the identifier the
         // user is typing so accepting an item replaces the partial prefix
