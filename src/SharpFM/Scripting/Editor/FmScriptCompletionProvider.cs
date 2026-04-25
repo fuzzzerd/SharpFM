@@ -113,12 +113,20 @@ public static class FmScriptCompletionProvider
         return bestMatch;
     }
 
-    private static IList<ICompletionData> GetStepNameCompletions(string prefix)
+    /// <summary>
+    /// Every step-name completion, built once at type initialisation. The
+    /// step registry is immutable after startup, so this list is reused
+    /// across every script editor — per-keystroke work is just a
+    /// prefix-filtered copy of references. Mirrors
+    /// <see cref="FmCalcCompletionProvider.AllBuiltinIdentifierCompletions"/>.
+    /// </summary>
+    public static IReadOnlyList<ICompletionData> AllStepNameCompletions { get; } =
+        BuildAllStepNameCompletions();
+
+    private static IReadOnlyList<ICompletionData> BuildAllStepNameCompletions()
     {
         return StepRegistry.All
-            .Where(s => s.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
-                        string.IsNullOrEmpty(prefix))
-            .OrderBy(s => s.Name)
+            .OrderBy(s => s.Name, StringComparer.Ordinal)
             .Select(s =>
             {
                 var desc = s.Category;
@@ -129,6 +137,20 @@ public static class FmScriptCompletionProvider
                     s.Name, desc, snippet: SynthesizeStepSnippet(s));
             })
             .ToList();
+    }
+
+    private static IList<ICompletionData> GetStepNameCompletions(string prefix)
+    {
+        var items = new List<ICompletionData>();
+        foreach (var item in AllStepNameCompletions)
+        {
+            if (string.IsNullOrEmpty(prefix) ||
+                item.Text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                items.Add(item);
+            }
+        }
+        return items;
     }
 
     /// <summary>

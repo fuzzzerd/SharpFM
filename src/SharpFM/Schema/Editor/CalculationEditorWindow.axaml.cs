@@ -67,6 +67,12 @@ public partial class CalculationEditorWindow : Window
     {
         if (_completionWindow != null) return;
 
+        // Only auto-trigger on characters that begin or extend an identifier
+        // (incl. the $ that introduces a variable). Otherwise typing ( ; ,
+        // space and similar would each pop a fresh window — the perceived
+        // lag the user reports comes from those spurious triggers.
+        if (string.IsNullOrEmpty(e.Text) || !IsTriggerChar(e.Text[0])) return;
+
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
         var lineText = _editor.Document.GetText(line.Offset, line.Length);
@@ -109,6 +115,15 @@ public partial class CalculationEditorWindow : Window
 
     private static bool IsIdentifierChar(char c) =>
         char.IsLetterOrDigit(c) || c == '_';
+
+    /// <summary>
+    /// Characters that should pop the completion window when typed in a
+    /// fresh editor with no window open. Letters and underscore start
+    /// identifiers; <c>$</c> starts a variable reference. Digits and other
+    /// punctuation never start a completion-worthy token, so we ignore them.
+    /// </summary>
+    private static bool IsTriggerChar(char c) =>
+        char.IsLetter(c) || c == '_' || c == '$';
 
     private void OnOk(object? sender, RoutedEventArgs e)
     {
