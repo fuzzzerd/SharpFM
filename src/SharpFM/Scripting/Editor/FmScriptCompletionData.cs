@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
-using Avalonia.Controls;
 using Avalonia.Media;
 using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
@@ -17,7 +16,6 @@ public class FmScriptCompletionData : ICompletionData
         new(@"\$\{(\d+):([^}]*)\}|\$0", RegexOptions.Compiled);
 
     private readonly string? _snippet;
-    private readonly TextBlock _content;
 
     public FmScriptCompletionData(string text, string? description = null,
         double priority = 0, string? snippet = null)
@@ -26,18 +24,15 @@ public class FmScriptCompletionData : ICompletionData
         Description = description ?? text;
         Priority = priority;
         _snippet = snippet;
-
-        // Cache the Content control instead of allocating a fresh TextBlock
-        // on every property access. AvaloniaEdit's CompletionList may
-        // re-read Content during virtualization / filter narrowing, and
-        // each completion item is owned by a single ContentPresenter so
-        // sharing a per-item TextBlock is safe.
-        _content = new TextBlock { Text = text };
     }
 
     public IImage? Image => null;
     public string Text { get; }
-    public object Content => _content;
+    // Return the bare string. ContentPresenter wraps it in a TextBlock
+    // automatically and that wrapper is owned by exactly one parent, so
+    // unlike a cached Control instance there's no "already has a visual
+    // parent" failure when the completion window reopens or virtualises.
+    public object Content => Text;
     public object Description { get; }
     public double Priority { get; }
 
