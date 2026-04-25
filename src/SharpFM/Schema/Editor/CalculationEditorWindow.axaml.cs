@@ -28,10 +28,10 @@ public partial class CalculationEditorWindow : Window
 
         // Set up FM script syntax highlighting for calculations
         var registryOptions = new RegistryOptions((ThemeName)(int)ThemeName.DarkPlus);
-        var fmRegistry = new FmScriptRegistryOptions(registryOptions);
+        var fmRegistry = new FmLanguageRegistryOptions(registryOptions);
         var editor = this.FindControl<TextEditor>("calcEditor")!;
         _textMateInstallation = editor.InstallTextMate(fmRegistry);
-        _textMateInstallation.SetGrammar(FmScriptRegistryOptions.ScopeName);
+        _textMateInstallation.SetGrammar(FmLanguageRegistryOptions.CalcScopeName);
 
         // Populate fields
         editor.Text = field.Calculation ?? "";
