@@ -32,6 +32,9 @@ public class SealedStepSquiggleRenderer : IBackgroundRenderer
     {
         var doc = _textArea.Document;
         if (doc == null) return;
+        // Fast exit: avoid the SealedAnchors enumerator allocation when
+        // the script has zero sealed steps. Draw fires per paint.
+        if (!_editor.HasSealedAnchors) return;
 
         foreach (var anchor in _editor.SealedAnchors)
         {
