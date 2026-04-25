@@ -32,6 +32,16 @@ public class StepIndexMargin : AbstractMargin
     // the typeface or em size changes (handled in OnTextViewChanged).
     private readonly Dictionary<string, FormattedText> _formattedCache = new();
 
+    // Track the last visible line range + step-index identity we
+    // actually rendered. VisualLinesChanged fires for many reasons
+    // (every layout pass, scroll attempts, font property changes, etc.)
+    // — when neither the visible-line range nor the step-index dict
+    // identity has changed since our last paint, the next paint would
+    // be pixel-identical, so InvalidateVisual is wasted work.
+    private int _lastFirstVisibleLine = -1;
+    private int _lastLastVisibleLine = -1;
+    private object? _lastStepIndexKey;
+
     public StepIndexMargin()
     {
         // Match the editor's default font; will be re-pulled on attach.
@@ -58,6 +68,40 @@ public class StepIndexMargin : AbstractMargin
 
     private void OnVisualLinesChanged(object? sender, System.EventArgs e)
     {
+        var tv = TextView;
+        if (tv == null || !tv.VisualLinesValid)
+        {
+            InvalidateVisual();
+            return;
+        }
+
+        var visualLines = tv.VisualLines;
+        if (visualLines.Count == 0)
+        {
+            InvalidateVisual();
+            return;
+        }
+
+        var first = visualLines[0].FirstDocumentLine.LineNumber;
+        var last = visualLines[visualLines.Count - 1].FirstDocumentLine.LineNumber;
+        var doc = tv.Document;
+        // Reference-identity on the cached step-index dict — same
+        // instance means the document version hasn't changed since
+        // CachedMultiLineRanges last computed.
+        object? stepIndexKey = doc != null
+            ? CachedMultiLineRanges.GetStepIndex(doc)
+            : null;
+
+        if (first == _lastFirstVisibleLine
+            && last == _lastLastVisibleLine
+            && ReferenceEquals(stepIndexKey, _lastStepIndexKey))
+        {
+            return;
+        }
+
+        _lastFirstVisibleLine = first;
+        _lastLastVisibleLine = last;
+        _lastStepIndexKey = stepIndexKey;
         InvalidateVisual();
     }
 
