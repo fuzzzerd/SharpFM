@@ -26,6 +26,12 @@ public class StepIndexMargin : AbstractMargin
     private Typeface _typeface = new(FontFamily.Default);
     private double _emSize = 12;
 
+    // FormattedText is heavy to construct (font shaping + glyph layout).
+    // Step numbers are bounded — for the visible range, they're a tiny
+    // recurring set ("1", "2", "3", …) — so cache by string. Reset when
+    // the typeface or em size changes (handled in OnTextViewChanged).
+    private readonly Dictionary<string, FormattedText> _formattedCache = new();
+
     public StepIndexMargin()
     {
         // Match the editor's default font; will be re-pulled on attach.
@@ -43,6 +49,7 @@ public class StepIndexMargin : AbstractMargin
             newTextView.VisualLinesChanged += OnVisualLinesChanged;
             _typeface = new Typeface(newTextView.GetValue(TextElement.FontFamilyProperty));
             _emSize = newTextView.GetValue(TextElement.FontSizeProperty);
+            _formattedCache.Clear();
         }
 
         base.OnTextViewChanged(oldTextView, newTextView);
@@ -88,7 +95,13 @@ public class StepIndexMargin : AbstractMargin
         _stepIndex = CachedMultiLineRanges.GetStepIndex(document);
     }
 
-    private FormattedText MakeFormattedText(string text) =>
-        new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            _typeface, _emSize, Brushes.Gray);
+    private FormattedText MakeFormattedText(string text)
+    {
+        if (_formattedCache.TryGetValue(text, out var cached))
+            return cached;
+        var formatted = new FormattedText(text, CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight, _typeface, _emSize, Brushes.Gray);
+        _formattedCache[text] = formatted;
+        return formatted;
+    }
 }
