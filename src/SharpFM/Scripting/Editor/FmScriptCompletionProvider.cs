@@ -11,6 +11,21 @@ public enum CompletionContext
     StepName,
     ParamLabel,
     ParamValue,
+    /// <summary>
+    /// Caret is inside <c>[ ... ]</c> on a freeform value position — the
+    /// calculation provider is supplying functions, control forms,
+    /// constants, etc. Anchored at the identifier prefix.
+    /// </summary>
+    CalcExpression,
+    /// <summary>
+    /// Same as <see cref="CalcExpression"/> but the calc provider matched
+    /// a <see cref="FmCalcCompletionProvider"/> <c>FunctionParam</c>
+    /// context — i.e. enum keywords for the current arg
+    /// (<c>Get(...)</c>, <c>JSONSetElement</c>'s <c>type</c>, etc.).
+    /// Distinguished so the controller can pop on <c>(</c> and <c>;</c>
+    /// triggers without spamming bare identifier lists.
+    /// </summary>
+    CalcParamValue,
     None,
 }
 
@@ -49,6 +64,17 @@ public static class FmScriptCompletionProvider
             return (CompletionContext.StepName, items);
         }
 
+        // Inside an unmatched `(...)` the `;` separators belong to that
+        // call, not to the step's bracket-param list. Hand off to the calc
+        // provider before we try to slice currentSegment on flat `;` —
+        // otherwise the script logic mis-attributes the call's args to
+        // step params and we never reach the labeled-value fallback.
+        if (FmCalcCompletionProvider.DetectEnclosingCall(lineText, caretColumn) != null)
+        {
+            var deferredEarly = DeferToCalc(lineText, caretColumn);
+            if (deferredEarly.Items.Count > 0) return deferredEarly;
+        }
+
         var afterStepName = forLookup.Substring(stepName.Length);
         var lastSemicolon = afterStepName.LastIndexOf(';');
         var currentSegment = lastSemicolon >= 0
@@ -67,6 +93,14 @@ public static class FmScriptCompletionProvider
                 var items = GetParamValueCompletions(matchingParam);
                 if (items.Count > 0)
                     return (CompletionContext.ParamValue, items);
+
+                // Param exists but has no enum values — the user is typing
+                // a freeform calculation expression (e.g. `Value: Length(`,
+                // `Value: $myVar`, `Value: Get(AccountName)`). Hand off to
+                // the calc provider so functions, control forms, constants
+                // and per-arg keywords all light up here too.
+                var deferred = DeferToCalc(lineText, caretColumn);
+                if (deferred.Items.Count > 0) return deferred;
             }
         }
 
@@ -258,5 +292,25 @@ public static class FmScriptCompletionProvider
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// Hand off completion to the calc provider for the same line/caret
+    /// position. Returns a script-side context so the controller can
+    /// distinguish identifier-prefix completions (anchored at the prefix)
+    /// from function-param keyword completions (whose triggers also
+    /// include <c>(</c> and <c>;</c>).
+    /// </summary>
+    private static (CompletionContext Context, IList<ICompletionData> Items) DeferToCalc(
+        string lineText, int caretColumn)
+    {
+        var (calcCtx, calcItems) = FmCalcCompletionProvider.GetCompletions(lineText, caretColumn);
+        if (calcCtx == CalcCompletionContext.None || calcItems.Count == 0)
+            return (CompletionContext.None, Array.Empty<ICompletionData>());
+
+        var scriptCtx = calcCtx == CalcCompletionContext.FunctionParam
+            ? CompletionContext.CalcParamValue
+            : CompletionContext.CalcExpression;
+        return (scriptCtx, calcItems);
     }
 }
