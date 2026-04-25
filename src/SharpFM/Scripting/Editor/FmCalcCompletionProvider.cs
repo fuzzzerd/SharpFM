@@ -89,38 +89,66 @@ public static class FmCalcCompletionProvider
         return (CalcCompletionContext.Identifier, identifierItems);
     }
 
-    private static IList<ICompletionData> BuildIdentifierCompletions(
-        string prefix, ICalcCompletionContextProvider? contextProvider)
+    /// <summary>
+    /// All built-in identifier completions (functions, control forms,
+    /// constants), built once at startup. The catalog is immutable after
+    /// type initialization, so this list is shared safely across every
+    /// calculation editor — no per-trigger allocations beyond the filtered
+    /// view we hand to the completion window.
+    ///
+    /// <para>Public so future consumers (e.g. embedded calc inside script
+    /// step brackets) can reuse the same list.</para>
+    /// </summary>
+    public static IReadOnlyList<ICompletionData> AllBuiltinIdentifierCompletions { get; } =
+        BuildAllBuiltinIdentifierCompletions();
+
+    private static IReadOnlyList<ICompletionData> BuildAllBuiltinIdentifierCompletions()
     {
-        var items = new List<ICompletionData>();
+        var items = new List<ICompletionData>(
+            FmCalcCatalog.ControlForms.Count
+            + FmCalcCatalog.Functions.Count
+            + FmCalcCatalog.Constants.Count);
 
         // Control forms first — promoted via priority so Let/Case/If sort
         // ahead of similarly-named functions when prefixes overlap.
         foreach (var c in FmCalcCatalog.ControlForms)
         {
-            if (!Matches(c.Name, prefix)) continue;
             items.Add(new FmScriptCompletionData(
                 c.Name,
-                $"{c.Signature}\n{c.Description}",
+                $"{c.Signature} — {c.Description}",
                 priority: 1.0,
                 snippet: c.Snippet));
         }
 
         foreach (var f in FmCalcCatalog.Functions)
         {
-            if (!Matches(f.Name, prefix)) continue;
             items.Add(new FmScriptCompletionData(
                 f.Name,
-                $"{f.Signature}\n{f.Description}"));
+                $"{f.Signature} — {f.Description}"));
         }
 
         foreach (var k in FmCalcCatalog.Constants)
         {
-            if (!Matches(k, prefix)) continue;
             items.Add(new FmScriptCompletionData(k, "constant"));
         }
 
-        // Phase-3 hook: tables (head of a Table::Field reference).
+        return items;
+    }
+
+    private static IList<ICompletionData> BuildIdentifierCompletions(
+        string prefix, ICalcCompletionContextProvider? contextProvider)
+    {
+        // Filter the prebuilt list — no per-trigger allocations of completion
+        // data objects, just a List of references.
+        var items = new List<ICompletionData>();
+        foreach (var item in AllBuiltinIdentifierCompletions)
+        {
+            if (Matches(item.Text, prefix)) items.Add(item);
+        }
+
+        // Tables come from the document context, so they're built per-trigger.
+        // Empty in practice today (no schema container); the loop is a no-op
+        // until that hook is wired.
         if (contextProvider != null)
         {
             foreach (var t in contextProvider.GetTableNames())

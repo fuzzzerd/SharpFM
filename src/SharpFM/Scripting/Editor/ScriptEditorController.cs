@@ -154,8 +154,17 @@ public class ScriptEditorController : IDisposable
     {
         if (_completionWindow != null) return;
 
+        // Only auto-trigger on identifier-starting characters. Without this
+        // gate, every space, semicolon, bracket, etc. spawns a fresh
+        // CompletionWindow build — measurably laggy for catalogs of any
+        // size. Mirrors the calculation editor's gating logic.
+        if (string.IsNullOrEmpty(e.Text) || !IsTriggerChar(e.Text[0])) return;
+
         TryShowCompletions();
     }
+
+    private static bool IsTriggerChar(char c) =>
+        char.IsLetter(c) || c == '_';
 
     private void TryShowCompletions()
     {
