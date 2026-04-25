@@ -152,14 +152,19 @@ public class ScriptEditorController : IDisposable
     private void OnTextEntered(object? sender, TextInputEventArgs e)
     {
         if (_completionWindow != null) return;
+        if (string.IsNullOrEmpty(e.Text)) return;
 
-        // Only auto-trigger on identifier-starting characters. Without this
-        // gate, every space, semicolon, bracket, etc. spawns a fresh
-        // CompletionWindow build — measurably laggy for catalogs of any
-        // size. Mirrors the calculation editor's gating logic.
-        if (string.IsNullOrEmpty(e.Text) || !IsTriggerChar(e.Text[0])) return;
+        var ch = e.Text[0];
+        var isIdentifierTrigger = IsTriggerChar(ch);
+        // Argument-boundary characters: ( and ; should pop the menu *only*
+        // when we end up in a CalcParamValue context (e.g. Get( →
+        // selectors, JSONSetElement(j;k;v; → JSON types). Without this,
+        // every ( and ; would spam the window with the full identifier
+        // catalog. Mirrors the calculation editor's gating logic.
+        var isArgBoundary = ch == '(' || ch == ';';
+        if (!isIdentifierTrigger && !isArgBoundary) return;
 
-        TryShowCompletions();
+        TryShowCompletions(isArgBoundary);
     }
 
     private static bool IsTriggerChar(char c) =>
@@ -168,23 +173,34 @@ public class ScriptEditorController : IDisposable
     private static bool IsIdentifierChar(char c) =>
         char.IsLetterOrDigit(c) || c == '_';
 
-    private void TryShowCompletions()
+    private void TryShowCompletions(bool isArgBoundaryTrigger = false)
     {
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
         var lineText = _editor.Document.GetText(line.Offset, line.Length);
         var col = caret.Column - 1;
 
-        // Require AutoCompleteMinPrefix consecutive identifier characters
-        // immediately before the caret before showing. Skips the
-        // 60-item-empty-prefix popup on the very first keystroke.
+        // Walk back over the identifier prefix immediately before the
+        // caret. We need this in two places: the min-prefix gate below
+        // and the StartOffset anchor for calc-context completions.
         var prefixStart = col;
         while (prefixStart > 0 && IsIdentifierChar(lineText[prefixStart - 1]))
             prefixStart--;
-        if (col - prefixStart < AutoCompleteMinPrefix) return;
+
+        // Require AutoCompleteMinPrefix consecutive identifier characters
+        // before showing — skips the empty-prefix popup on the first
+        // keystroke. Skipped for ( / ; triggers because those are
+        // argument-boundary characters where the prefix is intentionally
+        // empty (e.g. `Get(` should pop the selector list immediately).
+        if (!isArgBoundaryTrigger && col - prefixStart < AutoCompleteMinPrefix) return;
 
         var (context, items) = FmScriptCompletionProvider.GetCompletions(lineText, col);
         if (context == CompletionContext.None || items.Count == 0) return;
+
+        // Only commit to opening the window on ( or ; triggers when the
+        // result is a function-param keyword list — anything else and the
+        // user just typed a separator and doesn't want a popup.
+        if (isArgBoundaryTrigger && context != CompletionContext.CalcParamValue) return;
 
         _completionWindow = new CompletionWindow(_editor.TextArea);
 
@@ -196,6 +212,14 @@ public class ScriptEditorController : IDisposable
         else if (context == CompletionContext.ParamLabel)
         {
             _completionWindow.StartOffset = _editor.CaretOffset;
+        }
+        else if (context == CompletionContext.CalcExpression
+                 || context == CompletionContext.CalcParamValue)
+        {
+            // Anchor at the start of the identifier prefix so accepting
+            // an item replaces the partial prefix rather than appending
+            // after it.
+            _completionWindow.StartOffset = line.Offset + prefixStart;
         }
 
         foreach (var item in items)
