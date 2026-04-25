@@ -153,20 +153,28 @@ public class ScriptEditorController : IDisposable
     private void OnTextEntered(object? sender, TextInputEventArgs e)
     {
         if (_completionWindow != null) return;
+        if (string.IsNullOrEmpty(e.Text)) return;
 
-        // Only auto-trigger on identifier-starting characters. Without this
-        // gate, every space, semicolon, bracket, etc. spawns a fresh
-        // CompletionWindow build — measurably laggy for catalogs of any
-        // size. Mirrors the calculation editor's gating logic.
-        if (string.IsNullOrEmpty(e.Text) || !IsTriggerChar(e.Text[0])) return;
+        var ch = e.Text[0];
+        var isIdentifierTrigger = IsTriggerChar(ch);
+        // Argument-boundary characters: ( and ; should pop the menu *only*
+        // when we end up in a CalcParamValue context (e.g. Get( →
+        // selectors, JSONSetElement(j;k;v; → JSON types). Without this,
+        // every ( and ; would spam the window with the full identifier
+        // catalog. Mirrors the calculation editor's gating logic.
+        var isArgBoundary = ch == '(' || ch == ';';
+        if (!isIdentifierTrigger && !isArgBoundary) return;
 
-        TryShowCompletions();
+        TryShowCompletions(isArgBoundary);
     }
 
     private static bool IsTriggerChar(char c) =>
         char.IsLetter(c) || c == '_';
 
-    private void TryShowCompletions()
+    private static bool IsIdentifierChar(char c) =>
+        char.IsLetterOrDigit(c) || c == '_';
+
+    private void TryShowCompletions(bool isArgBoundaryTrigger = false)
     {
         var caret = _editor.TextArea.Caret;
         var line = _editor.Document.GetLineByNumber(caret.Line);
@@ -175,6 +183,11 @@ public class ScriptEditorController : IDisposable
 
         var (context, items) = FmScriptCompletionProvider.GetCompletions(lineText, col);
         if (context == CompletionContext.None || items.Count == 0) return;
+
+        // Only commit to opening the window on ( or ; triggers when the
+        // result is a function-param keyword list — anything else and the
+        // user just typed a separator and doesn't want a popup.
+        if (isArgBoundaryTrigger && context != CompletionContext.CalcParamValue) return;
 
         _completionWindow = new CompletionWindow(_editor.TextArea);
 
@@ -186,6 +199,17 @@ public class ScriptEditorController : IDisposable
         else if (context == CompletionContext.ParamLabel)
         {
             _completionWindow.StartOffset = _editor.CaretOffset;
+        }
+        else if (context == CompletionContext.CalcExpression
+                 || context == CompletionContext.CalcParamValue)
+        {
+            // Anchor at the start of the identifier prefix the user is
+            // typing so accepting an item replaces the partial prefix
+            // rather than appending after it.
+            var prefixStart = col;
+            while (prefixStart > 0 && IsIdentifierChar(lineText[prefixStart - 1]))
+                prefixStart--;
+            _completionWindow.StartOffset = line.Offset + prefixStart;
         }
 
         foreach (var item in items)
