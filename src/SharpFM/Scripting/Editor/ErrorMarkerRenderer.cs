@@ -22,9 +22,32 @@ public class ErrorMarkerRenderer : IBackgroundRenderer
 
     public KnownLayer Layer => KnownLayer.Selection;
 
-    public void UpdateDiagnostics(List<ScriptDiagnostic> diagnostics)
+    /// <summary>
+    /// Replace the renderer's diagnostics list. Returns true if the list
+    /// actually changed (different count or any element differs) — caller
+    /// can use this to skip InvalidateLayer when the validator returned
+    /// the same diagnostics it returned last time, which is the common
+    /// case during steady typing inside a single problematic line.
+    /// </summary>
+    public bool UpdateDiagnostics(List<ScriptDiagnostic> diagnostics)
     {
+        if (DiagnosticsEquivalent(_diagnostics, diagnostics)) return false;
         _diagnostics = diagnostics;
+        return true;
+    }
+
+    private static bool DiagnosticsEquivalent(List<ScriptDiagnostic> a, List<ScriptDiagnostic> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+        {
+            var x = a[i];
+            var y = b[i];
+            if (x.Line != y.Line || x.StartCol != y.StartCol || x.EndCol != y.EndCol
+                || x.Severity != y.Severity || x.Message != y.Message)
+                return false;
+        }
+        return true;
     }
 
     public ScriptDiagnostic? GetDiagnosticAtOffset(int offset)

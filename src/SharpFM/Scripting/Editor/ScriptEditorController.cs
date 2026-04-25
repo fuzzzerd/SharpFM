@@ -116,8 +116,12 @@ public class ScriptEditorController : IDisposable
             var diagnostics = await System.Threading.Tasks.Task.Run(
                 () => ScriptValidator.Validate(text));
 
-            _errorRenderer.UpdateDiagnostics(diagnostics);
-            _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
+            // Only invalidate when the diagnostics actually changed —
+            // typing inside a line that's still good (or still bad in
+            // the same way) returns identical lists every cycle, and an
+            // invalidation here forces a full TextView render pass.
+            if (_errorRenderer.UpdateDiagnostics(diagnostics))
+                _editor.TextArea.TextView.InvalidateLayer(_errorRenderer.Layer);
         }
         catch
         {
