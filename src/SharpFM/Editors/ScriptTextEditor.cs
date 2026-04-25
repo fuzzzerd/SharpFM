@@ -37,6 +37,7 @@ public class ScriptTextEditor : TextEditor, IDisposable
 
     private readonly TextMate.Installation _textMate;
     private readonly ScriptEditorController _controller;
+    private ScriptClipEditor? _attachedEditor;
 
     public ScriptTextEditor()
     {
@@ -52,6 +53,15 @@ public class ScriptTextEditor : TextEditor, IDisposable
         base.OnDataContextChanged(e);
 
         if (DataContext is not ScriptClipEditor clipEditor) return;
+
+        // Avalonia fires DataContextChanged multiple times during template
+        // instantiation and visual-tree reparenting even when the resolved
+        // value is the same instance. Skip the attach work when nothing
+        // actually changed — the trace showed this firing 9× for a single
+        // tab open, each time tearing down + reinstalling sealed-step
+        // renderers.
+        if (ReferenceEquals(_attachedEditor, clipEditor)) return;
+        _attachedEditor = clipEditor;
 
         Document = clipEditor.Document;
         _controller.AttachClipEditor(clipEditor);
