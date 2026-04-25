@@ -7,8 +7,6 @@ using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
-using SharpFM.Model.Scripting;
-
 namespace SharpFM.Scripting.Editor;
 
 /// <summary>
@@ -25,7 +23,6 @@ namespace SharpFM.Scripting.Editor;
 public class StepIndexMargin : AbstractMargin
 {
     private IReadOnlyDictionary<int, int> _stepIndex = new Dictionary<int, int>();
-    private int _cachedTextVersion = -1;
     private Typeface _typeface = new(FontFamily.Default);
     private double _emSize = 12;
 
@@ -86,11 +83,9 @@ public class StepIndexMargin : AbstractMargin
     private void EnsureStepIndexFresh(TextDocument? document)
     {
         if (document == null) return;
-        if (document.Version is { } version && version.GetHashCode() == _cachedTextVersion)
-            return;
-
-        _stepIndex = MultiLineStatementRanges.BuildStepIndex(document.Text);
-        _cachedTextVersion = document.Version?.GetHashCode() ?? -1;
+        // Defer to the shared cache so multiple renderers reading the
+        // same document version reuse one Compute pass.
+        _stepIndex = CachedMultiLineRanges.GetStepIndex(document);
     }
 
     private FormattedText MakeFormattedText(string text) =>
