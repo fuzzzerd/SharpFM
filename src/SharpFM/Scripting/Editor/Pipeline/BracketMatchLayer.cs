@@ -1,55 +1,45 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
-using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
+using SharpFM.Model.Scripting;
 
-namespace SharpFM.Scripting.Editor;
+namespace SharpFM.Scripting.Editor.Pipeline;
 
-[ExcludeFromCodeCoverage]
-public class BracketMatchRenderer : IBackgroundRenderer
+/// <summary>
+/// Highlights the matching <c>[</c>/<c>]</c> pair when the caret sits
+/// adjacent to one of them. Updates only when the caret is near a
+/// bracket — for all other caret moves the layer reports clean and
+/// no Avalonia work is triggered.
+/// </summary>
+internal sealed class BracketMatchLayer : IRenderLayer
 {
+    public KnownLayer TargetLayer => KnownLayer.Selection;
 
-    private readonly TextArea _textArea;
     private int _openOffset = -1;
     private int _closeOffset = -1;
 
-    public BracketMatchRenderer(TextArea textArea)
-    {
-        _textArea = textArea;
-        _textArea.Caret.PositionChanged += (_, _) => UpdateBracketMatch();
-    }
-
-    public KnownLayer Layer => KnownLayer.Selection;
-
-    public void UpdateBracketMatch()
+    public bool OnCaretChanged(RenderContext ctx)
     {
         var oldOpen = _openOffset;
         var oldClose = _closeOffset;
         _openOffset = -1;
         _closeOffset = -1;
 
-        var doc = _textArea.Document;
-        if (doc == null) return;
+        var doc = ctx.Document;
+        if (doc == null) return oldOpen != -1 || oldClose != -1;
 
-        var offset = _textArea.Caret.Offset;
-        if (offset <= 0 || offset > doc.TextLength) return;
+        var offset = ctx.CaretOffset;
+        if (offset <= 0 || offset > doc.TextLength)
+            return oldOpen != -1 || oldClose != -1;
 
-        // Check character before caret and at caret. Defer reading doc.Text
-        // (full-document allocation) until we know we're actually on a
-        // bracket — most caret positions aren't, and this fires per
-        // keystroke / per arrow key.
+        // Defer reading doc.Text (full-document allocation) until we know
+        // we're actually adjacent to a bracket — most caret positions
+        // aren't, and this fires per keystroke + arrow key.
         var charBefore = offset > 0 ? doc.GetCharAt(offset - 1) : '\0';
         var charAt = offset < doc.TextLength ? doc.GetCharAt(offset) : '\0';
 
         if (charBefore != '[' && charBefore != ']' && charAt != '[' && charAt != ']')
-        {
-            if (_openOffset != oldOpen || _closeOffset != oldClose)
-                _textArea.TextView.InvalidateLayer(Layer);
-            return;
-        }
+            return oldOpen != -1 || oldClose != -1;
 
         var text = doc.Text;
 
@@ -74,25 +64,22 @@ public class BracketMatchRenderer : IBackgroundRenderer
             if (match >= 0) { _openOffset = match; _closeOffset = offset; }
         }
 
-        if (_openOffset != oldOpen || _closeOffset != oldClose)
-            _textArea.TextView.InvalidateLayer(Layer);
+        return _openOffset != oldOpen || _closeOffset != oldClose;
     }
 
-    public void Draw(TextView textView, DrawingContext drawingContext)
+    public void Draw(RenderContext ctx, TextView textView, DrawingContext dc)
     {
         if (_openOffset < 0 || _closeOffset < 0) return;
-
-        DrawBracketHighlight(textView, drawingContext, _openOffset);
-        DrawBracketHighlight(textView, drawingContext, _closeOffset);
+        DrawBracketHighlight(textView, dc, _openOffset);
+        DrawBracketHighlight(textView, dc, _closeOffset);
     }
 
-    private static void DrawBracketHighlight(TextView textView, DrawingContext context, int offset)
+    private static void DrawBracketHighlight(TextView textView, DrawingContext dc, int offset)
     {
         var segment = new TextSegment { StartOffset = offset, EndOffset = offset + 1 };
         foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
         {
-            context.DrawRectangle(ScriptEditorTheme.BracketMatchBrush, ScriptEditorTheme.BracketMatchPen, rect);
+            dc.DrawRectangle(ScriptEditorTheme.BracketMatchBrush, ScriptEditorTheme.BracketMatchPen, rect);
         }
     }
-
 }
