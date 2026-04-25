@@ -3,15 +3,19 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Media;
+using AvaloniaEdit.CodeCompletion;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
-using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Snippets;
 
 namespace SharpFM.Scripting.Editor;
 
 [ExcludeFromCodeCoverage]
 public class FmScriptCompletionData : ICompletionData
 {
+    private static readonly Regex PlaceholderRegex =
+        new(@"\$\{(\d+):([^}]*)\}|\$0", RegexOptions.Compiled);
+
     private readonly string? _snippet;
 
     public FmScriptCompletionData(string text, string? description = null,
@@ -31,75 +35,65 @@ public class FmScriptCompletionData : ICompletionData
 
     public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
     {
-        if (_snippet != null)
-        {
-            // Convert Monaco snippet syntax to plain text with first placeholder selected
-            // ${1:placeholder} → placeholder (selected), ${2:text} → text, $0 removed
-            var (plainText, selectStart, selectLength) = ConvertSnippet(_snippet);
-            textArea.Document.Replace(completionSegment, plainText);
-
-            if (selectStart >= 0 && selectLength > 0)
-            {
-                var offset = completionSegment.Offset + selectStart;
-                textArea.Caret.Offset = offset;
-                textArea.Selection = Selection.Create(textArea, offset, offset + selectLength);
-            }
-        }
-        else
+        if (_snippet == null)
         {
             textArea.Document.Replace(completionSegment, Text);
+            return;
         }
+
+        // Use AvaloniaEdit's snippet engine for the insert — that gives us
+        // per-placeholder selection plus Tab-through navigation across all
+        // ${N:...} stops natively. Replacing the segment with empty first
+        // positions the caret where the snippet should expand.
+        var snippet = ParseMonacoSnippet(_snippet);
+        textArea.Document.Replace(completionSegment, "");
+        textArea.Caret.Offset = completionSegment.Offset;
+        snippet.Insert(textArea);
     }
 
     /// <summary>
-    /// Convert Monaco snippet syntax to plain text + first placeholder selection info.
+    /// Convert a Monaco-style snippet (<c>${N:placeholder}</c> / <c>$0</c>)
+    /// into an AvaloniaEdit <see cref="Snippet"/>. Each <c>${N:..}</c>
+    /// becomes a <see cref="SnippetReplaceableTextElement"/> — the engine
+    /// hooks Tab to advance through them. <c>$0</c> becomes a
+    /// <see cref="SnippetCaretElement"/> marking where the caret lands
+    /// after the user finishes the last replaceable.
     /// </summary>
-    private static (string Text, int SelectStart, int SelectLength) ConvertSnippet(string snippet)
+    private static Snippet ParseMonacoSnippet(string template)
     {
-        var selectStart = -1;
-        var selectLength = 0;
-
-        // Remove $0 (final cursor position marker)
-        var text = snippet.Replace("$0", "");
-
-        // Replace ${N:placeholder} with just the placeholder text
-        // Track the first placeholder (${1:...}) for selection
-        text = Regex.Replace(text, @"\$\{(\d+):([^}]*)\}", match =>
+        var snippet = new Snippet();
+        int pos = 0;
+        foreach (Match m in PlaceholderRegex.Matches(template))
         {
-            var index = int.Parse(match.Groups[1].Value);
-            var placeholder = match.Groups[2].Value;
-
-            if (index == 1 && selectStart < 0)
+            if (m.Index > pos)
             {
-                // Calculate position in the output string up to this point
-                selectStart = match.Index;
-                // Adjust for previous replacements — we need the position in the final string
-                selectLength = placeholder.Length;
+                snippet.Elements.Add(new SnippetTextElement
+                {
+                    Text = Unescape(template.Substring(pos, m.Index - pos)),
+                });
             }
-
-            return placeholder;
-        });
-
-        // Recalculate selectStart since Regex.Replace processes sequentially
-        // but match.Index is from the original string. Do it properly:
-        if (selectStart >= 0)
-        {
-            var firstPlaceholder = Regex.Match(snippet, @"\$\{1:([^}]*)\}");
-            if (firstPlaceholder.Success)
+            if (m.Value == "$0")
             {
-                // Count the plain text before the first placeholder
-                var beforeSnippet = snippet.Substring(0, firstPlaceholder.Index);
-                // Remove any snippet markers that come before it
-                var beforePlain = Regex.Replace(beforeSnippet, @"\$\{\d+:([^}]*)\}", "$1")
-                    .Replace("$0", "");
-                selectStart = beforePlain.Length;
-                selectLength = firstPlaceholder.Groups[1].Value.Length;
+                snippet.Elements.Add(new SnippetCaretElement());
             }
+            else
+            {
+                snippet.Elements.Add(new SnippetReplaceableTextElement
+                {
+                    Text = m.Groups[2].Value,
+                });
+            }
+            pos = m.Index + m.Length;
         }
-
-        // Clean up backslash escapes (e.g., \$ → $) and trailing whitespace
-        text = text.Replace("\\$", "$").TrimEnd('\t', '\n', '\r');
-
-        return (text, selectStart, selectLength);
+        if (pos < template.Length)
+        {
+            snippet.Elements.Add(new SnippetTextElement
+            {
+                Text = Unescape(template.Substring(pos)),
+            });
+        }
+        return snippet;
     }
+
+    private static string Unescape(string s) => s.Replace("\\$", "$");
 }
