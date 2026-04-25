@@ -38,8 +38,16 @@ public static class FmCalcCatalog
         var list = new List<FmCalcFunction>();
 
         void Add(string n, FunctionCategory c, string sig, string desc,
-            params FmCalcFunctionParam[] ps) =>
-            list.Add(new FmCalcFunction(n, c, sig, desc, ps));
+            params FmCalcFunctionParam[] ps)
+        {
+            // When the caller doesn't pass explicit Params, derive them
+            // from the signature string. Lets every function get tab-stop
+            // completion without hand-authoring a param list per entry.
+            IReadOnlyList<FmCalcFunctionParam> paramList = ps.Length > 0
+                ? ps
+                : FmCalcSignatureParser.ParseParams(sig);
+            list.Add(new FmCalcFunction(n, c, sig, desc, paramList));
+        }
 
         // Text
         Add("Char", FunctionCategory.Text, "Char(number)", "Returns the character for a Unicode code point.");
