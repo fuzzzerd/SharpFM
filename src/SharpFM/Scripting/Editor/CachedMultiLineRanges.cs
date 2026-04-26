@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using AvaloniaEdit.Document;
 using SharpFM.Model.Scripting;
@@ -17,7 +16,6 @@ namespace SharpFM.Scripting.Editor;
 /// <see cref="ConditionalWeakTable{TKey,TValue}"/>, so closing a
 /// document drops its cache entry automatically.</para>
 /// </summary>
-[ExcludeFromCodeCoverage]
 public static class CachedMultiLineRanges
 {
     private sealed class CacheEntry
