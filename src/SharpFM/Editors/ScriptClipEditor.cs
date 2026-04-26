@@ -40,6 +40,18 @@ public class ScriptClipEditor : IClipEditor
     // the anchor is considered stale and ignored.
     private readonly Dictionary<TextAnchor, (XElement Xml, string Signature)> _sealedAnchors = new();
 
+    // Hot-path cache: sealed line numbers + end-offsets, recomputed
+    // lazily on next read after Document.TextChanged. Visual components
+    // (italic colorizer, cog generator, squiggle renderer) fire per
+    // visible line per layout — without this, each fired SealedAnchors
+    // enumerator walks every anchor and allocates a fresh string per
+    // anchor through SignatureMatches/GetText. With N visible lines and
+    // M anchors that's N*M strings per paint. The cache collapses this
+    // to a single pass per text change.
+    private HashSet<int>? _sealedLineNumbersCache;
+    private Dictionary<int, int>? _sealedEndOffsetsCache; // line# -> end offset
+    private bool _sealedCacheDirty = true;
+
     public event EventHandler? ContentChanged;
 
     /// <summary>The TextDocument bound to the AvaloniaEdit script editor.</summary>
@@ -55,7 +67,81 @@ public class ScriptClipEditor : IClipEditor
         BuildSealedAnchors();
 
         _debouncer = new DebouncedEventRaiser(500, () => ContentChanged?.Invoke(this, EventArgs.Empty));
-        Document.TextChanged += (_, _) => _debouncer.Trigger();
+        Document.TextChanged += (_, _) =>
+        {
+            _sealedCacheDirty = true;
+            _debouncer.Trigger();
+        };
+    }
+
+    /// <summary>
+    /// Document line numbers (1-based) currently occupied by a sealed step.
+    /// Built lazily on first read after a text change; the underlying set
+    /// is reused across reads so render-pipeline consumers (colorizer,
+    /// cog generator, sealed-step layer) get O(1) lookup. Skips the
+    /// SignatureMatches string allocations that the live SealedAnchors
+    /// enumerator does — for visual rendering, anchor liveness + bounds
+    /// is sufficient; signature checks belong on the model-rebuild path.
+    /// </summary>
+    internal IReadOnlySet<int> SealedLineNumbers
+    {
+        get
+        {
+            EnsureSealedCache();
+            return _sealedLineNumbersCache!;
+        }
+    }
+
+    /// <summary>
+    /// Map from sealed-line number (1-based) to the document offset of
+    /// that line's end. Used by the cog generator to decide which visual
+    /// line ends carry a cog button.
+    /// </summary>
+    internal IReadOnlyDictionary<int, int> SealedLineEndOffsets
+    {
+        get
+        {
+            EnsureSealedCache();
+            return _sealedEndOffsetsCache!;
+        }
+    }
+
+    private void EnsureSealedCache()
+    {
+        if (!_sealedCacheDirty && _sealedLineNumbersCache != null) return;
+
+        var lineNumbers = new HashSet<int>();
+        var endOffsets = new Dictionary<int, int>();
+        foreach (var kv in _sealedAnchors)
+        {
+            var anchor = kv.Key;
+            if (anchor.IsDeleted) continue;
+            if (anchor.Offset < 0 || anchor.Offset > Document.TextLength) continue;
+            var line = Document.GetLineByOffset(anchor.Offset);
+            lineNumbers.Add(line.LineNumber);
+            endOffsets[line.LineNumber] = line.EndOffset;
+        }
+        _sealedLineNumbersCache = lineNumbers;
+        _sealedEndOffsetsCache = endOffsets;
+        _sealedCacheDirty = false;
+    }
+
+    /// <summary>
+    /// Raised after the sealed-line cache has been invalidated and the
+    /// next read rebuilt it. Pipeline consumers subscribe to refresh
+    /// their snapshot views and trigger a debounced repaint.
+    /// </summary>
+    internal event EventHandler? SealedCacheChanged;
+
+    /// <summary>
+    /// Force-invalidate the sealed-line cache. Called from paths that
+    /// mutate <see cref="_sealedAnchors"/> outside a TextChanged event
+    /// (BuildSealedAnchors, UpdateSealedXml, RebuildFromDocument).
+    /// </summary>
+    private void InvalidateSealedCache()
+    {
+        _sealedCacheDirty = true;
+        SealedCacheChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -122,6 +208,7 @@ public class ScriptClipEditor : IClipEditor
 
         // Update the cache entry with the fresh XML + new signature.
         _sealedAnchors[anchor] = (new XElement(newXml), newDisplay);
+        InvalidateSealedCache();
         return true;
     }
 
@@ -220,6 +307,7 @@ public class ScriptClipEditor : IClipEditor
             .Select(kv => kv.Key)
             .ToList();
         foreach (var d in dead) _sealedAnchors.Remove(d);
+        if (dead.Count > 0) InvalidateSealedCache();
 
         _script = new FmScript(newSteps);
     }
@@ -257,5 +345,6 @@ public class ScriptClipEditor : IClipEditor
             anchor.SurviveDeletion = false;
             _sealedAnchors[anchor] = (step.ToXml(), lineText);
         }
+        InvalidateSealedCache();
     }
 }
