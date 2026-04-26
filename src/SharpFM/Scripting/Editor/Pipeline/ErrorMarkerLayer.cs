@@ -16,12 +16,9 @@ internal sealed class ErrorMarkerLayer : IRenderLayer
 {
     public KnownLayer TargetLayer => KnownLayer.Selection;
     // Diagnostics list is pushed in via the pipeline's UpdateDiagnostics
-    // path (the validator runs on its own debounce). Neither caret moves
-    // nor raw TextChanged need to recompute anything here.
-    public RenderCadence Cadence => RenderCadence.Realtime;
-
+    // path (the validator runs on its own debounce). Caret moves don't
+    // affect the squiggle.
     public bool OnCaretChanged(RenderContext ctx) => false;
-    public bool OnTextChanged(RenderContext ctx) => false;
 
     /// <summary>
     /// Find the diagnostic at <paramref name="offset"/>, or null. Used
