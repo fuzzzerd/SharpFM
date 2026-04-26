@@ -14,8 +14,10 @@ namespace SharpFM.Scripting.Editor.Pipeline;
 internal sealed class ContinuationRailLayer : IRenderLayer
 {
     public KnownLayer TargetLayer => KnownLayer.Background;
+    public RenderCadence Cadence => RenderCadence.Realtime;
 
     public bool OnCaretChanged(RenderContext ctx) => false;
+    public bool OnTextChanged(RenderContext ctx) => false;
 
     public void Draw(RenderContext ctx, TextView textView, DrawingContext dc)
     {

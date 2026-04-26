@@ -14,6 +14,8 @@ namespace SharpFM.Scripting.Editor.Pipeline;
 internal sealed class BracketMatchLayer : IRenderLayer
 {
     public KnownLayer TargetLayer => KnownLayer.Selection;
+    public RenderCadence Cadence => RenderCadence.Realtime;
+    public bool OnTextChanged(RenderContext ctx) => false;
 
     private int _openOffset = -1;
     private int _closeOffset = -1;

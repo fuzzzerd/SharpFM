@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,10 +11,10 @@ namespace SharpFM.Editors.SealedSteps;
 
 /// <summary>
 /// Inline element generator that places a small clickable cog button
-/// at the end of every sealed-step line. Clicking the cog raises the
-/// <see cref="CogClicked"/> event with the sealed step's line anchor;
-/// the subscriber (ScriptEditorController) opens the raw-XML editor
-/// dialog and writes the result back to the sealed-step cache.
+/// at the end of every sealed-step line. Reads the cached
+/// <see cref="ScriptClipEditor.SealedLineEndOffsets"/> map for O(1)
+/// lookup — no per-call iteration over the anchor dictionary, no
+/// per-anchor <c>Document.GetText</c> string allocations.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public class SealedStepCogGenerator : VisualLineElementGenerator
@@ -29,58 +30,64 @@ public class SealedStepCogGenerator : VisualLineElementGenerator
 
     public override int GetFirstInterestedOffset(int startOffset)
     {
-        // Fast exit: skip the SealedAnchors enumerator when no sealed
-        // steps exist. AvaloniaEdit calls this per visual line during
-        // line construction.
         if (!_editor.HasSealedAnchors) return -1;
 
-        // The cog sits at the end of each sealed line. Return the
-        // earliest end-of-line offset that belongs to a sealed anchor
-        // and is >= startOffset; -1 when no more.
+        var endOffsets = _editor.SealedLineEndOffsets;
+        if (endOffsets.Count == 0) return -1;
+
         int best = int.MaxValue;
-        var doc = CurrentContext.Document;
-        foreach (var anchor in _editor.SealedAnchors)
+        foreach (var end in endOffsets.Values)
         {
-            if (anchor.IsDeleted) continue;
-            // Defensive bounds check: a stale anchor from a previously
-            // attached clip could point past the end of the current doc.
-            if (anchor.Offset < 0 || anchor.Offset > doc.TextLength) continue;
-            var line = doc.GetLineByOffset(anchor.Offset);
-            if (line.EndOffset >= startOffset && line.EndOffset < best)
-                best = line.EndOffset;
+            if (end >= startOffset && end < best)
+                best = end;
         }
         return best == int.MaxValue ? -1 : best;
     }
 
     public override VisualLineElement? ConstructElement(int offset)
     {
+        if (!_editor.HasSealedAnchors) return null;
+        var endOffsets = _editor.SealedLineEndOffsets;
+
+        // Verify offset matches a sealed line's end. Don't allocate a
+        // button for non-sealed line ends.
+        var matched = false;
+        foreach (var end in endOffsets.Values)
+        {
+            if (end == offset) { matched = true; break; }
+        }
+        if (!matched) return null;
+
+        // Resolve which anchor lives on this line so the click handler
+        // can map back to the sealed step's XML. Iterating SealedAnchors
+        // is acceptable here (called once per sealed line construction,
+        // not per visible line per layout). Use a stable strategy: pick
+        // the anchor whose line contains the offset.
         var doc = CurrentContext.Document;
+        TextAnchor? hit = null;
         foreach (var anchor in _editor.SealedAnchors)
         {
             if (anchor.IsDeleted) continue;
             if (anchor.Offset < 0 || anchor.Offset > doc.TextLength) continue;
             var line = doc.GetLineByOffset(anchor.Offset);
-            if (line.EndOffset != offset) continue;
-
-            var button = new Button
-            {
-                Content = "⚙",
-                Padding = new Thickness(4, 0),
-                Margin = new Thickness(6, 0, 0, 0),
-                FontSize = 12,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
-            };
-
-            // Capture the anchor in the click handler so the subscriber
-            // can map back to the sealed step's XML.
-            var capturedAnchor = anchor;
-            button.Click += (_, _) => CogClicked?.Invoke(this, capturedAnchor);
-
-            return new InlineObjectElement(0, button);
+            if (line.EndOffset == offset) { hit = anchor; break; }
         }
+        if (hit == null) return null;
 
-        return null;
+        var button = new Button
+        {
+            Content = "⚙",
+            Padding = new Thickness(4, 0),
+            Margin = new Thickness(6, 0, 0, 0),
+            FontSize = 12,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+        };
+
+        var capturedAnchor = hit;
+        button.Click += (_, _) => CogClicked?.Invoke(this, capturedAnchor);
+
+        return new InlineObjectElement(0, button);
     }
 }

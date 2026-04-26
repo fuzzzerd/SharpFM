@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
+using SharpFM.Editors;
 using SharpFM.Model.Scripting;
 
 namespace SharpFM.Scripting.Editor.Pipeline;
@@ -31,6 +32,27 @@ internal sealed class RenderContext
 
     public IReadOnlyList<(int StartLine, int EndLine)> StatementRanges =>
         Document is { } d ? CachedMultiLineRanges.Compute(d) : Array.Empty<(int, int)>();
+
+    /// <summary>
+    /// Optional sealed-step source. Set by the pipeline when a
+    /// <see cref="ScriptClipEditor"/> is attached so layers can read
+    /// the cached sealed-line snapshot through the context rather than
+    /// holding their own reference.
+    /// </summary>
+    public ScriptClipEditor? ClipEditor { get; private set; }
+
+    public void SetClipEditor(ScriptClipEditor? clipEditor) => ClipEditor = clipEditor;
+
+    private static readonly HashSet<int> EmptyLineSet = new();
+    private static readonly Dictionary<int, int> EmptyEndOffsets = new();
+
+    /// <summary>Sealed line numbers (1-based), O(1) lookup.</summary>
+    public IReadOnlySet<int> SealedLineNumbers =>
+        ClipEditor?.SealedLineNumbers ?? EmptyLineSet;
+
+    /// <summary>Sealed-line end offsets keyed by line number.</summary>
+    public IReadOnlyDictionary<int, int> SealedLineEndOffsets =>
+        ClipEditor?.SealedLineEndOffsets ?? EmptyEndOffsets;
 
     public List<ScriptDiagnostic> Diagnostics { get; private set; } = new();
 
