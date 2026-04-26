@@ -25,7 +25,12 @@ public static class ClipEditorViewFactory
         ScriptClipEditor s => new ScriptTextEditor
         {
             FontFamily = MonoFont,
-            ShowLineNumbers = true,
+            // Step-index margin is installed by ScriptEditorController;
+            // skipping the built-in line-number margin avoids adding a
+            // margin we'll just remove (and that AvaloniaEdit can re-add
+            // if the editor's template is re-applied later — in the
+            // post-pipeline trace it was still rendering at 5.8s/30s).
+            ShowLineNumbers = false,
             WordWrap = false,
             DataContext = s,
         },
