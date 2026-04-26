@@ -31,8 +31,10 @@ public class ScriptEditorController : IDisposable
     // references against their original document, and AvaloniaEdit will
     // keep invoking them against whatever document the shared TextView
     // is now displaying — offsets go out of range and throw.
-    private SealedStepSquiggleRenderer? _sealedSquiggleRenderer;
-    private SealedStepItalicColorizer? _sealedItalicColorizer;
+    // (The sealed-step squiggle now lives in the render pipeline as
+    // SealedStepLayer; only the colorizer and cog generator are still
+    // hosted directly on the editor.)
+    private SealedStepDimmingColorizer? _sealedDimmingColorizer;
     private SealedStepCogGenerator? _cogGenerator;
 
     /// <summary>
@@ -261,13 +263,12 @@ public class ScriptEditorController : IDisposable
         DetachSealedStepRenderers();
 
         _clipEditor = clipEditor;
+        // Pipeline gains access to the clip's sealed-line snapshot so
+        // SealedStepLayer can paint without owning its own subscription.
+        _renderPipeline.AttachClipEditor(clipEditor);
 
-        // Squiggle + italic renderers read from clipEditor.SealedAnchors.
-        _sealedSquiggleRenderer = new SealedStepSquiggleRenderer(_editor.TextArea, clipEditor);
-        _editor.TextArea.TextView.BackgroundRenderers.Add(_sealedSquiggleRenderer);
-
-        _sealedItalicColorizer = new SealedStepItalicColorizer(clipEditor);
-        _editor.TextArea.TextView.LineTransformers.Add(_sealedItalicColorizer);
+        _sealedDimmingColorizer = new SealedStepDimmingColorizer(clipEditor);
+        _editor.TextArea.TextView.LineTransformers.Add(_sealedDimmingColorizer);
 
         // Cog-button inline element + click handler.
         _cogGenerator = new SealedStepCogGenerator(clipEditor);
@@ -281,15 +282,11 @@ public class ScriptEditorController : IDisposable
 
     private void DetachSealedStepRenderers()
     {
-        if (_sealedSquiggleRenderer != null)
+        _renderPipeline.AttachClipEditor(null);
+        if (_sealedDimmingColorizer != null)
         {
-            _editor.TextArea.TextView.BackgroundRenderers.Remove(_sealedSquiggleRenderer);
-            _sealedSquiggleRenderer = null;
-        }
-        if (_sealedItalicColorizer != null)
-        {
-            _editor.TextArea.TextView.LineTransformers.Remove(_sealedItalicColorizer);
-            _sealedItalicColorizer = null;
+            _editor.TextArea.TextView.LineTransformers.Remove(_sealedDimmingColorizer);
+            _sealedDimmingColorizer = null;
         }
         if (_cogGenerator != null)
         {

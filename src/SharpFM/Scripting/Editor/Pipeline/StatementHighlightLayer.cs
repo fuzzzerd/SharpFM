@@ -15,6 +15,8 @@ namespace SharpFM.Scripting.Editor.Pipeline;
 internal sealed class StatementHighlightLayer : IRenderLayer
 {
     public KnownLayer TargetLayer => KnownLayer.Background;
+    public RenderCadence Cadence => RenderCadence.Realtime;
+    public bool OnTextChanged(RenderContext ctx) => false;
 
     private int _highlightStartLine = -1;
     private int _highlightEndLine = -1;
