@@ -17,8 +17,17 @@ namespace SharpFM.Editors;
 [ExcludeFromCodeCoverage]
 public static class ClipEditorViewFactory
 {
-    private static readonly FontFamily MonoFont =
-        new("Cascadia Code,Consolas,Menlo,Monospace");
+    // Use a single font name so Avalonia/Skia resolves through the
+    // platform font manager once per Typeface request. The previous
+    // comma-separated fallback chain ("Cascadia Code,Consolas,Menlo,
+    // Monospace") forced every text-run shape pass to walk the chain
+    // looking for missing fonts on platforms where most of those
+    // names don't resolve — on Linux, three of the four miss, and the
+    // trace showed 2321 native font lookups in a 30s window with
+    // ~8.7 lookups per visual-line build. "Monospace" is the standard
+    // generic alias resolved to the platform's default monospace face
+    // (DejaVu Sans Mono on Linux, Menlo on macOS, Consolas on Windows).
+    private static readonly FontFamily MonoFont = new("Monospace");
 
     public static Control Create(IClipEditor editor) => editor switch
     {
