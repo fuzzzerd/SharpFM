@@ -1,4 +1,6 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Media;
 using AvaloniaEdit;
@@ -17,17 +19,50 @@ namespace SharpFM.Editors;
 [ExcludeFromCodeCoverage]
 public static class ClipEditorViewFactory
 {
-    // Use a single font name so Avalonia/Skia resolves through the
-    // platform font manager once per Typeface request. The previous
-    // comma-separated fallback chain ("Cascadia Code,Consolas,Menlo,
-    // Monospace") forced every text-run shape pass to walk the chain
-    // looking for missing fonts on platforms where most of those
-    // names don't resolve — on Linux, three of the four miss, and the
-    // trace showed 2321 native font lookups in a 30s window with
-    // ~8.7 lookups per visual-line build. "Monospace" is the standard
-    // generic alias resolved to the platform's default monospace face
-    // (DejaVu Sans Mono on Linux, Menlo on macOS, Consolas on Windows).
-    private static readonly FontFamily MonoFont = new("Monospace");
+    // Resolve a real installed face name at startup. Avalonia's font
+    // cache (SystemFontCollection._glyphTypefaceCache) is keyed by the
+    // family-name string the caller asks for, but populated under the
+    // platform's RESOLVED face name — so requesting an alias like
+    // "Monospace" or "Cascadia Code" on a system that doesn't carry
+    // that face misses the cache forever. The trace showed every one
+    // of 1283 typeface lookups falling through to the slow path. By
+    // detecting an actually-installed face name once at startup and
+    // using it as the editor font, every subsequent typeface request
+    // hits the cache after the first.
+    private static readonly FontFamily MonoFont = ResolveMonospaceFont();
+
+    private static FontFamily ResolveMonospaceFont()
+    {
+        // Per-platform preference order. First entries are the "good"
+        // monospace fonts we'd pick if available; tail entries are
+        // safer last-resorts known to ship with the OS.
+        string[] preferred =
+            OperatingSystem.IsWindows() ? new[] { "Cascadia Code", "Cascadia Mono", "Consolas", "Lucida Console", "Courier New" } :
+            OperatingSystem.IsMacOS()   ? new[] { "Menlo", "Monaco", "Courier New" } :
+                                          new[] { "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono", "Ubuntu Mono" };
+
+        try
+        {
+            var installed = FontManager.Current.SystemFonts
+                .Select(f => f.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var name in preferred)
+            {
+                if (installed.Contains(name))
+                    return new FontFamily(name);
+            }
+        }
+        catch
+        {
+            // FontManager not yet available during certain init orderings.
+            // Fall through to the default below.
+        }
+
+        // No known monospace face installed — accept the alias path. We
+        // pay the cache-miss cost but the editor still works.
+        return new FontFamily("Monospace");
+    }
 
     public static Control Create(IClipEditor editor) => editor switch
     {
