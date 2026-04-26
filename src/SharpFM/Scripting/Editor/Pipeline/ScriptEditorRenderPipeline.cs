@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Avalonia.Threading;
-using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 using SharpFM.Editors;
@@ -12,17 +10,14 @@ namespace SharpFM.Scripting.Editor.Pipeline;
 
 /// <summary>
 /// Owns the script editor's render layers and consolidates their event
-/// handling + invalidation. Replaces the four standalone
+/// handling + invalidation. Replaces the standalone
 /// <c>IBackgroundRenderer</c> implementations (bracket, statement,
-/// continuation, error) with one shared pipeline:
+/// continuation, error, sealed-step) with one shared pipeline:
 ///
 /// <list type="bullet">
 ///   <item>One subscription to <see cref="Caret.PositionChanged"/>;
-///   realtime layers are dispatched in order and each reports whether
-///   its draw output changed.</item>
-///   <item>One debounced subscription to <c>Document.TextChanged</c>;
-///   idle layers are recomputed once per quiet window so per-keystroke
-///   work stays out of the hot path.</item>
+///   layers are dispatched in order and each reports whether its draw
+///   output changed.</item>
 ///   <item>Two <see cref="IBackgroundRenderer"/> wrappers — one per
 ///   <see cref="KnownLayer"/> (Background + Selection) — host the
 ///   feature layers in their correct visual stacking order.</item>
@@ -37,8 +32,6 @@ namespace SharpFM.Scripting.Editor.Pipeline;
 [ExcludeFromCodeCoverage]
 public sealed class ScriptEditorRenderPipeline : IDisposable
 {
-    private const int IdleDebounceMs = 150;
-
     private readonly TextArea _textArea;
     private readonly RenderContext _context;
     private readonly StatementHighlightLayer _statementLayer;
@@ -48,10 +41,7 @@ public sealed class ScriptEditorRenderPipeline : IDisposable
     private readonly SealedStepLayer _sealedLayer;
     private readonly LayeredBackgroundRenderer _bgRenderer;
     private readonly LayeredBackgroundRenderer _selRenderer;
-    private readonly DispatcherTimer _idleTimer;
     private readonly IRenderLayer[] _allLayers;
-    private TextDocument? _attachedDocument;
-    private ScriptClipEditor? _clipEditor;
     private bool _disposed;
 
     public ScriptEditorRenderPipeline(TextArea textArea)
@@ -85,34 +75,22 @@ public sealed class ScriptEditorRenderPipeline : IDisposable
         textArea.TextView.BackgroundRenderers.Add(_selRenderer);
 
         textArea.Caret.PositionChanged += OnCaretChanged;
-
-        _idleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(IdleDebounceMs) };
-        _idleTimer.Tick += OnIdleTick;
-
-        AttachDocument(textArea.Document);
-        textArea.DocumentChanged += OnTextAreaDocumentChanged;
     }
 
     /// <summary>
     /// Wire the pipeline to a clip editor so layers (sealed-step layer
-    /// today; possibly more later) can read its cached snapshot through
+    /// today) can read its cached snapshot through
     /// <see cref="RenderContext.SealedLineNumbers"/>. Pass <c>null</c>
     /// to detach.
     /// </summary>
     public void AttachClipEditor(ScriptClipEditor? clipEditor)
     {
-        if (_clipEditor != null)
-            _clipEditor.SealedCacheChanged -= OnSealedCacheChanged;
-
-        _clipEditor = clipEditor;
         _context.SetClipEditor(clipEditor);
-
-        if (clipEditor != null)
-            clipEditor.SealedCacheChanged += OnSealedCacheChanged;
-
-        // Force a fresh idle pass so the sealed layer recomputes
-        // immediately under the new clip's snapshot.
-        ScheduleIdleRecompute();
+        // The Selection layer hosts the sealed-step layer; force a
+        // repaint so the new clip's stripe + squiggle render against
+        // the freshly-attached snapshot rather than whatever the
+        // previous clip left on screen.
+        _textArea.TextView.InvalidateLayer(KnownLayer.Selection);
     }
 
     /// <summary>
@@ -141,7 +119,6 @@ public sealed class ScriptEditorRenderPipeline : IDisposable
 
         foreach (var layer in _allLayers)
         {
-            if (layer.Cadence != RenderCadence.Realtime) continue;
             if (!layer.OnCaretChanged(_context)) continue;
             if (layer.TargetLayer == KnownLayer.Background) bgDirty = true;
             else selDirty = true;
@@ -151,67 +128,11 @@ public sealed class ScriptEditorRenderPipeline : IDisposable
         if (selDirty) _textArea.TextView.InvalidateLayer(KnownLayer.Selection);
     }
 
-    private void OnIdleTick(object? sender, EventArgs e)
-    {
-        _idleTimer.Stop();
-
-        var bgDirty = false;
-        var selDirty = false;
-
-        foreach (var layer in _allLayers)
-        {
-            if (layer.Cadence != RenderCadence.Idle) continue;
-            if (!layer.OnTextChanged(_context)) continue;
-            if (layer.TargetLayer == KnownLayer.Background) bgDirty = true;
-            else selDirty = true;
-        }
-
-        if (bgDirty) _textArea.TextView.InvalidateLayer(KnownLayer.Background);
-        if (selDirty) _textArea.TextView.InvalidateLayer(KnownLayer.Selection);
-    }
-
-    private void ScheduleIdleRecompute()
-    {
-        _idleTimer.Stop();
-        _idleTimer.Start();
-    }
-
-    private void OnDocumentTextChanged(object? sender, EventArgs e) =>
-        ScheduleIdleRecompute();
-
-    private void OnSealedCacheChanged(object? sender, EventArgs e) =>
-        ScheduleIdleRecompute();
-
-    private void OnTextAreaDocumentChanged(object? sender, EventArgs e)
-    {
-        AttachDocument(_textArea.Document);
-        // New document means the cached snapshot the layers hold may
-        // not match the doc that's about to paint — recompute soon.
-        ScheduleIdleRecompute();
-    }
-
-    private void AttachDocument(TextDocument? document)
-    {
-        if (ReferenceEquals(_attachedDocument, document)) return;
-        if (_attachedDocument != null)
-            _attachedDocument.TextChanged -= OnDocumentTextChanged;
-        _attachedDocument = document;
-        if (document != null)
-            document.TextChanged += OnDocumentTextChanged;
-    }
-
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        _idleTimer.Stop();
-        _idleTimer.Tick -= OnIdleTick;
         _textArea.Caret.PositionChanged -= OnCaretChanged;
-        _textArea.DocumentChanged -= OnTextAreaDocumentChanged;
-        if (_attachedDocument != null)
-            _attachedDocument.TextChanged -= OnDocumentTextChanged;
-        if (_clipEditor != null)
-            _clipEditor.SealedCacheChanged -= OnSealedCacheChanged;
         _textArea.TextView.BackgroundRenderers.Remove(_bgRenderer);
         _textArea.TextView.BackgroundRenderers.Remove(_selRenderer);
     }

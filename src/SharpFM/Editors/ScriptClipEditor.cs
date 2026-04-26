@@ -127,22 +127,11 @@ public class ScriptClipEditor : IClipEditor
     }
 
     /// <summary>
-    /// Raised after the sealed-line cache has been invalidated and the
-    /// next read rebuilt it. Pipeline consumers subscribe to refresh
-    /// their snapshot views and trigger a debounced repaint.
-    /// </summary>
-    internal event EventHandler? SealedCacheChanged;
-
-    /// <summary>
     /// Force-invalidate the sealed-line cache. Called from paths that
     /// mutate <see cref="_sealedAnchors"/> outside a TextChanged event
     /// (BuildSealedAnchors, UpdateSealedXml, RebuildFromDocument).
     /// </summary>
-    private void InvalidateSealedCache()
-    {
-        _sealedCacheDirty = true;
-        SealedCacheChanged?.Invoke(this, EventArgs.Empty);
-    }
+    private void InvalidateSealedCache() => _sealedCacheDirty = true;
 
     /// <summary>
     /// Live sealed anchors (entries whose line text still matches the
