@@ -7,5 +7,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="SharpFM.Tests" />
+    <InternalsVisibleTo Include="SharpFM.Plugin.Tests" />
   </ItemGroup>
 </Project>

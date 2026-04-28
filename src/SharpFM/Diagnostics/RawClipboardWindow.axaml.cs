@@ -61,10 +61,10 @@ public partial class RawClipboardWindow : Window
                 return;
             }
 
-            var xml = FileMakerClip.ClipBytesToPrettyXml(bytes.Skip(4));
+            var clip = SharpFM.Model.Clip.FromWireBytes("preview", first, bytes);
 
             _formatLabel.Text = first;
-            _editor.Text = xml;
+            _editor.Text = clip.Xml;
             _warningLabel.Text = fmFormats.Length > 1
                 ? $"Multiple FileMaker formats present ({string.Join(", ", fmFormats)}); only the first was rendered."
                 : "";

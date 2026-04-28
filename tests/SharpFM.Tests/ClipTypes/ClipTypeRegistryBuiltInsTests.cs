@@ -2,6 +2,7 @@ using SharpFM.Model.ClipTypes;
 
 namespace SharpFM.Tests.ClipTypes;
 
+[Collection(RegistryMutatingCollection.Name)]
 public class ClipTypeRegistryBuiltInsTests : IDisposable
 {
     public ClipTypeRegistryBuiltInsTests()
@@ -13,6 +14,7 @@ public class ClipTypeRegistryBuiltInsTests : IDisposable
     public void Dispose()
     {
         ClipTypeRegistry.Reset();
+        ClipTypeRegistry.RegisterBuiltIns();
     }
 
     [Theory]

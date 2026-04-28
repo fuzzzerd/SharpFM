@@ -1,141 +1,115 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-
 using SharpFM.Model;
+using SharpFM.Model.Parsing;
+using SharpFM.Model.Schema;
 
 namespace SharpFM;
 
-public static class FileMakerClipExtensions
+/// <summary>
+/// Code-generation helpers operating on a parsed <see cref="Clip"/>. Today
+/// only table clips can produce a class; layouts and scripts throw
+/// <see cref="NotSupportedException"/>.
+/// </summary>
+public static class ClipCodeGenExtensions
 {
     /// <summary>
-    /// Create a class from scratch.
+    /// Generate a C# class with one <c>[DataMember]</c> property per field
+    /// in this table clip. Throws if the clip isn't a parsed table.
     /// </summary>
-    public static string CreateClass(this FileMakerClip _clip, FileMakerClip? fieldProjectionLayout = null)
+    public static string CreateClass(this Clip clip)
     {
-        if (_clip == null) { return string.Empty; }
-
-        var fieldProjectionList = new List<string>();
-        if (fieldProjectionLayout != null && FileMakerClip.ClipTypes.Single(ct => ct.KeyId == fieldProjectionLayout.ClipboardFormat).DisplayName == "Layout")
+        if (clip.Parsed is not ParseSuccess { Model: TableClipModel tableModel })
         {
-            // a clip that is of type layout, only has name attribute (since the rest isn't available)
-            // and we only need the name to skip it down below
-            fieldProjectionList.AddRange(fieldProjectionLayout.Fields.Select(f => f.Name));
-        }
-        else
-        {
-            // otherwise include all fields
-            fieldProjectionList.AddRange(_clip.Fields.Select(f => f.Name));
+            throw new NotSupportedException(
+                "Code generation is only supported for table clips (Mac-XMTB / Mac-XMFD).");
         }
 
-        return _clip.CreateClass(fieldProjectionList);
+        var table = tableModel.Table;
+        return CreateClassFromTable(table, table.Fields.Select(f => f.Name));
     }
 
     /// <summary>
-    /// Create a class from scratch.
+    /// Generate a C# class for a table, projecting only the named fields.
     /// </summary>
-    public static string CreateClass(this FileMakerClip _clip, IEnumerable<string> fieldProjectionList)
+    public static string CreateClass(this Clip clip, IEnumerable<string> fieldProjectionList)
     {
-        // Create a namespace: (namespace CodeGenerationSample)
-        var @namespace = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName("SharpFM.CodeGen")).NormalizeWhitespace();
+        if (clip.Parsed is not ParseSuccess { Model: TableClipModel tableModel })
+        {
+            throw new NotSupportedException(
+                "Code generation is only supported for table clips (Mac-XMTB / Mac-XMFD).");
+        }
 
-        // Add System using statement: (using System)
+        return CreateClassFromTable(tableModel.Table, fieldProjectionList);
+    }
+
+    private static string CreateClassFromTable(FmTable table, IEnumerable<string> fieldProjectionList)
+    {
+        var @namespace = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName("SharpFM.CodeGen")).NormalizeWhitespace();
         @namespace = @namespace.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")));
         @namespace = @namespace.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Runtime.Serialization")));
 
         var dataContractAttribute = SyntaxFactory.Attribute(SyntaxFactory.ParseName("DataContract"));
-
-        //  Create a class: (class [_clip.Name])
-        var classDeclaration = SyntaxFactory.ClassDeclaration(_clip.Name);
-
-        // Add the public modifier: (public class [_clip.Name])
+        var classDeclaration = SyntaxFactory.ClassDeclaration(table.Name);
         classDeclaration = classDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
-        classDeclaration = classDeclaration.AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataContractAttribute)));
+        classDeclaration = classDeclaration.AddAttributeLists(
+            SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataContractAttribute)));
 
-        // add each field from the underling _clip as a public property with the data member attribute
-        List<PropertyDeclarationSyntax> fieldsToBeAddedAsProperties = new List<PropertyDeclarationSyntax>(_clip.Fields.Count());
-        // include the field projection
-        foreach (var field in _clip.Fields.Where(fmF => fieldProjectionList.Contains(fmF.Name)))
+        var projection = new HashSet<string>(fieldProjectionList, StringComparer.Ordinal);
+
+        var properties = new List<PropertyDeclarationSyntax>();
+        foreach (var field in table.Fields.Where(f => projection.Contains(f.Name)))
         {
-            // filemaker to C# data type mapping
-            var propertyTypeCSharp = string.Empty;
-
-            switch (field.DataType)
-            {
-                case "Text":
-                    propertyTypeCSharp = "string";
-                    break;
-                case "Number":
-                    propertyTypeCSharp = "int";
-                    break;
-                case "Binary":
-                    propertyTypeCSharp = "byte[]";
-                    break;
-                case "Date":
-                    propertyTypeCSharp = "DateTime";
-                    break;
-                case "Time":
-                    propertyTypeCSharp = "TimeSpan";
-                    break;
-                case "TimeStamp":
-                    propertyTypeCSharp = "DateTime";
-                    break;
-                default:
-                    propertyTypeCSharp = "string";
-                    break;
-            }
-
-            if (field.NotEmpty == false && propertyTypeCSharp != "string")
-            {
-                propertyTypeCSharp += "?";
-            }
-
-            var propertyTypeSyntax = SyntaxFactory.ParseTypeName(propertyTypeCSharp);
-
+            var propertyType = MapFieldDataType(field);
+            var propertyTypeSyntax = SyntaxFactory.ParseTypeName(propertyType);
             var dataMemberAttribute = SyntaxFactory.Attribute(SyntaxFactory.ParseName("DataMember"));
 
             var propertyDeclaration = SyntaxFactory.PropertyDeclaration(propertyTypeSyntax, field.Name)
-            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddAccessorListAccessors(
-                SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
-                SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))
-                .NormalizeWhitespace(indentation: "", eol: " ")
-            .AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataMemberAttribute)))
-            .NormalizeWhitespace();
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddAccessorListAccessors(
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))
+                    .NormalizeWhitespace(indentation: "", eol: " ")
+                .AddAttributeLists(SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(dataMemberAttribute)))
+                .NormalizeWhitespace();
 
-            fieldsToBeAddedAsProperties.Add(propertyDeclaration);
+            properties.Add(propertyDeclaration);
         }
 
-        // Add the field, the property and method to the class.
-        classDeclaration = classDeclaration.AddMembers(fieldsToBeAddedAsProperties.ToArray());
-
-        // Add the class to the namespace.
+        classDeclaration = classDeclaration.AddMembers(properties.ToArray());
         @namespace = @namespace.AddMembers(classDeclaration);
 
-        // Normalize and get code as string.
-        var code = @namespace.NormalizeWhitespace().ToFullString().FormatAutoPropertiesOnOneLine();
-
-        // Output new code to the console.
-        return code;
+        return @namespace.NormalizeWhitespace().ToFullString().FormatAutoPropertiesOnOneLine();
     }
 
-
-    /// <summary>
-    /// https://stackoverflow.com/a/52339795/86860
-    /// </summary>
-    private static readonly Regex AutoPropRegex = new Regex(@"\s*\{\s*get;\s*set;\s*}\s");
-
-    /// <summary>
-    /// https://stackoverflow.com/a/52339795/86860
-    /// </summary>
-    /// <param name="str">Code string to format.</param>
-    /// <returns>The code string with auto properties formatted to a single line</returns>
-    private static string FormatAutoPropertiesOnOneLine(this string str)
+    private static string MapFieldDataType(FmField field)
     {
-        return AutoPropRegex.Replace(str, " { get; set; }");
+        var raw = field.DataType.ToString();
+        var clr = raw switch
+        {
+            "Text" => "string",
+            "Number" => "int",
+            "Binary" => "byte[]",
+            "Date" => "DateTime",
+            "Time" => "TimeSpan",
+            "TimeStamp" => "DateTime",
+            _ => "string",
+        };
+
+        if (!field.NotEmpty && clr != "string")
+        {
+            clr += "?";
+        }
+        return clr;
     }
+
+    private static readonly Regex AutoPropRegex = new(@"\s*\{\s*get;\s*set;\s*}\s");
+
+    private static string FormatAutoPropertiesOnOneLine(this string str) =>
+        AutoPropRegex.Replace(str, " { get; set; }");
 }

@@ -24,15 +24,6 @@ public class FallbackXmlEditorTests
     }
 
     [Fact]
-    public void FromXml_SetsDocumentText()
-    {
-        var editor = new FallbackXmlEditor("<original/>");
-        editor.FromXml("<updated/>");
-
-        Assert.Equal("<updated/>", editor.Document.Text);
-    }
-
-    [Fact]
     public void IsPartial_AlwaysFalse()
     {
         var editor = new FallbackXmlEditor("<root/>");
@@ -47,14 +38,11 @@ public class FallbackXmlEditorTests
     }
 
     [Fact]
-    public void ToXml_FromXml_RoundTrip()
+    public void ToXml_RoundTripsViaDocumentText()
     {
         var xml = "<fmxmlsnippet type=\"FMObjectList\"><Layout name=\"Test\"/></fmxmlsnippet>";
         var editor = new FallbackXmlEditor(xml);
 
-        var exported = editor.ToXml();
-        editor.FromXml(exported);
-
-        Assert.Equal(exported, editor.Document.Text);
+        Assert.Equal(xml, editor.ToXml());
     }
 }

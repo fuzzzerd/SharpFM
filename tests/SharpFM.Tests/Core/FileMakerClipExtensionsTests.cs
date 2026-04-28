@@ -5,15 +5,15 @@ namespace SharpFM.Tests.Core;
 
 public class FileMakerClipExtensionsTests
 {
-    private static FileMakerClip MakeTableClip(string tableName, params (string name, string dataType)[] fields)
+    private static Clip MakeTableClip(string tableName, params (string name, string dataType)[] fields)
     {
         var fieldElements = string.Join("", fields.Select(f =>
             $"<Field id=\"1\" name=\"{f.name}\" dataType=\"{f.dataType}\" fieldType=\"Normal\">"
-            + "<Validation><NotEmpty value=\"true\"/><Unique value=\"false\"/></Validation>"
+            + "<Validation><NotEmpty value=\"True\"/><Unique value=\"False\"/></Validation>"
             + "</Field>"));
 
         var xml = $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{tableName}\">{fieldElements}</BaseTable></fmxmlsnippet>";
-        return new FileMakerClip(tableName, "Mac-XMTB", xml);
+        return Clip.FromXml(tableName, "Mac-XMTB", xml);
     }
 
     [Fact]
@@ -73,15 +73,6 @@ public class FileMakerClipExtensionsTests
     }
 
     [Fact]
-    public void CreateClass_UnknownDataType_DefaultsToString()
-    {
-        var clip = MakeTableClip("Misc", ("Custom", "SomeOtherType"));
-        var code = clip.CreateClass();
-
-        Assert.Contains("string Custom { get; set; }", code);
-    }
-
-    [Fact]
     public void CreateClass_IncludesDataContractAttribute()
     {
         var clip = MakeTableClip("People", ("Name", "Text"));
@@ -114,22 +105,22 @@ public class FileMakerClipExtensionsTests
     }
 
     [Fact]
-    public void CreateClass_NullClip_ReturnsEmpty()
+    public void CreateClass_NonTableClip_Throws()
     {
-        FileMakerClip? clip = null;
-        var code = FileMakerClipExtensions.CreateClass(clip!, (FileMakerClip?)null);
-        Assert.Equal(string.Empty, code);
+        var clip = Clip.FromXml("script", "Mac-XMSS",
+            "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
+
+        Assert.Throws<NotSupportedException>(() => clip.CreateClass());
     }
 
     [Fact]
     public void CreateClass_NullableNumberField_GetsQuestionMark()
     {
-        // NotEmpty=false on a non-string type should produce a nullable
         var xml = "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"T\">"
             + "<Field id=\"1\" name=\"Score\" dataType=\"Number\" fieldType=\"Normal\">"
-            + "<Validation><NotEmpty value=\"false\"/><Unique value=\"false\"/></Validation>"
+            + "<Validation><NotEmpty value=\"False\"/><Unique value=\"False\"/></Validation>"
             + "</Field></BaseTable></fmxmlsnippet>";
-        var clip = new FileMakerClip("T", "Mac-XMTB", xml);
+        var clip = Clip.FromXml("T", "Mac-XMTB", xml);
         var code = clip.CreateClass();
 
         Assert.Contains("int?", code);

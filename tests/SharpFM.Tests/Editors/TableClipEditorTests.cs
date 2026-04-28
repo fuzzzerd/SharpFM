@@ -13,10 +13,13 @@ public class TableClipEditorTests
         "<Field id=\"2\" name=\"LastName\" dataType=\"Text\" fieldType=\"Normal\"/>" +
         "</BaseTable></fmxmlsnippet>";
 
+    private static TableClipEditor MakeEditor(string? xml) =>
+        new(FmTable.FromXml(xml ?? ""));
+
     [Fact]
     public void Constructor_ParsesFields()
     {
-        var editor = new TableClipEditor(SampleTableXml);
+        var editor = MakeEditor(SampleTableXml);
 
         Assert.Equal(2, editor.ViewModel.Fields.Count);
         Assert.Equal("FirstName", editor.ViewModel.Fields[0].Name);
@@ -26,7 +29,7 @@ public class TableClipEditorTests
     [Fact]
     public void ToXml_RoundTrips()
     {
-        var editor = new TableClipEditor(SampleTableXml);
+        var editor = MakeEditor(SampleTableXml);
         var xml = editor.ToXml();
 
         Assert.Contains("People", xml);
@@ -38,7 +41,7 @@ public class TableClipEditorTests
     [Fact]
     public void ToXml_ReflectsAddedField()
     {
-        var editor = new TableClipEditor(SampleTableXml);
+        var editor = MakeEditor(SampleTableXml);
         editor.ViewModel.AddField();
 
         var xml = editor.ToXml();
@@ -48,9 +51,9 @@ public class TableClipEditorTests
     }
 
     [Fact]
-    public void Constructor_HandlesNullXml()
+    public void Constructor_HandlesEmptyTable()
     {
-        var editor = new TableClipEditor(null);
+        var editor = new TableClipEditor(new FmTable(""));
 
         Assert.NotNull(editor.ViewModel);
         Assert.Empty(editor.ViewModel.Fields);
@@ -59,7 +62,7 @@ public class TableClipEditorTests
     [Fact]
     public void IsPartial_AlwaysFalse()
     {
-        var editor = new TableClipEditor(SampleTableXml);
+        var editor = MakeEditor(SampleTableXml);
         editor.ToXml();
         Assert.False(editor.IsPartial);
     }

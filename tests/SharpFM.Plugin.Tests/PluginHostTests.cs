@@ -89,7 +89,9 @@ public class PluginHostTests
         var newXml = "<fmxmlsnippet type=\"FMObjectList\"><test /></fmxmlsnippet>";
         host.UpdateSelectedClipXml(newXml, "test-plugin");
 
-        Assert.Equal(newXml, vm.SelectedClip!.Clip.XmlData);
+        // Clip.Xml is canonicalised via PrettyPrint; assert structural equivalence.
+        Assert.Contains("<test", vm.SelectedClip!.Clip.Xml);
+        Assert.Contains("fmxmlsnippet", vm.SelectedClip.Clip.Xml);
     }
 
     [Fact]

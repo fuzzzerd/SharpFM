@@ -9,7 +9,7 @@ public class ClipTreeNodeViewModelTests
 {
     private static ClipViewModel Clip(string name, params string[] folderPath)
     {
-        var vm = new ClipViewModel(new FileMakerClip(name, "Mac-XMSS",
+        var vm = new ClipViewModel(SharpFM.Model.Clip.FromXml(name, "Mac-XMSS",
             "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>"));
         vm.FolderPath = folderPath;
         return vm;
