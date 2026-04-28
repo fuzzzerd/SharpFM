@@ -1,6 +1,9 @@
+using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Linq;
 using SharpFM.Model.Parsing;
+using SharpFM.Model.Scripting;
+using SharpFM.Model.Scripting.Steps;
 
 namespace SharpFM.Model.ClipTypes;
 
@@ -58,5 +61,28 @@ internal static class ClipStrategyHelpers
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Walk a script's steps and emit one Info-severity <see cref="ParseDiagnosticKind.UnknownStep"/>
+    /// diagnostic per <see cref="RawStep"/>. Used by both the script strategy
+    /// (after a fresh parse) and the trusted-edit path (after a model-only
+    /// reuse) so the same UI signal surfaces regardless of source.
+    /// </summary>
+    public static IEnumerable<ClipParseDiagnostic> RawStepDiagnostics(FmScript script)
+    {
+        var index = 0;
+        foreach (var step in script.Steps)
+        {
+            index++;
+            if (step is RawStep raw)
+            {
+                yield return new ClipParseDiagnostic(
+                    ParseDiagnosticKind.UnknownStep,
+                    ParseDiagnosticSeverity.Info,
+                    $"/fmxmlsnippet/Step[{index}]",
+                    $"step '{raw.Name}' is not modeled by the host; preserved verbatim as RawStep");
+            }
+        }
     }
 }

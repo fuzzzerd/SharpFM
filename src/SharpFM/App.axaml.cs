@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Models;
 using SharpFM.Plugin;
@@ -32,11 +31,6 @@ public partial class App : Application
         // Reflection scan lands at a predictable moment; otherwise the
         // same initialization runs lazily on first registry access.
         StepRegistry.Initialize();
-
-        // Clip-type strategies are explicitly registered (no reflection); do
-        // it once at startup so paste / file load / plugin push all see the
-        // built-in formats from the first request onward.
-        ClipTypeRegistry.RegisterBuiltIns();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

@@ -39,7 +39,11 @@ public class FmTable
         return new FmTable(tableName, fields) { Id = tableId };
     }
 
-    public string ToXml()
+    /// <summary>
+    /// Build the table's XML as an <see cref="XElement"/> directly, skipping
+    /// the <c>ToString</c> + pretty-print round-trip <see cref="ToXml"/> does.
+    /// </summary>
+    public XElement ToElement()
     {
         var root = new XElement("fmxmlsnippet", new XAttribute("type", "FMObjectList"));
         var baseTable = new XElement("BaseTable", new XAttribute("name", Name));
@@ -51,8 +55,10 @@ public class FmTable
 
         root.Add(baseTable);
 
-        return XmlHelpers.PrettyPrint(root.ToString());
+        return root;
     }
+
+    public string ToXml() => XmlHelpers.PrettyPrint(ToElement().ToString());
 
     public void AddField(FmField field)
     {

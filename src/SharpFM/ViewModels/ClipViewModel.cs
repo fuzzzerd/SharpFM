@@ -127,7 +127,14 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     // Dispatcher. In production this is invoked from Editor.ContentChanged.
     internal void HandleEditorContentChanged()
     {
-        Clip = _clip.WithXml(Editor.ToXml());
+        // Trusted-edit path: the editor produced this XML from a model it
+        // already holds, so the round-trip is lossless by construction. Hand
+        // both over to the aggregate to skip the strategy parse + diff —
+        // critical for large scripts where that work would freeze the UI
+        // every debounced keystroke.
+        var xml = Editor.ToXml();
+        var model = Editor.GetModel();
+        Clip = Clip.FromEditor(_clip.Name, _clip.FormatId, xml, model);
         NotifyPropertyChanged(nameof(IsDirty));
         NotifyPropertyChanged(nameof(ParseReport));
         NotifyPropertyChanged(nameof(IsLossless));

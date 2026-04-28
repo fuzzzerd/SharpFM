@@ -2,6 +2,7 @@ using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using SharpFM.Schema.Editor;
+using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
 
 namespace SharpFM.Editors;
@@ -34,6 +35,8 @@ public class TableClipEditor : IClipEditor
     {
         return ViewModel.Table.ToXml();
     }
+
+    public ClipModel GetModel() => new TableClipModel(ViewModel.Table);
 
     private void SubscribeToViewModel(TableEditorViewModel vm)
     {

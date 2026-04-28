@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
 
@@ -52,8 +51,8 @@ public sealed class TableClipStrategy : IClipTypeStrategy
                 ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "failed to parse table");
         }
 
-        var output = XElement.Parse(table.ToXml());
-        var diagnostics = new List<ClipParseDiagnostic>(XmlRoundTripDiff.Compute(input, output));
+        var diagnostics = new List<ClipParseDiagnostic>(
+            XmlRoundTripDiff.Compute(input, table.ToElement()));
 
         var report = diagnostics.Count == 0
             ? ClipParseReport.Empty

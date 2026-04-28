@@ -60,7 +60,13 @@ public class FmScript
 
     // --- Serialize to FM XML ---
 
-    public string ToXml()
+    /// <summary>
+    /// Build the script's XML as an <see cref="XElement"/> directly, skipping
+    /// the <c>ToString</c> + pretty-print round-trip <see cref="ToXml"/> does.
+    /// Use this when the caller needs an element to walk (e.g. round-trip
+    /// diffing) rather than a serialised string.
+    /// </summary>
+    public XElement ToElement()
     {
         var root = new XElement("fmxmlsnippet", new XAttribute("type", "FMObjectList"));
 
@@ -77,8 +83,10 @@ public class FmScript
                 root.Add(step.ToXml());
         }
 
-        return XmlHelpers.PrettyPrint(root.ToString());
+        return root;
     }
+
+    public string ToXml() => XmlHelpers.PrettyPrint(ToElement().ToString());
 
     // --- Render to display text ---
 

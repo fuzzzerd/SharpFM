@@ -4,87 +4,41 @@ using System.Linq;
 namespace SharpFM.Model.ClipTypes;
 
 /// <summary>
-/// Static, explicitly-populated registry of <see cref="IClipTypeStrategy"/>
-/// implementations keyed by <c>Mac-XM*</c> format id. Built-in strategies are
-/// registered once at startup via <see cref="RegisterBuiltIns"/>; tests
-/// reset and re-register through <see cref="Reset"/>.
+/// Compile-time registry of <see cref="IClipTypeStrategy"/> implementations
+/// keyed by <c>Mac-XM*</c> format id. Strategies are fully owned by SharpFM
+/// (no plugin extension point), so the table is built once from a static
+/// list and is read-only thereafter — no locks, no bootstrap, no reset.
+/// Adding a new clip type means writing the strategy and adding it to
+/// <see cref="BuiltIns"/>.
 /// </summary>
-/// <remarks>
-/// Reflection-based auto-discovery (the pattern used by <c>StepRegistry</c>)
-/// is deliberately not used here — clip types are few, low-cardinality, and
-/// explicit registration makes the bootstrapping order obvious.
-/// </remarks>
 public static class ClipTypeRegistry
 {
-    private static readonly object _gate = new();
-    private static readonly Dictionary<string, IClipTypeStrategy> _strategies = new();
+    public static IReadOnlyList<IClipTypeStrategy> BuiltIns { get; } =
+    [
+        ScriptClipStrategy.Steps,
+        ScriptClipStrategy.Script,
+        TableClipStrategy.Table,
+        TableClipStrategy.Field,
+        LayoutClipStrategy.Instance,
+    ];
 
-    /// <summary>Register a strategy. A duplicate <see cref="IClipTypeStrategy.FormatId"/> overwrites the prior entry.</summary>
-    public static void Register(IClipTypeStrategy strategy)
-    {
-        lock (_gate)
-        {
-            _strategies[strategy.FormatId] = strategy;
-        }
-    }
+    private static readonly Dictionary<string, IClipTypeStrategy> _byFormatId =
+        BuiltIns.ToDictionary(s => s.FormatId);
+
+    /// <summary>All built-in strategies (excludes the opaque fallback).</summary>
+    public static IReadOnlyList<IClipTypeStrategy> All => BuiltIns;
 
     /// <summary>
     /// Resolve a strategy for the given format id. Unknown ids fall back to
     /// <see cref="OpaqueClipStrategy.Instance"/> so callers always receive a
     /// usable strategy.
     /// </summary>
-    public static IClipTypeStrategy For(string formatId)
-    {
-        lock (_gate)
-        {
-            return _strategies.TryGetValue(formatId, out var strategy)
-                ? strategy
-                : OpaqueClipStrategy.Instance;
-        }
-    }
+    public static IClipTypeStrategy For(string formatId) =>
+        _byFormatId.TryGetValue(formatId, out var strategy)
+            ? strategy
+            : OpaqueClipStrategy.Instance;
 
-    /// <summary>True if the given format id has a dedicated strategy registered.</summary>
-    public static bool IsRegistered(string formatId)
-    {
-        lock (_gate)
-        {
-            return _strategies.ContainsKey(formatId);
-        }
-    }
-
-    /// <summary>All explicitly-registered strategies, in registration order.</summary>
-    public static IReadOnlyList<IClipTypeStrategy> All
-    {
-        get
-        {
-            lock (_gate)
-            {
-                return _strategies.Values.ToList();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Register every built-in clip-type strategy. Called once at host startup;
-    /// idempotent thanks to <see cref="Register"/>'s overwrite semantics. Adding
-    /// a new <c>Mac-XM*</c> format is a single additional <see cref="Register"/>
-    /// call here. Opaque is the implicit fallback and is not registered.
-    /// </summary>
-    public static void RegisterBuiltIns()
-    {
-        Register(ScriptClipStrategy.Steps);
-        Register(ScriptClipStrategy.Script);
-        Register(TableClipStrategy.Table);
-        Register(TableClipStrategy.Field);
-        Register(LayoutClipStrategy.Instance);
-    }
-
-    /// <summary>Clear the registry. Tests use this to isolate from production registrations.</summary>
-    internal static void Reset()
-    {
-        lock (_gate)
-        {
-            _strategies.Clear();
-        }
-    }
+    /// <summary>True if the given format id has a dedicated built-in strategy.</summary>
+    public static bool IsRegistered(string formatId) =>
+        _byFormatId.ContainsKey(formatId);
 }
