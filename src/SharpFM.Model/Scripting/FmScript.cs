@@ -181,13 +181,14 @@ public class FmScript
     private List<string> ApplyAdd(ScriptStepOperation op)
     {
         if (op.StepName is null) return ["StepName is required for add operations."];
-        if (!Registry.StepRegistry.ByName.ContainsKey(op.StepName))
+        if (!Registry.StepRegistry.ByName.TryGetValue(op.StepName, out var metadata))
             return [$"Unknown step name '{op.StepName}'."];
 
         // Route through each POCO's FromDisplay factory with the caller's
-        // param map synthesized into labeled HR tokens. POCOs that take
-        // unlabeled positional params parse them in order.
-        var hrParams = SynthesizeHrParams(op.Params);
+        // param map synthesized into HR tokens. The synthesizer consults the
+        // step's metadata so positional params (no HrLabel) pass as raw
+        // values and labeled params get the canonical "Label: value" form.
+        var hrParams = SynthesizeHrParams(op.Params, metadata);
         var step = StepDisplayFactory.TryCreate(op.StepName, op.Enabled ?? true, hrParams);
         if (step is null)
             return [$"No typed POCO factory registered for '{op.StepName}'."];
@@ -214,7 +215,7 @@ public class FmScript
         if (metadata is null)
             return [$"Apply/update is not supported for step kind '{step.GetType().Name}'."];
 
-        var hrParams = SynthesizeHrParams(op.Params);
+        var hrParams = SynthesizeHrParams(op.Params, metadata);
         var updated = StepDisplayFactory.TryCreate(metadata.Name, step.Enabled, hrParams);
         if (updated is null)
             return [$"No typed POCO factory registered for '{metadata.Name}'."];
@@ -223,18 +224,60 @@ public class FmScript
         return [];
     }
 
-    private static string[] SynthesizeHrParams(IReadOnlyDictionary<string, string>? map)
+    /// <summary>
+    /// Convert a caller's param map into the ordered HR-token form each step's
+    /// FromDisplay factory expects. Iterates the step's metadata in declared
+    /// order, formatting each match as <c>"HrLabel: value"</c> when the param
+    /// has a label and as a raw positional value when it doesn't (e.g.
+    /// <c>SetVariableStep.Name</c>, <c>IfStep.Condition</c> — these go straight
+    /// into <c>&lt;Name&gt;</c> / <c>&lt;Calculation&gt;</c> without prefix).
+    /// </summary>
+    /// <remarks>
+    /// The previous implementation labeled every non-empty key, which caused
+    /// positional params to receive a <c>"Name: $foo"</c> string verbatim into
+    /// XML — structurally valid but semantically broken under FileMaker.
+    /// </remarks>
+    private static string[] SynthesizeHrParams(
+        IReadOnlyDictionary<string, string>? map,
+        Registry.StepMetadata metadata)
     {
         if (map is null || map.Count == 0) return [];
+
+        var consumedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<string>(map.Count);
+
+        foreach (var paramMeta in metadata.Params)
+        {
+            var matchedKey = FindMatchingKey(map, paramMeta.Name);
+            if (matchedKey is null) continue;
+
+            consumedKeys.Add(matchedKey);
+            var value = map[matchedKey];
+            result.Add(paramMeta.HrLabel is not null
+                ? $"{paramMeta.HrLabel}: {value}"
+                : value);
+        }
+
+        // Forward-compat: any keys we don't recognise pass through with the
+        // old formatting so newly-introduced params keep working until their
+        // metadata catches up.
         foreach (var (k, v) in map)
         {
-            // Bare values (key is empty) are positional tokens; labeled
-            // entries become "Label: value" tokens which each POCO's
-            // FromDisplay parser recognizes.
+            if (consumedKeys.Contains(k)) continue;
             result.Add(string.IsNullOrEmpty(k) ? v : $"{k}: {v}");
         }
+
         return result.ToArray();
+    }
+
+    private static string? FindMatchingKey(IReadOnlyDictionary<string, string> map, string paramName)
+    {
+        foreach (var (k, _) in map)
+        {
+            if (string.Equals(k, paramName, StringComparison.OrdinalIgnoreCase))
+                return k;
+        }
+        return null;
     }
 
     private List<string> ApplyRemove(ScriptStepOperation op)
