@@ -22,7 +22,10 @@
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewScriptCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewTableCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding CopySelectedToClip}" />
-        <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteFileMakerClipData}" />
+        <!-- Ctrl+V is wired in code-behind via a tunnel-phase preview
+             handler so it can defer to the focused text editor (TextBox /
+             AvaloniaEdit) and only fall through to the FileMaker-clip
+             paste when focus is on the tree, tabs, or window background. -->
     </Window.KeyBindings>
 
     <DockPanel>

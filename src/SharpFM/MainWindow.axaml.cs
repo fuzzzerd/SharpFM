@@ -4,6 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using AvaloniaEdit;
+using AvaloniaEdit.Editing;
 using SharpFM.Diagnostics;
 using SharpFM.Plugin;
 using SharpFM.Plugin.UI;
@@ -33,6 +37,9 @@ public partial class MainWindow : Window
         var rawClipboard = this.FindControl<MenuItem>("rawClipboardMenuItem");
         if (rawClipboard != null)
             rawClipboard.Click += (_, _) => new RawClipboardWindow().Show(this);
+
+        // Tunnel-phase Ctrl+V — see OnPreviewKeyDown.
+        AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
 
         // Wire up plugin UI when DataContext is set
         DataContextChanged += OnDataContextChanged;
@@ -242,5 +249,35 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel vm) return;
         if ((sender as Button)?.Tag is OpenTabViewModel tab)
             vm.OpenTabs.Close(tab);
+    }
+
+    // Ctrl+V dispatch (issue #197). A Window-level KeyBinding fires before
+    // the focused control sees the keystroke, which broke plain-text paste
+    // in the script editor and the search box. Bubble-phase OnKeyDown does
+    // the opposite — text editors mark Ctrl+V handled, so the Window never
+    // sees the global case. Tunnel-phase preview lets us inspect the key
+    // first and decide based on focus: hand off to text editors, otherwise
+    // intercept for the FileMaker-clip paste.
+    private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.V) return;
+        if (e.KeyModifiers != KeyModifiers.Control) return;
+        if (IsTextInputFocused()) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        e.Handled = true;
+        _ = vm.PasteFileMakerClipData();
+    }
+
+    private bool IsTextInputFocused()
+    {
+        var focused = FocusManager?.GetFocusedElement() as Visual;
+        while (focused is not null)
+        {
+            if (focused is TextBox or TextEditor or TextArea)
+                return true;
+            focused = focused.GetVisualParent();
+        }
+        return false;
     }
 }
