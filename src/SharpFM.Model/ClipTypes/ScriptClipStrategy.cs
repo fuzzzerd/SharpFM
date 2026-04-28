@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
-using SharpFM.Model.Scripting.Steps;
 
 namespace SharpFM.Model.ClipTypes;
 
@@ -52,22 +50,9 @@ public sealed class ScriptClipStrategy : IClipTypeStrategy
                 ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "failed to parse script");
         }
 
-        var output = XElement.Parse(script.ToXml());
-        var diagnostics = new List<ClipParseDiagnostic>(XmlRoundTripDiff.Compute(input, output));
-
-        var rawStepIndex = 0;
-        foreach (var step in script.Steps)
-        {
-            rawStepIndex++;
-            if (step is RawStep raw)
-            {
-                diagnostics.Add(new ClipParseDiagnostic(
-                    ParseDiagnosticKind.UnknownStep,
-                    ParseDiagnosticSeverity.Info,
-                    $"/fmxmlsnippet/Step[{rawStepIndex}]",
-                    $"step '{raw.Name}' is not modeled by the host; preserved verbatim as RawStep"));
-            }
-        }
+        var diagnostics = new List<ClipParseDiagnostic>(
+            XmlRoundTripDiff.Compute(input, script.ToElement()));
+        diagnostics.AddRange(ClipStrategyHelpers.RawStepDiagnostics(script));
 
         var report = diagnostics.Count == 0
             ? ClipParseReport.Empty

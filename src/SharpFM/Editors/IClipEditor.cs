@@ -1,4 +1,5 @@
 using System;
+using SharpFM.Model.Parsing;
 
 namespace SharpFM.Editors;
 
@@ -19,6 +20,15 @@ public interface IClipEditor
     /// Serialize the current editor state to XML.
     /// </summary>
     string ToXml();
+
+    /// <summary>
+    /// Snapshot the editor's live domain model. The editor owns this state
+    /// (it produced it from display-text edits), so callers can trust the
+    /// returned model reflects the same content <see cref="ToXml"/> would
+    /// emit — no re-parse required. Returned model is "as good as" the
+    /// editor knows; structural fidelity is the editor's responsibility.
+    /// </summary>
+    ClipModel GetModel();
 
     /// <summary>
     /// True if the last <see cref="ToXml"/> produced output from an incomplete or errored parse.

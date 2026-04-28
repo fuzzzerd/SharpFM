@@ -1,5 +1,6 @@
 using System;
 using AvaloniaEdit.Document;
+using SharpFM.Model.Parsing;
 
 namespace SharpFM.Editors;
 
@@ -27,4 +28,6 @@ public class FallbackXmlEditor : IClipEditor
     }
 
     public string ToXml() => Document.Text;
+
+    public ClipModel GetModel() => new OpaqueClipModel(Document.Text);
 }

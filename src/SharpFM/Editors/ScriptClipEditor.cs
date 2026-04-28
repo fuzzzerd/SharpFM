@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using AvaloniaEdit.Document;
+using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Steps;
 using SharpFM.Scripting;
@@ -223,6 +224,24 @@ public class ScriptClipEditor : IClipEditor
 
         _script.Metadata = _metadata;
         return _script.ToXml();
+    }
+
+    public ClipModel GetModel()
+    {
+        // RebuildFromDocument runs from ToXml; calling it here too keeps
+        // GetModel callable independently (e.g. in tests) without requiring
+        // a prior ToXml.
+        try
+        {
+            RebuildFromDocument();
+            IsPartial = false;
+        }
+        catch
+        {
+            IsPartial = true;
+        }
+        _script.Metadata = _metadata;
+        return new ScriptClipModel(_script);
     }
 
     /// <summary>

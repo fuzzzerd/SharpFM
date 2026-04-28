@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -111,6 +112,38 @@ public sealed class Clip
             ? string.Empty
             : Encoding.UTF8.GetString(bytes, 4, bytes.Length - 4);
         return FromXml(name, formatId, xml);
+    }
+
+    /// <summary>
+    /// Construct a clip from a model the editor already holds. Skips the
+    /// strategy parse + round-trip diff entirely — the editor's domain model
+    /// is the source of truth, the XML it emits is lossless to that model
+    /// by definition. Only kind-specific diagnostics that aren't structural
+    /// (e.g. <see cref="ParseDiagnosticKind.UnknownStep"/> for <c>RawStep</c>)
+    /// are derived from the model directly.
+    /// </summary>
+    /// <remarks>
+    /// This is the typing hot path for large scripts. Going through
+    /// <see cref="FromXml"/> on every debounced edit re-parses the XML
+    /// (~ N steps) plus serialises and structurally diffs (~ N more) on
+    /// the UI thread. <c>FromEditor</c> drops all of that.
+    /// </remarks>
+    public static Clip FromEditor(string name, string formatId, string xml, ClipModel model)
+    {
+        var report = ReportForEditorModel(model);
+        return new Clip(name, formatId, xml, new ParseSuccess(model, report));
+    }
+
+    private static ClipParseReport ReportForEditorModel(ClipModel model)
+    {
+        if (model is ScriptClipModel script)
+        {
+            var diagnostics = ClipStrategyHelpers.RawStepDiagnostics(script.Script).ToList();
+            return diagnostics.Count == 0
+                ? ClipParseReport.Empty
+                : new ClipParseReport(diagnostics);
+        }
+        return ClipParseReport.Empty;
     }
 
     /// <summary>
