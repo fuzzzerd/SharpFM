@@ -29,10 +29,44 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private IClipRepository _repository;
     private OpenTabViewModel? _trackedActiveTab;
 
+    private ClipViewModel? _trackedSelectedClip;
+
     private void OnActiveTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(OpenTabViewModel.Clip))
+        {
             NotifyPropertyChanged(nameof(SelectedClip));
+            ResubscribeSelectedClipParseReport();
+        }
+    }
+
+    private void ResubscribeSelectedClipParseReport()
+    {
+        if (_trackedSelectedClip is not null)
+        {
+            _trackedSelectedClip.PropertyChanged -= OnSelectedClipPropertyChanged;
+        }
+
+        _trackedSelectedClip = SelectedClip;
+        if (_trackedSelectedClip is not null)
+        {
+            _trackedSelectedClip.PropertyChanged += OnSelectedClipPropertyChanged;
+        }
+
+        NotifyPropertyChanged(nameof(ParseFidelityVisible));
+        NotifyPropertyChanged(nameof(ParseFidelityIsLossless));
+        NotifyPropertyChanged(nameof(ParseFidelitySummary));
+    }
+
+    private void OnSelectedClipPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ClipViewModel.ParseReport)
+            || e.PropertyName == nameof(ClipViewModel.IsLossless)
+            || e.PropertyName == nameof(ClipViewModel.Clip))
+        {
+            NotifyPropertyChanged(nameof(ParseFidelityIsLossless));
+            NotifyPropertyChanged(nameof(ParseFidelitySummary));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -79,6 +113,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 _trackedActiveTab.PropertyChanged += OnActiveTabPropertyChanged;
 
             NotifyPropertyChanged(nameof(SelectedClip));
+            ResubscribeSelectedClipParseReport();
         };
 
         RootNodes = [];
@@ -470,6 +505,48 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             NotifyPropertyChanged();
         }
     }
+
+    /// <summary>True when the status bar should display a parse-fidelity summary for the selected clip.</summary>
+    public bool ParseFidelityVisible => SelectedClip is not null;
+
+    /// <summary>True when the selected clip parsed losslessly. Drives the warning glyph in the status bar.</summary>
+    public bool ParseFidelityIsLossless => SelectedClip?.IsLossless ?? true;
+
+    /// <summary>
+    /// Human-readable summary of the selected clip's parse report, e.g.
+    /// <c>"Parsed losslessly"</c> or <c>"Parsed with 3 issues: 2 unknown step elements, 1 unknown attribute"</c>.
+    /// </summary>
+    public string ParseFidelitySummary
+    {
+        get
+        {
+            var report = SelectedClip?.ParseReport;
+            if (report is null) return string.Empty;
+            if (report.IsLossless) return "Parsed losslessly";
+
+            var byKind = report.Diagnostics
+                .GroupBy(d => d.Kind)
+                .Select(g => $"{g.Count()} {HumanKind(g.Key, g.Count())}")
+                .ToList();
+
+            return $"Parsed with {report.Diagnostics.Count} issue(s): {string.Join(", ", byKind)}";
+        }
+    }
+
+    private static string HumanKind(SharpFM.Model.Parsing.ParseDiagnosticKind kind, int count) =>
+        kind switch
+        {
+            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownStep => count == 1 ? "unknown step" : "unknown steps",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownStepElement => count == 1 ? "unknown step element" : "unknown step elements",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownStepAttribute => count == 1 ? "unknown step attribute" : "unknown step attributes",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownClipElement => count == 1 ? "unknown element" : "unknown elements",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownClipAttribute => count == 1 ? "unknown attribute" : "unknown attributes",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.DroppedNamespace => count == 1 ? "dropped namespace" : "dropped namespaces",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.RoundTripValueMismatch => count == 1 ? "value mismatch" : "value mismatches",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.XmlMalformed => "malformed xml",
+            SharpFM.Model.Parsing.ParseDiagnosticKind.UnsupportedClipType => "unsupported clip type",
+            _ => "issue",
+        };
 
     /// <summary>
     /// Open a clip as a preview tab (single-click in the tree).
