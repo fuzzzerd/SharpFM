@@ -1,4 +1,3 @@
-using System;
 using System.Xml;
 using System.Xml.Linq;
 using SharpFM.Model.Parsing;
@@ -17,21 +16,17 @@ public sealed class OpaqueClipStrategy : IClipTypeStrategy
 
     private OpaqueClipStrategy() { }
 
+    /// <summary>Synthetic id used only by the fallback singleton; never registered with the registry.</summary>
     public string FormatId => "Mac-XM??";
+
     public string DisplayName => "Unknown";
 
     public ClipParseResult Parse(string xml)
     {
         if (string.IsNullOrWhiteSpace(xml))
         {
-            return new ParseFailure("empty xml", new ClipParseReport(
-            [
-                new ClipParseDiagnostic(
-                    ParseDiagnosticKind.XmlMalformed,
-                    ParseDiagnosticSeverity.Error,
-                    "/",
-                    "input was empty"),
-            ]));
+            return ClipStrategyHelpers.Failure(
+                ParseDiagnosticKind.XmlMalformed, "/", "input was empty", "empty xml");
         }
 
         try
@@ -40,14 +35,8 @@ public sealed class OpaqueClipStrategy : IClipTypeStrategy
         }
         catch (XmlException ex)
         {
-            return new ParseFailure("malformed xml", new ClipParseReport(
-            [
-                new ClipParseDiagnostic(
-                    ParseDiagnosticKind.XmlMalformed,
-                    ParseDiagnosticSeverity.Error,
-                    "/",
-                    ex.Message),
-            ]));
+            return ClipStrategyHelpers.Failure(
+                ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "malformed xml");
         }
 
         return new ParseSuccess(new OpaqueClipModel(xml), ClipParseReport.Empty);

@@ -28,7 +28,6 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
 
     private Clip _clip;
 
-    /// <summary>The current immutable clip aggregate. Replaced wholesale on edits.</summary>
     public Clip Clip
     {
         get => _clip;
@@ -40,11 +39,6 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    /// <summary>
-    /// The clip-type-specific editor. Receives an already-parsed model from
-    /// <see cref="ClipEditorViewFactory.CreateEditor"/>; no XML parsing happens
-    /// here.
-    /// </summary>
     public IClipEditor Editor { get; private set; }
 
     /// <summary>
@@ -86,11 +80,7 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         _editorView = null;
     }
 
-    /// <summary>
-    /// Wholesale replacement: re-parse the clip with new XML and rebuild the
-    /// editor around the resulting model. Used for all external updates
-    /// (MCP, plugins, XML viewer).
-    /// </summary>
+    /// <summary>Re-parse the clip with new XML; used for external updates (MCP, plugins, XML viewer).</summary>
     public void Replace(string xml)
     {
         Editor.ContentChanged -= OnEditorContentChanged;
@@ -98,13 +88,11 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         Editor = ClipEditorViewFactory.CreateEditor(_clip);
         Editor.ContentChanged += OnEditorContentChanged;
 
-        // The cached editor view was built around the old editor instance.
-        // Tear it down so the next EditorView access rebuilds cleanly.
         if (_editorView is IDisposable d) d.Dispose();
         _editorView = null;
 
-        // Reverse sync from plugins / external tools must not flag the clip
-        // dirty — the source of truth is what the editor now holds.
+        // Reverse sync from external sources must not flag the clip dirty —
+        // the source of truth is what the editor now holds.
         _savedXml = Editor.ToXml();
 
         NotifyPropertyChanged(nameof(IsDirty));
@@ -117,27 +105,17 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         NotifyPropertyChanged(nameof(IsLossless));
     }
 
-    /// <summary>The fidelity report from the most recent XML→domain parse.</summary>
     public ClipParseReport ParseReport => _clip.Parsed.Report;
 
-    /// <summary>True when no parse loss was detected on the current XML.</summary>
     public bool IsLossless => ParseReport.IsLossless;
 
-    /// <summary>
-    /// Called by the host after a successful save; captures the current XML as
-    /// the "clean" baseline so edits that follow light the dirty indicator.
-    /// </summary>
+    /// <summary>Captures the current XML as the saved baseline; clears the dirty indicator.</summary>
     public void MarkSaved()
     {
         _savedXml = Editor.ToXml();
         NotifyPropertyChanged(nameof(IsDirty));
     }
 
-    /// <summary>
-    /// True when the editor's current XML differs from the last saved snapshot.
-    /// Drives the dirty dot on open tabs. Computed on demand — cheap enough
-    /// for a UI binding evaluated only when <c>ContentChanged</c> fires.
-    /// </summary>
     public bool IsDirty =>
         !string.Equals(Editor.ToXml(), _savedXml, StringComparison.Ordinal);
 
@@ -149,9 +127,6 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     // Dispatcher. In production this is invoked from Editor.ContentChanged.
     internal void HandleEditorContentChanged()
     {
-        // Editor edits are display→XML→model. The aggregate's parsed state
-        // becomes stale; re-derive it via WithXml so ParseReport reflects the
-        // current XML.
         Clip = _clip.WithXml(Editor.ToXml());
         NotifyPropertyChanged(nameof(IsDirty));
         NotifyPropertyChanged(nameof(ParseReport));

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml;
 using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
@@ -38,28 +36,9 @@ public sealed class ScriptClipStrategy : IClipTypeStrategy
 
     public ClipParseResult Parse(string xml)
     {
-        if (string.IsNullOrWhiteSpace(xml))
+        if (!ClipStrategyHelpers.TryParseFmxmlsnippet(xml, out var input, out var failure))
         {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", "input was empty", "empty xml");
-        }
-
-        XElement input;
-        try
-        {
-            input = XElement.Parse(xml);
-        }
-        catch (XmlException ex)
-        {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "malformed xml");
-        }
-
-        if (input.Name.LocalName != "fmxmlsnippet")
-        {
-            return Failure(
-                ParseDiagnosticKind.UnsupportedClipType,
-                "/" + input.Name.LocalName,
-                $"expected <fmxmlsnippet>, found <{input.Name.LocalName}>",
-                "unsupported root element");
+            return failure;
         }
 
         FmScript script;
@@ -69,7 +48,8 @@ public sealed class ScriptClipStrategy : IClipTypeStrategy
         }
         catch (Exception ex)
         {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "failed to parse script");
+            return ClipStrategyHelpers.Failure(
+                ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "failed to parse script");
         }
 
         var output = XElement.Parse(script.ToXml());
@@ -81,12 +61,11 @@ public sealed class ScriptClipStrategy : IClipTypeStrategy
             rawStepIndex++;
             if (step is RawStep raw)
             {
-                var stepName = raw.Element.Attribute("name")?.Value ?? "Unknown";
                 diagnostics.Add(new ClipParseDiagnostic(
                     ParseDiagnosticKind.UnknownStep,
                     ParseDiagnosticSeverity.Info,
                     $"/fmxmlsnippet/Step[{rawStepIndex}]",
-                    $"step '{stepName}' is not modeled by the host; preserved verbatim as RawStep"));
+                    $"step '{raw.Name}' is not modeled by the host; preserved verbatim as RawStep"));
             }
         }
 
@@ -99,13 +78,4 @@ public sealed class ScriptClipStrategy : IClipTypeStrategy
 
     public string DefaultXml(string clipName) =>
         "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
-
-    private static ParseFailure Failure(
-        ParseDiagnosticKind kind, string location, string message, string reason)
-    {
-        return new ParseFailure(reason, new ClipParseReport(
-        [
-            new ClipParseDiagnostic(kind, ParseDiagnosticSeverity.Error, location, message),
-        ]));
-    }
 }

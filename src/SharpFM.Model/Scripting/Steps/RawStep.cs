@@ -27,6 +27,12 @@ public sealed class RawStep : ScriptStep
     /// </summary>
     internal XElement Element => _element;
 
+    /// <summary>
+    /// Step name as preserved from the source XML, e.g. <c>"Future Step"</c>.
+    /// Returns <c>"Unknown"</c> if the source had no <c>name</c> attribute.
+    /// </summary>
+    public string Name => _element.Attribute("name")?.Value ?? "Unknown";
+
     public RawStep(XElement element)
         : base(IsEnabled(element))
     {
@@ -41,20 +47,17 @@ public sealed class RawStep : ScriptStep
     {
         var rawText = _element.Element("RawText")?.Value;
         if (!string.IsNullOrEmpty(rawText)) return rawText;
-        return _element.Attribute("name")?.Value ?? "Unknown";
+        return Name;
     }
 
-    public override List<ScriptDiagnostic> Validate(int lineIndex)
-    {
-        var name = _element.Attribute("name")?.Value ?? "Unknown";
-        return new List<ScriptDiagnostic>
+    public override List<ScriptDiagnostic> Validate(int lineIndex) =>
+        new()
         {
-            new(lineIndex, 0, name.Length,
-                $"Unknown script step '{name}' — preserved verbatim as a RawStep. "
+            new(lineIndex, 0, Name.Length,
+                $"Unknown script step '{Name}' — preserved verbatim as a RawStep. "
                 + "Edit the underlying XML via the XML editor; display-text edits here won't round-trip.",
                 DiagnosticSeverity.Warning)
         };
-    }
 
     private static bool IsEnabled(XElement element) =>
         element.Attribute("enable")?.Value != "False";

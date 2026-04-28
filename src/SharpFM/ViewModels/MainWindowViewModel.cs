@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using SharpFM.Models;
 using SharpFM.Model;
 using SharpFM.Model.ClipTypes;
+using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
 using SharpFM.Services;
@@ -206,7 +207,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         try
         {
-            // Sync editor state into the aggregate before snapshotting.
             foreach (var clip in FileMakerClips)
                 clip.HandleEditorContentChanged();
 
@@ -219,8 +219,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
             await _repository.SaveClipsAsync(clipData);
 
-            // Clip is now known-persisted — rebase the dirty snapshot so the
-            // tab dirty dots clear.
             foreach (var c in FileMakerClips) c.MarkSaved();
 
             ShowStatus($"Saved {clipData.Count} clip(s) to {_repository.CurrentLocation}");
@@ -359,7 +357,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         try
         {
-            // Sync editor state into the aggregate before lifting wire bytes off it.
             data.HandleEditorContentChanged();
             await _clipboard.SetDataAsync(data.ClipType, data.Clip.WireBytes);
             ShowStatus("Copied to FileMaker clipboard");
@@ -526,27 +523,11 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
             var byKind = report.Diagnostics
                 .GroupBy(d => d.Kind)
-                .Select(g => $"{g.Count()} {HumanKind(g.Key, g.Count())}")
-                .ToList();
+                .Select(g => $"{g.Count()} {g.Key.ToHumanLabel(g.Count())}");
 
             return $"Parsed with {report.Diagnostics.Count} issue(s): {string.Join(", ", byKind)}";
         }
     }
-
-    private static string HumanKind(SharpFM.Model.Parsing.ParseDiagnosticKind kind, int count) =>
-        kind switch
-        {
-            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownStep => count == 1 ? "unknown step" : "unknown steps",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownStepElement => count == 1 ? "unknown step element" : "unknown step elements",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownStepAttribute => count == 1 ? "unknown step attribute" : "unknown step attributes",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownClipElement => count == 1 ? "unknown element" : "unknown elements",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.UnknownClipAttribute => count == 1 ? "unknown attribute" : "unknown attributes",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.DroppedNamespace => count == 1 ? "dropped namespace" : "dropped namespaces",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.RoundTripValueMismatch => count == 1 ? "value mismatch" : "value mismatches",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.XmlMalformed => "malformed xml",
-            SharpFM.Model.Parsing.ParseDiagnosticKind.UnsupportedClipType => "unsupported clip type",
-            _ => "issue",
-        };
 
     /// <summary>
     /// Open a clip as a preview tab (single-click in the tree).
