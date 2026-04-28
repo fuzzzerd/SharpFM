@@ -69,6 +69,21 @@
                     HorizontalAlignment="Left"
                     IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                     Text="{Binding StatusMessage}" />
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    IsVisible="{Binding ParseFidelityVisible}">
+                    <TextBlock
+                        Classes="Fluent2Caption"
+                        Foreground="DarkOrange"
+                        Text="!"
+                        IsVisible="{Binding !ParseFidelityIsLossless}" />
+                    <TextBlock
+                        Classes="Fluent2Caption"
+                        Opacity="0.7"
+                        Text="{Binding ParseFidelitySummary}" />
+                </StackPanel>
                 <TextBlock
                     Classes="Fluent2Caption"
                     HorizontalAlignment="Right"
@@ -190,6 +205,12 @@
                                                         Classes="Fluent2Caption"
                                                         Opacity="0.6"
                                                         Text="{Binding Clip.ClipTypeDisplay}" />
+                                                    <TextBlock
+                                                        Classes="Fluent2Caption"
+                                                        Foreground="DarkOrange"
+                                                        IsVisible="{Binding !Clip.IsLossless}"
+                                                        Text="!"
+                                                        ToolTip.Tip="This clip's XML did not round-trip cleanly through the domain model. See the status bar for details when selected." />
                                                 </StackPanel>
                                             </StackPanel>
                                         </TreeDataTemplate>
