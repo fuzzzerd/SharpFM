@@ -1,6 +1,3 @@
-using System;
-using System.Xml;
-using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 
 namespace SharpFM.Model.ClipTypes;
@@ -23,42 +20,13 @@ public sealed class LayoutClipStrategy : IClipTypeStrategy
 
     public ClipParseResult Parse(string xml)
     {
-        if (string.IsNullOrWhiteSpace(xml))
+        if (!ClipStrategyHelpers.TryParseFmxmlsnippet(xml, out _, out var failure))
         {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", "input was empty", "empty xml");
+            return failure;
         }
-
-        XElement input;
-        try
-        {
-            input = XElement.Parse(xml);
-        }
-        catch (XmlException ex)
-        {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "malformed xml");
-        }
-
-        if (input.Name.LocalName != "fmxmlsnippet")
-        {
-            return Failure(
-                ParseDiagnosticKind.UnsupportedClipType,
-                "/" + input.Name.LocalName,
-                $"expected <fmxmlsnippet>, found <{input.Name.LocalName}>",
-                "unsupported root element");
-        }
-
         return new ParseSuccess(new LayoutClipModel(xml), ClipParseReport.Empty);
     }
 
     public string DefaultXml(string clipName) =>
         "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
-
-    private static ParseFailure Failure(
-        ParseDiagnosticKind kind, string location, string message, string reason)
-    {
-        return new ParseFailure(reason, new ClipParseReport(
-        [
-            new ClipParseDiagnostic(kind, ParseDiagnosticSeverity.Error, location, message),
-        ]));
-    }
 }

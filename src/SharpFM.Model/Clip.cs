@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
@@ -15,25 +16,39 @@ namespace SharpFM.Model;
 /// any consumer regardless of how the clip arrived.
 /// </summary>
 /// <remarks>
-/// Mutation produces a new instance: <see cref="WithXml"/> reparses against
-/// the registered strategy; <see cref="Rename"/> reuses the existing parse.
 /// View-models hold a <c>Clip</c> reference and re-publish change
 /// notifications when the reference is replaced — INPC stays out of the
 /// domain layer.
 /// </remarks>
 public sealed class Clip
 {
-    /// <summary>Display name of the clip.</summary>
     public string Name { get; }
-
-    /// <summary>Wire-format identifier, e.g. <c>"Mac-XMSS"</c>.</summary>
     public string FormatId { get; }
-
-    /// <summary>Canonical (pretty-printed) XML body. Always retains whatever the source produced for unknown content.</summary>
     public string Xml { get; }
 
-    /// <summary>Outcome of parsing <see cref="Xml"/> against the registered strategy for <see cref="FormatId"/>.</summary>
-    public ClipParseResult Parsed { get; }
+    private readonly Func<ClipParseResult> _parseFactory;
+    private ClipParseResult? _parsed;
+
+    /// <summary>
+    /// Outcome of parsing <see cref="Xml"/> against the registered strategy.
+    /// Computed on first access — XML→domain parsing is the slow part of
+    /// constructing a clip, and most callers along the editor's hot path
+    /// only read <see cref="Xml"/>.
+    /// </summary>
+    public ClipParseResult Parsed
+    {
+        get
+        {
+            // PublicationOnly semantics: multiple racing threads may compute
+            // the parse, only one result wins. Cheaper than full
+            // double-checked locking and the strategies are pure functions.
+            if (_parsed is null)
+            {
+                Interlocked.CompareExchange(ref _parsed, _parseFactory(), null);
+            }
+            return _parsed;
+        }
+    }
 
     private byte[]? _cachedWireBytes;
 
@@ -55,27 +70,35 @@ public sealed class Clip
         }
     }
 
-    private Clip(string name, string formatId, string xml, ClipParseResult parsed)
+    private Clip(string name, string formatId, string xml, Func<ClipParseResult> parseFactory)
     {
         Name = name;
         FormatId = formatId;
         Xml = xml;
-        Parsed = parsed;
+        _parseFactory = parseFactory;
+    }
+
+    private Clip(string name, string formatId, string xml, ClipParseResult parsed)
+        : this(name, formatId, xml, () => parsed)
+    {
+        _parsed = parsed;
     }
 
     /// <summary>
     /// Construct a clip from raw XML. The XML is canonicalised via
-    /// <see cref="XmlHelpers.PrettyPrint"/> (which preserves the input on
-    /// well-formedness errors), then handed to the registered strategy for
-    /// <paramref name="formatId"/>. Parse failures are returned in
-    /// <see cref="Parsed"/>; this method itself does not throw.
+    /// <see cref="XmlHelpers.PrettyPrint"/>; the strategy parse runs lazily
+    /// when <see cref="Parsed"/> is first read. This method itself does not
+    /// throw — well-formedness errors surface as a <see cref="ParseFailure"/>
+    /// from the strategy on demand.
     /// </summary>
     public static Clip FromXml(string name, string formatId, string xml)
     {
         var canonical = XmlHelpers.PrettyPrint(xml ?? string.Empty);
-        var strategy = ClipTypeRegistry.For(formatId);
-        var parsed = strategy.Parse(canonical);
-        return new Clip(name, formatId, canonical, parsed);
+        return new Clip(
+            name,
+            formatId,
+            canonical,
+            () => ClipTypeRegistry.For(formatId).Parse(canonical));
     }
 
     /// <summary>
@@ -90,9 +113,26 @@ public sealed class Clip
         return FromXml(name, formatId, xml);
     }
 
-    /// <summary>Return a fresh clip with replacement XML. Re-parses against the registered strategy.</summary>
-    public Clip WithXml(string newXml) => FromXml(Name, FormatId, newXml);
+    /// <summary>
+    /// Return a fresh clip with replacement XML. The parse runs lazily on
+    /// the new instance. Returns <c>this</c> when <paramref name="newXml"/>
+    /// is byte-identical to the current canonical XML, which short-circuits
+    /// the change cascade for keystroke-driven re-syncs that don't actually
+    /// change anything.
+    /// </summary>
+    public Clip WithXml(string newXml)
+    {
+        if (string.Equals(newXml, Xml, StringComparison.Ordinal))
+        {
+            return this;
+        }
+        return FromXml(Name, FormatId, newXml);
+    }
 
-    /// <summary>Return a fresh clip with a new name; parse state is reused since XML is unchanged.</summary>
-    public Clip Rename(string newName) => new(newName, FormatId, Xml, Parsed);
+    /// <summary>Return a fresh clip under a new name; the existing parse is reused.</summary>
+    public Clip Rename(string newName)
+    {
+        var parsed = Parsed;
+        return new Clip(newName, FormatId, Xml, parsed);
+    }
 }

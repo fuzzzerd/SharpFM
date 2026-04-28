@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Xml;
 using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
@@ -37,28 +36,9 @@ public sealed class TableClipStrategy : IClipTypeStrategy
 
     public ClipParseResult Parse(string xml)
     {
-        if (string.IsNullOrWhiteSpace(xml))
+        if (!ClipStrategyHelpers.TryParseFmxmlsnippet(xml, out var input, out var failure))
         {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", "input was empty", "empty xml");
-        }
-
-        XElement input;
-        try
-        {
-            input = XElement.Parse(xml);
-        }
-        catch (XmlException ex)
-        {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "malformed xml");
-        }
-
-        if (input.Name.LocalName != "fmxmlsnippet")
-        {
-            return Failure(
-                ParseDiagnosticKind.UnsupportedClipType,
-                "/" + input.Name.LocalName,
-                $"expected <fmxmlsnippet>, found <{input.Name.LocalName}>",
-                "unsupported root element");
+            return failure;
         }
 
         FmTable table;
@@ -68,7 +48,8 @@ public sealed class TableClipStrategy : IClipTypeStrategy
         }
         catch (Exception ex)
         {
-            return Failure(ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "failed to parse table");
+            return ClipStrategyHelpers.Failure(
+                ParseDiagnosticKind.XmlMalformed, "/", ex.Message, "failed to parse table");
         }
 
         var output = XElement.Parse(table.ToXml());
@@ -85,13 +66,4 @@ public sealed class TableClipStrategy : IClipTypeStrategy
         _wrapsBaseTable
             ? $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{clipName}\"></BaseTable></fmxmlsnippet>"
             : "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
-
-    private static ParseFailure Failure(
-        ParseDiagnosticKind kind, string location, string message, string reason)
-    {
-        return new ParseFailure(reason, new ClipParseReport(
-        [
-            new ClipParseDiagnostic(kind, ParseDiagnosticSeverity.Error, location, message),
-        ]));
-    }
 }
