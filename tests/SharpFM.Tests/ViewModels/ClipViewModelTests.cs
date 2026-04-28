@@ -9,11 +9,8 @@ public class ClipViewModelTests
     private static string WrapXml(string steps) =>
         $"<fmxmlsnippet type=\"FMObjectList\">{steps}</fmxmlsnippet>";
 
-    private static ClipViewModel CreateScriptClip(string xml)
-    {
-        var clip = new FileMakerClip("Test", "Mac-XMSS", xml);
-        return new ClipViewModel(clip);
-    }
+    private static ClipViewModel CreateScriptClip(string xml) =>
+        new(Clip.FromXml("Test", "Mac-XMSS", xml));
 
     [Fact]
     public void IsScriptClip_TrueForXMSS()
@@ -25,8 +22,8 @@ public class ClipViewModelTests
     [Fact]
     public void IsScriptClip_FalseForTable()
     {
-        var clip = new FileMakerClip("Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
-        var vm = new ClipViewModel(clip);
+        var vm = new ClipViewModel(Clip.FromXml(
+            "Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>"));
         Assert.False(vm.IsScriptClip);
     }
 
@@ -36,7 +33,6 @@ public class ClipViewModelTests
         var xml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>hello</Text></Step>");
         var vm = CreateScriptClip(xml);
 
-        // Access ScriptDocument triggers lazy creation
         var doc = vm.ScriptDocument;
         Assert.NotNull(doc);
         Assert.Contains("# hello", doc.Text);
@@ -51,13 +47,12 @@ public class ClipViewModelTests
         var doc = vm.ScriptDocument;
         doc!.Text = "# modified";
 
-        // Editor.ToXml() gives fresh XML from current editor state
         var freshXml = vm.Editor.ToXml();
         Assert.Contains("modified", freshXml);
     }
 
     [Fact]
-    public void ReplaceEditor_UpdatesScriptDocument()
+    public void Replace_UpdatesScriptDocument()
     {
         var xml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>original</Text></Step>");
         var vm = CreateScriptClip(xml);
@@ -65,49 +60,44 @@ public class ClipViewModelTests
         _ = vm.ScriptDocument;
 
         var newXml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>changed via xml</Text></Step>");
-        vm.ReplaceEditor(newXml);
+        vm.Replace(newXml);
 
         Assert.Contains("changed via xml", vm.ScriptDocument!.Text);
     }
 
     [Fact]
-    public void ReplaceEditor_TableClip_RoundTripsXml()
+    public void Replace_TableClip_RoundTripsXml()
     {
-        var clip = new FileMakerClip("Test", "Mac-XMTB", "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"T\"></BaseTable></fmxmlsnippet>");
-        var vm = new ClipViewModel(clip);
+        var vm = new ClipViewModel(Clip.FromXml(
+            "Test", "Mac-XMTB",
+            "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"T\"></BaseTable></fmxmlsnippet>"));
 
-        vm.ReplaceEditor(vm.Clip.XmlData);
+        vm.Replace(vm.Clip.Xml);
 
-        Assert.Contains("BaseTable", vm.Clip.XmlData);
-        Assert.Contains("name=\"T\"", vm.Clip.XmlData);
+        Assert.Contains("BaseTable", vm.Clip.Xml);
+        Assert.Contains("name=\"T\"", vm.Clip.Xml);
     }
 
     [Fact]
-    public void Clip_XmlData_UpdatesBothClipAndDocument()
+    public void Replace_UpdatesXmlDocumentForFallbackClip()
     {
-        var xml = WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>");
-        var vm = CreateScriptClip(xml);
+        var vm = new ClipViewModel(Clip.FromXml(
+            "Test", "Mac-XML2", "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>"));
 
-        // Access XML document to create it
-        _ = vm.XmlDocument;
+        var newXml = "<fmxmlsnippet type=\"FMObjectList\"><Layout name=\"Hello\"/></fmxmlsnippet>";
+        vm.Replace(newXml);
 
-        var newXml = WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>new</Text></Step>");
-        vm.Clip.XmlData = newXml;
-
-        Assert.Equal(newXml, vm.Clip.XmlData);
-        Assert.Equal(newXml, vm.XmlDocument.Text);
+        Assert.Contains("Hello", vm.Clip.Xml);
     }
 
     [Fact]
-    public void Clip_Name_FiresPropertyChanged()
+    public void Rename_ProducesRenamedAggregate()
     {
         var vm = CreateScriptClip(WrapXml(""));
-        string? changed = null;
-        vm.Clip.PropertyChanged += (_, args) => changed = args.PropertyName;
+        var renamed = vm.Clip.Rename("Renamed");
 
-        vm.Clip.Name = "Renamed";
-        Assert.Equal("Renamed", vm.Clip.Name);
-        Assert.Equal("Name", changed);
+        Assert.Equal("Renamed", renamed.Name);
+        Assert.Equal(vm.Clip.Xml, renamed.Xml);
     }
 
     [Fact]
@@ -123,9 +113,6 @@ public class ClipViewModelTests
         var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>a</Text></Step>"));
         vm.ScriptDocument!.Text += "\n# new line";
 
-        // IsDirty is computed live — no need to pump the ContentChanged
-        // debouncer; a UI binding watching IsDirty gets notified when
-        // ContentChanged fires, but the value itself is always fresh.
         Assert.True(vm.IsDirty);
     }
 
@@ -141,13 +128,20 @@ public class ClipViewModelTests
     }
 
     [Fact]
-    public void ReplaceEditor_ResetsIsDirty()
+    public void Replace_ResetsIsDirty()
     {
         var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>a</Text></Step>"));
         vm.ScriptDocument!.Text += "\n# edited";
         Assert.True(vm.IsDirty);
 
-        vm.ReplaceEditor(vm.Editor.ToXml());
+        vm.Replace(vm.Editor.ToXml());
         Assert.False(vm.IsDirty);
+    }
+
+    [Fact]
+    public void ParseReport_ReflectsClipParseState()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>"));
+        Assert.True(vm.IsLossless);
     }
 }

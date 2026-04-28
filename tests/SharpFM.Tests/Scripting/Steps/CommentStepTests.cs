@@ -180,7 +180,7 @@ public class CommentStepTests
         var xml = "<fmxmlsnippet type=\"FMObjectList\">"
             + "<Step enable=\"True\" id=\"89\" name=\"# (comment)\"></Step>"
             + "</fmxmlsnippet>";
-        var editor = new SharpFM.Editors.ScriptClipEditor(xml);
+        var editor = new SharpFM.Editors.ScriptClipEditor(SharpFM.Model.Scripting.FmScript.FromXml(xml));
         var xmlOut = editor.ToXml();
 
         // Parseable; empty comment survives the round-trip.

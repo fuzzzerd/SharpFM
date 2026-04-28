@@ -1,5 +1,6 @@
 using System.Linq;
 using SharpFM.Editors;
+using SharpFM.Model.Scripting;
 using Xunit;
 
 namespace SharpFM.Tests.Editors;
@@ -11,10 +12,13 @@ public class ScriptClipEditorTests
         "<Step enable=\"True\" id=\"89\" name=\"# (comment)\">" +
         "<Text>Hello</Text></Step></fmxmlsnippet>";
 
+    private static ScriptClipEditor MakeEditor(string? xml) =>
+        new(FmScript.FromXml(xml ?? ""));
+
     [Fact]
     public void Constructor_ParsesXmlToDisplayText()
     {
-        var editor = new ScriptClipEditor(SampleScriptXml);
+        var editor = MakeEditor(SampleScriptXml);
 
         Assert.NotNull(editor.Document);
         // Comment step renders as "# Hello" in display text
@@ -24,7 +28,7 @@ public class ScriptClipEditorTests
     [Fact]
     public void ToXml_RoundTrips()
     {
-        var editor = new ScriptClipEditor(SampleScriptXml);
+        var editor = MakeEditor(SampleScriptXml);
         var xml = editor.ToXml();
 
         Assert.Contains("fmxmlsnippet", xml);
@@ -33,24 +37,9 @@ public class ScriptClipEditorTests
     }
 
     [Fact]
-    public void FromXml_UpdatesDocument()
-    {
-        var editor = new ScriptClipEditor(SampleScriptXml);
-        var originalText = editor.Document.Text;
-
-        var newXml =
-            "<fmxmlsnippet type=\"FMObjectList\">" +
-            "<Step enable=\"True\" id=\"93\" name=\"Beep\"/></fmxmlsnippet>";
-        editor.FromXml(newXml);
-
-        Assert.NotEqual(originalText, editor.Document.Text);
-        Assert.Contains("Beep", editor.Document.Text);
-    }
-
-    [Fact]
     public void ToXml_EmptyScript_IsNotPartial()
     {
-        var editor = new ScriptClipEditor("<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
+        var editor = MakeEditor("<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
         var xml = editor.ToXml();
 
         Assert.False(editor.IsPartial);
@@ -58,9 +47,9 @@ public class ScriptClipEditorTests
     }
 
     [Fact]
-    public void Constructor_HandlesNullXml()
+    public void Constructor_HandlesEmptyScript()
     {
-        var editor = new ScriptClipEditor(null);
+        var editor = new ScriptClipEditor(new FmScript([]));
 
         Assert.NotNull(editor.Document);
         Assert.NotNull(editor.ToXml());
@@ -77,7 +66,7 @@ public class ScriptClipEditorTests
             "<fmxmlsnippet type=\"FMObjectList\">" +
             "<Step enable=\"True\" id=\"9999\" name=\"FutureStep\"><Foo>bar</Foo></Step>" +
             "</fmxmlsnippet>";
-        var editor = new ScriptClipEditor(xml);
+        var editor = MakeEditor(xml);
 
         Assert.Single(editor.SealedAnchors);
 
@@ -101,7 +90,7 @@ public class ScriptClipEditorTests
         // The sealed FutureStep is the second display line; the
         // colorizer / cog generator / sealed-step layer all read this
         // set per paint and must see line 2.
-        var editor = new ScriptClipEditor(OneSealedAtLineTwoXml);
+        var editor = MakeEditor(OneSealedAtLineTwoXml);
 
         Assert.Single(editor.SealedLineNumbers);
         Assert.Contains(2, editor.SealedLineNumbers);
@@ -110,7 +99,7 @@ public class ScriptClipEditorTests
     [Fact]
     public void SealedLineEndOffsets_KeyedByLineNumber()
     {
-        var editor = new ScriptClipEditor(OneSealedAtLineTwoXml);
+        var editor = MakeEditor(OneSealedAtLineTwoXml);
         var line2 = editor.Document.GetLineByNumber(2);
 
         Assert.Single(editor.SealedLineEndOffsets);
@@ -120,7 +109,7 @@ public class ScriptClipEditorTests
     [Fact]
     public void SealedLineNumbers_Empty_WhenNoSealedSteps()
     {
-        var editor = new ScriptClipEditor(SampleScriptXml);
+        var editor = MakeEditor(SampleScriptXml);
 
         Assert.Empty(editor.SealedLineNumbers);
         Assert.Empty(editor.SealedLineEndOffsets);
@@ -132,7 +121,7 @@ public class ScriptClipEditorTests
         // Inserting a fresh line above the sealed step should slide its
         // line number from 2 → 3. Without cache invalidation the
         // dimming colorizer would highlight the wrong physical line.
-        var editor = new ScriptClipEditor(OneSealedAtLineTwoXml);
+        var editor = MakeEditor(OneSealedAtLineTwoXml);
         Assert.Contains(2, editor.SealedLineNumbers);
 
         editor.Document.Insert(0, "# new top line\n");
@@ -149,7 +138,7 @@ public class ScriptClipEditorTests
         // Deleting the entire sealed line drops the anchor (its
         // SurviveDeletion flag is false), so the cache should empty
         // out on next read.
-        var editor = new ScriptClipEditor(OneSealedAtLineTwoXml);
+        var editor = MakeEditor(OneSealedAtLineTwoXml);
         var sealedLine = editor.Document.GetLineByNumber(2);
         Assert.Contains(2, editor.SealedLineNumbers);
 

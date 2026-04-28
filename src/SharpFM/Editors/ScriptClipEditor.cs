@@ -59,9 +59,9 @@ public class ScriptClipEditor : IClipEditor
 
     public bool IsPartial { get; private set; }
 
-    public ScriptClipEditor(string? xml)
+    public ScriptClipEditor(FmScript script)
     {
-        _script = FmScript.FromXml(xml ?? "");
+        _script = script;
         _metadata = _script.Metadata;
         Document = new TextDocument(_script.ToDisplayText());
         BuildSealedAnchors();
@@ -223,14 +223,6 @@ public class ScriptClipEditor : IClipEditor
 
         _script.Metadata = _metadata;
         return _script.ToXml();
-    }
-
-    public void FromXml(string xml)
-    {
-        _script = FmScript.FromXml(xml);
-        _metadata = _script.Metadata;
-        Document.Text = _script.ToDisplayText();
-        BuildSealedAnchors();
     }
 
     /// <summary>

@@ -5,6 +5,8 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Highlighting;
+using SharpFM.Model;
+using SharpFM.Model.Parsing;
 using SharpFM.Schema.Editor;
 
 namespace SharpFM.Editors;
@@ -62,6 +64,24 @@ public static class ClipEditorViewFactory
         // No known monospace face installed — accept the alias path. We
         // pay the cache-miss cost but the editor still works.
         return new FontFamily("Monospace");
+    }
+
+    /// <summary>
+    /// Build the <see cref="IClipEditor"/> matching <paramref name="clip"/>'s
+    /// parsed model. The editor receives an already-parsed domain object — no
+    /// XML parsing happens inside editors any more.
+    /// </summary>
+    public static IClipEditor CreateEditor(Clip clip)
+    {
+        var model = (clip.Parsed as ParseSuccess)?.Model;
+        return model switch
+        {
+            ScriptClipModel scriptModel => new ScriptClipEditor(scriptModel.Script),
+            TableClipModel tableModel => new TableClipEditor(tableModel.Table),
+            LayoutClipModel layoutModel => new FallbackXmlEditor(layoutModel.Xml),
+            OpaqueClipModel opaqueModel => new FallbackXmlEditor(opaqueModel.Xml),
+            _ => new FallbackXmlEditor(clip.Xml),
+        };
     }
 
     public static Control Create(IClipEditor editor) => editor switch

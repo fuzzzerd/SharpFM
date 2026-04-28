@@ -21,12 +21,6 @@ public interface IClipEditor
     string ToXml();
 
     /// <summary>
-    /// Load XML into the editor (reverse sync from an external source like a plugin).
-    /// Implementations should diff/patch when possible to preserve UI state.
-    /// </summary>
-    void FromXml(string xml);
-
-    /// <summary>
     /// True if the last <see cref="ToXml"/> produced output from an incomplete or errored parse.
     /// For example, a half-typed script step that can't fully round-trip.
     /// </summary>

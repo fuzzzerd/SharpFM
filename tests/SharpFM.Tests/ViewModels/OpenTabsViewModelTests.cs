@@ -7,7 +7,7 @@ namespace SharpFM.Tests.ViewModels;
 public class OpenTabsViewModelTests
 {
     private static ClipViewModel Clip(string name) =>
-        new(new FileMakerClip(name, "Mac-XMSS",
+        new(SharpFM.Model.Clip.FromXml(name, "Mac-XMSS",
             "<fmxmlsnippet type=\"FMObjectList\"><Step enable=\"True\" id=\"89\" name=\"# (comment)\"><Text>a</Text></Step></fmxmlsnippet>"));
 
     [Fact]

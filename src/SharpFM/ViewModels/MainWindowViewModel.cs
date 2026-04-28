@@ -13,6 +13,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Models;
 using SharpFM.Model;
+using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
 using SharpFM.Services;
@@ -135,7 +136,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         foreach (var clip in clips)
         {
             FileMakerClips.Add(new ClipViewModel(
-                new FileMakerClip(clip.Name, clip.ClipType, clip.Xml))
+                Clip.FromXml(clip.Name, clip.ClipType, clip.Xml))
             {
                 FolderPath = clip.FolderPath,
             });
@@ -170,12 +171,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         try
         {
-            // Ensure XML is up-to-date from editor state before saving
+            // Sync editor state into the aggregate before snapshotting.
             foreach (var clip in FileMakerClips)
-                clip.Clip.XmlData = clip.Editor.ToXml();
+                clip.HandleEditorContentChanged();
 
             var clipData = FileMakerClips
-                .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.XmlData)
+                .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.Xml)
                 {
                     FolderPath = c.FolderPath,
                 })
@@ -210,11 +211,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private static readonly string EmptyScriptXml =
-        "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
-
-    private static readonly string EmptyTableXml =
-        "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"NewTable\"></BaseTable></fmxmlsnippet>";
 
     public void DeleteSelectedClip()
     {
@@ -231,18 +227,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         ShowStatus($"Deleted clip '{name}'");
     }
 
-    public void NewScriptCommand() =>
-        CreateNewClip("New Script", "Mac-XMSS", EmptyScriptXml, "script");
+    public void NewScriptCommand() => CreateNewClip("New Script", "Mac-XMSS", "script");
 
-    public void NewTableCommand() =>
-        CreateNewClip("New Table", "Mac-XMTB", EmptyTableXml, "table");
+    public void NewTableCommand() => CreateNewClip("New Table", "Mac-XMTB", "table");
 
-    private void CreateNewClip(string name, string format, string xml, string kind)
+    private void CreateNewClip(string name, string format, string kind)
     {
         try
         {
-            var clip = new FileMakerClip(name, format, xml);
-            var vm = new ClipViewModel(clip);
+            var seed = ClipTypeRegistry.For(format).DefaultXml(name);
+            var vm = new ClipViewModel(Clip.FromXml(name, format, seed));
             FileMakerClips.Add(vm);
             SelectedClip = vm;
             ShowStatus($"Created new {kind}");
@@ -268,6 +262,11 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             await _clipboard.SetTextAsync(classString);
             ShowStatus("Copied C# class to clipboard");
         }
+        catch (NotSupportedException e)
+        {
+            _logger.LogInformation(e, "Copy as class is only available for table clips.");
+            ShowStatus(e.Message, isError: true);
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error copying as class.");
@@ -291,10 +290,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 if (clipData is not byte[] dataObj) continue;
 
-                var clip = new FileMakerClip("new-clip", format, dataObj);
+                var clip = Clip.FromWireBytes("new-clip", format, dataObj);
 
                 // don't add duplicates
-                if (FileMakerClips.Any(k => k.Clip.XmlData == clip.XmlData)) continue;
+                if (FileMakerClips.Any(k => k.Clip.Xml == clip.Xml)) continue;
 
                 lastAdded = new ClipViewModel(clip);
                 FileMakerClips.Add(lastAdded);
@@ -325,9 +324,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         try
         {
-            // Ensure XML is up-to-date from editor state before copying
-            data.Clip.XmlData = data.Editor.ToXml();
-            await _clipboard.SetDataAsync(data.ClipType, data.Clip.RawData);
+            // Sync editor state into the aggregate before lifting wire bytes off it.
+            data.HandleEditorContentChanged();
+            await _clipboard.SetDataAsync(data.ClipType, data.Clip.WireBytes);
             ShowStatus("Copied to FileMaker clipboard");
         }
         catch (Exception e)
@@ -361,13 +360,13 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         try
         {
             // Editor state → FmScript → force Metadata present → emit as XMSC
-            data.Clip.XmlData = data.Editor.ToXml();
-            var script = FmScript.FromXml(data.Clip.XmlData);
+            data.HandleEditorContentChanged();
+            var script = FmScript.FromXml(data.Clip.Xml);
             script.Metadata ??= ScriptMetadata.Default(data.Clip.Name);
 
             var xmlWithWrapper = script.ToXml();
-            var clip = new FileMakerClip(data.Clip.Name, "Mac-XMSC", xmlWithWrapper);
-            await _clipboard.SetDataAsync("Mac-XMSC", clip.RawData);
+            var clip = Clip.FromXml(data.Clip.Name, "Mac-XMSC", xmlWithWrapper);
+            await _clipboard.SetDataAsync("Mac-XMSC", clip.WireBytes);
             ShowStatus("Copied as Script to FileMaker clipboard");
         }
         catch (Exception e)
@@ -398,13 +397,13 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         try
         {
-            data.Clip.XmlData = data.Editor.ToXml();
-            var script = FmScript.FromXml(data.Clip.XmlData);
+            data.HandleEditorContentChanged();
+            var script = FmScript.FromXml(data.Clip.Xml);
             script.Metadata = null;
 
             var xmlNoWrapper = script.ToXml();
-            var clip = new FileMakerClip(data.Clip.Name, "Mac-XMSS", xmlNoWrapper);
-            await _clipboard.SetDataAsync("Mac-XMSS", clip.RawData);
+            var clip = Clip.FromXml(data.Clip.Name, "Mac-XMSS", xmlNoWrapper);
+            await _clipboard.SetDataAsync("Mac-XMSS", clip.WireBytes);
             ShowStatus("Copied as Script Steps to FileMaker clipboard");
         }
         catch (Exception e)

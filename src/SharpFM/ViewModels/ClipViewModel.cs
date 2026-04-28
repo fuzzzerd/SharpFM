@@ -6,10 +6,17 @@ using Avalonia.Controls;
 using AvaloniaEdit.Document;
 using SharpFM.Editors;
 using SharpFM.Model;
+using SharpFM.Model.ClipTypes;
+using SharpFM.Model.Parsing;
 using SharpFM.Schema.Editor;
 
 namespace SharpFM.ViewModels;
 
+/// <summary>
+/// View-model wrapper around an immutable <see cref="Clip"/> aggregate. The
+/// clip itself owns parsing and the round-trip report; this class adds the
+/// editor lifecycle, dirty tracking, and INPC for Avalonia bindings.
+/// </summary>
 public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
 {
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -19,11 +26,24 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public FileMakerClip Clip { get; set; }
+    private Clip _clip;
+
+    /// <summary>The current immutable clip aggregate. Replaced wholesale on edits.</summary>
+    public Clip Clip
+    {
+        get => _clip;
+        private set
+        {
+            if (ReferenceEquals(_clip, value)) return;
+            _clip = value;
+            NotifyPropertyChanged();
+        }
+    }
 
     /// <summary>
-    /// The clip-type-specific editor. Handles change detection, XML serialization,
-    /// and reverse sync for this clip's format.
+    /// The clip-type-specific editor. Receives an already-parsed model from
+    /// <see cref="ClipEditorViewFactory.CreateEditor"/>; no XML parsing happens
+    /// here.
     /// </summary>
     public IClipEditor Editor { get; private set; }
 
@@ -44,10 +64,10 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     /// </summary>
     private string _savedXml;
 
-    public ClipViewModel(FileMakerClip clip)
+    public ClipViewModel(Clip clip)
     {
-        Clip = clip;
-        Editor = CreateEditor(clip.XmlData);
+        _clip = clip;
+        Editor = ClipEditorViewFactory.CreateEditor(clip);
         Editor.ContentChanged += OnEditorContentChanged;
         _savedXml = Editor.ToXml();
     }
@@ -67,15 +87,15 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     }
 
     /// <summary>
-    /// Wholesale replacement: discard the current editor and create a fresh one
-    /// from the given XML. Used for all external updates (MCP, plugins, XML viewer).
-    /// The new editor re-parses the XML into fresh domain model state.
+    /// Wholesale replacement: re-parse the clip with new XML and rebuild the
+    /// editor around the resulting model. Used for all external updates
+    /// (MCP, plugins, XML viewer).
     /// </summary>
-    public void ReplaceEditor(string xml)
+    public void Replace(string xml)
     {
         Editor.ContentChanged -= OnEditorContentChanged;
-        Clip.XmlData = xml;
-        Editor = CreateEditor(xml);
+        Clip = _clip.WithXml(xml);
+        Editor = ClipEditorViewFactory.CreateEditor(_clip);
         Editor.ContentChanged += OnEditorContentChanged;
 
         // The cached editor view was built around the old editor instance.
@@ -86,14 +106,22 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         // Reverse sync from plugins / external tools must not flag the clip
         // dirty — the source of truth is what the editor now holds.
         _savedXml = Editor.ToXml();
-        NotifyPropertyChanged(nameof(IsDirty));
 
+        NotifyPropertyChanged(nameof(IsDirty));
         NotifyPropertyChanged(nameof(Editor));
         NotifyPropertyChanged(nameof(EditorView));
         NotifyPropertyChanged(nameof(ScriptDocument));
         NotifyPropertyChanged(nameof(TableEditor));
         NotifyPropertyChanged(nameof(XmlDocument));
+        NotifyPropertyChanged(nameof(ParseReport));
+        NotifyPropertyChanged(nameof(IsLossless));
     }
+
+    /// <summary>The fidelity report from the most recent XML→domain parse.</summary>
+    public ClipParseReport ParseReport => _clip.Parsed.Report;
+
+    /// <summary>True when no parse loss was detected on the current XML.</summary>
+    public bool IsLossless => ParseReport.IsLossless;
 
     /// <summary>
     /// Called by the host after a successful save; captures the current XML as
@@ -113,13 +141,6 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     public bool IsDirty =>
         !string.Equals(Editor.ToXml(), _savedXml, StringComparison.Ordinal);
 
-    private IClipEditor CreateEditor(string? xml) => Clip.ClipboardFormat switch
-    {
-        "Mac-XMSS" or "Mac-XMSC" => new ScriptClipEditor(xml),
-        "Mac-XMTB" or "Mac-XMFD" => new TableClipEditor(xml),
-        _ => new FallbackXmlEditor(xml),
-    };
-
     private void OnEditorContentChanged(object? sender, EventArgs e) =>
         HandleEditorContentChanged();
 
@@ -128,28 +149,25 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     // Dispatcher. In production this is invoked from Editor.ContentChanged.
     internal void HandleEditorContentChanged()
     {
-        Clip.XmlData = Editor.ToXml();
+        // Editor edits are display→XML→model. The aggregate's parsed state
+        // becomes stale; re-derive it via WithXml so ParseReport reflects the
+        // current XML.
+        Clip = _clip.WithXml(Editor.ToXml());
         NotifyPropertyChanged(nameof(IsDirty));
+        NotifyPropertyChanged(nameof(ParseReport));
+        NotifyPropertyChanged(nameof(IsLossless));
         EditorContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public bool IsScriptClip =>
-        Clip.ClipboardFormat == "Mac-XMSS" || Clip.ClipboardFormat == "Mac-XMSC";
+        _clip.Parsed is ParseSuccess { Model: ScriptClipModel };
 
     public bool IsTableClip =>
-        Clip.ClipboardFormat == "Mac-XMTB" || Clip.ClipboardFormat == "Mac-XMFD";
+        _clip.Parsed is ParseSuccess { Model: TableClipModel };
 
     public bool IsFallbackClip => !IsScriptClip && !IsTableClip;
 
-    public string ClipTypeDisplay => Clip.ClipboardFormat switch
-    {
-        "Mac-XMSS" => "Script Steps",
-        "Mac-XMSC" => "Script",
-        "Mac-XMTB" => "Table",
-        "Mac-XMFD" => "Field",
-        "Mac-XML2" => "Layout",
-        _ => Clip.ClipboardFormat
-    };
+    public string ClipTypeDisplay => ClipTypeRegistry.For(_clip.FormatId).DisplayName;
 
     // --- Convenience properties for AXAML bindings ---
 
@@ -158,18 +176,7 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
     public TableEditorViewModel? TableEditor => (Editor as TableClipEditor)?.ViewModel;
 
     public TextDocument XmlDocument =>
-        (Editor as FallbackXmlEditor)?.Document ?? new TextDocument(Clip.XmlData ?? "");
+        (Editor as FallbackXmlEditor)?.Document ?? new TextDocument(_clip.Xml);
 
-    public string ClipType
-    {
-        get => Clip.ClipboardFormat;
-        set
-        {
-            Clip.ClipboardFormat = value;
-            NotifyPropertyChanged();
-            NotifyPropertyChanged(nameof(IsScriptClip));
-            NotifyPropertyChanged(nameof(IsTableClip));
-            NotifyPropertyChanged(nameof(IsFallbackClip));
-        }
-    }
+    public string ClipType => _clip.FormatId;
 }

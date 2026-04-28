@@ -79,7 +79,7 @@ public class MainWindowViewModelTests
         // TableEditor should lazy-create from the starter XML
         var editor = clip.TableEditor;
         Assert.NotNull(editor);
-        Assert.Equal("NewTable", editor!.TableName);
+        Assert.Equal("New Table", editor!.TableName);
 
         // AddField command should work
         Assert.True(editor.AddFieldCommand.CanExecute(null));

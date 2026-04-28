@@ -1,22 +1,11 @@
 using System.Text;
 using SharpFM.Model;
-using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Parsing;
 
 namespace SharpFM.Tests;
 
-public class ClipTests : IDisposable
+public class ClipTests
 {
-    public ClipTests()
-    {
-        ClipTypeRegistry.Reset();
-    }
-
-    public void Dispose()
-    {
-        ClipTypeRegistry.Reset();
-    }
-
     [Fact]
     public void FromXml_UnknownFormat_FallsBackToOpaqueParse()
     {

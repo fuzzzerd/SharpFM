@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Model;
+using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Schema;
 using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
@@ -59,7 +60,7 @@ public class PluginHost : IPluginHost
         {
             var clip = _viewModel.SelectedClip;
             if (clip is null) return null;
-            return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
+            return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
         }
     }
 
@@ -69,7 +70,7 @@ public class PluginHost : IPluginHost
 
     public IReadOnlyList<ClipData> AllClips =>
         _viewModel.FileMakerClips
-            .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.XmlData))
+            .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.Xml))
             .ToList();
 
     public ILogger CreateLogger(string categoryName) => _loggerFactory.CreateLogger(categoryName);
@@ -83,9 +84,9 @@ public class PluginHost : IPluginHost
             var clip = _viewModel.SelectedClip;
             if (clip is null) return;
 
-            clip.ReplaceEditor(xml);
+            clip.Replace(xml);
 
-            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
+            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
@@ -93,8 +94,7 @@ public class PluginHost : IPluginHost
     {
         var clip = FindClipByName(clipName);
         if (clip is null) return null;
-        // Auto-sync keeps ClipXml current — just return it
-        return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
+        return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
     }
 
     public void UpdateClipXml(string clipName, string xml, string originPluginId) =>
@@ -103,40 +103,26 @@ public class PluginHost : IPluginHost
             var clip = FindClipByName(clipName);
             if (clip is null) return;
 
-            // Wholesale replacement — re-ingest the XML
-            clip.ReplaceEditor(xml);
+            clip.Replace(xml);
 
-            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
+            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
             ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
         });
 
-    private static readonly HashSet<string> KnownClipTypes = new(StringComparer.Ordinal)
-    {
-        "Mac-XMSS", // script steps
-        "Mac-XMSC", // script
-        "Mac-XMTB", // table
-        "Mac-XMFD", // field
-        "Mac-XML2", // layout
-    };
-
     public void CreateClip(string name, string clipType, string? xml = null)
     {
-        if (!KnownClipTypes.Contains(clipType))
+        if (!ClipTypeRegistry.IsRegistered(clipType))
+        {
             throw new ArgumentException(
-                $"Unknown clip type '{clipType}'. Valid types: {string.Join(", ", KnownClipTypes)}.",
+                $"Unknown clip type '{clipType}'. Valid types: " +
+                $"{string.Join(", ", ClipTypeRegistry.All.Select(s => s.FormatId))}.",
                 nameof(clipType));
+        }
 
         EnsureUiThread(() =>
         {
-            xml ??= clipType switch
-            {
-                "Mac-XMSS" or "Mac-XMSC" => "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>",
-                "Mac-XMTB" => $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{name}\"></BaseTable></fmxmlsnippet>",
-                _ => "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>",
-            };
-
-            var clip = new FileMakerClip(name, clipType, xml);
-            var vm = new ClipViewModel(clip);
+            var seed = xml ?? ClipTypeRegistry.For(clipType).DefaultXml(name);
+            var vm = new ClipViewModel(Clip.FromXml(name, clipType, seed));
             _viewModel.FileMakerClips.Add(vm);
         });
     }
@@ -203,7 +189,7 @@ public class PluginHost : IPluginHost
         var clip = _viewModel.SelectedClip;
         if (clip is null) return;
 
-        var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.XmlData);
+        var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
         var isPartial = clip.Editor.IsPartial;
         ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, "editor", isPartial));
     }

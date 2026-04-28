@@ -27,9 +27,4 @@ public class FallbackXmlEditor : IClipEditor
     }
 
     public string ToXml() => Document.Text;
-
-    public void FromXml(string xml)
-    {
-        Document.Text = xml;
-    }
 }

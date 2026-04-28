@@ -21,9 +21,8 @@ public class TableClipEditor : IClipEditor
 
     public bool IsPartial => false;
 
-    public TableClipEditor(string? xml)
+    public TableClipEditor(FmTable table)
     {
-        var table = FmTable.FromXml(xml ?? "");
         ViewModel = new TableEditorViewModel(table);
 
         _debouncer = new DebouncedEventRaiser(500, () => ContentChanged?.Invoke(this, EventArgs.Empty));
@@ -34,12 +33,6 @@ public class TableClipEditor : IClipEditor
     public string ToXml()
     {
         return ViewModel.Table.ToXml();
-    }
-
-    public void FromXml(string xml)
-    {
-        // Not used for external updates — ReplaceEditor creates a new TableClipEditor.
-        // Kept for IClipEditor interface compliance.
     }
 
     private void SubscribeToViewModel(TableEditorViewModel vm)
