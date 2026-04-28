@@ -66,13 +66,17 @@ public static class ClipTypeRegistry
 
     /// <summary>
     /// Register every built-in clip-type strategy. Called once at host startup;
-    /// idempotent thanks to <see cref="Register"/>'s overwrite semantics.
+    /// idempotent thanks to <see cref="Register"/>'s overwrite semantics. Adding
+    /// a new <c>Mac-XM*</c> format is a single additional <see cref="Register"/>
+    /// call here. Opaque is the implicit fallback and is not registered.
     /// </summary>
     public static void RegisterBuiltIns()
     {
-        // Built-in strategies are registered here as they land in subsequent
-        // commits (script, table, layout). Opaque is the implicit fallback;
-        // it is not registered.
+        Register(ScriptClipStrategy.Steps);
+        Register(ScriptClipStrategy.Script);
+        Register(TableClipStrategy.Table);
+        Register(TableClipStrategy.Field);
+        Register(LayoutClipStrategy.Instance);
     }
 
     /// <summary>Clear the registry. Tests use this to isolate from production registrations.</summary>
