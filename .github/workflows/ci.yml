@@ -48,7 +48,7 @@ jobs:
           reporttypes: Cobertura
 
       - name: Generate test report
-        uses: bibipkins/dotnet-test-reporter@v1.6.1
+        uses: bibipkins/dotnet-test-reporter@v1.6.4
         if: ${{ always() && matrix.os == 'ubuntu-latest' }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
