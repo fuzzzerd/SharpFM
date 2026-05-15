@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
+using SharpFM.Model.Scripting;
 
 namespace SharpFM.Model.ClipTypes;
 
@@ -63,6 +64,6 @@ public sealed class TableClipStrategy : IClipTypeStrategy
 
     public string DefaultXml(string clipName) =>
         _wrapsBaseTable
-            ? $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{clipName}\"></BaseTable></fmxmlsnippet>"
+            ? $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{XmlHelpers.XmlEscape(clipName)}\"></BaseTable></fmxmlsnippet>"
             : "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
 }

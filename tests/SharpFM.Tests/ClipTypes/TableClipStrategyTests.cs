@@ -69,4 +69,19 @@ public class TableClipStrategyTests
         var result = TableClipStrategy.Table.Parse(seed);
         Assert.IsType<ParseSuccess>(result);
     }
+
+    [Theory]
+    [InlineData("My \"favorite\" stuff")]
+    [InlineData("A & B")]
+    [InlineData("<Angle>")]
+    public void Table_DefaultXml_EscapesPunctuationInName(string clipName)
+    {
+        var seed = TableClipStrategy.Table.DefaultXml(clipName);
+
+        var result = TableClipStrategy.Table.Parse(seed);
+
+        var success = Assert.IsType<ParseSuccess>(result);
+        var model = Assert.IsType<TableClipModel>(success.Model);
+        Assert.Equal(clipName, model.Table.Name);
+    }
 }
