@@ -63,6 +63,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Microsoft.Extensions.Logging" VersionOverride="10.0.8" />
     <PackageReference Include="TextMateSharp.Grammars" />
     <PackageReference Include="AvaloniaEdit.TextMate" />
 
