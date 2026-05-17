@@ -1,6 +1,9 @@
+using System.Collections.Generic;
 using System.Text;
 using SharpFM.Model;
 using SharpFM.Model.Parsing;
+using SharpFM.Model.Scripting;
+using SharpFM.Model.Validation;
 
 namespace SharpFM.Tests;
 
@@ -102,5 +105,64 @@ public class ClipTests
         Assert.Same(original.Parsed, renamed.Parsed);
         Assert.Equal("Y", renamed.Name);
         Assert.Equal(original.Xml, renamed.Xml);
+    }
+
+    [Fact]
+    public void FromXml_RunsSemanticValidators_AndFoldsDiagnosticsIntoReport()
+    {
+        var fake = new SeenItValidator();
+        using var _ = SemanticValidatorRegistry.OverrideForTest([fake]);
+
+        var clip = Clip.FromXml("X", "Mac-XMUNKNOWN", "<root/>");
+        var report = clip.Parsed.Report;
+
+        Assert.True(fake.Called);
+        Assert.Single(report.SemanticDiagnostics);
+        Assert.True(report.IsLossless);
+        Assert.False(report.IsSemanticallyValid);
+    }
+
+    [Fact]
+    public void FromEditor_RunsSemanticValidators_AndFoldsDiagnosticsIntoReport()
+    {
+        var fake = new SeenItValidator();
+        using var _ = SemanticValidatorRegistry.OverrideForTest([fake]);
+
+        var clip = Clip.FromEditor("X", "Mac-XMSS", "<root/>", new ScriptClipModel(new FmScript([])));
+        var report = clip.Parsed.Report;
+
+        Assert.True(fake.Called);
+        Assert.Single(report.SemanticDiagnostics);
+    }
+
+    [Fact]
+    public void FromXml_ParseFailure_DoesNotInvokeSemanticValidators()
+    {
+        var fake = new SeenItValidator();
+        using var _ = SemanticValidatorRegistry.OverrideForTest([fake]);
+
+        var clip = Clip.FromXml("X", "Mac-XMUNKNOWN", "<oops>");
+
+        Assert.IsType<ParseFailure>(clip.Parsed);
+        Assert.False(fake.Called);
+    }
+
+    private sealed class SeenItValidator : IClipSemanticValidator
+    {
+        public bool Called { get; private set; }
+        public IReadOnlyCollection<string> FormatIds => [IClipSemanticValidator.AllFormats];
+
+        public IReadOnlyList<ClipParseDiagnostic> Validate(ClipModel model)
+        {
+            Called = true;
+            return
+            [
+                new ClipParseDiagnostic(
+                    ParseDiagnosticKind.UnknownStep,
+                    ParseDiagnosticSeverity.Info,
+                    "/test",
+                    "seen"),
+            ];
+        }
     }
 }
