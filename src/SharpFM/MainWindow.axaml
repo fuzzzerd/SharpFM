@@ -4,44 +4,61 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="using:SharpFM.ViewModels"
     xmlns:editors="using:SharpFM.Editors"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:schema="using:SharpFM.Schema.Editor"
-    Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
+    xmlns:vm="using:SharpFM.ViewModels"
     Title="SharpFM"
     Width="700"
     Height="500"
     d:DesignHeight="500"
     d:DesignWidth="700"
     x:DataType="vm:MainWindowViewModel"
+    Icon="/Assets/noun-sharp-teeth-monster-4226695.small.png"
     mc:Ignorable="d">
 
     <Window.KeyBindings>
-        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveClipsStorage}" />
-        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewScriptCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewTableCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding CopySelectedToClip}" />
-        <!-- Ctrl+V is wired in code-behind via a tunnel-phase preview
-             handler so it can defer to the focused text editor (TextBox /
-             AvaloniaEdit) and only fall through to the FileMaker-clip
-             paste when focus is on the tree, tabs, or window background. -->
+        <KeyBinding Command="{Binding SaveClipsStorage}" Gesture="Ctrl+S" />
+        <KeyBinding Command="{Binding NewScriptCommand}" Gesture="Ctrl+N" />
+        <KeyBinding Command="{Binding NewTableCommand}" Gesture="Ctrl+Shift+N" />
+        <KeyBinding Command="{Binding CopySelectedToClip}" Gesture="Ctrl+Shift+C" />
+        <!--
+            Ctrl+V is wired in code-behind via a tunnel-phase preview
+            handler so it can defer to the focused text editor (TextBox /
+            AvaloniaEdit) and only fall through to the FileMaker-clip
+            paste when focus is on the tree, tabs, or window background.
+        -->
     </Window.KeyBindings>
 
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Command="{Binding NewScriptCommand}" Header="New Script" InputGesture="Ctrl+N" />
-                <MenuItem Command="{Binding NewTableCommand}" Header="New Table" InputGesture="Ctrl+Shift+N" />
+                <MenuItem
+                    Command="{Binding NewScriptCommand}"
+                    Header="New Script"
+                    InputGesture="Ctrl+N" />
+                <MenuItem
+                    Command="{Binding NewTableCommand}"
+                    Header="New Table"
+                    InputGesture="Ctrl+Shift+N" />
                 <Separator />
                 <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder..." />
-                <MenuItem Command="{Binding SaveClipsStorage}" Header="Save All" InputGesture="Ctrl+S" />
+                <MenuItem
+                    Command="{Binding SaveClipsStorage}"
+                    Header="Save All"
+                    InputGesture="Ctrl+S" />
                 <Separator />
                 <MenuItem Command="{Binding ExitApplication}" Header="_Exit" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste from FileMaker" InputGesture="Ctrl+V" />
-                <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" InputGesture="Ctrl+Shift+C" />
+                <MenuItem
+                    Command="{Binding PasteFileMakerClipData}"
+                    Header="Paste from FileMaker"
+                    InputGesture="Ctrl+V" />
+                <MenuItem
+                    Command="{Binding CopySelectedToClip}"
+                    Header="Copy to FileMaker"
+                    InputGesture="Ctrl+Shift+C" />
                 <MenuItem Command="{Binding CopyAsScript}" Header="Copy as Script (whole script)" />
                 <MenuItem Command="{Binding CopyAsScriptSteps}" Header="Copy as Script Steps (lines only)" />
                 <Separator />
@@ -53,40 +70,40 @@
                 <MenuItem x:Name="rawClipboardMenuItem" Header="Raw Clipboard Viewer..." />
             </MenuItem>
             <MenuItem x:Name="pluginsMenu" Header="_Plugins">
-                <!-- Plugin menu items are added dynamically in code-behind -->
+                <!--  Plugin menu items are added dynamically in code-behind  -->
                 <MenuItem x:Name="managePluginsMenuItem" Header="Manage Plugins..." />
             </MenuItem>
         </Menu>
 
-        <!-- Status bar -->
+        <!--  Status bar  -->
         <Border
-            DockPanel.Dock="Bottom"
+            Padding="16,6"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-            Padding="16,6">
+            DockPanel.Dock="Bottom">
             <Grid>
                 <TextBlock
-                    Classes="Fluent2Caption"
                     HorizontalAlignment="Left"
+                    Classes="Fluent2Caption"
                     IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                     Text="{Binding StatusMessage}" />
                 <StackPanel
                     HorizontalAlignment="Center"
+                    IsVisible="{Binding ParseFidelityVisible}"
                     Orientation="Horizontal"
-                    Spacing="6"
-                    IsVisible="{Binding ParseFidelityVisible}">
+                    Spacing="6">
                     <TextBlock
                         Classes="Fluent2Caption"
                         Foreground="DarkOrange"
-                        Text="!"
-                        IsVisible="{Binding !ParseFidelityIsLossless}" />
+                        IsVisible="{Binding !ParseFidelityIsLossless}"
+                        Text="!" />
                     <TextBlock
                         Classes="Fluent2Caption"
                         Opacity="0.7"
                         Text="{Binding ParseFidelitySummary}" />
                 </StackPanel>
                 <TextBlock
-                    Classes="Fluent2Caption"
                     HorizontalAlignment="Right"
+                    Classes="Fluent2Caption"
                     Opacity="0.5"
                     Text="{Binding Version}" />
             </Grid>
@@ -98,95 +115,80 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Header section with Fluent 2 design tokens -->
-            <Border 
+            <!--  Header section with Fluent 2 design tokens  -->
+            <Border
                 Grid.Row="0"
-                Classes="Fluent2Surface"
                 Margin="24,16,24,0"
-                Padding="16">
+                Padding="16"
+                Classes="Fluent2Surface">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock 
-                        Grid.Column="0" 
+                    <TextBlock
+                        Grid.Column="0"
+                        Margin="0,0,12,0"
+                        VerticalAlignment="Center"
                         Classes="Fluent2Body"
-                        Margin="0,0,12,0"
-                        VerticalAlignment="Center" 
                         Text="Clip path:" />
-                    <TextBox 
-                        Grid.Column="1" 
-                        Classes="Fluent2"
+                    <TextBox
+                        Grid.Column="1"
                         Margin="0,0,12,0"
+                        Classes="Fluent2"
                         Text="{Binding CurrentPath, Mode=OneWay}" />
-                    <Button 
-                        Grid.Column="2" 
+                    <Button
+                        Grid.Column="2"
                         Classes="Fluent2Primary"
-                        Command="{Binding OpenFolderPicker}" 
+                        Command="{Binding OpenFolderPicker}"
                         Content="Browse" />
                 </Grid>
             </Border>
 
-            <!-- Main content area with Fluent 2 elevation and spacing -->
-            <Grid 
-                Grid.Row="1" 
-                Margin="24,16,24,24">
+            <!--  Main content area with Fluent 2 elevation and spacing  -->
+            <Grid Grid.Row="1" Margin="24,16,24,24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="320" />
                     <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Left panel: Clips navigation with Fluent 2 surface treatment -->
-                <Border 
-                    Grid.Column="0"
-                    Classes="Fluent2SurfaceElevated">
+                <!--  Left panel: Clips navigation with Fluent 2 surface treatment  -->
+                <Border Grid.Column="0" Classes="Fluent2SurfaceElevated">
                     <ScrollViewer>
                         <StackPanel Margin="16" Spacing="16">
-                            <!-- Search section -->
+                            <!--  Search section  -->
                             <StackPanel Spacing="8">
-                                <TextBlock 
-                                    Classes="Fluent2Subtitle"
-                                    Text="Search Clips" />
-                                <TextBox 
+                                <TextBlock Classes="Fluent2Subtitle" Text="Search Clips" />
+                                <TextBox
                                     Classes="Fluent2"
-                                    Watermark="Type to search clips..." 
-                                    Text="{Binding SearchText}" />
+                                    Text="{Binding SearchText}"
+                                    Watermark="Type to search clips..." />
                             </StackPanel>
 
-                            <!-- Clips tree section. Mirrors the repository's folder
-                                 hierarchy (ClipViewModel.FolderPath). Single-tap a
-                                 clip for a preview tab, double-tap for a permanent
-                                 tab. -->
+                            <!--
+                                Clips tree section. Mirrors the repository's folder
+                                hierarchy (ClipViewModel.FolderPath). Single-tap a
+                                clip for a preview tab, double-tap for a permanent
+                                tab.
+                            -->
                             <StackPanel Spacing="8">
-                                <TextBlock
-                                    Classes="Fluent2Subtitle"
-                                    Text="Available Clips" />
+                                <TextBlock Classes="Fluent2Subtitle" Text="Available Clips" />
                                 <TreeView
                                     x:Name="clipsTreeView"
+                                    DoubleTapped="ClipsTree_DoubleTapped"
                                     ItemsSource="{Binding RootNodes}"
-                                    Tapped="ClipsTree_Tapped"
-                                    DoubleTapped="ClipsTree_DoubleTapped">
+                                    Tapped="ClipsTree_Tapped">
                                     <TreeView.ContextMenu>
                                         <ContextMenu>
-                                            <MenuItem
-                                                Command="{Binding CopySelectedToClip}"
-                                                Header="Copy to FileMaker" />
-                                            <MenuItem
-                                                Command="{Binding CopyAsScript}"
-                                                Header="Copy as Script" />
-                                            <MenuItem
-                                                Command="{Binding CopyAsScriptSteps}"
-                                                Header="Copy as Script Steps" />
-                                            <MenuItem
-                                                Command="{Binding CopyAsClass}"
-                                                Header="Copy as C# Class" />
+                                            <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" />
+                                            <MenuItem Command="{Binding CopyAsScript}" Header="Copy as Script" />
+                                            <MenuItem Command="{Binding CopyAsScriptSteps}" Header="Copy as Script Steps" />
+                                            <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
                                             <Separator />
-                                            <MenuItem
-                                                Command="{Binding DeleteSelectedClip}"
-                                                Header="Delete Clip" />
+                                            <MenuItem Command="{Binding RenameSelectedClip}" Header="Rename..." />
+                                            <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" />
                                         </ContextMenu>
                                     </TreeView.ContextMenu>
                                     <TreeView.DataTemplates>
@@ -197,9 +199,9 @@
                                                     IsVisible="{Binding IsFolder}"
                                                     Text="{Binding Name}" />
                                                 <StackPanel
+                                                    IsVisible="{Binding IsClip}"
                                                     Orientation="Horizontal"
-                                                    Spacing="6"
-                                                    IsVisible="{Binding IsClip}">
+                                                    Spacing="6">
                                                     <TextBlock Text="{Binding Clip.Clip.Name}" />
                                                     <TextBlock
                                                         Classes="Fluent2Caption"
@@ -221,14 +223,14 @@
                     </ScrollViewer>
                 </Border>
 
-                <!-- Splitter space -->
-                <GridSplitter 
-                    Grid.Column="1" 
+                <!--  Splitter space  -->
+                <GridSplitter
+                    Grid.Column="1"
+                    Width="16"
                     Background="Transparent"
-                    ResizeDirection="Columns"
-                    Width="16" />
+                    ResizeDirection="Columns" />
 
-                <!-- Right panel: Editor + optional plugin sidebar -->
+                <!--  Right panel: Editor + optional plugin sidebar  -->
                 <Grid x:Name="editorPluginGrid" Grid.Column="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -236,29 +238,31 @@
                         <ColumnDefinition Width="0" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Open clips area: VS Code-style tab strip. Each tab wraps
-                         a ClipViewModel; the tab header italicizes for preview
-                         tabs and shows a dirty dot when the clip has unsaved
-                         edits. The tab body reuses the existing per-editor
-                         DataTemplates. -->
-                    <Border
-                        Grid.Column="0"
-                        Classes="Fluent2SurfaceElevated">
+                    <!--
+                        Open clips area: VS Code-style tab strip. Each tab wraps
+                        a ClipViewModel; the tab header italicizes for preview
+                        tabs and shows a dirty dot when the clip has unsaved
+                        edits. The tab body reuses the existing per-editor
+                        DataTemplates.
+                    -->
+                    <Border Grid.Column="0" Classes="Fluent2SurfaceElevated">
                         <Grid>
                             <TextBlock
-                                Classes="Fluent2Caption"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                Opacity="0.6"
+                                Classes="Fluent2Caption"
                                 IsVisible="{Binding !OpenTabs.Tabs.Count}"
+                                Opacity="0.6"
                                 Text="Single-tap a clip to preview, double-tap to open." />
 
-                            <!-- TabStrip for headers; a separate ItemsControl
-                                 realises every open editor into the visual tree
-                                 once and toggles IsVisible per tab. This avoids
-                                 reparenting AvaloniaEdit on each switch, which
-                                 triggers costly layout/tokenise passes. -->
-                                <DockPanel IsVisible="{Binding OpenTabs.Tabs.Count}">
+                            <!--
+                                TabStrip for headers; a separate ItemsControl
+                                realises every open editor into the visual tree
+                                once and toggles IsVisible per tab. This avoids
+                                reparenting AvaloniaEdit on each switch, which
+                                triggers costly layout/tokenise passes.
+                            -->
+                            <DockPanel IsVisible="{Binding OpenTabs.Tabs.Count}">
                                 <TabStrip
                                     x:Name="openTabStrip"
                                     DockPanel.Dock="Top"
@@ -290,34 +294,37 @@
                                     </TabStrip.Styles>
                                     <TabStrip.ItemTemplate>
                                         <DataTemplate DataType="vm:OpenTabViewModel">
-                                            <StackPanel Orientation="Horizontal" Spacing="8" DoubleTapped="TabHeader_DoubleTapped">
+                                            <StackPanel
+                                                DoubleTapped="TabHeader_DoubleTapped"
+                                                Orientation="Horizontal"
+                                                Spacing="8">
                                                 <TextBlock
+                                                    MaxWidth="200"
                                                     VerticalAlignment="Center"
                                                     FontSize="14"
-                                                    MaxWidth="200"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    ToolTip.Tip="{Binding Title}"
                                                     FontStyle="{Binding TitleFontStyle}"
-                                                    Text="{Binding Title}" />
+                                                    Text="{Binding Title}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    ToolTip.Tip="{Binding Title}" />
                                                 <Ellipse
-                                                    Width="6" Height="6"
+                                                    Width="6"
+                                                    Height="6"
                                                     VerticalAlignment="Center"
                                                     Fill="{DynamicResource SystemAccentColorBrush}"
                                                     IsVisible="{Binding IsDirty}" />
                                                 <Button
                                                     Padding="4,0"
-                                                    FontSize="12"
                                                     Background="Transparent"
                                                     BorderThickness="0"
-                                                    Content="✕"
                                                     Click="CloseTab_Click"
+                                                    Content="✕"
+                                                    FontSize="12"
                                                     Tag="{Binding}" />
                                             </StackPanel>
                                         </DataTemplate>
                                     </TabStrip.ItemTemplate>
                                 </TabStrip>
-                                <ItemsControl
-                                    ItemsSource="{Binding OpenTabs.Tabs}">
+                                <ItemsControl ItemsSource="{Binding OpenTabs.Tabs}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <Grid />
@@ -325,9 +332,7 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="vm:OpenTabViewModel">
-                                            <ContentControl
-                                                Content="{Binding Clip.EditorView}"
-                                                IsVisible="{Binding IsActive}" />
+                                            <ContentControl Content="{Binding Clip.EditorView}" IsVisible="{Binding IsActive}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -335,16 +340,16 @@
                         </Grid>
                     </Border>
 
-                    <!-- Plugin panel splitter -->
+                    <!--  Plugin panel splitter  -->
                     <GridSplitter
                         x:Name="pluginSplitter"
                         Grid.Column="1"
+                        Width="16"
                         Background="Transparent"
-                        ResizeDirection="Columns"
                         IsVisible="False"
-                        Width="16" />
+                        ResizeDirection="Columns" />
 
-                    <!-- Plugin panel host -->
+                    <!--  Plugin panel host  -->
                     <Border
                         x:Name="pluginPanelBorder"
                         Grid.Column="2"

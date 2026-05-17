@@ -101,6 +101,45 @@ public class ClipViewModelTests
     }
 
     [Fact]
+    public void RenameTo_UpdatesUnderlyingClipName()
+    {
+        var vm = CreateScriptClip(WrapXml(""));
+
+        vm.RenameTo("Renamed");
+
+        Assert.Equal("Renamed", vm.Clip.Name);
+    }
+
+    [Fact]
+    public void RenameTo_RaisesPropertyChangedForClip()
+    {
+        var vm = CreateScriptClip(WrapXml(""));
+        var notified = false;
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ClipViewModel.Clip))
+            {
+                notified = true;
+            }
+        };
+
+        vm.RenameTo("Renamed");
+
+        Assert.True(notified);
+    }
+
+    [Fact]
+    public void RenameTo_ReusesCachedParse()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>"));
+        var originalParsed = vm.Clip.Parsed;
+
+        vm.RenameTo("Renamed");
+
+        Assert.Same(originalParsed, vm.Clip.Parsed);
+    }
+
+    [Fact]
     public void IsDirty_FalseImmediatelyAfterConstruction()
     {
         var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>"));
