@@ -6,6 +6,7 @@ using System.Threading;
 using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
+using SharpFM.Model.Validation;
 
 namespace SharpFM.Model;
 
@@ -99,7 +100,23 @@ public sealed class Clip
             name,
             formatId,
             canonical,
-            () => ClipTypeRegistry.For(formatId).Parse(canonical));
+            () => WithSemanticDiagnostics(formatId, ClipTypeRegistry.For(formatId).Parse(canonical)));
+    }
+
+    private static ClipParseResult WithSemanticDiagnostics(string formatId, ClipParseResult result)
+    {
+        if (result is not ParseSuccess success)
+        {
+            return result;
+        }
+
+        var semantic = SemanticValidatorRegistry.Run(formatId, success.Model);
+        if (semantic.Count == 0)
+        {
+            return success;
+        }
+
+        return success with { Report = success.Report with { SemanticDiagnostics = semantic } };
     }
 
     /// <summary>
@@ -130,20 +147,23 @@ public sealed class Clip
     /// </remarks>
     public static Clip FromEditor(string name, string formatId, string xml, ClipModel model)
     {
-        var report = ReportForEditorModel(model);
+        var report = ReportForEditorModel(formatId, model);
         return new Clip(name, formatId, xml, new ParseSuccess(model, report));
     }
 
-    private static ClipParseReport ReportForEditorModel(ClipModel model)
+    private static ClipParseReport ReportForEditorModel(string formatId, ClipModel model)
     {
-        if (model is ScriptClipModel script)
+        IReadOnlyList<ClipParseDiagnostic> structural = model is ScriptClipModel script
+            ? ClipStrategyHelpers.RawStepDiagnostics(script.Script).ToList()
+            : Array.Empty<ClipParseDiagnostic>();
+        var semantic = SemanticValidatorRegistry.Run(formatId, model);
+
+        if (structural.Count == 0 && semantic.Count == 0)
         {
-            var diagnostics = ClipStrategyHelpers.RawStepDiagnostics(script.Script).ToList();
-            return diagnostics.Count == 0
-                ? ClipParseReport.Empty
-                : new ClipParseReport(diagnostics);
+            return ClipParseReport.Empty;
         }
-        return ClipParseReport.Empty;
+
+        return new ClipParseReport(structural) { SemanticDiagnostics = semantic };
     }
 
     /// <summary>

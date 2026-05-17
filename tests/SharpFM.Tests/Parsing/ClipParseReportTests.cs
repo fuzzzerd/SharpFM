@@ -57,4 +57,43 @@ public class ClipParseReportTests
         Assert.Equal(first, report.Diagnostics[0]);
         Assert.Equal(second, report.Diagnostics[1]);
     }
+
+    [Fact]
+    public void SemanticDiagnostics_DefaultsToEmpty()
+    {
+        var report = new ClipParseReport([]);
+
+        Assert.Empty(report.SemanticDiagnostics);
+    }
+
+    [Fact]
+    public void Empty_SemanticDiagnostics_IsEmpty()
+    {
+        Assert.Empty(ClipParseReport.Empty.SemanticDiagnostics);
+    }
+
+    [Fact]
+    public void IsSemanticallyValid_TrueWhenSemanticDiagnosticsEmpty()
+    {
+        Assert.True(ClipParseReport.Empty.IsSemanticallyValid);
+    }
+
+    [Fact]
+    public void IsSemanticallyValid_FalseWhenAnySemanticDiagnostic()
+    {
+        var report = new ClipParseReport([])
+        {
+            SemanticDiagnostics =
+            [
+                new ClipParseDiagnostic(
+                    ParseDiagnosticKind.UnknownStep,
+                    ParseDiagnosticSeverity.Warning,
+                    "/fmxmlsnippet/Step[1]/Name",
+                    "variable name missing $ prefix"),
+            ],
+        };
+
+        Assert.False(report.IsSemanticallyValid);
+        Assert.True(report.IsLossless);
+    }
 }
