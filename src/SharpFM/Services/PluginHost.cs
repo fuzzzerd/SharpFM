@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Model;
 using SharpFM.Model.ClipTypes;
+using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
 using SharpFM.Model.Scripting;
 using SharpFM.Plugin;
@@ -98,6 +99,9 @@ public class PluginHost : IPluginHost
         if (clip is null) return null;
         return ToClipData(clip);
     }
+
+    public ClipParseReport ValidateClipXml(string clipType, string xml) =>
+        ClipTypeRegistry.For(clipType).Parse(xml).Report;
 
     public void UpdateClipXml(string clipName, string xml, string originPluginId) =>
         EnsureUiThread(() =>

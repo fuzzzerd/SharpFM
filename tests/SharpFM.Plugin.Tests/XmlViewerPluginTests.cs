@@ -152,6 +152,7 @@ public class TrackingPluginHost : IPluginHost
 
     public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
     public ClipData? GetClip(string clipName) => AllClips.FirstOrDefault(c => c.Name.Equals(clipName, StringComparison.OrdinalIgnoreCase));
+    public SharpFM.Model.Parsing.ClipParseReport ValidateClipXml(string clipType, string xml) => SharpFM.Model.Parsing.ClipParseReport.Empty;
     public void CreateClip(string name, string clipType, string? xml = null) { }
     public bool RemoveClip(string clipName) => false;
     public void UpdateClipXml(string clipName, string xml, string originPluginId) { LastUpdatedXml = xml; LastOriginPluginId = originPluginId; }

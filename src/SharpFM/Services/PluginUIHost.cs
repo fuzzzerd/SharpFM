@@ -88,6 +88,7 @@ public class PluginUIHost : IPluginUIHost, INotifyPropertyChanged
     }
     public void ShowStatus(string message) => _baseHost.ShowStatus(message);
     public Model.ClipData? GetClip(string clipName) => _baseHost.GetClip(clipName);
+    public Model.Parsing.ClipParseReport ValidateClipXml(string clipType, string xml) => _baseHost.ValidateClipXml(clipType, xml);
     public void UpdateClipXml(string clipName, string xml, string originPluginId) => _baseHost.UpdateClipXml(clipName, xml, originPluginId);
     public void CreateClip(string name, string clipType, string? xml = null) => _baseHost.CreateClip(name, clipType, xml);
     public bool RemoveClip(string clipName) => _baseHost.RemoveClip(clipName);

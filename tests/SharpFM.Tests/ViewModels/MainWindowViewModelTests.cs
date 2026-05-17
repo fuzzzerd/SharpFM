@@ -282,6 +282,7 @@ public class MainWindowViewModelTests
 #pragma warning restore CS0067
         public ILogger CreateLogger(string categoryName) => NullLogger.Instance;
         public Model.ClipData? GetClip(string clipName) => null;
+        public Model.Parsing.ClipParseReport ValidateClipXml(string clipType, string xml) => Model.Parsing.ClipParseReport.Empty;
         public void UpdateClipXml(string clipName, string xml, string originPluginId) { }
         public void CreateClip(string name, string clipType, string? xml = null) { }
         public bool RemoveClip(string clipName) => false;
