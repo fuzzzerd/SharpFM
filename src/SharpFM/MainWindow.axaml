@@ -177,6 +177,7 @@
                                 <TextBlock Classes="Fluent2Subtitle" Text="Available Clips" />
                                 <TreeView
                                     x:Name="clipsTreeView"
+                                    ContextRequested="ClipsTree_ContextRequested"
                                     DoubleTapped="ClipsTree_DoubleTapped"
                                     ItemsSource="{Binding RootNodes}"
                                     Tapped="ClipsTree_Tapped">
