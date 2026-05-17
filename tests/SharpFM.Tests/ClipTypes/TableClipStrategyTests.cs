@@ -13,6 +13,32 @@ public class TableClipStrategyTests
     }
 
     [Fact]
+    public void TryGetSourceName_ReturnsBaseTableNameAttribute()
+    {
+        var name = TableClipStrategy.Table.TryGetSourceName(
+            "<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"Customers\" id=\"1\"></BaseTable></fmxmlsnippet>");
+
+        Assert.Equal("Customers", name);
+    }
+
+    [Fact]
+    public void TryGetSourceName_FieldClipWithoutBaseTable_ReturnsNull()
+    {
+        var name = TableClipStrategy.Field.TryGetSourceName(
+            "<fmxmlsnippet type=\"FMObjectList\"><Field id=\"1\" name=\"ID\"/></fmxmlsnippet>");
+
+        Assert.Null(name);
+    }
+
+    [Fact]
+    public void TryGetSourceName_MalformedXml_ReturnsNull()
+    {
+        var name = TableClipStrategy.Table.TryGetSourceName("<oops>");
+
+        Assert.Null(name);
+    }
+
+    [Fact]
     public void Parse_ValidTable_ReturnsSuccess()
     {
         const string xml = """

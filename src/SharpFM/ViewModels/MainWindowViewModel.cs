@@ -334,6 +334,19 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    // Pick a clip name that doesn't collide with anything already loaded.
+    // Returns the input when it's free, otherwise appends "(2)", "(3)", … until
+    // a free slot is found.
+    private string UniqueClipName(string desired)
+    {
+        if (FileMakerClips.All(c => c.Clip.Name != desired)) return desired;
+        for (var n = 2; ; n++)
+        {
+            var candidate = $"{desired} ({n})";
+            if (FileMakerClips.All(c => c.Clip.Name != candidate)) return candidate;
+        }
+    }
+
     public async Task PasteFileMakerClipData()
     {
         try
@@ -354,6 +367,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 // don't add duplicates
                 if (FileMakerClips.Any(k => k.Clip.Xml == clip.Xml)) continue;
+
+                var sourceName = ClipTypeRegistry.For(format).TryGetSourceName(clip.Xml);
+                var desired = string.IsNullOrWhiteSpace(sourceName) ? "new-clip" : sourceName;
+                clip = clip.Rename(UniqueClipName(desired));
 
                 lastAdded = new ClipViewModel(clip);
                 FileMakerClips.Add(lastAdded);

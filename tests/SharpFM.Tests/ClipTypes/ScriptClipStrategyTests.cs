@@ -15,6 +15,41 @@ public class ScriptClipStrategyTests
     }
 
     [Fact]
+    public void TryGetSourceName_ReturnsScriptNameAttribute()
+    {
+        var name = ScriptClipStrategy.Script.TryGetSourceName(
+            "<fmxmlsnippet type=\"FMObjectList\"><Script name=\"FooBar\"></Script></fmxmlsnippet>");
+
+        Assert.Equal("FooBar", name);
+    }
+
+    [Fact]
+    public void TryGetSourceName_StepsClipWithoutScriptWrapper_ReturnsNull()
+    {
+        var name = ScriptClipStrategy.Steps.TryGetSourceName(
+            "<fmxmlsnippet type=\"FMObjectList\"><Step enable=\"True\" id=\"141\" name=\"Set Variable\"/></fmxmlsnippet>");
+
+        Assert.Null(name);
+    }
+
+    [Fact]
+    public void TryGetSourceName_MalformedXml_ReturnsNull()
+    {
+        var name = ScriptClipStrategy.Script.TryGetSourceName("<oops>");
+
+        Assert.Null(name);
+    }
+
+    [Fact]
+    public void TryGetSourceName_PreservesPunctuationInName()
+    {
+        var name = ScriptClipStrategy.Script.TryGetSourceName(
+            "<fmxmlsnippet type=\"FMObjectList\"><Script name=\"My &quot;favorite&quot; script\"></Script></fmxmlsnippet>");
+
+        Assert.Equal("My \"favorite\" script", name);
+    }
+
+    [Fact]
     public void Parse_EmptyScriptSnippet_ReturnsLosslessSuccess()
     {
         var result = ScriptClipStrategy.Steps.Parse(

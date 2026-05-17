@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Scripting;
 
@@ -63,4 +66,17 @@ public sealed class ScriptClipStrategy : IClipTypeStrategy
 
     public string DefaultXml(string clipName) =>
         "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
+
+    public string? TryGetSourceName(string xml)
+    {
+        try
+        {
+            var name = XDocument.Parse(xml).Descendants("Script").FirstOrDefault()?.Attribute("name")?.Value;
+            return string.IsNullOrEmpty(name) ? null : name;
+        }
+        catch (XmlException)
+        {
+            return null;
+        }
+    }
 }

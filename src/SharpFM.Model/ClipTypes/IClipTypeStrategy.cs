@@ -29,4 +29,13 @@ public interface IClipTypeStrategy
     /// "new clip" flows in the host and by plugins.
     /// </summary>
     string DefaultXml(string clipName);
+
+    /// <summary>
+    /// Pull a clip-display-name hint out of <paramref name="xml"/> when the
+    /// wire format carries one (e.g. <c>&lt;Script name="…"&gt;</c> for
+    /// <c>Mac-XMSC</c>, <c>&lt;BaseTable name="…"&gt;</c> for <c>Mac-XMTB</c>).
+    /// Returns <c>null</c> for formats with no embedded name or when the
+    /// element is absent. Must not throw on malformed input.
+    /// </summary>
+    string? TryGetSourceName(string xml);
 }

@@ -44,4 +44,6 @@ public sealed class OpaqueClipStrategy : IClipTypeStrategy
 
     public string DefaultXml(string clipName) =>
         "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
+
+    public string? TryGetSourceName(string xml) => null;
 }

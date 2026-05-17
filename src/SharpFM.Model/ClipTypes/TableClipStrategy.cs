@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
 using SharpFM.Model.Scripting;
@@ -66,4 +69,17 @@ public sealed class TableClipStrategy : IClipTypeStrategy
         _wrapsBaseTable
             ? $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{XmlHelpers.XmlEscape(clipName)}\"></BaseTable></fmxmlsnippet>"
             : "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
+
+    public string? TryGetSourceName(string xml)
+    {
+        try
+        {
+            var name = XDocument.Parse(xml).Descendants("BaseTable").FirstOrDefault()?.Attribute("name")?.Value;
+            return string.IsNullOrEmpty(name) ? null : name;
+        }
+        catch (XmlException)
+        {
+            return null;
+        }
+    }
 }
