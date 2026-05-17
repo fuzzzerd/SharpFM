@@ -53,4 +53,12 @@ public class OpaqueClipStrategyTests
         var result = OpaqueClipStrategy.Instance.Parse(seed);
         Assert.IsType<ParseSuccess>(result);
     }
+
+    [Fact]
+    public void TryGetSourceName_ReturnsNull()
+    {
+        var name = OpaqueClipStrategy.Instance.TryGetSourceName("<root name=\"Whatever\"/>");
+
+        Assert.Null(name);
+    }
 }

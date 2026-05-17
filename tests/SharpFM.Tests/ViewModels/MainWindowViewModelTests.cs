@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpFM.Dialogs;
+using SharpFM.Model;
 using SharpFM.Plugin;
 using SharpFM.Plugin.UI;
 using SharpFM.Services;
@@ -197,6 +198,77 @@ public class MainWindowViewModelTests
         Assert.Equal(initialCount + 2, vm.FileMakerClips.Count);
         Assert.Same(vm.FileMakerClips[^1], vm.SelectedClip);
         Assert.Contains("Pasted 2 clip(s)", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_ScriptWithMetadataName_UsesMetadataAsClipName()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet><Script name=\"OrderTotal\"></Script></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal("OrderTotal", vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_TableWithBaseTableName_UsesItAsClipName()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMTB"] = BuildClipBytes(
+            "<fmxmlsnippet><BaseTable name=\"Customers\"></BaseTable></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal("Customers", vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_NoMetadataName_FallsBackToNewClip()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSS"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Step enable=\"True\" id=\"141\" name=\"Set Variable\"/></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal("new-clip", vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_CollidingName_AppendsNumericSuffix()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet><Script name=\"OrderTotal\"></Script></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("OrderTotal", "Mac-XMSC", "<fmxmlsnippet/>")));
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal("OrderTotal (2)", vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_PreservesPunctuationInName()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet><Script name=\"My &quot;favorite&quot; script\"></Script></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal("My \"favorite\" script", vm.SelectedClip!.Clip.Name);
     }
 
     private static byte[] BuildClipBytes(string xml)

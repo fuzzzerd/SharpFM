@@ -13,6 +13,15 @@ public class LayoutClipStrategyTests
     }
 
     [Fact]
+    public void TryGetSourceName_ReturnsNull()
+    {
+        var name = LayoutClipStrategy.Instance.TryGetSourceName(
+            "<fmxmlsnippet type=\"FMObjectList\"><Layout/></fmxmlsnippet>");
+
+        Assert.Null(name);
+    }
+
+    [Fact]
     public void Parse_ValidLayoutSnippet_ReturnsSuccess()
     {
         var result = LayoutClipStrategy.Instance.Parse(
