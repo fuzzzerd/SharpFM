@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SharpFM.Model;
+using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
 using SharpFM.Model.Scripting;
 
@@ -62,6 +63,15 @@ public interface IPluginHost
     /// If the clip is currently selected, syncs the editor state first.
     /// </summary>
     ClipData? GetClip(string clipName);
+
+    /// <summary>
+    /// Parse <paramref name="xml"/> with the strategy registered for
+    /// <paramref name="clipType"/> and return the resulting fidelity report.
+    /// Pure — does not load or mutate any clip in the host. Lets plugins
+    /// pre-flight XML before pushing it through
+    /// <see cref="UpdateClipXml"/> or <see cref="UpdateSelectedClipXml"/>.
+    /// </summary>
+    ClipParseReport ValidateClipXml(string clipType, string xml);
 
     /// <summary>
     /// Replace the XML content of any loaded clip by name.

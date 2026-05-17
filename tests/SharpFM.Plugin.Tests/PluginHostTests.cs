@@ -258,4 +258,56 @@ public class PluginHostTests
         Assert.NotNull(args);
         Assert.NotNull(args!.Clip.ParseReport);
     }
+
+    // --- Item 2: ValidateClipXml ---
+
+    [Fact]
+    public void ValidateClipXml_Lossless_OnCleanScriptStepsXml()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+
+        var report = host.ValidateClipXml(
+            "Mac-XMSS",
+            "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
+
+        Assert.True(report.IsLossless);
+    }
+
+    [Fact]
+    public void ValidateClipXml_ReportsXmlMalformed_OnGarbage()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+
+        var report = host.ValidateClipXml("Mac-XMSS", "<oops>");
+
+        Assert.False(report.IsLossless);
+        Assert.Contains(
+            report.Diagnostics,
+            d => d.Kind == ParseDiagnosticKind.XmlMalformed);
+    }
+
+    [Fact]
+    public void ValidateClipXml_FallsBackToOpaque_OnUnknownType()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+
+        var report = host.ValidateClipXml("Mac-XMUNKNOWN", "<root/>");
+
+        Assert.True(report.IsLossless);
+    }
+
+    [Fact]
+    public void ValidateClipXml_DoesNotMutateClipCollection()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+        var beforeCount = host.AllClips.Count;
+
+        host.ValidateClipXml("Mac-XMSS", "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>");
+
+        Assert.Equal(beforeCount, host.AllClips.Count);
+    }
 }
