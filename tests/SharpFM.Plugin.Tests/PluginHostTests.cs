@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SharpFM.Model;
+using SharpFM.Model.Parsing;
 using SharpFM.Plugin;
 using SharpFM.Services;
 using SharpFM.ViewModels;
@@ -184,5 +185,77 @@ public class PluginHostTests
         host.ShowStatus("Plugin says hello");
 
         Assert.Equal("Plugin says hello", vm.StatusMessage);
+    }
+
+    // --- Item 1: ClipData.ParseReport ---
+
+    [Fact]
+    public void SelectedClip_ExposesParseReport_FromClip()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+
+        vm.NewScriptCommand();
+
+        Assert.NotNull(host.SelectedClip);
+        Assert.NotNull(host.SelectedClip!.ParseReport);
+        Assert.True(host.SelectedClip.ParseReport.IsLossless);
+    }
+
+    [Fact]
+    public void SelectedClip_ParseReport_SurfacesDiagnostics()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+        vm.NewScriptCommand();
+
+        host.UpdateSelectedClipXml(
+            "<fmxmlsnippet type=\"FMObjectList\"><Mystery /></fmxmlsnippet>",
+            "test-plugin");
+
+        var report = host.SelectedClip!.ParseReport;
+        Assert.False(report.IsLossless);
+        Assert.NotEmpty(report.Diagnostics);
+    }
+
+    [Fact]
+    public void AllClips_PopulatesParseReport()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+        vm.NewScriptCommand();
+        vm.NewTableCommand();
+
+        Assert.All(host.AllClips, c => Assert.NotNull(c.ParseReport));
+    }
+
+    [Fact]
+    public void GetClip_PopulatesParseReport()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+        vm.NewScriptCommand();
+
+        var clip = host.GetClip("New Script");
+
+        Assert.NotNull(clip);
+        Assert.NotNull(clip!.ParseReport);
+    }
+
+    [Fact]
+    public void ClipContentChanged_FromUpdate_CarriesParseReport()
+    {
+        var vm = CreateVm();
+        var host = new PluginHost(vm, NullLoggerFactory.Instance);
+        vm.NewScriptCommand();
+        ClipContentChangedArgs? args = null;
+        host.ClipContentChanged += (_, e) => args = e;
+
+        host.UpdateSelectedClipXml(
+            "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>",
+            "test-plugin");
+
+        Assert.NotNull(args);
+        Assert.NotNull(args!.Clip.ParseReport);
     }
 }

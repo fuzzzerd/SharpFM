@@ -60,7 +60,7 @@ public class PluginHost : IPluginHost
         {
             var clip = _viewModel.SelectedClip;
             if (clip is null) return null;
-            return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
+            return ToClipData(clip);
         }
     }
 
@@ -69,9 +69,10 @@ public class PluginHost : IPluginHost
     public event EventHandler? ClipCollectionChanged;
 
     public IReadOnlyList<ClipData> AllClips =>
-        _viewModel.FileMakerClips
-            .Select(c => new ClipData(c.Clip.Name, c.ClipType, c.Clip.Xml))
-            .ToList();
+        _viewModel.FileMakerClips.Select(ToClipData).ToList();
+
+    private static ClipData ToClipData(ClipViewModel clip) =>
+        new(clip.Clip.Name, clip.ClipType, clip.Clip.Xml) { ParseReport = clip.ParseReport };
 
     public ILogger CreateLogger(string categoryName) => _loggerFactory.CreateLogger(categoryName);
 
@@ -86,15 +87,16 @@ public class PluginHost : IPluginHost
 
             clip.Replace(xml);
 
-            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
-            ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
+            ClipContentChanged?.Invoke(
+                this,
+                new ClipContentChangedArgs(ToClipData(clip), originPluginId, false));
         });
 
     public ClipData? GetClip(string clipName)
     {
         var clip = FindClipByName(clipName);
         if (clip is null) return null;
-        return new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
+        return ToClipData(clip);
     }
 
     public void UpdateClipXml(string clipName, string xml, string originPluginId) =>
@@ -105,8 +107,9 @@ public class PluginHost : IPluginHost
 
             clip.Replace(xml);
 
-            var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
-            ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, originPluginId, false));
+            ClipContentChanged?.Invoke(
+                this,
+                new ClipContentChangedArgs(ToClipData(clip), originPluginId, false));
         });
 
     public void CreateClip(string name, string clipType, string? xml = null)
@@ -189,8 +192,8 @@ public class PluginHost : IPluginHost
         var clip = _viewModel.SelectedClip;
         if (clip is null) return;
 
-        var info = new ClipData(clip.Clip.Name, clip.ClipType, clip.Clip.Xml);
-        var isPartial = clip.Editor.IsPartial;
-        ClipContentChanged?.Invoke(this, new ClipContentChangedArgs(info, "editor", isPartial));
+        ClipContentChanged?.Invoke(
+            this,
+            new ClipContentChangedArgs(ToClipData(clip), "editor", clip.Editor.IsPartial));
     }
 }
