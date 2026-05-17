@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using SharpFM.Dialogs;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Models;
 using SharpFM.Plugin;
@@ -41,13 +42,15 @@ public partial class App : Application
             services.AddSingleton<IClipboardService>(x => new ClipboardService(desktop.MainWindow));
             Services = services.BuildServiceProvider();
 
+            var inputPrompt = new WindowInputPrompt(desktop.MainWindow);
             var viewModel = new MainWindowViewModel(
                 logger,
                 Services.GetRequiredService<IClipboardService>(),
-                Services.GetRequiredService<IFolderService>());
+                Services.GetRequiredService<IFolderService>(),
+                inputPrompt);
 
             // Load plugins
-            var pluginHost = new PluginHost(viewModel, loggerFactory);
+            var pluginHost = new PluginHost(viewModel, loggerFactory, inputPrompt);
             var pluginUIHost = new PluginUIHost(pluginHost);
             var pluginConfigService = new PluginConfigService(logger);
             var pluginService = new PluginService(logger, pluginConfigService);

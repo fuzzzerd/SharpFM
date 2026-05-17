@@ -1,0 +1,43 @@
+﻿<Window
+    x:Class="SharpFM.Dialogs.InputDialog"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Input"
+    Width="420"
+    SizeToContent="Height"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16" RowDefinitions="Auto,Auto,Auto">
+
+        <TextBlock
+            x:Name="promptLabel"
+            Grid.Row="0"
+            Margin="0,0,0,8"
+            Classes="Fluent2Body"
+            Text=""
+            TextWrapping="Wrap" />
+
+        <TextBox
+            x:Name="inputBox"
+            Grid.Row="1"
+            Margin="0,0,0,12" />
+
+        <StackPanel
+            Grid.Row="2"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button
+                x:Name="cancelButton"
+                Classes="Fluent2"
+                Content="Cancel" />
+            <Button
+                x:Name="okButton"
+                Classes="Fluent2Primary"
+                Content="OK"
+                IsDefault="True" />
+        </StackPanel>
+
+    </Grid>
+
+</Window>

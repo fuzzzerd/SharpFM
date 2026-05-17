@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpFM.Dialogs;
 using SharpFM.Plugin;
 using SharpFM.Plugin.UI;
 using SharpFM.Services;
@@ -38,13 +39,30 @@ public class MainWindowViewModelTests
 {
     private static MainWindowViewModel CreateVm(
         MockClipboardService? clipboard = null,
-        MockFolderService? folderService = null)
+        MockFolderService? folderService = null,
+        IInputPrompt? prompt = null)
     {
         var logger = NullLoggerFactory.Instance.CreateLogger<MainWindowViewModel>();
         return new MainWindowViewModel(
             logger,
             clipboard ?? new MockClipboardService(),
-            folderService ?? new MockFolderService());
+            folderService ?? new MockFolderService(),
+            prompt);
+    }
+
+    private sealed class FakeInputPrompt(string? answer) : IInputPrompt
+    {
+        public string? LastTitle { get; private set; }
+        public string? LastPrompt { get; private set; }
+        public string? LastDefault { get; private set; }
+
+        public Task<string?> PromptAsync(string title, string prompt, string defaultValue)
+        {
+            LastTitle = title;
+            LastPrompt = prompt;
+            LastDefault = defaultValue;
+            return Task.FromResult(answer);
+        }
     }
 
     [Fact]
@@ -95,6 +113,55 @@ public class MainWindowViewModelTests
         vm.SelectedClip = null;
         await vm.CopyAsClass();
         Assert.Equal("No clip selected", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task RenameSelectedClip_PromptsAndRenames()
+    {
+        var prompt = new FakeInputPrompt("Renamed");
+        var vm = CreateVm(prompt: prompt);
+        vm.NewScriptCommand();
+
+        await vm.RenameSelectedClip();
+
+        Assert.Equal("Renamed", vm.SelectedClip!.Clip.Name);
+        Assert.Equal("New Script", prompt.LastDefault);
+        Assert.Contains("Renamed", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task RenameSelectedClip_NoSelection_ShowsStatus()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("Whatever"));
+        vm.SelectedClip = null;
+
+        await vm.RenameSelectedClip();
+
+        Assert.Equal("No clip selected", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task RenameSelectedClip_BlankInput_KeepsExistingName()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("   "));
+        vm.NewScriptCommand();
+        var original = vm.SelectedClip!.Clip.Name;
+
+        await vm.RenameSelectedClip();
+
+        Assert.Equal(original, vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task RenameSelectedClip_CancelledPrompt_KeepsExistingName()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt(null));
+        vm.NewScriptCommand();
+        var original = vm.SelectedClip!.Clip.Name;
+
+        await vm.RenameSelectedClip();
+
+        Assert.Equal(original, vm.SelectedClip!.Clip.Name);
     }
 
     [Fact]

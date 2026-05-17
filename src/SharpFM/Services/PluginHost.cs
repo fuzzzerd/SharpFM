@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using SharpFM.Dialogs;
 using SharpFM.Model;
 using SharpFM.Model.ClipTypes;
 using SharpFM.Model.Parsing;
@@ -23,6 +24,7 @@ public class PluginHost : IPluginHost
 {
     private readonly MainWindowViewModel _viewModel;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IInputPrompt _prompt;
     private ClipViewModel? _trackedClip;
     private readonly List<IClipRepository> _repositories = [];
     private readonly List<IClipTransform> _transforms = [];
@@ -33,10 +35,11 @@ public class PluginHost : IPluginHost
     /// <summary>Transforms registered by plugins.</summary>
     public IReadOnlyList<IClipTransform> Transforms => _transforms;
 
-    public PluginHost(MainWindowViewModel viewModel, ILoggerFactory loggerFactory)
+    public PluginHost(MainWindowViewModel viewModel, ILoggerFactory loggerFactory, IInputPrompt? prompt = null)
     {
         _viewModel = viewModel;
         _loggerFactory = loggerFactory;
+        _prompt = prompt ?? new NullInputPrompt();
         _viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName != nameof(MainWindowViewModel.SelectedClip)) return;
@@ -153,12 +156,8 @@ public class PluginHost : IPluginHost
         return Task.FromResult<string?>(null);
     }
 
-    public Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null)
-    {
-        // TODO: implement with Avalonia dialog
-        ShowStatus(prompt);
-        return Task.FromResult(defaultValue);
-    }
+    public Task<string?> ShowInputDialogAsync(string title, string prompt, string? defaultValue = null) =>
+        _prompt.PromptAsync(title, prompt, defaultValue ?? string.Empty);
 
     private ClipViewModel? FindClipByName(string clipName) =>
         _viewModel.FileMakerClips.FirstOrDefault(c =>

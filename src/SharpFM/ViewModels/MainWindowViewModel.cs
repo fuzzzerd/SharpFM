@@ -11,6 +11,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using SharpFM.Dialogs;
 using SharpFM.Models;
 using SharpFM.Model;
 using SharpFM.Model.ClipTypes;
@@ -26,6 +27,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private readonly ILogger _logger;
     private readonly IClipboardService _clipboard;
     private readonly IFolderService _folderService;
+    private readonly IInputPrompt _prompt;
     private readonly DispatcherTimer _statusTimer;
     private IClipRepository _repository;
     private OpenTabViewModel? _trackedActiveTab;
@@ -80,11 +82,13 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel(
         ILogger logger,
         IClipboardService clipboard,
-        IFolderService folderService)
+        IFolderService folderService,
+        IInputPrompt? prompt = null)
     {
         _logger = logger;
         _clipboard = clipboard;
         _folderService = folderService;
+        _prompt = prompt ?? new NullInputPrompt();
 
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _statusTimer.Tick += (_, _) =>
@@ -244,6 +248,29 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+
+    public async Task RenameSelectedClip()
+    {
+        var clip = SelectedClip;
+        if (clip is null)
+        {
+            ShowStatus("No clip selected");
+            return;
+        }
+
+        var current = clip.Clip.Name;
+        var entered = await _prompt.PromptAsync("Rename clip", "New name:", current);
+        if (entered is null) return;
+
+        var trimmed = entered.Trim();
+        if (trimmed.Length == 0 || trimmed == current) return;
+
+        clip.RenameTo(trimmed);
+        // Tree label binds Clip.Clip.Name; the rebuild also re-sorts under the
+        // new name so the node lands in the right folder slot.
+        RebuildTree();
+        ShowStatus($"Renamed to '{trimmed}'");
+    }
 
     public void DeleteSelectedClip()
     {

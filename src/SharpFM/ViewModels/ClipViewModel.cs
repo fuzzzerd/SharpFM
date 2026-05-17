@@ -80,6 +80,9 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         _editorView = null;
     }
 
+    /// <summary>Rename the underlying clip; the cached parse carries over.</summary>
+    public void RenameTo(string newName) => Clip = _clip.Rename(newName);
+
     /// <summary>Re-parse the clip with new XML; used for external updates (MCP, plugins, XML viewer).</summary>
     public void Replace(string xml)
     {
