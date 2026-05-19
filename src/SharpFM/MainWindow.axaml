@@ -41,6 +41,7 @@
                     Command="{Binding NewTableCommand}"
                     Header="New Table"
                     InputGesture="Ctrl+Shift+N" />
+                <MenuItem Command="{Binding NewFolderCommand}" Header="New Folder..." />
                 <Separator />
                 <MenuItem Command="{Binding OpenFolderPicker}" Header="Open Folder..." />
                 <MenuItem
@@ -188,6 +189,7 @@
                                             <MenuItem Command="{Binding CopyAsScriptSteps}" Header="Copy as Script Steps" />
                                             <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
                                             <Separator />
+                                            <MenuItem Command="{Binding NewFolderCommand}" Header="New Folder..." />
                                             <MenuItem Command="{Binding RenameSelectedClip}" Header="Rename..." />
                                             <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" />
                                         </ContextMenu>

@@ -225,8 +225,13 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainWindowViewModel vm) return;
         var node = FindClipNode(e.Source);
-        if (node?.Clip is null) return;
-        vm.OpenClipAsPreview(node.Clip);
+        if (node is null) return;
+        if (node.Clip is not null)
+        {
+            vm.OpenClipAsPreview(node.Clip);
+            return;
+        }
+        vm.OpenFolderAsSelection(node.Path);
     }
 
     // Right-click bypasses the Tapped handler, so the context menu would
@@ -236,8 +241,13 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainWindowViewModel vm) return;
         var node = FindClipNode(e.Source);
-        if (node?.Clip is null) return;
-        vm.OpenClipAsPreview(node.Clip);
+        if (node is null) return;
+        if (node.Clip is not null)
+        {
+            vm.OpenClipAsPreview(node.Clip);
+            return;
+        }
+        vm.OpenFolderAsSelection(node.Path);
     }
 
     private void ClipsTree_DoubleTapped(object? sender, TappedEventArgs e)

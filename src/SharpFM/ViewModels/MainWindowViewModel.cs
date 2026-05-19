@@ -123,6 +123,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
         RootNodes = [];
 
+        Folders = [];
+        Folders.CollectionChanged += (_, _) => RebuildTree();
+
         FileMakerClips = [];
         FileMakerClips.CollectionChanged += (sender, e) =>
         {
@@ -145,24 +148,26 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         };
 
         _repository = new ClipRepository(_currentPath);
-        LoadClipsFromRepository();
+        LoadFromRepository();
     }
 
     public IClipRepository ActiveRepository => _repository;
 
-    private void LoadClipsFromRepository()
+    private void LoadFromRepository()
     {
         var clips = _repository.LoadClipsAsync().GetAwaiter().GetResult();
-        PopulateClips(clips);
+        var folders = _repository.LoadFoldersAsync().GetAwaiter().GetResult();
+        Populate(clips, folders);
     }
 
-    private async Task LoadClipsFromRepositoryAsync()
+    private async Task LoadFromRepositoryAsync()
     {
         var clips = await _repository.LoadClipsAsync();
-        PopulateClips(clips);
+        var folders = await _repository.LoadFoldersAsync();
+        Populate(clips, folders);
     }
 
-    private void PopulateClips(IReadOnlyList<ClipData> clips)
+    private void Populate(IReadOnlyList<ClipData> clips, IReadOnlyList<FolderData> folders)
     {
         // Closing the tab strip first keeps the editor area from holding refs
         // to clips that are about to be replaced.
@@ -173,6 +178,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         // the outgoing clips explicitly.
         foreach (var c in FileMakerClips) c.Dispose();
         FileMakerClips.Clear();
+        Folders.Clear();
+
+        foreach (var folder in folders) Folders.Add(folder);
+
         foreach (var clip in clips)
         {
             FileMakerClips.Add(new ClipViewModel(
@@ -189,7 +198,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             CurrentPath = await _folderService.GetFolderAsync();
             _repository = new ClipRepository(CurrentPath);
-            await LoadClipsFromRepositoryAsync();
+            await LoadFromRepositoryAsync();
             ShowStatus($"Opened {CurrentPath}");
         }
         catch (Exception e)
@@ -203,7 +212,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         _repository = repository;
         CurrentPath = repository.CurrentLocation;
-        await LoadClipsFromRepositoryAsync();
+        await LoadFromRepositoryAsync();
         ShowStatus($"Switched to {repository.ProviderName}: {repository.CurrentLocation}");
     }
 
@@ -221,6 +230,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 })
                 .ToList();
 
+            // Folders persist first so the orphan sweep in SaveClipsAsync
+            // sees up-to-date marker files when reclaiming empty directories.
+            await _repository.SaveFoldersAsync(Folders.ToList());
             await _repository.SaveClipsAsync(clipData);
 
             foreach (var c in FileMakerClips) c.MarkSaved();
@@ -291,12 +303,47 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     public void NewTableCommand() => CreateNewClip("New Table", "Mac-XMTB", "table");
 
+    /// <summary>
+    /// Create an empty folder under the current target folder. The user is
+    /// prompted for the folder name; cancelling or supplying a blank/colliding
+    /// name aborts.
+    /// </summary>
+    public async Task NewFolderCommand()
+    {
+        var parent = TargetFolderPath;
+
+        var entered = await _prompt.PromptAsync("New folder", "Folder name:", "New Folder");
+        if (entered is null) return;
+
+        var trimmed = entered.Trim();
+        if (trimmed.Length == 0)
+        {
+            ShowStatus("Folder name cannot be empty", isError: true);
+            return;
+        }
+
+        var path = Combine(parent, new[] { trimmed });
+        if (Folders.Any(f => FolderPathsEqual(f.Path, path)))
+        {
+            ShowStatus($"Folder '{trimmed}' already exists at this level", isError: true);
+            return;
+        }
+
+        Folders.Add(new FolderData(path));
+        SelectedFolderPath = path;
+        ShowStatus($"Created folder '{trimmed}'");
+    }
+
     private void CreateNewClip(string name, string format, string kind)
     {
         try
         {
+            var folderPath = TargetFolderPath;
             var seed = ClipTypeRegistry.For(format).DefaultXml(name);
-            var vm = new ClipViewModel(Clip.FromXml(name, format, seed));
+            var vm = new ClipViewModel(Clip.FromXml(name, format, seed))
+            {
+                FolderPath = folderPath,
+            };
             FileMakerClips.Add(vm);
             SelectedClip = vm;
             ShowStatus($"Created new {kind}");
@@ -368,9 +415,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             int count = 0;
             ClipViewModel? lastAdded = null;
 
-            // Group pastes land relative to the currently selected clip's folder
-            // so the user can drop a folder into the spot they're looking at.
-            var pasteRoot = SelectedClip?.FolderPath ?? [];
+            // Group pastes land relative to the current target folder so the
+            // user can drop a folder into the spot they're looking at — whether
+            // that's a selected clip's folder or an explicitly tapped empty one.
+            var pasteRoot = TargetFolderPath;
 
             foreach (var format in formats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct())
             {
@@ -382,10 +430,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 var rawClip = Clip.FromWireBytes("new-clip", format, dataObj);
 
-                var groupEntries = GroupPasteDecomposer.TryDecompose(rawClip.Xml);
-                if (groupEntries is { Count: > 0 })
+                var decomposed = GroupPasteDecomposer.TryDecompose(rawClip.Xml);
+                if (decomposed is { Entries.Count: > 0 })
                 {
-                    foreach (var entry in groupEntries)
+                    foreach (var folder in decomposed.Folders)
+                    {
+                        var fullPath = Combine(pasteRoot, folder.Path);
+                        UpsertFolder(folder with { Path = fullPath });
+                    }
+
+                    foreach (var entry in decomposed.Entries)
                     {
                         var entryClip = Clip.FromXml("new-clip", format, entry.Xml);
                         if (FileMakerClips.Any(k => k.Clip.Xml == entryClip.Xml &&
@@ -567,6 +621,27 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     public ObservableCollection<ClipViewModel> FileMakerClips { get; set; }
 
     /// <summary>
+    /// Folder metadata for every materialized folder — empty folders the user
+    /// created locally and the FileMaker <c>&lt;Group&gt;</c> attributes captured
+    /// when a Group paste landed. The tree builder consults this collection so
+    /// empty folders still render.
+    /// </summary>
+    public ObservableCollection<FolderData> Folders { get; }
+
+    private void UpsertFolder(FolderData folder)
+    {
+        for (var i = 0; i < Folders.Count; i++)
+        {
+            if (FolderPathsEqual(Folders[i].Path, folder.Path))
+            {
+                Folders[i] = folder;
+                return;
+            }
+        }
+        Folders.Add(folder);
+    }
+
+    /// <summary>
     /// VS Code-style open tabs — the right-side editor area binds to this.
     /// </summary>
     public OpenTabsViewModel OpenTabs { get; }
@@ -589,9 +664,47 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             StatusMessage = "";
             if (value is null) { OpenTabs.ActiveTab = null; NotifyPropertyChanged(); return; }
+            SelectedFolderPath = null;
             OpenTabs.OpenAsPermanent(value);
             NotifyPropertyChanged();
         }
+    }
+
+    private IReadOnlyList<string>? _selectedFolderPath;
+
+    /// <summary>
+    /// Folder path tapped in the tree, if any. New clip/folder/paste operations
+    /// land relative to this path (it takes priority over the selected clip's
+    /// own folder). Cleared when a clip is opened.
+    /// </summary>
+    public IReadOnlyList<string>? SelectedFolderPath
+    {
+        get => _selectedFolderPath;
+        set
+        {
+            _selectedFolderPath = value;
+            NotifyPropertyChanged();
+            NotifyPropertyChanged(nameof(TargetFolderPath));
+        }
+    }
+
+    /// <summary>
+    /// Where the next "new" or "paste" operation will land. Resolves to the
+    /// explicitly tapped folder, else the selected clip's folder, else root.
+    /// </summary>
+    public IReadOnlyList<string> TargetFolderPath =>
+        SelectedFolderPath ?? SelectedClip?.FolderPath ?? [];
+
+    /// <summary>
+    /// Select a folder node in the tree as the active target for new clip /
+    /// paste / new folder operations. Closes any open clip preview so the
+    /// selection is unambiguous.
+    /// </summary>
+    public void OpenFolderAsSelection(IReadOnlyList<string> folderPath)
+    {
+        OpenTabs.ActiveTab = null;
+        SelectedFolderPath = folderPath;
+        NotifyPropertyChanged(nameof(SelectedClip));
     }
 
     /// <summary>True when the status bar should display a parse-fidelity summary for the selected clip.</summary>
@@ -644,7 +757,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
     private void RebuildTree()
     {
-        var nodes = ClipTreeNodeViewModel.Build(FileMakerClips, _searchText);
+        var nodes = ClipTreeNodeViewModel.Build(FileMakerClips, _searchText, Folders);
         RootNodes.Clear();
         foreach (var n in nodes) RootNodes.Add(n);
     }
