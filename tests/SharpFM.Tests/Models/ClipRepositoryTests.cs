@@ -393,6 +393,92 @@ public class ClipRepositoryTests
     }
 
     [Fact]
+    public async Task ClipName_WithSlash_RoundTrips()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            await repo.SaveClipsAsync([new("Go-To-Record/Request/Page", "Mac-XMSC", "<x/>")]);
+
+            var loaded = await repo.LoadClipsAsync();
+
+            var clip = Assert.Single(loaded);
+            Assert.Equal("Go-To-Record/Request/Page", clip.Name);
+            Assert.Empty(clip.FolderPath);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task ClipName_WithMultipleInvalidChars_RoundTrips()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            var weirdName = "a/b\\c:d*e?f\"g<h>i|j";
+            await repo.SaveClipsAsync([new(weirdName, "Mac-XMSS", "<x/>")]);
+
+            var loaded = await repo.LoadClipsAsync();
+            Assert.Equal(weirdName, Assert.Single(loaded).Name);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task ClipName_LiteralPercent_RoundTrips()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            await repo.SaveClipsAsync([new("100% done", "Mac-XMSS", "<x/>")]);
+
+            var loaded = await repo.LoadClipsAsync();
+            Assert.Equal("100% done", Assert.Single(loaded).Name);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task FolderSegment_WithSlash_RoundTrips()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            await repo.SaveClipsAsync([new("Inside", "Mac-XMSC", "<x/>")
+                { FolderPath = new[] { "Date/Time", "Helpers" } }]);
+
+            var loaded = await repo.LoadClipsAsync();
+            var clip = Assert.Single(loaded);
+            Assert.Equal(new[] { "Date/Time", "Helpers" }, clip.FolderPath);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task FolderMetadata_WithSlashInSegment_RoundTrips()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            await repo.SaveFoldersAsync([
+                new(new[] { "Date/Time" }) { Id = 7, IncludeInMenu = false }
+            ]);
+
+            var loaded = await repo.LoadFoldersAsync();
+            var folder = Assert.Single(loaded);
+            Assert.Equal(new[] { "Date/Time" }, folder.Path);
+            Assert.Equal(7, folder.Id);
+            Assert.False(folder.IncludeInMenu);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public async Task SaveClipsAsync_RejectsTraversalSegments()
     {
         var dir = CreateTempDir();
