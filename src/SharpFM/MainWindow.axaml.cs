@@ -236,12 +236,17 @@ public partial class MainWindow : Window
 
     // Right-click bypasses the Tapped handler, so the context menu would
     // otherwise operate on whatever was previously selected. Promote the
-    // right-clicked node into the active selection before the menu opens.
+    // right-clicked node into the active selection before the menu opens —
+    // and treat a click in the empty area as "select the repository root".
     private void ClipsTree_ContextRequested(object? sender, ContextRequestedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm) return;
         var node = FindClipNode(e.Source);
-        if (node is null) return;
+        if (node is null)
+        {
+            vm.OpenFolderAsSelection([]);
+            return;
+        }
         if (node.Clip is not null)
         {
             vm.OpenClipAsPreview(node.Clip);
