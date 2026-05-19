@@ -75,7 +75,7 @@ public class ClipRepository : IClipRepository
                 var folderPath = GetRelativeFolderSegments(root.FullName, fi.Directory!.FullName);
 
                 clips.Add(new ClipData(
-                    Name: Path.GetFileNameWithoutExtension(fi.Name),
+                    Name: DecodeName(Path.GetFileNameWithoutExtension(fi.Name)),
                     ClipType: fi.Extension.TrimStart('.'),
                     Xml: File.ReadAllText(clipFile))
                 {
@@ -104,7 +104,7 @@ public class ClipRepository : IClipRepository
 
             Directory.CreateDirectory(targetDir);
 
-            var fileName = $"{clip.Name}.{clip.ClipType}";
+            var fileName = $"{EncodeName(clip.Name)}.{clip.ClipType}";
             var clipPath = Path.Combine(targetDir, fileName);
             File.WriteAllText(clipPath, clip.Xml);
 
@@ -227,12 +227,16 @@ public class ClipRepository : IClipRepository
     {
         var rel = Path.GetRelativePath(root, directory);
         if (string.IsNullOrEmpty(rel) || rel == ".") return [];
-        return rel.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+        var raw = rel.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
             StringSplitOptions.RemoveEmptyEntries);
+        var decoded = new string[raw.Length];
+        for (var i = 0; i < raw.Length; i++) decoded[i] = DecodeName(raw[i]);
+        return decoded;
     }
 
-    // Reject traversal/rooted segments; repositories are logical stores and
-    // must not escape their root no matter what a misbehaving provider sends.
+    // Reject traversal segments (security) and percent-encode any character
+    // the filesystem rejects so FileMaker names containing '/' or ':' survive
+    // the round-trip instead of being silently dropped.
     private static IReadOnlyList<string> SanitizeFolderPath(IReadOnlyList<string> segments)
     {
         if (segments is null || segments.Count == 0) return [];
@@ -241,9 +245,69 @@ public class ClipRepository : IClipRepository
         {
             if (string.IsNullOrWhiteSpace(raw)) continue;
             if (raw == "." || raw == "..") continue;
-            if (raw.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) continue;
-            safe.Add(raw);
+            safe.Add(EncodeName(raw));
         }
         return safe;
+    }
+
+    private static readonly char[] InvalidNameChars = Path.GetInvalidFileNameChars();
+
+    /// <summary>
+    /// Percent-encode characters the filesystem rejects (path separators,
+    /// reserved chars, control codes) plus '%' itself so encoding is reversible.
+    /// Output is plain ASCII and safe to embed in any cross-platform filename.
+    /// </summary>
+    internal static string EncodeName(string raw)
+    {
+        var needsEncoding = false;
+        for (var i = 0; i < raw.Length; i++)
+        {
+            if (raw[i] == '%' || Array.IndexOf(InvalidNameChars, raw[i]) >= 0)
+            {
+                needsEncoding = true;
+                break;
+            }
+        }
+        if (!needsEncoding) return raw;
+
+        var sb = new System.Text.StringBuilder(raw.Length + 8);
+        foreach (var ch in raw)
+        {
+            if (ch == '%' || Array.IndexOf(InvalidNameChars, ch) >= 0)
+            {
+                sb.Append('%');
+                sb.Append(((int)ch).ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                sb.Append(ch);
+            }
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Reverse of <see cref="EncodeName"/>. Unrecognised '%' triplets pass through unchanged.</summary>
+    internal static string DecodeName(string encoded)
+    {
+        if (encoded.IndexOf('%') < 0) return encoded;
+
+        var sb = new System.Text.StringBuilder(encoded.Length);
+        for (var i = 0; i < encoded.Length; i++)
+        {
+            if (encoded[i] == '%' && i + 2 < encoded.Length
+                && int.TryParse(encoded.AsSpan(i + 1, 2),
+                    System.Globalization.NumberStyles.HexNumber,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var code))
+            {
+                sb.Append((char)code);
+                i += 2;
+            }
+            else
+            {
+                sb.Append(encoded[i]);
+            }
+        }
+        return sb.ToString();
     }
 }
