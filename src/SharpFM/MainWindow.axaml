@@ -196,6 +196,17 @@
                             DoubleTapped="ClipsTree_DoubleTapped"
                             ItemsSource="{Binding RootNodes}"
                             Tapped="ClipsTree_Tapped">
+                            <!--
+                                Bind TreeViewItem.IsExpanded two-way to the VM so the
+                                tree honours ClipTreeNodeViewModel.IsExpanded (default
+                                true) instead of collapsing every node on rebuild,
+                                and so the user's chevron clicks flow back to the VM.
+                            -->
+                            <TreeView.Styles>
+                                <Style x:DataType="vm:ClipTreeNodeViewModel" Selector="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                </Style>
+                            </TreeView.Styles>
                             <TreeView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Command="{Binding NewScriptCommand}" Header="New Script (whole script)" />
