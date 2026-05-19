@@ -49,7 +49,7 @@ public class PluginHostTests
 
         Assert.NotNull(host.SelectedClip);
         Assert.Equal("New Script", host.SelectedClip!.Name);
-        Assert.Equal("Mac-XMSS", host.SelectedClip.ClipType);
+        Assert.Equal("Mac-XMSC", host.SelectedClip.ClipType);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class PluginHostTests
 
         Assert.NotNull(clip);
         Assert.Equal("New Script", clip!.Name);
-        Assert.Equal("Mac-XMSS", clip.ClipType);
+        Assert.Equal("Mac-XMSC", clip.ClipType);
     }
 
     [Fact]

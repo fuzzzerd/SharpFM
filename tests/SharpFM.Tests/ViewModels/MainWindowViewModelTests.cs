@@ -80,7 +80,17 @@ public class MainWindowViewModelTests
         vm.NewScriptCommand();
         Assert.Equal(initialCount + 1, vm.FileMakerClips.Count);
         Assert.True(vm.SelectedClip?.IsScriptClip);
+        Assert.Equal("Mac-XMSC", vm.SelectedClip!.ClipType);
         Assert.Contains("Created new script", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void NewScriptStepsCommand_AddsBareStepsClip()
+    {
+        var vm = CreateVm();
+        vm.NewScriptStepsCommand();
+        Assert.True(vm.SelectedClip?.IsScriptClip);
+        Assert.Equal("Mac-XMSS", vm.SelectedClip!.ClipType);
     }
 
     [Fact]
@@ -213,6 +223,19 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task NewFolderCommand_TwiceAtRoot_ProducesSiblings()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("A", "B"));
+        ResetRepoState(vm);
+
+        await vm.NewFolderCommand();
+        await vm.NewFolderCommand();
+
+        Assert.Equal(2, vm.Folders.Count);
+        Assert.All(vm.Folders, f => Assert.Single(f.Path));
+    }
+
+    [Fact]
     public void NewScriptCommand_LandsInSelectedFolder()
     {
         var vm = CreateVm();
@@ -266,6 +289,34 @@ public class MainWindowViewModelTests
         Assert.Null(vm.SelectedFolderPath);
     }
 
+    [Fact]
+    public void OpenFolderAsSelection_KeepsActiveTab()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        vm.NewScriptCommand();
+        var openClip = vm.SelectedClip;
+        Assert.NotNull(openClip);
+
+        vm.OpenFolderAsSelection(new[] { "Schemas" });
+
+        Assert.Same(openClip, vm.SelectedClip);
+        Assert.Equal(new[] { "Schemas" }, vm.TargetFolderPath);
+    }
+
+    [Fact]
+    public void TargetFolderPath_PrefersExplicitFolderOverSelectedClipFolder()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        vm.NewScriptCommand();
+        vm.SelectedClip!.FolderPath = new[] { "Original" };
+
+        vm.OpenFolderAsSelection(new[] { "Override" });
+
+        Assert.Equal(new[] { "Override" }, vm.TargetFolderPath);
+    }
+
 
     [Fact]
     public async Task NewFolderCommand_CancelledPrompt_AddsNothing()
@@ -297,9 +348,6 @@ public class MainWindowViewModelTests
         ResetRepoState(vm);
         await vm.NewFolderCommand();
         Assert.Single(vm.Folders);
-        // Successful create selects the new folder; clear so the second call
-        // targets the same root level and trips the duplicate check.
-        vm.SelectedFolderPath = null;
 
         await vm.NewFolderCommand();
 

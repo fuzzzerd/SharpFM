@@ -299,7 +299,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         ShowStatus($"Deleted clip '{name}'");
     }
 
-    public void NewScriptCommand() => CreateNewClip("New Script", "Mac-XMSS", "script");
+    public void NewScriptCommand() => CreateNewClip("New Script", "Mac-XMSC", "script");
+
+    public void NewScriptStepsCommand() => CreateNewClip("New Script Steps", "Mac-XMSS", "script steps");
 
     public void NewTableCommand() => CreateNewClip("New Table", "Mac-XMTB", "table");
 
@@ -330,7 +332,6 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
 
         Folders.Add(new FolderData(path));
-        SelectedFolderPath = path;
         ShowStatus($"Created folder '{trimmed}'");
     }
 
@@ -696,15 +697,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         SelectedFolderPath ?? SelectedClip?.FolderPath ?? [];
 
     /// <summary>
-    /// Select a folder node in the tree as the active target for new clip /
-    /// paste / new folder operations. Closes any open clip preview so the
-    /// selection is unambiguous.
+    /// Select a folder path as the active target for new clip / paste /
+    /// new folder operations. An empty path means "the repository root".
+    /// The tab strip is intentionally left alone — navigating the tree should
+    /// not close whatever the user is editing.
     /// </summary>
     public void OpenFolderAsSelection(IReadOnlyList<string> folderPath)
     {
-        OpenTabs.ActiveTab = null;
         SelectedFolderPath = folderPath;
-        NotifyPropertyChanged(nameof(SelectedClip));
     }
 
     /// <summary>True when the status bar should display a parse-fidelity summary for the selected clip.</summary>
