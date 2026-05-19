@@ -81,6 +81,70 @@ public class ClipTreeNodeViewModelTests
     }
 
     [Fact]
+    public void Build_EmptyFolder_RendersAsFolderNode()
+    {
+        var folders = new[] { new FolderData(new[] { "Empty" }) };
+
+        var nodes = ClipTreeNodeViewModel.Build([], folders: folders);
+
+        var empty = Assert.Single(nodes);
+        Assert.True(empty.IsFolder);
+        Assert.Equal("Empty", empty.Name);
+        Assert.Equal(new[] { "Empty" }, empty.Path);
+        Assert.Empty(empty.Children);
+    }
+
+    [Fact]
+    public void Build_NestedFolderNode_CarriesFullPath()
+    {
+        var folders = new[] { new FolderData(new[] { "Outer", "Inner" }) };
+
+        var nodes = ClipTreeNodeViewModel.Build([], folders: folders);
+
+        var outer = Assert.Single(nodes);
+        Assert.Equal(new[] { "Outer" }, outer.Path);
+        var inner = outer.Children.Single();
+        Assert.Equal(new[] { "Outer", "Inner" }, inner.Path);
+    }
+
+    [Fact]
+    public void Build_ClipDerivedFolder_CarriesPath()
+    {
+        var clips = new[] { Clip("X", "Outer", "Inner") };
+
+        var nodes = ClipTreeNodeViewModel.Build(clips);
+
+        var outer = Assert.Single(nodes);
+        Assert.Equal(new[] { "Outer" }, outer.Path);
+        var inner = outer.Children.Single(c => c.IsFolder);
+        Assert.Equal(new[] { "Outer", "Inner" }, inner.Path);
+    }
+
+    [Fact]
+    public void Build_EmptyFolderInsideClipFolder_RendersAsChild()
+    {
+        var clips = new[] { Clip("Sibling", "Scripts") };
+        var folders = new[] { new FolderData(new[] { "Scripts", "Drafts" }) };
+
+        var nodes = ClipTreeNodeViewModel.Build(clips, folders: folders);
+
+        var scripts = Assert.Single(nodes);
+        var drafts = scripts.Children.Single(c => c.IsFolder);
+        Assert.Equal("Drafts", drafts.Name);
+        Assert.Empty(drafts.Children);
+    }
+
+    [Fact]
+    public void Build_FilterActive_HidesEmptyFolders()
+    {
+        var folders = new[] { new FolderData(new[] { "Empty" }) };
+
+        var nodes = ClipTreeNodeViewModel.Build([], "needle", folders);
+
+        Assert.Empty(nodes);
+    }
+
+    [Fact]
     public void Build_IsStable_WhenFolderPathCasingDiffers()
     {
         var clips = new[]

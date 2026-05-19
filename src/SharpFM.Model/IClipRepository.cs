@@ -37,6 +37,22 @@ public interface IClipRepository
     Task SaveClipsAsync(IReadOnlyList<ClipData> clips);
 
     /// <summary>
+    /// Load folder metadata records — one per materialized folder (including
+    /// empty ones). Default implementation returns an empty list for backends
+    /// that don't model folders independently of clip paths.
+    /// </summary>
+    Task<IReadOnlyList<FolderData>> LoadFoldersAsync() =>
+        Task.FromResult<IReadOnlyList<FolderData>>([]);
+
+    /// <summary>
+    /// Save folder metadata. The implementation should handle creates,
+    /// updates, and deletes (folders not in the list should be removed).
+    /// Default implementation is a no-op for backends that infer folders from
+    /// clip paths only.
+    /// </summary>
+    Task SaveFoldersAsync(IReadOnlyList<FolderData> folders) => Task.CompletedTask;
+
+    /// <summary>
     /// Open a location picker and switch to the selected location.
     /// Only called if <see cref="SupportsLocationPicker"/> is true.
     /// Returns the display string for the new location, or null if cancelled.

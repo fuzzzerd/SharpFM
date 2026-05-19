@@ -51,8 +51,13 @@ public class MainWindowViewModelTests
             prompt);
     }
 
-    private sealed class FakeInputPrompt(string? answer) : IInputPrompt
+    private sealed class FakeInputPrompt(params string?[]? answers) : IInputPrompt
     {
+        // A single explicit `null` argument resolves to `params` = null rather
+        // than a one-element array; treat both the same as "always cancel".
+        private readonly Queue<string?> _answers = new(
+            answers ?? new string?[] { null });
+
         public string? LastTitle { get; private set; }
         public string? LastPrompt { get; private set; }
         public string? LastDefault { get; private set; }
@@ -62,6 +67,7 @@ public class MainWindowViewModelTests
             LastTitle = title;
             LastPrompt = prompt;
             LastDefault = defaultValue;
+            var answer = _answers.Count > 0 ? _answers.Dequeue() : null;
             return Task.FromResult(answer);
         }
     }
@@ -163,6 +169,152 @@ public class MainWindowViewModelTests
         await vm.RenameSelectedClip();
 
         Assert.Equal(original, vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_PromptsAndAddsEmptyFolderAtRoot()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("Drafts"));
+        ResetRepoState(vm);
+
+        await vm.NewFolderCommand();
+
+        var folder = Assert.Single(vm.Folders);
+        Assert.Equal(new[] { "Drafts" }, folder.Path);
+        Assert.Contains(vm.RootNodes, n => n.IsFolder && n.Name == "Drafts");
+        Assert.Contains("Created folder", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_RelativeToSelectedClipFolder()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("Sub"));
+        ResetRepoState(vm);
+        vm.NewScriptCommand();
+        vm.SelectedClip!.FolderPath = new[] { "Top" };
+
+        await vm.NewFolderCommand();
+
+        var folder = vm.Folders.Single(f => f.Path.Count == 2);
+        Assert.Equal(new[] { "Top", "Sub" }, folder.Path);
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_NestsInsideSelectedFolder()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("Outer", "Inner"));
+        ResetRepoState(vm);
+        await vm.NewFolderCommand();
+        vm.OpenFolderAsSelection(new[] { "Outer" });
+        await vm.NewFolderCommand();
+
+        Assert.Contains(vm.Folders, f =>
+            f.Path.Count == 2 && f.Path[0] == "Outer" && f.Path[1] == "Inner");
+    }
+
+    [Fact]
+    public void NewScriptCommand_LandsInSelectedFolder()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        vm.OpenFolderAsSelection(new[] { "Drafts" });
+
+        vm.NewScriptCommand();
+
+        var script = Assert.Single(vm.FileMakerClips);
+        Assert.Equal(new[] { "Drafts" }, script.FolderPath);
+    }
+
+    [Fact]
+    public void NewTableCommand_LandsInSelectedFolder()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        vm.OpenFolderAsSelection(new[] { "Schemas" });
+
+        vm.NewTableCommand();
+
+        var table = Assert.Single(vm.FileMakerClips);
+        Assert.Equal(new[] { "Schemas" }, table.FolderPath);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_LandsInSelectedFolder()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSS"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Script id=\"5\" name=\"X\"/></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        ResetRepoState(vm);
+        vm.OpenFolderAsSelection(new[] { "Drop Here" });
+
+        await vm.PasteFileMakerClipData();
+
+        var pasted = Assert.Single(vm.FileMakerClips);
+        Assert.Equal(new[] { "Drop Here" }, pasted.FolderPath);
+    }
+
+    [Fact]
+    public void SelectedFolderPath_ClearsWhenClipSelected()
+    {
+        var vm = CreateVm();
+        vm.OpenFolderAsSelection(new[] { "Folder" });
+        Assert.NotNull(vm.SelectedFolderPath);
+
+        vm.NewScriptCommand();
+
+        Assert.Null(vm.SelectedFolderPath);
+    }
+
+
+    [Fact]
+    public async Task NewFolderCommand_CancelledPrompt_AddsNothing()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt(null));
+        ResetRepoState(vm);
+
+        await vm.NewFolderCommand();
+
+        Assert.Empty(vm.Folders);
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_BlankName_ShowsError()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("   "));
+        ResetRepoState(vm);
+
+        await vm.NewFolderCommand();
+
+        Assert.Empty(vm.Folders);
+        Assert.Contains("cannot be empty", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task NewFolderCommand_DuplicateName_ShowsError()
+    {
+        var vm = CreateVm(prompt: new FakeInputPrompt("Dup", "Dup"));
+        ResetRepoState(vm);
+        await vm.NewFolderCommand();
+        Assert.Single(vm.Folders);
+        // Successful create selects the new folder; clear so the second call
+        // targets the same root level and trips the duplicate check.
+        vm.SelectedFolderPath = null;
+
+        await vm.NewFolderCommand();
+
+        Assert.Single(vm.Folders);
+        Assert.Contains("already exists", vm.StatusMessage);
+    }
+
+    // Tests that assert exact catalog sizes need to start from a clean slate.
+    // CreateVm constructs a MainWindowViewModel that eagerly loads from the
+    // default LocalApplicationData repo path, so anything left there by prior
+    // user sessions or earlier tests would leak in otherwise.
+    private static void ResetRepoState(MainWindowViewModel vm)
+    {
+        vm.FileMakerClips.Clear();
+        vm.Folders.Clear();
     }
 
     [Fact]
@@ -278,6 +430,26 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task PasteFileMakerClipData_GroupPaste_CapturesFolderMetadata()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\">" +
+            "<Group groupCollapsed=\"True\" includeInMenu=\"False\" id=\"16\" name=\"Paste Targets\">" +
+            "<Script id=\"19\" name=\"FizzBuzz\"/></Group></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        ResetRepoState(vm);
+
+        await vm.PasteFileMakerClipData();
+
+        var folder = Assert.Single(vm.Folders);
+        Assert.Equal(new[] { "Paste Targets" }, folder.Path);
+        Assert.Equal(16, folder.Id);
+        Assert.False(folder.IncludeInMenu);
+        Assert.True(folder.GroupCollapsed);
+    }
+
+    [Fact]
     public async Task PasteFileMakerClipData_GroupWithSingleScript_CreatesClipUnderFolder()
     {
         var clipboard = new MockClipboardService();
@@ -365,7 +537,7 @@ public class MainWindowViewModelTests
             "<Group id=\"1\" name=\"Sub\"><Script id=\"10\" name=\"Inside\"/></Group>" +
             "</fmxmlsnippet>");
         var vm = CreateVm(clipboard);
-        vm.FileMakerClips.Clear();
+        ResetRepoState(vm);
         var anchor = new ClipViewModel(Clip.FromXml("Anchor", "Mac-XMSC", "<fmxmlsnippet/>"))
         {
             FolderPath = new[] { "Parent" },
@@ -379,6 +551,9 @@ public class MainWindowViewModelTests
         Assert.Equal(new[] { "Parent" }, loose.FolderPath);
         var inside = vm.FileMakerClips.Single(c => c.Clip.Name == "Inside");
         Assert.Equal(new[] { "Parent", "Sub" }, inside.FolderPath);
+
+        var folder = Assert.Single(vm.Folders);
+        Assert.Equal(new[] { "Parent", "Sub" }, folder.Path);
     }
 
     [Fact]

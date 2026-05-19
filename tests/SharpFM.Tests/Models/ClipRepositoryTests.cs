@@ -241,6 +241,158 @@ public class ClipRepositoryTests
     }
 
     [Fact]
+    public async Task SaveFoldersAsync_WritesMarkerWithMetadata()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            var folders = new List<FolderData>
+            {
+                new(new[] { "Group A" }) { Id = 42, IncludeInMenu = false, GroupCollapsed = true }
+            };
+
+            await repo.SaveFoldersAsync(folders);
+
+            var marker = Path.Combine(dir, "Group A", ".sharpfm-folder.json");
+            Assert.True(File.Exists(marker));
+            var contents = File.ReadAllText(marker);
+            Assert.Contains("\"id\": 42", contents);
+            Assert.Contains("\"includeInMenu\": false", contents);
+            Assert.Contains("\"groupCollapsed\": true", contents);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task LoadFoldersAsync_ReadsMarkerMetadata()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var sub = Path.Combine(dir, "Group A");
+            Directory.CreateDirectory(sub);
+            File.WriteAllText(Path.Combine(sub, ".sharpfm-folder.json"),
+                "{\"id\": 7, \"includeInMenu\": false, \"groupCollapsed\": true}");
+
+            var repo = new ClipRepository(dir);
+            var folders = await repo.LoadFoldersAsync();
+
+            var f = Assert.Single(folders);
+            Assert.Equal(new[] { "Group A" }, f.Path);
+            Assert.Equal(7, f.Id);
+            Assert.False(f.IncludeInMenu);
+            Assert.True(f.GroupCollapsed);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveFoldersAsync_EmptyFolder_CreatesDirectory()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            await repo.SaveFoldersAsync([new(new[] { "Empty" })]);
+
+            Assert.True(Directory.Exists(Path.Combine(dir, "Empty")));
+            Assert.True(File.Exists(Path.Combine(dir, "Empty", ".sharpfm-folder.json")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task LoadClipsAsync_IgnoresFolderMarkerFile()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var sub = Path.Combine(dir, "Group");
+            Directory.CreateDirectory(sub);
+            File.WriteAllText(Path.Combine(sub, ".sharpfm-folder.json"), "{}");
+            File.WriteAllText(Path.Combine(sub, "Real.Mac-XMSS"), "<x/>");
+
+            var repo = new ClipRepository(dir);
+            var clips = await repo.LoadClipsAsync();
+
+            var clip = Assert.Single(clips);
+            Assert.Equal("Real", clip.Name);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_KeepsEmptyFolderWithMarker()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var sub = Path.Combine(dir, "KeepMe");
+            Directory.CreateDirectory(sub);
+            File.WriteAllText(Path.Combine(sub, ".sharpfm-folder.json"), "{}");
+
+            var repo = new ClipRepository(dir);
+            await repo.SaveClipsAsync([new("Root", "Mac-XMSS", "<r/>")]);
+
+            Assert.True(Directory.Exists(sub));
+            Assert.True(File.Exists(Path.Combine(sub, ".sharpfm-folder.json")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveFoldersAsync_DeletesOrphanedMarkers()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var a = Path.Combine(dir, "A");
+            var b = Path.Combine(dir, "B");
+            Directory.CreateDirectory(a);
+            Directory.CreateDirectory(b);
+            File.WriteAllText(Path.Combine(a, ".sharpfm-folder.json"), "{}");
+            File.WriteAllText(Path.Combine(b, ".sharpfm-folder.json"), "{}");
+
+            var repo = new ClipRepository(dir);
+            await repo.SaveFoldersAsync([new(new[] { "A" })]);
+
+            Assert.True(File.Exists(Path.Combine(a, ".sharpfm-folder.json")));
+            Assert.False(File.Exists(Path.Combine(b, ".sharpfm-folder.json")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task FolderRoundtrip_PreservesMetadata()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            await repo.SaveFoldersAsync([
+                new(new[] { "Outer", "Inner" }) { Id = 99, IncludeInMenu = false, GroupCollapsed = true },
+                new(new[] { "Outer" }) { Id = 1 }
+            ]);
+
+            var loaded = await repo.LoadFoldersAsync();
+
+            Assert.Equal(2, loaded.Count);
+            var inner = loaded.Single(f => f.Path.Count == 2);
+            Assert.Equal(new[] { "Outer", "Inner" }, inner.Path);
+            Assert.Equal(99, inner.Id);
+            Assert.False(inner.IncludeInMenu);
+            Assert.True(inner.GroupCollapsed);
+
+            var outer = loaded.Single(f => f.Path.Count == 1);
+            Assert.Equal(1, outer.Id);
+            Assert.True(outer.IncludeInMenu);
+            Assert.False(outer.GroupCollapsed);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public async Task SaveClipsAsync_RejectsTraversalSegments()
     {
         var dir = CreateTempDir();

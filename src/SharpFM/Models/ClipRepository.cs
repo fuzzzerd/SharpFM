@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using NLog;
 using SharpFM.Model;
@@ -11,11 +12,31 @@ namespace SharpFM.Models;
 /// <summary>
 /// File-system-based clip repository. Stores each clip as a file in a directory
 /// tree. Subdirectories map one-to-one to <see cref="ClipData.FolderPath"/>
-/// segments.
+/// segments. Per-folder metadata (FileMaker Group id, includeInMenu,
+/// groupCollapsed) is persisted in a <see cref="FolderMarkerFileName"/> sidecar
+/// inside each folder; an "empty folder" is a directory that contains only the
+/// sidecar.
 /// </summary>
 public class ClipRepository : IClipRepository
 {
     private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
+    /// <summary>Sidecar filename used to store folder metadata and to mark
+    /// empty folders so the orphan sweep doesn't reclaim them.</summary>
+    public const string FolderMarkerFileName = ".sharpfm-folder.json";
+
+    private static readonly JsonSerializerOptions FolderJsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private sealed record FolderMarker
+    {
+        public int? Id { get; init; }
+        public bool IncludeInMenu { get; init; } = true;
+        public bool GroupCollapsed { get; init; }
+    }
 
     public string ProviderName => "Local Files";
 
@@ -49,6 +70,7 @@ public class ClipRepository : IClipRepository
             {
                 var fi = new FileInfo(clipFile);
                 if (string.IsNullOrEmpty(fi.Extension)) continue;
+                if (string.Equals(fi.Name, FolderMarkerFileName, StringComparison.OrdinalIgnoreCase)) continue;
 
                 var folderPath = GetRelativeFolderSegments(root.FullName, fi.Directory!.FullName);
 
@@ -91,8 +113,14 @@ public class ClipRepository : IClipRepository
         }
 
         // Remove files for clips that no longer exist (anywhere in the tree).
+        // Folder marker files are preserved by SaveFoldersAsync — they belong
+        // to the folder, not to any individual clip.
         foreach (var file in Directory.EnumerateFiles(ClipPath, "*", SearchOption.AllDirectories))
         {
+            if (string.Equals(Path.GetFileName(file), FolderMarkerFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
             var relative = Path.GetRelativePath(ClipPath, file);
             if (!activeRelativePaths.Contains(relative))
             {
@@ -100,7 +128,83 @@ public class ClipRepository : IClipRepository
             }
         }
 
-        // Clean up any now-empty subdirectories (bottom-up).
+        PruneEmptyDirectories();
+
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<FolderData>> LoadFoldersAsync()
+    {
+        var folders = new List<FolderData>();
+        var root = new DirectoryInfo(ClipPath);
+
+        foreach (var markerPath in Directory.EnumerateFiles(ClipPath, FolderMarkerFileName, SearchOption.AllDirectories))
+        {
+            try
+            {
+                var fi = new FileInfo(markerPath);
+                var path = GetRelativeFolderSegments(root.FullName, fi.Directory!.FullName);
+                if (path.Count == 0) continue;
+
+                var marker = JsonSerializer.Deserialize<FolderMarker>(File.ReadAllText(markerPath), FolderJsonOptions)
+                             ?? new FolderMarker();
+
+                folders.Add(new FolderData(path)
+                {
+                    Id = marker.Id,
+                    IncludeInMenu = marker.IncludeInMenu,
+                    GroupCollapsed = marker.GroupCollapsed,
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to load folder marker: {File}", markerPath);
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<FolderData>>(folders);
+    }
+
+    public Task SaveFoldersAsync(IReadOnlyList<FolderData> folders)
+    {
+        var activeMarkerPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var folder in folders)
+        {
+            var safeSegments = SanitizeFolderPath(folder.Path);
+            if (safeSegments.Count == 0) continue;
+
+            var targetDir = Path.Combine(new[] { ClipPath }.Concat(safeSegments).ToArray());
+            Directory.CreateDirectory(targetDir);
+
+            var marker = new FolderMarker
+            {
+                Id = folder.Id,
+                IncludeInMenu = folder.IncludeInMenu,
+                GroupCollapsed = folder.GroupCollapsed,
+            };
+
+            var markerPath = Path.Combine(targetDir, FolderMarkerFileName);
+            File.WriteAllText(markerPath, JsonSerializer.Serialize(marker, FolderJsonOptions));
+            activeMarkerPaths.Add(markerPath);
+        }
+
+        // Remove orphan marker files. Empty directories are reclaimed below.
+        foreach (var marker in Directory.EnumerateFiles(ClipPath, FolderMarkerFileName, SearchOption.AllDirectories))
+        {
+            if (!activeMarkerPaths.Contains(marker))
+            {
+                File.Delete(marker);
+            }
+        }
+
+        PruneEmptyDirectories();
+
+        return Task.CompletedTask;
+    }
+
+    private void PruneEmptyDirectories()
+    {
         foreach (var dir in Directory.EnumerateDirectories(ClipPath, "*", SearchOption.AllDirectories)
             .OrderByDescending(d => d.Length))
         {
@@ -110,8 +214,6 @@ public class ClipRepository : IClipRepository
                 catch (IOException) { /* best-effort */ }
             }
         }
-
-        return Task.CompletedTask;
     }
 
     public Task<string?> PickLocationAsync()
