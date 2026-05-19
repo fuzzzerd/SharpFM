@@ -278,6 +278,110 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task PasteFileMakerClipData_GroupWithSingleScript_CreatesClipUnderFolder()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Group id=\"16\" name=\"Paste Targets\">" +
+            "<Script id=\"19\" name=\"FizzBuzz\"><Step enable=\"True\" id=\"141\" name=\"Set Variable\"/></Script>" +
+            "</Group></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        var pasted = Assert.Single(vm.FileMakerClips);
+        Assert.Equal("FizzBuzz", pasted.Clip.Name);
+        Assert.Equal(new[] { "Paste Targets" }, pasted.FolderPath);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_GroupWithMultipleScripts_CreatesAllUnderSameFolder()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Group id=\"1\" name=\"Utils\">" +
+            "<Script id=\"10\" name=\"A\"/><Script id=\"11\" name=\"B\"/><Script id=\"12\" name=\"C\"/>" +
+            "</Group></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal(3, vm.FileMakerClips.Count);
+        Assert.All(vm.FileMakerClips, c => Assert.Equal(new[] { "Utils" }, c.FolderPath));
+        Assert.Equal(new[] { "A", "B", "C" }, vm.FileMakerClips.Select(c => c.Clip.Name).OrderBy(n => n));
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_NestedGroups_ProduceNestedFolders()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Group id=\"1\" name=\"Outer\">" +
+            "<Script id=\"10\" name=\"Top\"/>" +
+            "<Group id=\"2\" name=\"Inner\"><Script id=\"20\" name=\"Deep\"/></Group>" +
+            "</Group></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal(2, vm.FileMakerClips.Count);
+        var top = vm.FileMakerClips.Single(c => c.Clip.Name == "Top");
+        Assert.Equal(new[] { "Outer" }, top.FolderPath);
+        var deep = vm.FileMakerClips.Single(c => c.Clip.Name == "Deep");
+        Assert.Equal(new[] { "Outer", "Inner" }, deep.FolderPath);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_GroupCollisionWithExistingFolder_MergesIntoIt()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Group id=\"1\" name=\"Shared\">" +
+            "<Script id=\"10\" name=\"NewOne\"/></Group></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+        var existing = new ClipViewModel(Clip.FromXml("Existing", "Mac-XMSC", "<fmxmlsnippet/>"))
+        {
+            FolderPath = new[] { "Shared" },
+        };
+        vm.FileMakerClips.Add(existing);
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal(2, vm.FileMakerClips.Count);
+        var pasted = vm.FileMakerClips.Single(c => c.Clip.Name == "NewOne");
+        Assert.Equal(new[] { "Shared" }, pasted.FolderPath);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_GroupPaste_StartsAtSelectedClipsFolder()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet type=\"FMObjectList\"><Script id=\"5\" name=\"Loose\"/>" +
+            "<Group id=\"1\" name=\"Sub\"><Script id=\"10\" name=\"Inside\"/></Group>" +
+            "</fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+        var anchor = new ClipViewModel(Clip.FromXml("Anchor", "Mac-XMSC", "<fmxmlsnippet/>"))
+        {
+            FolderPath = new[] { "Parent" },
+        };
+        vm.FileMakerClips.Add(anchor);
+        vm.SelectedClip = anchor;
+
+        await vm.PasteFileMakerClipData();
+
+        var loose = vm.FileMakerClips.Single(c => c.Clip.Name == "Loose");
+        Assert.Equal(new[] { "Parent" }, loose.FolderPath);
+        var inside = vm.FileMakerClips.Single(c => c.Clip.Name == "Inside");
+        Assert.Equal(new[] { "Parent", "Sub" }, inside.FolderPath);
+    }
+
+    [Fact]
     public void StatusMessage_NotifiesPropertyChanged()
     {
         var vm = CreateVm();

@@ -334,17 +334,30 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    // Pick a clip name that doesn't collide with anything already loaded.
-    // Returns the input when it's free, otherwise appends "(2)", "(3)", … until
-    // a free slot is found.
-    private string UniqueClipName(string desired)
+    // Pick a clip name that doesn't collide with anything already loaded in
+    // the same folder. Folder paths are compared case-insensitively, matching
+    // the tree's grouping rules.
+    private string UniqueClipName(string desired, IReadOnlyList<string> folderPath)
     {
-        if (FileMakerClips.All(c => c.Clip.Name != desired)) return desired;
+        bool Collides(string candidate) => FileMakerClips.Any(c =>
+            c.Clip.Name == candidate && FolderPathsEqual(c.FolderPath, folderPath));
+
+        if (!Collides(desired)) return desired;
         for (var n = 2; ; n++)
         {
             var candidate = $"{desired} ({n})";
-            if (FileMakerClips.All(c => c.Clip.Name != candidate)) return candidate;
+            if (!Collides(candidate)) return candidate;
         }
+    }
+
+    private static bool FolderPathsEqual(IReadOnlyList<string> a, IReadOnlyList<string> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (var i = 0; i < a.Count; i++)
+        {
+            if (!string.Equals(a[i], b[i], StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        return true;
     }
 
     public async Task PasteFileMakerClipData()
@@ -355,6 +368,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             int count = 0;
             ClipViewModel? lastAdded = null;
 
+            // Group pastes land relative to the currently selected clip's folder
+            // so the user can drop a folder into the spot they're looking at.
+            var pasteRoot = SelectedClip?.FolderPath ?? [];
+
             foreach (var format in formats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct())
             {
                 if (string.IsNullOrEmpty(format)) continue;
@@ -363,16 +380,36 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
                 if (clipData is not byte[] dataObj) continue;
 
-                var clip = Clip.FromWireBytes("new-clip", format, dataObj);
+                var rawClip = Clip.FromWireBytes("new-clip", format, dataObj);
+
+                var groupEntries = GroupPasteDecomposer.TryDecompose(rawClip.Xml);
+                if (groupEntries is { Count: > 0 })
+                {
+                    foreach (var entry in groupEntries)
+                    {
+                        var entryClip = Clip.FromXml("new-clip", format, entry.Xml);
+                        if (FileMakerClips.Any(k => k.Clip.Xml == entryClip.Xml &&
+                            FolderPathsEqual(k.FolderPath, Combine(pasteRoot, entry.FolderPath))))
+                            continue;
+
+                        var folderPath = Combine(pasteRoot, entry.FolderPath);
+                        entryClip = entryClip.Rename(UniqueClipName(entry.Name, folderPath));
+
+                        lastAdded = new ClipViewModel(entryClip) { FolderPath = folderPath };
+                        FileMakerClips.Add(lastAdded);
+                        count++;
+                    }
+                    continue;
+                }
 
                 // don't add duplicates
-                if (FileMakerClips.Any(k => k.Clip.Xml == clip.Xml)) continue;
+                if (FileMakerClips.Any(k => k.Clip.Xml == rawClip.Xml)) continue;
 
-                var sourceName = ClipTypeRegistry.For(format).TryGetSourceName(clip.Xml);
+                var sourceName = ClipTypeRegistry.For(format).TryGetSourceName(rawClip.Xml);
                 var desired = string.IsNullOrWhiteSpace(sourceName) ? "new-clip" : sourceName;
-                clip = clip.Rename(UniqueClipName(desired));
+                var singleClip = rawClip.Rename(UniqueClipName(desired, pasteRoot));
 
-                lastAdded = new ClipViewModel(clip);
+                lastAdded = new ClipViewModel(singleClip) { FolderPath = pasteRoot };
                 FileMakerClips.Add(lastAdded);
                 count++;
             }
@@ -389,6 +426,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             _logger.LogError(e, "Error pasting from FileMaker clipboard.");
             ShowStatus("Error pasting from clipboard", isError: true);
         }
+    }
+
+    private static IReadOnlyList<string> Combine(IReadOnlyList<string> root, IReadOnlyList<string> sub)
+    {
+        if (root.Count == 0) return sub;
+        if (sub.Count == 0) return root;
+        var combined = new string[root.Count + sub.Count];
+        for (var i = 0; i < root.Count; i++) combined[i] = root[i];
+        for (var i = 0; i < sub.Count; i++) combined[root.Count + i] = sub[i];
+        return combined;
     }
 
     public async Task CopySelectedToClip()
