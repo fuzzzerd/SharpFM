@@ -191,7 +191,7 @@ public class MainWindowViewModelTests
 
         var folder = Assert.Single(vm.Folders);
         Assert.Equal(new[] { "Drafts" }, folder.Path);
-        Assert.Contains(vm.RootNodes, n => n.IsFolder && n.Name == "Drafts");
+        Assert.Contains(TopLevel(vm), n => n.IsFolder && n.Name == "Drafts");
         Assert.Contains("Created folder", vm.StatusMessage);
     }
 
@@ -302,6 +302,34 @@ public class MainWindowViewModelTests
 
         Assert.Same(openClip, vm.SelectedClip);
         Assert.Equal(new[] { "Schemas" }, vm.TargetFolderPath);
+    }
+
+    [Fact]
+    public void RootNodes_AlwaysContainsSyntheticRoot_WithPathEmpty()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+
+        var root = Assert.Single(vm.RootNodes);
+        Assert.True(root.IsFolder);
+        Assert.Empty(root.Path);
+        Assert.Empty(root.Children);
+    }
+
+    [Fact]
+    public void RootNodes_RootWraps_AllTopLevelItems()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        // Root-level clip
+        vm.NewScriptCommand();
+        // Folder under root
+        vm.OpenFolderAsSelection(new[] { "Foo" });
+        vm.NewScriptCommand();
+
+        var root = Assert.Single(vm.RootNodes);
+        Assert.Contains(root.Children, c => c.IsFolder && c.Name == "Foo");
+        Assert.Contains(root.Children, c => c.IsClip && c.Name == "New Script");
     }
 
     [Fact]
@@ -647,12 +675,12 @@ public class MainWindowViewModelTests
         vm.NewScriptCommand();
         var clip = vm.SelectedClip!;
         Assert.Contains(clip, vm.FileMakerClips);
-        Assert.Contains(vm.RootNodes, n => n.IsClip && ReferenceEquals(n.Clip, clip));
+        Assert.Contains(TopLevel(vm), n => n.IsClip && ReferenceEquals(n.Clip, clip));
 
         vm.DeleteSelectedClip();
 
         Assert.DoesNotContain(clip, vm.FileMakerClips);
-        Assert.DoesNotContain(vm.RootNodes, n => n.IsClip && ReferenceEquals(n.Clip, clip));
+        Assert.DoesNotContain(TopLevel(vm), n => n.IsClip && ReferenceEquals(n.Clip, clip));
     }
 
     [Fact]
@@ -661,10 +689,18 @@ public class MainWindowViewModelTests
         var vm = CreateVm();
         vm.NewScriptCommand(); // adds a clip named "New Script"
         vm.SearchText = "zzz_nonexistent";
-        Assert.Empty(vm.RootNodes);
+        Assert.Empty(TopLevel(vm));
         vm.SearchText = "";
-        Assert.NotEmpty(vm.RootNodes);
+        Assert.NotEmpty(TopLevel(vm));
     }
+
+    /// <summary>
+    /// Children of the synthetic root node. RebuildTree always wraps the
+    /// repository's top level in a single root so tests written against
+    /// "directly in the tree" use this helper.
+    /// </summary>
+    private static System.Collections.ObjectModel.ObservableCollection<ClipTreeNodeViewModel> TopLevel(MainWindowViewModel vm) =>
+        Assert.Single(vm.RootNodes).Children;
 
     [Fact]
     public void AllPlugins_DefaultsToEmpty()

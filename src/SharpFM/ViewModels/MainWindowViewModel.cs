@@ -758,8 +758,27 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private void RebuildTree()
     {
         var nodes = ClipTreeNodeViewModel.Build(FileMakerClips, _searchText, Folders);
+        var root = ClipTreeNodeViewModel.Folder(RootNodeLabel, []);
+        foreach (var n in nodes) root.Children.Add(n);
         RootNodes.Clear();
-        foreach (var n in nodes) RootNodes.Add(n);
+        RootNodes.Add(root);
+    }
+
+    /// <summary>
+    /// Label for the synthetic root node shown at the top of the tree. Derived
+    /// from the current repository location's leaf segment so it adapts when
+    /// the user switches folders; falls back to a generic label for repos
+    /// whose location string isn't a filesystem path.
+    /// </summary>
+    private string RootNodeLabel
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_currentPath)) return "All Clips";
+            var trimmed = _currentPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var leaf = Path.GetFileName(trimmed);
+            return string.IsNullOrEmpty(leaf) ? "All Clips" : leaf;
+        }
     }
 
     private string _currentPath;
@@ -770,6 +789,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         {
             _currentPath = value;
             NotifyPropertyChanged();
+            RebuildTree();
         }
     }
 

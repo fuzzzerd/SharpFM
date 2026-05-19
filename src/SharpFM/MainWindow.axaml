@@ -159,79 +159,89 @@
 
                 <!--  Left panel: Clips navigation with Fluent 2 surface treatment  -->
                 <Border Grid.Column="0" Classes="Fluent2SurfaceElevated">
-                    <ScrollViewer>
-                        <StackPanel Margin="16" Spacing="16">
-                            <!--  Search section  -->
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="Fluent2Subtitle" Text="Search Clips" />
-                                <TextBox
-                                    Classes="Fluent2"
-                                    Text="{Binding SearchText}"
-                                    Watermark="Type to search clips..." />
-                            </StackPanel>
-
-                            <!--
-                                Clips tree section. Mirrors the repository's folder
-                                hierarchy (ClipViewModel.FolderPath). Single-tap a
-                                clip for a preview tab, double-tap for a permanent
-                                tab.
-                            -->
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="Fluent2Subtitle" Text="Available Clips" />
-                                <TreeView
-                                    x:Name="clipsTreeView"
-                                    ContextRequested="ClipsTree_ContextRequested"
-                                    DoubleTapped="ClipsTree_DoubleTapped"
-                                    ItemsSource="{Binding RootNodes}"
-                                    Tapped="ClipsTree_Tapped">
-                                    <TreeView.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Command="{Binding NewScriptCommand}" Header="New Script (whole script)" />
-                                            <MenuItem Command="{Binding NewScriptStepsCommand}" Header="New Script Steps (lines only)" />
-                                            <MenuItem Command="{Binding NewTableCommand}" Header="New Table" />
-                                            <MenuItem Command="{Binding NewFolderCommand}" Header="New Folder..." />
-                                            <Separator />
-                                            <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste from FileMaker" />
-                                            <Separator />
-                                            <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" />
-                                            <MenuItem Command="{Binding CopyAsScript}" Header="Copy as Script (whole script)" />
-                                            <MenuItem Command="{Binding CopyAsScriptSteps}" Header="Copy as Script Steps (lines only)" />
-                                            <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
-                                            <Separator />
-                                            <MenuItem Command="{Binding RenameSelectedClip}" Header="Rename..." />
-                                            <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" />
-                                        </ContextMenu>
-                                    </TreeView.ContextMenu>
-                                    <TreeView.DataTemplates>
-                                        <TreeDataTemplate DataType="vm:ClipTreeNodeViewModel" ItemsSource="{Binding Children}">
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock
-                                                    FontWeight="SemiBold"
-                                                    IsVisible="{Binding IsFolder}"
-                                                    Text="{Binding Name}" />
-                                                <StackPanel
-                                                    IsVisible="{Binding IsClip}"
-                                                    Orientation="Horizontal"
-                                                    Spacing="6">
-                                                    <TextBlock Text="{Binding Clip.Clip.Name}" />
-                                                    <TextBlock
-                                                        Classes="Fluent2Caption"
-                                                        Opacity="0.6"
-                                                        Text="{Binding Clip.ClipTypeDisplay}" />
-                                                    <TextBlock
-                                                        Classes="Fluent2Caption"
-                                                        Foreground="DarkOrange"
-                                                        IsVisible="{Binding !Clip.IsLossless}"
-                                                        Text="!"
-                                                        ToolTip.Tip="This clip's XML did not round-trip cleanly through the domain model. See the status bar for details when selected." />
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </TreeDataTemplate>
-                                    </TreeView.DataTemplates>
-                                </TreeView>
-                            </StackPanel>
+                    <!--
+                        DockPanel keeps the search/header rows docked at the top
+                        and lets the TreeView consume all remaining height so the
+                        empty space below the last node is part of the tree's hit
+                        area (root-targeted right-click).
+                    -->
+                    <DockPanel Margin="16" LastChildFill="True">
+                        <!--  Search section  -->
+                        <StackPanel
+                            Margin="0,0,0,16"
+                            DockPanel.Dock="Top"
+                            Spacing="8">
+                            <TextBlock Classes="Fluent2Subtitle" Text="Search Clips" />
+                            <TextBox
+                                Classes="Fluent2"
+                                Text="{Binding SearchText}"
+                                Watermark="Type to search clips..." />
                         </StackPanel>
-                    </ScrollViewer>
+
+                        <TextBlock
+                            Margin="0,0,0,8"
+                            Classes="Fluent2Subtitle"
+                            DockPanel.Dock="Top"
+                            Text="Available Clips" />
+
+                        <!--
+                            Clips tree section. Mirrors the repository's folder
+                            hierarchy (ClipViewModel.FolderPath). Single-tap a
+                            clip for a preview tab, double-tap for a permanent
+                            tab.
+                        -->
+                        <TreeView
+                            x:Name="clipsTreeView"
+                            ContextRequested="ClipsTree_ContextRequested"
+                            DoubleTapped="ClipsTree_DoubleTapped"
+                            ItemsSource="{Binding RootNodes}"
+                            Tapped="ClipsTree_Tapped">
+                            <TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Command="{Binding NewScriptCommand}" Header="New Script (whole script)" />
+                                    <MenuItem Command="{Binding NewScriptStepsCommand}" Header="New Script Steps (lines only)" />
+                                    <MenuItem Command="{Binding NewTableCommand}" Header="New Table" />
+                                    <MenuItem Command="{Binding NewFolderCommand}" Header="New Folder..." />
+                                    <Separator />
+                                    <MenuItem Command="{Binding PasteFileMakerClipData}" Header="Paste from FileMaker" />
+                                    <Separator />
+                                    <MenuItem Command="{Binding CopySelectedToClip}" Header="Copy to FileMaker" />
+                                    <MenuItem Command="{Binding CopyAsScript}" Header="Copy as Script (whole script)" />
+                                    <MenuItem Command="{Binding CopyAsScriptSteps}" Header="Copy as Script Steps (lines only)" />
+                                    <MenuItem Command="{Binding CopyAsClass}" Header="Copy as C# Class" />
+                                    <Separator />
+                                    <MenuItem Command="{Binding RenameSelectedClip}" Header="Rename..." />
+                                    <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                            <TreeView.DataTemplates>
+                                <TreeDataTemplate DataType="vm:ClipTreeNodeViewModel" ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock
+                                            FontWeight="SemiBold"
+                                            IsVisible="{Binding IsFolder}"
+                                            Text="{Binding Name}" />
+                                        <StackPanel
+                                            IsVisible="{Binding IsClip}"
+                                            Orientation="Horizontal"
+                                            Spacing="6">
+                                            <TextBlock Text="{Binding Clip.Clip.Name}" />
+                                            <TextBlock
+                                                Classes="Fluent2Caption"
+                                                Opacity="0.6"
+                                                Text="{Binding Clip.ClipTypeDisplay}" />
+                                            <TextBlock
+                                                Classes="Fluent2Caption"
+                                                Foreground="DarkOrange"
+                                                IsVisible="{Binding !Clip.IsLossless}"
+                                                Text="!"
+                                                ToolTip.Tip="This clip's XML did not round-trip cleanly through the domain model. See the status bar for details when selected." />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.DataTemplates>
+                        </TreeView>
+                    </DockPanel>
                 </Border>
 
                 <!--  Splitter space  -->
