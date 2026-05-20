@@ -100,6 +100,7 @@ public class TableClipStrategyTests
     [InlineData("My \"favorite\" stuff")]
     [InlineData("A & B")]
     [InlineData("<Angle>")]
+    [InlineData("O'Brien")]
     public void Table_DefaultXml_EscapesPunctuationInName(string clipName)
     {
         var seed = TableClipStrategy.Table.DefaultXml(clipName);

@@ -6,14 +6,6 @@ namespace SharpFM.Model.Scripting;
 
 public static class XmlHelpers
 {
-    public static string XmlEscape(string s)
-    {
-        return s.Replace("&", "&amp;")
-                .Replace("<", "&lt;")
-                .Replace(">", "&gt;")
-                .Replace("\"", "&quot;");
-    }
-
     public static string Unquote(string s)
     {
         if (s.Length >= 2 && s[0] == '"' && s[^1] == '"')
