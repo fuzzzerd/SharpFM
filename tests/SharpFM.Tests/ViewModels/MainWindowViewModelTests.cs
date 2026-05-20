@@ -41,14 +41,33 @@ public class MainWindowViewModelTests
     private static MainWindowViewModel CreateVm(
         MockClipboardService? clipboard = null,
         MockFolderService? folderService = null,
-        IInputPrompt? prompt = null)
+        IInputPrompt? prompt = null,
+        ILogger? logger = null)
     {
-        var logger = NullLoggerFactory.Instance.CreateLogger<MainWindowViewModel>();
         return new MainWindowViewModel(
-            logger,
+            logger ?? NullLoggerFactory.Instance.CreateLogger<MainWindowViewModel>(),
             clipboard ?? new MockClipboardService(),
             folderService ?? new MockFolderService(),
             prompt);
+    }
+
+    private sealed class CapturingLogger : ILogger
+    {
+        public List<string> Messages { get; } = new();
+
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull =>
+            NullLogger.Instance.BeginScope(state);
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Messages.Add(formatter(state, exception));
+        }
     }
 
     private sealed class FakeInputPrompt(params string?[]? answers) : IInputPrompt
@@ -483,6 +502,56 @@ public class MainWindowViewModelTests
         await vm.PasteFileMakerClipData();
 
         Assert.Equal("OrderTotal (2)", vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_UnknownFormat_PastesAsOpaqueAndWarns()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMZZ"] = BuildClipBytes(
+            "<fmxmlsnippet><Future name=\"Whatever\"/></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        var pasted = Assert.Single(vm.FileMakerClips);
+        Assert.Equal("Mac-XMZZ", pasted.ClipType);
+        Assert.Contains("Pasted unknown format Mac-XMZZ", vm.StatusMessage);
+        Assert.Contains("raw XML", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_UnknownFormat_LogsFormatId()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMZZ"] = BuildClipBytes(
+            "<fmxmlsnippet><Future name=\"Whatever\"/></fmxmlsnippet>");
+        var capturing = new CapturingLogger();
+        var vm = CreateVm(clipboard, logger: capturing);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Contains(capturing.Messages, m => m.Contains("Mac-XMZZ"));
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_RecognizedAlongsideUnknown_PastesRecognizedOnly()
+    {
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
+            "<fmxmlsnippet><Script name=\"Known\"/></fmxmlsnippet>");
+        clipboard.ClipboardData["Mac-XMZZ"] = BuildClipBytes(
+            "<fmxmlsnippet><Future name=\"Unknown\"/></fmxmlsnippet>");
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+
+        await vm.PasteFileMakerClipData();
+
+        var pasted = Assert.Single(vm.FileMakerClips);
+        Assert.Equal("Mac-XMSC", pasted.ClipType);
+        Assert.DoesNotContain("unknown", vm.StatusMessage, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

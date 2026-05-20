@@ -421,52 +421,40 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             // that's a selected clip's folder or an explicitly tapped empty one.
             var pasteRoot = TargetFolderPath;
 
-            foreach (var format in formats.Where(f => f.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)).Distinct())
+            var recognized = new List<string>();
+            var unrecognized = new List<string>();
+            foreach (var format in formats.Distinct())
             {
                 if (string.IsNullOrEmpty(format)) continue;
+                if (!format.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)) continue;
+                (ClipTypeRegistry.IsRegistered(format) ? recognized : unrecognized).Add(format);
+            }
 
-                object? clipData = await _clipboard.GetDataAsync(format);
+            foreach (var format in recognized)
+            {
+                var (added, last) = await PasteOneFormat(format, pasteRoot);
+                lastAdded = last ?? lastAdded;
+                count += added;
+            }
 
-                if (clipData is not byte[] dataObj) continue;
-
-                var rawClip = Clip.FromWireBytes("new-clip", format, dataObj);
-
-                var decomposed = GroupPasteDecomposer.TryDecompose(rawClip.Xml);
-                if (decomposed is { Entries.Count: > 0 })
+            // Fall back to opaque only when no recognized format produced a
+            // paste — same payload often arrives in both a known and a
+            // not-yet-registered encoding, and the known one already covered it.
+            string? unknownFormatPasted = null;
+            if (count == 0)
+            {
+                foreach (var format in unrecognized)
                 {
-                    foreach (var folder in decomposed.Folders)
-                    {
-                        var fullPath = Combine(pasteRoot, folder.Path);
-                        UpsertFolder(folder with { Path = fullPath });
-                    }
-
-                    foreach (var entry in decomposed.Entries)
-                    {
-                        var entryClip = Clip.FromXml("new-clip", format, entry.Xml);
-                        if (FileMakerClips.Any(k => k.Clip.Xml == entryClip.Xml &&
-                            FolderPathsEqual(k.FolderPath, Combine(pasteRoot, entry.FolderPath))))
-                            continue;
-
-                        var folderPath = Combine(pasteRoot, entry.FolderPath);
-                        entryClip = entryClip.Rename(UniqueClipName(entry.Name, folderPath));
-
-                        lastAdded = new ClipViewModel(entryClip) { FolderPath = folderPath };
-                        FileMakerClips.Add(lastAdded);
-                        count++;
-                    }
-                    continue;
+                    var (added, last) = await PasteOneFormat(format, pasteRoot);
+                    if (added == 0) continue;
+                    lastAdded = last ?? lastAdded;
+                    count += added;
+                    unknownFormatPasted = format;
+                    _logger.LogInformation(
+                        "Pasted unknown format {Format}; will round-trip as raw XML.",
+                        format);
+                    break;
                 }
-
-                // don't add duplicates
-                if (FileMakerClips.Any(k => k.Clip.Xml == rawClip.Xml)) continue;
-
-                var sourceName = ClipTypeRegistry.For(format).TryGetSourceName(rawClip.Xml);
-                var desired = string.IsNullOrWhiteSpace(sourceName) ? "new-clip" : sourceName;
-                var singleClip = rawClip.Rename(UniqueClipName(desired, pasteRoot));
-
-                lastAdded = new ClipViewModel(singleClip) { FolderPath = pasteRoot };
-                FileMakerClips.Add(lastAdded);
-                count++;
             }
 
             if (lastAdded is not null)
@@ -474,13 +462,67 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 SelectedClip = lastAdded;
             }
 
-            ShowStatus(count > 0 ? $"Pasted {count} clip(s) from FileMaker" : "No FileMaker clips found on clipboard");
+            if (unknownFormatPasted is not null)
+            {
+                ShowStatus($"Pasted unknown format {unknownFormatPasted}; will round-trip as raw XML.");
+            }
+            else
+            {
+                ShowStatus(count > 0 ? $"Pasted {count} clip(s) from FileMaker" : "No FileMaker clips found on clipboard");
+            }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Error pasting from FileMaker clipboard.");
             ShowStatus("Error pasting from clipboard", isError: true);
         }
+    }
+
+    private async Task<(int added, ClipViewModel? last)> PasteOneFormat(string format, IReadOnlyList<string> pasteRoot)
+    {
+        object? clipData = await _clipboard.GetDataAsync(format);
+        if (clipData is not byte[] dataObj) return (0, null);
+
+        var rawClip = Clip.FromWireBytes("new-clip", format, dataObj);
+        int added = 0;
+        ClipViewModel? last = null;
+
+        var decomposed = GroupPasteDecomposer.TryDecompose(rawClip.Xml);
+        if (decomposed is { Entries.Count: > 0 })
+        {
+            foreach (var folder in decomposed.Folders)
+            {
+                var fullPath = Combine(pasteRoot, folder.Path);
+                UpsertFolder(folder with { Path = fullPath });
+            }
+
+            foreach (var entry in decomposed.Entries)
+            {
+                var entryClip = Clip.FromXml("new-clip", format, entry.Xml);
+                if (FileMakerClips.Any(k => k.Clip.Xml == entryClip.Xml &&
+                    FolderPathsEqual(k.FolderPath, Combine(pasteRoot, entry.FolderPath))))
+                    continue;
+
+                var folderPath = Combine(pasteRoot, entry.FolderPath);
+                entryClip = entryClip.Rename(UniqueClipName(entry.Name, folderPath));
+
+                last = new ClipViewModel(entryClip) { FolderPath = folderPath };
+                FileMakerClips.Add(last);
+                added++;
+            }
+            return (added, last);
+        }
+
+        // don't add duplicates
+        if (FileMakerClips.Any(k => k.Clip.Xml == rawClip.Xml)) return (0, null);
+
+        var sourceName = ClipTypeRegistry.For(format).TryGetSourceName(rawClip.Xml);
+        var desired = string.IsNullOrWhiteSpace(sourceName) ? "new-clip" : sourceName;
+        var singleClip = rawClip.Rename(UniqueClipName(desired, pasteRoot));
+
+        last = new ClipViewModel(singleClip) { FolderPath = pasteRoot };
+        FileMakerClips.Add(last);
+        return (1, last);
     }
 
     private static IReadOnlyList<string> Combine(IReadOnlyList<string> root, IReadOnlyList<string> sub)
