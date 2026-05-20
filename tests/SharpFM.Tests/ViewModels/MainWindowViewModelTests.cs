@@ -42,13 +42,38 @@ public class MainWindowViewModelTests
         MockClipboardService? clipboard = null,
         MockFolderService? folderService = null,
         IInputPrompt? prompt = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IClipCollisionPrompt? collisionPrompt = null)
     {
         return new MainWindowViewModel(
             logger ?? NullLoggerFactory.Instance.CreateLogger<MainWindowViewModel>(),
             clipboard ?? new MockClipboardService(),
             folderService ?? new MockFolderService(),
-            prompt);
+            prompt,
+            collisionPrompt);
+    }
+
+    private sealed class FakeCollisionPrompt : IClipCollisionPrompt
+    {
+        private readonly Queue<ClipCollisionDecision> _scripted;
+
+        public FakeCollisionPrompt(params ClipCollisionDecision[] scripted)
+        {
+            _scripted = new Queue<ClipCollisionDecision>(scripted);
+        }
+
+        public int CallCount { get; private set; }
+        public List<string> SeenNames { get; } = new();
+
+        public Task<ClipCollisionDecision> PromptAsync(string clipName, IReadOnlyList<string> folderPath)
+        {
+            CallCount++;
+            SeenNames.Add(clipName);
+            var decision = _scripted.Count > 0
+                ? _scripted.Dequeue()
+                : new ClipCollisionDecision(ClipCollisionChoice.Cancel, ApplyToAll: false);
+            return Task.FromResult(decision);
+        }
     }
 
     private sealed class CapturingLogger : ILogger
@@ -523,13 +548,141 @@ public class MainWindowViewModelTests
         var clipboard = new MockClipboardService();
         clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(
             "<fmxmlsnippet><Script name=\"OrderTotal\"></Script></fmxmlsnippet>");
-        var vm = CreateVm(clipboard);
+        var prompt = new FakeCollisionPrompt(
+            new ClipCollisionDecision(ClipCollisionChoice.KeepBoth, ApplyToAll: false));
+        var vm = CreateVm(clipboard, collisionPrompt: prompt);
         vm.FileMakerClips.Clear();
         vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("OrderTotal", "Mac-XMSC", "<fmxmlsnippet/>")));
 
         await vm.PasteFileMakerClipData();
 
         Assert.Equal("OrderTotal (2)", vm.SelectedClip!.Clip.Name);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_SameNameSameContent_SkipsDuplicate()
+    {
+        var xml = "<fmxmlsnippet><Script name=\"FizzBuzz\">body</Script></fmxmlsnippet>";
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(xml);
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("FizzBuzz", "Mac-XMSC", xml)));
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Single(vm.FileMakerClips);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_DifferentNameSameContent_AddsVariant()
+    {
+        var xml = "<fmxmlsnippet><Script name=\"FizzBuzz\">body</Script></fmxmlsnippet>";
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(xml);
+        var vm = CreateVm(clipboard);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("FizzBuzz_v2", "Mac-XMSC", xml)));
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal(2, vm.FileMakerClips.Count);
+        Assert.Contains(vm.FileMakerClips, c => c.Clip.Name == "FizzBuzz");
+        Assert.Contains(vm.FileMakerClips, c => c.Clip.Name == "FizzBuzz_v2");
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_SameNameDifferentContent_Replace_OverwritesExisting()
+    {
+        var existingXml = "<fmxmlsnippet><Script name=\"FizzBuzz\">old</Script></fmxmlsnippet>";
+        var pasteXml = "<fmxmlsnippet><Script name=\"FizzBuzz\">new</Script></fmxmlsnippet>";
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(pasteXml);
+        var prompt = new FakeCollisionPrompt(
+            new ClipCollisionDecision(ClipCollisionChoice.Replace, ApplyToAll: false));
+        var vm = CreateVm(clipboard, collisionPrompt: prompt);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("FizzBuzz", "Mac-XMSC", existingXml)));
+
+        await vm.PasteFileMakerClipData();
+
+        var only = Assert.Single(vm.FileMakerClips);
+        Assert.Equal("FizzBuzz", only.Clip.Name);
+        Assert.Contains("new", only.Clip.Xml);
+        Assert.Equal(1, prompt.CallCount);
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_SameNameDifferentContent_KeepBoth_AddsWithSuffix()
+    {
+        var existingXml = "<fmxmlsnippet><Script name=\"FizzBuzz\">old</Script></fmxmlsnippet>";
+        var pasteXml = "<fmxmlsnippet><Script name=\"FizzBuzz\">new</Script></fmxmlsnippet>";
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(pasteXml);
+        var prompt = new FakeCollisionPrompt(
+            new ClipCollisionDecision(ClipCollisionChoice.KeepBoth, ApplyToAll: false));
+        var vm = CreateVm(clipboard, collisionPrompt: prompt);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("FizzBuzz", "Mac-XMSC", existingXml)));
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal(2, vm.FileMakerClips.Count);
+        Assert.Contains(vm.FileMakerClips, c => c.Clip.Name == "FizzBuzz" && c.Clip.Xml.Contains("old"));
+        Assert.Contains(vm.FileMakerClips, c => c.Clip.Name == "FizzBuzz (2)" && c.Clip.Xml.Contains("new"));
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_SameNameDifferentContent_Cancel_AbortsBatch()
+    {
+        var existingXml = "<fmxmlsnippet><Script name=\"FizzBuzz\">old</Script></fmxmlsnippet>";
+        var groupXml =
+            "<fmxmlsnippet type=\"FMObjectList\"><Group id=\"1\" name=\"Drop\">" +
+                "<Script id=\"1\" name=\"FizzBuzz\">first-new</Script>" +
+                "<Script id=\"2\" name=\"NewClip\">second</Script>" +
+            "</Group></fmxmlsnippet>";
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(groupXml);
+        var prompt = new FakeCollisionPrompt(
+            new ClipCollisionDecision(ClipCollisionChoice.Cancel, ApplyToAll: false));
+        var vm = CreateVm(clipboard, collisionPrompt: prompt);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("FizzBuzz", "Mac-XMSC", existingXml))
+            { FolderPath = new[] { "Drop" } });
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Single(vm.FileMakerClips);
+        Assert.Contains("old", vm.FileMakerClips[0].Clip.Xml);
+        Assert.DoesNotContain(vm.FileMakerClips, c => c.Clip.Name == "NewClip");
+    }
+
+    [Fact]
+    public async Task PasteFileMakerClipData_BatchApplyToAll_DoesNotRepromptForSubsequentCollisions()
+    {
+        var existingA = "<fmxmlsnippet><Script name=\"A\">old-a</Script></fmxmlsnippet>";
+        var existingB = "<fmxmlsnippet><Script name=\"B\">old-b</Script></fmxmlsnippet>";
+        var groupXml =
+            "<fmxmlsnippet type=\"FMObjectList\"><Group id=\"1\" name=\"Drop\">" +
+                "<Script id=\"1\" name=\"A\">new-a</Script>" +
+                "<Script id=\"2\" name=\"B\">new-b</Script>" +
+            "</Group></fmxmlsnippet>";
+        var clipboard = new MockClipboardService();
+        clipboard.ClipboardData["Mac-XMSC"] = BuildClipBytes(groupXml);
+        var prompt = new FakeCollisionPrompt(
+            new ClipCollisionDecision(ClipCollisionChoice.KeepBoth, ApplyToAll: true));
+        var vm = CreateVm(clipboard, collisionPrompt: prompt);
+        vm.FileMakerClips.Clear();
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("A", "Mac-XMSC", existingA))
+            { FolderPath = new[] { "Drop" } });
+        vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("B", "Mac-XMSC", existingB))
+            { FolderPath = new[] { "Drop" } });
+
+        await vm.PasteFileMakerClipData();
+
+        Assert.Equal(1, prompt.CallCount);
+        Assert.Contains(vm.FileMakerClips, c => c.Clip.Name == "A (2)");
+        Assert.Contains(vm.FileMakerClips, c => c.Clip.Name == "B (2)");
     }
 
     [Fact]

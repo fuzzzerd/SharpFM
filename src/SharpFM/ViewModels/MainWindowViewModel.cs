@@ -28,6 +28,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     private readonly IClipboardService _clipboard;
     private readonly IFolderService _folderService;
     private readonly IInputPrompt _prompt;
+    private readonly IClipCollisionPrompt _collisionPrompt;
     private readonly DispatcherTimer _statusTimer;
     private IClipRepository _repository;
     private OpenTabViewModel? _trackedActiveTab;
@@ -83,12 +84,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         ILogger logger,
         IClipboardService clipboard,
         IFolderService folderService,
-        IInputPrompt? prompt = null)
+        IInputPrompt? prompt = null,
+        IClipCollisionPrompt? collisionPrompt = null)
     {
         _logger = logger;
         _clipboard = clipboard;
         _folderService = folderService;
         _prompt = prompt ?? new NullInputPrompt();
+        _collisionPrompt = collisionPrompt ?? new NullClipCollisionPrompt();
 
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _statusTimer.Tick += (_, _) =>
@@ -448,22 +451,25 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 (ClipTypeRegistry.IsRegistered(format) ? recognized : unrecognized).Add(format);
             }
 
+            var batch = new PasteBatchState();
+
             foreach (var format in recognized)
             {
-                var (added, last) = await PasteOneFormat(format, pasteRoot);
+                var (added, last) = await PasteOneFormat(format, pasteRoot, batch);
                 lastAdded = last ?? lastAdded;
                 count += added;
+                if (batch.Cancelled) break;
             }
 
             // Fall back to opaque only when no recognized format produced a
             // paste — same payload often arrives in both a known and a
             // not-yet-registered encoding, and the known one already covered it.
             string? unknownFormatPasted = null;
-            if (count == 0)
+            if (count == 0 && !batch.Cancelled)
             {
                 foreach (var format in unrecognized)
                 {
-                    var (added, last) = await PasteOneFormat(format, pasteRoot);
+                    var (added, last) = await PasteOneFormat(format, pasteRoot, batch);
                     if (added == 0) continue;
                     lastAdded = last ?? lastAdded;
                     count += added;
@@ -484,6 +490,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             {
                 ShowStatus($"Pasted unknown format {unknownFormatPasted}; will round-trip as raw XML.");
             }
+            else if (batch.Cancelled)
+            {
+                ShowStatus($"Paste cancelled at name collision; kept {count} clip(s)", isError: true);
+            }
             else
             {
                 ShowStatus(count > 0 ? $"Pasted {count} clip(s) from FileMaker" : "No FileMaker clips found on clipboard");
@@ -496,7 +506,10 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private async Task<(int added, ClipViewModel? last)> PasteOneFormat(string format, IReadOnlyList<string> pasteRoot)
+    private async Task<(int added, ClipViewModel? last)> PasteOneFormat(
+        string format,
+        IReadOnlyList<string> pasteRoot,
+        PasteBatchState batch)
     {
         object? clipData = await _clipboard.GetDataAsync(format);
         if (clipData is not byte[] dataObj) return (0, null);
@@ -516,33 +529,64 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
             foreach (var entry in decomposed.Entries)
             {
-                var entryClip = Clip.FromXml("new-clip", format, entry.Xml);
-                if (FileMakerClips.Any(k => k.Clip.Xml == entryClip.Xml &&
-                    FolderPathsEqual(k.FolderPath, Combine(pasteRoot, entry.FolderPath))))
-                {
-                    continue;
-                }
-
+                if (batch.Cancelled) break;
                 var folderPath = Combine(pasteRoot, entry.FolderPath);
-                entryClip = entryClip.Rename(UniqueClipName(entry.Name, folderPath));
-
-                last = new ClipViewModel(entryClip) { FolderPath = folderPath };
-                FileMakerClips.Add(last);
+                var entryClip = Clip.FromXml(entry.Name, format, entry.Xml);
+                var result = await TryPasteEntry(entry.Name, folderPath, entryClip, batch);
+                if (result is null) continue;
+                last = result;
                 added++;
             }
             return (added, last);
         }
 
-        // don't add duplicates
-        if (FileMakerClips.Any(k => k.Clip.Xml == rawClip.Xml)) return (0, null);
-
         var sourceName = ClipTypeRegistry.For(format).TryGetSourceName(rawClip.Xml);
         var desired = string.IsNullOrWhiteSpace(sourceName) ? "new-clip" : sourceName;
-        var singleClip = rawClip.Rename(UniqueClipName(desired, pasteRoot));
+        var single = await TryPasteEntry(desired, pasteRoot, rawClip, batch);
+        return single is null ? (0, null) : (1, single);
+    }
 
-        last = new ClipViewModel(singleClip) { FolderPath = pasteRoot };
-        FileMakerClips.Add(last);
-        return (1, last);
+    private async Task<ClipViewModel?> TryPasteEntry(
+        string name,
+        IReadOnlyList<string> folderPath,
+        Clip clip,
+        PasteBatchState batch)
+    {
+        var existing = FileMakerClips.FirstOrDefault(c =>
+            c.Clip.Name == name && FolderPathsEqual(c.FolderPath, folderPath));
+
+        if (existing is not null)
+        {
+            if (existing.Clip.Xml == clip.Xml) return null;
+
+            var decision = batch.StickyDecision
+                ?? await _collisionPrompt.PromptAsync(name, folderPath);
+            if (decision.ApplyToAll) batch.StickyDecision = decision;
+
+            switch (decision.Choice)
+            {
+                case ClipCollisionChoice.Cancel:
+                    batch.Cancelled = true;
+                    return null;
+                case ClipCollisionChoice.Replace:
+                    existing.Replace(clip.Xml);
+                    return existing;
+                case ClipCollisionChoice.KeepBoth:
+                    // fall through to the rename-and-add path below
+                    break;
+            }
+        }
+
+        var renamed = clip.Rename(UniqueClipName(name, folderPath));
+        var added = new ClipViewModel(renamed) { FolderPath = folderPath };
+        FileMakerClips.Add(added);
+        return added;
+    }
+
+    private sealed class PasteBatchState
+    {
+        public ClipCollisionDecision? StickyDecision { get; set; }
+        public bool Cancelled { get; set; }
     }
 
     private static IReadOnlyList<string> Combine(IReadOnlyList<string> root, IReadOnlyList<string> sub)

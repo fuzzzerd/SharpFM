@@ -1,0 +1,57 @@
+<Window
+    x:Class="SharpFM.Dialogs.ClipCollisionDialog"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Clip already exists"
+    Width="460"
+    SizeToContent="Height"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="16" RowDefinitions="Auto,Auto,Auto,Auto">
+
+        <TextBlock
+            x:Name="messageLabel"
+            Grid.Row="0"
+            Margin="0,0,0,8"
+            Classes="Fluent2Body"
+            Text=""
+            TextWrapping="Wrap" />
+
+        <TextBlock
+            x:Name="locationLabel"
+            Grid.Row="1"
+            Margin="0,0,0,12"
+            Classes="Fluent2Body"
+            FontStyle="Italic"
+            Text=""
+            TextWrapping="Wrap" />
+
+        <CheckBox
+            x:Name="applyToAllBox"
+            Grid.Row="2"
+            Margin="0,0,0,12"
+            Content="Apply to all remaining clips in this paste" />
+
+        <StackPanel
+            Grid.Row="3"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button
+                x:Name="cancelButton"
+                Classes="Fluent2"
+                Content="Cancel" />
+            <Button
+                x:Name="keepBothButton"
+                Classes="Fluent2"
+                Content="Keep both" />
+            <Button
+                x:Name="replaceButton"
+                Classes="Fluent2Primary"
+                Content="Replace"
+                IsDefault="True" />
+        </StackPanel>
+
+    </Grid>
+
+</Window>

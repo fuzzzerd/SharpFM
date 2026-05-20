@@ -43,11 +43,13 @@ public partial class App : Application
             Services = services.BuildServiceProvider();
 
             var inputPrompt = new WindowInputPrompt(desktop.MainWindow);
+            var collisionPrompt = new WindowClipCollisionPrompt(desktop.MainWindow);
             var viewModel = new MainWindowViewModel(
                 logger,
                 Services.GetRequiredService<IClipboardService>(),
                 Services.GetRequiredService<IFolderService>(),
-                inputPrompt);
+                inputPrompt,
+                collisionPrompt);
 
             // Load plugins
             var pluginHost = new PluginHost(viewModel, loggerFactory, inputPrompt);
