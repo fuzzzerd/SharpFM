@@ -501,7 +501,9 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 var entryClip = Clip.FromXml("new-clip", format, entry.Xml);
                 if (FileMakerClips.Any(k => k.Clip.Xml == entryClip.Xml &&
                     FolderPathsEqual(k.FolderPath, Combine(pasteRoot, entry.FolderPath))))
+                {
                     continue;
+                }
 
                 var folderPath = Combine(pasteRoot, entry.FolderPath);
                 entryClip = entryClip.Rename(UniqueClipName(entry.Name, folderPath));
