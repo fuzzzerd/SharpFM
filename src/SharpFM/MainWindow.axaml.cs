@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using AvaloniaEdit;
 using AvaloniaEdit.Editing;
 using SharpFM.Diagnostics;
+using SharpFM.Dialogs;
 using SharpFM.Plugin;
 using SharpFM.Plugin.UI;
 using SharpFM.PluginManager;
@@ -37,6 +38,11 @@ public partial class MainWindow : Window
         var rawClipboard = this.FindControl<MenuItem>("rawClipboardMenuItem");
         if (rawClipboard != null)
             rawClipboard.Click += (_, _) => new RawClipboardWindow().Show(this);
+
+        // "About SharpFM..." menu item
+        var about = this.FindControl<MenuItem>("aboutMenuItem");
+        if (about != null)
+            about.Click += (_, _) => ShowAbout();
 
         // Tunnel-phase Ctrl+V — see OnPreviewKeyDown.
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
@@ -200,6 +206,31 @@ public partial class MainWindow : Window
         var window = new PluginManagerWindow();
         window.Configure(_pluginService, _pluginHost, vm, _pluginConfigService);
         window.ShowDialog(this);
+    }
+
+    // Shared across About-dialog opens so we don't churn sockets. The dialog
+    // can't open often enough for the static lifetime to matter; this just
+    // keeps GitHub's per-IP rate-limit accounting consistent across opens.
+    private static readonly System.Net.Http.HttpClient AboutHttpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(10),
+    };
+
+    private void ShowAbout()
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        var hostChecker = new HostUpdateCheck(AboutHttpClient, MainWindowViewModel.Version);
+        var aboutVm = new AboutViewModel(
+            "SharpFM",
+            MainWindowViewModel.Version,
+            hostChecker,
+            new Uri("https://github.com/fuzzzerd/SharpFM"),
+            vm.AllPlugins);
+
+        var dialog = new AboutDialog();
+        dialog.Configure(aboutVm);
+        dialog.ShowDialog(this);
     }
 
     // --- Tree / tab interaction ---

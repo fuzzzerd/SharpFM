@@ -1,0 +1,102 @@
+﻿<Window
+    x:Class="SharpFM.Dialogs.AboutDialog"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SharpFM.ViewModels"
+    Title="About SharpFM"
+    Width="480"
+    x:DataType="vm:AboutViewModel"
+    CanResize="False"
+    SizeToContent="Height"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
+
+        <TextBlock
+            Grid.Row="0"
+            Classes="Fluent2Title"
+            Text="{Binding Host.DisplayName}" />
+
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,0,0,12"
+            Classes="Fluent2Body"
+            Opacity="0.7"
+            Text="{Binding Host.Version}" />
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="0,0,0,4"
+            Orientation="Horizontal"
+            Spacing="8">
+            <Button
+                x:Name="hostCheckButton"
+                Classes="Fluent2"
+                Content="Check for updates" />
+            <Button
+                x:Name="hostOpenUpdateButton"
+                Classes="Fluent2"
+                Content="View release"
+                IsVisible="False" />
+            <Button
+                x:Name="hostHomepageButton"
+                Classes="Fluent2"
+                Content="GitHub" />
+        </StackPanel>
+
+        <TextBlock
+            Grid.Row="3"
+            Margin="0,0,0,12"
+            Classes="Fluent2Caption"
+            IsVisible="{Binding Host.Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+            Text="{Binding Host.Status}" />
+
+        <TextBlock
+            Grid.Row="4"
+            Margin="0,8,0,8"
+            Classes="Fluent2Subtitle"
+            IsVisible="{Binding Plugins.Count}"
+            Text="Loaded plugins" />
+
+        <ItemsControl Grid.Row="5" ItemsSource="{Binding Plugins}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AboutEntryViewModel">
+                    <Grid Margin="0,4" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock
+                                Classes="Fluent2Body"
+                                FontWeight="SemiBold"
+                                Text="{Binding DisplayName}" />
+                            <TextBlock
+                                Classes="Fluent2Caption"
+                                Opacity="0.7"
+                                Text="{Binding Version}" />
+                            <TextBlock
+                                Classes="Fluent2Caption"
+                                IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                Opacity="0.7"
+                                Text="{Binding Status}" />
+                        </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            Classes="Fluent2"
+                            Click="OnPluginCheckClick"
+                            Content="Check for updates"
+                            IsVisible="{Binding CanCheckForUpdates}"
+                            Tag="{Binding}" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button
+            x:Name="closeButton"
+            Grid.Row="6"
+            Margin="0,16,0,0"
+            HorizontalAlignment="Right"
+            Classes="Fluent2Primary"
+            Content="Close" />
+
+    </Grid>
+
+</Window>
