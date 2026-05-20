@@ -422,6 +422,34 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task SaveClips_SanitizationDropsSegment_StatusIncludesSanitizedSuffix()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        var clip = Clip.FromXml("Test", "Mac-XMSC", "<x/>");
+        vm.FileMakerClips.Add(new ClipViewModel(clip) { FolderPath = new[] { "..", "Real" } });
+
+        await vm.SaveClipsStorageAsync();
+
+        Assert.Contains("Saved", vm.StatusMessage);
+        Assert.Contains("sanitized 1 folder path", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task SaveClips_NoSanitization_StatusOmitsSuffix()
+    {
+        var vm = CreateVm();
+        ResetRepoState(vm);
+        var clip = Clip.FromXml("Test", "Mac-XMSC", "<x/>");
+        vm.FileMakerClips.Add(new ClipViewModel(clip));
+
+        await vm.SaveClipsStorageAsync();
+
+        Assert.Contains("Saved", vm.StatusMessage);
+        Assert.DoesNotContain("sanitized", vm.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task PasteFileMakerClipData_NoFormats_ShowsStatus()
     {
         var clipboard = new MockClipboardService();

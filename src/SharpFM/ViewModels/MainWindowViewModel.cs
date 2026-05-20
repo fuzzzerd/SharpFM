@@ -230,14 +230,32 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
                 })
                 .ToList();
 
-            // Folders persist first so the orphan sweep in SaveClipsAsync
-            // sees up-to-date marker files when reclaiming empty directories.
-            await _repository.SaveFoldersAsync(Folders.ToList());
-            await _repository.SaveClipsAsync(clipData);
+            var sanitized = 0;
+            void OnSanitized(object? _, FolderPathSanitizedEventArgs __) => sanitized++;
+            var fileRepo = _repository as ClipRepository;
+            if (fileRepo is not null) fileRepo.FolderPathSanitized += OnSanitized;
+
+            try
+            {
+                // Folders persist first so the orphan sweep in SaveClipsAsync
+                // sees up-to-date marker files when reclaiming empty directories.
+                await _repository.SaveFoldersAsync(Folders.ToList());
+                await _repository.SaveClipsAsync(clipData);
+            }
+            finally
+            {
+                if (fileRepo is not null) fileRepo.FolderPathSanitized -= OnSanitized;
+            }
 
             foreach (var c in FileMakerClips) c.MarkSaved();
 
-            ShowStatus($"Saved {clipData.Count} clip(s) to {_repository.CurrentLocation}");
+            var hadSanitization = sanitized > 0;
+            var suffix = hadSanitization
+                ? $"; sanitized {sanitized} folder path(s) — see log for dropped segments"
+                : "";
+            ShowStatus(
+                $"Saved {clipData.Count} clip(s) to {_repository.CurrentLocation}{suffix}",
+                isError: hadSanitization);
         }
         catch (Exception e)
         {
