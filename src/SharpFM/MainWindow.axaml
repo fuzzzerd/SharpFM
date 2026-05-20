@@ -76,6 +76,9 @@
                 <!--  Plugin menu items are added dynamically in code-behind  -->
                 <MenuItem x:Name="managePluginsMenuItem" Header="Manage Plugins..." />
             </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem x:Name="aboutMenuItem" Header="About SharpFM..." />
+            </MenuItem>
         </Menu>
 
         <!--  Status bar  -->
