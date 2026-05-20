@@ -189,7 +189,7 @@ public class FmField : INotifyPropertyChanged
         // Calculation
         if (!string.IsNullOrEmpty(Calculation))
         {
-            var calcEl = XElement.Parse($"<Calculation><![CDATA[{Calculation}]]></Calculation>");
+            var calcEl = new XElement("Calculation", new XCData(Calculation));
             if (AlwaysEvaluate)
                 calcEl.Add(new XAttribute("alwaysEvaluate", "True"));
             if (!string.IsNullOrEmpty(CalculationContext))
@@ -222,10 +222,10 @@ public class FmField : INotifyPropertyChanged
                         new XAttribute("nextSerialNumber", AutoEnterValue ?? "1")));
                     break;
                 case AutoEnterType.ConstantData:
-                    autoEl.Add(XElement.Parse($"<ConstantData><![CDATA[{AutoEnterValue ?? ""}]]></ConstantData>"));
+                    autoEl.Add(new XElement("ConstantData", new XCData(AutoEnterValue ?? "")));
                     break;
                 case AutoEnterType.Calculation:
-                    autoEl.Add(XElement.Parse($"<Calculation><![CDATA[{AutoEnterValue ?? ""}]]></Calculation>"));
+                    autoEl.Add(new XElement("Calculation", new XCData(AutoEnterValue ?? "")));
                     break;
             }
 
@@ -249,16 +249,16 @@ public class FmField : INotifyPropertyChanged
             {
                 var rangeEl = new XElement("Range");
                 if (RangeMin != null)
-                    rangeEl.Add(XElement.Parse($"<MinimumValue><![CDATA[{RangeMin}]]></MinimumValue>"));
+                    rangeEl.Add(new XElement("MinimumValue", new XCData(RangeMin)));
                 if (RangeMax != null)
-                    rangeEl.Add(XElement.Parse($"<MaximumValue><![CDATA[{RangeMax}]]></MaximumValue>"));
+                    rangeEl.Add(new XElement("MaximumValue", new XCData(RangeMax)));
                 valEl.Add(rangeEl);
             }
 
             if (ValidationCalculation != null)
-                valEl.Add(XElement.Parse($"<StrictValidation><![CDATA[{ValidationCalculation}]]></StrictValidation>"));
+                valEl.Add(new XElement("StrictValidation", new XCData(ValidationCalculation)));
             if (ErrorMessage != null)
-                valEl.Add(XElement.Parse($"<ErrorMessage><![CDATA[{ErrorMessage}]]></ErrorMessage>"));
+                valEl.Add(new XElement("ErrorMessage", new XCData(ErrorMessage)));
 
             el.Add(valEl);
         }

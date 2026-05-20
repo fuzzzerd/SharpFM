@@ -55,4 +55,17 @@ public class CalculationTests
 
         Assert.Equal(expr, roundTripped.Value);
     }
+
+    [Theory]
+    [InlineData("a < b & c > d")]
+    [InlineData("Quote(\"hello\")")]
+    [InlineData("If ( name = \"O'Brien\" ; 1 ; 0 )")]
+    public void RoundTrip_PreservesXmlMetacharacters(string expr)
+    {
+        var emitted = new Calculation(expr).ToXml();
+        var serialized = emitted.ToString();
+        var reparsed = Calculation.FromXml(XElement.Parse(serialized));
+
+        Assert.Equal(expr, reparsed.Text);
+    }
 }

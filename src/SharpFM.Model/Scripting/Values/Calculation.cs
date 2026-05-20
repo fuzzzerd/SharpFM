@@ -16,7 +16,7 @@ public sealed record Calculation(string Text)
     /// common case in FileMaker script XML.
     /// </summary>
     public XElement ToXml(string elementName = "Calculation") =>
-        XElement.Parse($"<{elementName}><![CDATA[{Text}]]></{elementName}>");
+        new(elementName, new XCData(Text));
 
     /// <summary>
     /// Parse the text body of the element (CDATA is transparent to

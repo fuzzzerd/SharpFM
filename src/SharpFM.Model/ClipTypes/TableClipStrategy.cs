@@ -5,7 +5,6 @@ using System.Xml;
 using System.Xml.Linq;
 using SharpFM.Model.Parsing;
 using SharpFM.Model.Schema;
-using SharpFM.Model.Scripting;
 
 namespace SharpFM.Model.ClipTypes;
 
@@ -65,10 +64,15 @@ public sealed class TableClipStrategy : IClipTypeStrategy
         return new ParseSuccess(new TableClipModel(table), report);
     }
 
-    public string DefaultXml(string clipName) =>
-        _wrapsBaseTable
-            ? $"<fmxmlsnippet type=\"FMObjectList\"><BaseTable name=\"{XmlHelpers.XmlEscape(clipName)}\"></BaseTable></fmxmlsnippet>"
-            : "<fmxmlsnippet type=\"FMObjectList\"></fmxmlsnippet>";
+    public string DefaultXml(string clipName)
+    {
+        var snippet = new XElement("fmxmlsnippet", new XAttribute("type", "FMObjectList"));
+        if (_wrapsBaseTable)
+        {
+            snippet.Add(new XElement("BaseTable", new XAttribute("name", clipName)));
+        }
+        return snippet.ToString(SaveOptions.DisableFormatting);
+    }
 
     public string? TryGetSourceName(string xml)
     {

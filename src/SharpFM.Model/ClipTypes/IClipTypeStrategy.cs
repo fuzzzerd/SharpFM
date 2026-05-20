@@ -26,7 +26,9 @@ public interface IClipTypeStrategy
 
     /// <summary>
     /// Produce a starter XML body for a fresh clip with the given name. Used by
-    /// "new clip" flows in the host and by plugins.
+    /// "new clip" flows in the host and by plugins. Build with
+    /// <see cref="System.Xml.Linq.XElement"/> rather than string concatenation so
+    /// XML metacharacters in <paramref name="clipName"/> are escaped by the framework.
     /// </summary>
     string DefaultXml(string clipName);
 
