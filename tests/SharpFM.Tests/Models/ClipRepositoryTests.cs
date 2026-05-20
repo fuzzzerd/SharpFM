@@ -502,4 +502,99 @@ public class ClipRepositoryTests
             if (Directory.Exists(sibling)) Directory.Delete(sibling, true);
         }
     }
+
+    [Fact]
+    public async Task SaveClipsAsync_TraversalSegment_RaisesFolderPathSanitizedEvent()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            FolderPathSanitizedEventArgs? captured = null;
+            repo.FolderPathSanitized += (_, e) => captured = e;
+
+            await repo.SaveClipsAsync([new("X", "Mac-XMSS", "<x/>")
+                { FolderPath = new[] { "..", "Real" } }]);
+
+            Assert.NotNull(captured);
+            Assert.Equal(new[] { "..", "Real" }, captured!.Original);
+            Assert.Equal(new[] { "Real" }, captured.Sanitized);
+            Assert.Equal(new[] { ".." }, captured.DroppedSegments);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_EmptySegment_RaisesEventNamingDropped()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            FolderPathSanitizedEventArgs? captured = null;
+            repo.FolderPathSanitized += (_, e) => captured = e;
+
+            await repo.SaveClipsAsync([new("X", "Mac-XMSS", "<x/>")
+                { FolderPath = new[] { "Real", "   " } }]);
+
+            Assert.NotNull(captured);
+            Assert.Equal(new[] { "Real" }, captured!.Sanitized);
+            Assert.Single(captured.DroppedSegments);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_AllValidSegments_DoesNotRaiseEvent()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            var fired = 0;
+            repo.FolderPathSanitized += (_, _) => fired++;
+
+            await repo.SaveClipsAsync([new("X", "Mac-XMSS", "<x/>")
+                { FolderPath = new[] { "Group", "Sub" } }]);
+
+            Assert.Equal(0, fired);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveClipsAsync_PercentEncodedOnly_DoesNotRaiseEvent()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            var fired = 0;
+            repo.FolderPathSanitized += (_, _) => fired++;
+
+            await repo.SaveClipsAsync([new("X", "Mac-XMSS", "<x/>")
+                { FolderPath = new[] { "Date/Time" } }]);
+
+            Assert.Equal(0, fired);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public async Task SaveFoldersAsync_TraversalSegment_RaisesFolderPathSanitizedEvent()
+    {
+        var dir = CreateTempDir();
+        try
+        {
+            var repo = new ClipRepository(dir);
+            FolderPathSanitizedEventArgs? captured = null;
+            repo.FolderPathSanitized += (_, e) => captured = e;
+
+            await repo.SaveFoldersAsync([new(new[] { "..", "Real" })]);
+
+            Assert.NotNull(captured);
+            Assert.Equal(new[] { ".." }, captured!.DroppedSegments);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
 }

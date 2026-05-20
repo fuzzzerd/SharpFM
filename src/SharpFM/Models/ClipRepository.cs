@@ -234,19 +234,41 @@ public class ClipRepository : IClipRepository
         return decoded;
     }
 
-    // Reject traversal segments (security) and percent-encode any character
-    // the filesystem rejects so FileMaker names containing '/' or ':' survive
-    // the round-trip instead of being silently dropped.
-    private static IReadOnlyList<string> SanitizeFolderPath(IReadOnlyList<string> segments)
+    /// <summary>
+    /// Raised when <see cref="SanitizeFolderPath"/> drops one or more segments
+    /// (empty, whitespace, or traversal). Hosts can subscribe to surface a
+    /// non-blocking notification so plugin-driven placements that landed
+    /// somewhere other than requested are visible to the user.
+    /// </summary>
+    public event EventHandler<FolderPathSanitizedEventArgs>? FolderPathSanitized;
+
+    // Empty / "." / ".." segments are dropped (not encoded) — the call is
+    // best-effort, not a hard error, but the dropped segments are reported via
+    // Log.Warn and FolderPathSanitized so the caller can surface them.
+    private IReadOnlyList<string> SanitizeFolderPath(IReadOnlyList<string> segments)
     {
         if (segments is null || segments.Count == 0) return [];
         var safe = new List<string>(segments.Count);
+        var dropped = new List<string>();
         foreach (var raw in segments)
         {
-            if (string.IsNullOrWhiteSpace(raw)) continue;
-            if (raw == "." || raw == "..") continue;
+            if (string.IsNullOrWhiteSpace(raw) || raw == "." || raw == "..")
+            {
+                dropped.Add(raw ?? "");
+                continue;
+            }
             safe.Add(EncodeName(raw));
         }
+
+        if (dropped.Count > 0)
+        {
+            Log.Warn(
+                "Sanitized folder path: dropped [{Dropped}]; kept [{Kept}].",
+                string.Join(", ", dropped),
+                string.Join("/", safe));
+            FolderPathSanitized?.Invoke(this, new FolderPathSanitizedEventArgs(segments, safe, dropped));
+        }
+
         return safe;
     }
 
