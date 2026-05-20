@@ -27,6 +27,53 @@ public class PluginInterfaceTests
         Assert.True(typeof(IDisposable).IsAssignableFrom(typeof(IPanelPlugin)));
     }
 
+    // --- IUpdateCheckable opt-in capability ---
+
+    [Fact]
+    public void IUpdateCheckable_IsPublicInterface()
+    {
+        var t = typeof(IUpdateCheckable);
+        Assert.True(t.IsInterface);
+        Assert.True(t.IsPublic);
+    }
+
+    [Fact]
+    public void IUpdateCheckable_DoesNotExtend_IPlugin()
+    {
+        // Capability interface, not a plugin sub-shape. A plugin opts in by
+        // implementing both IPlugin and IUpdateCheckable.
+        Assert.False(typeof(IPlugin).IsAssignableFrom(typeof(IUpdateCheckable)));
+    }
+
+    [Fact]
+    public void IUpdateCheckable_DeclaresCheckForUpdatesAsync()
+    {
+        var method = typeof(IUpdateCheckable).GetMethod("CheckForUpdatesAsync");
+        Assert.NotNull(method);
+        Assert.Equal(typeof(Task<UpdateCheckResult>), method!.ReturnType);
+        var parameters = method.GetParameters();
+        Assert.Single(parameters);
+        Assert.Equal(typeof(CancellationToken), parameters[0].ParameterType);
+    }
+
+    [Fact]
+    public void UpdateCheckResult_RecordEquality()
+    {
+        var a = new UpdateCheckResult(true, "2.0.0", new Uri("https://example.com/r/2.0.0"), "notes");
+        var b = new UpdateCheckResult(true, "2.0.0", new Uri("https://example.com/r/2.0.0"), "notes");
+        Assert.Equal(a, b);
+    }
+
+    [Fact]
+    public void UpdateCheckResult_NullablesAllowed_WhenNoUpdate()
+    {
+        var none = new UpdateCheckResult(false, null, null, null);
+        Assert.False(none.UpdateAvailable);
+        Assert.Null(none.LatestVersion);
+        Assert.Null(none.ReleaseUrl);
+        Assert.Null(none.Notes);
+    }
+
     // --- ClipData record ---
 
     [Fact]
