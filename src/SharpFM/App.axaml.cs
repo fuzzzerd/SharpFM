@@ -66,9 +66,19 @@ public partial class App : Application
             repos.AddRange(pluginHost.Repositories);
             viewModel.AvailableRepositories = repos;
 
+            // Session restore: the VM ctor has already loaded the repository,
+            // so FileMakerClips is populated. Restore the previously open tabs
+            // before any UI interaction; misses (deleted/renamed clips) are
+            // silently skipped.
+            var sessionService = new SessionStateService(logger);
+            viewModel.RestoreSessionState(sessionService.Load());
+
             // Give the window access to plugin services for the manager dialog
             if (desktop.MainWindow is MainWindow mainWindow)
+            {
                 mainWindow.SetPluginServices(pluginService, pluginUIHost, pluginConfigService);
+                mainWindow.SetSessionService(sessionService);
+            }
 
             desktop.MainWindow.DataContext = viewModel;
 

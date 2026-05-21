@@ -195,6 +195,56 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Snapshot the current tab strip and active tab as a serializable
+    /// <see cref="SessionState"/>. Each tab is identified by its clip's
+    /// <c>(FolderPath, Name)</c> tuple — the same pair used by the repository
+    /// on disk.
+    /// </summary>
+    public SessionState CaptureSessionState()
+    {
+        var refs = OpenTabs.Tabs
+            .Select(t => new TabRef(t.Clip.FolderPath, t.Clip.Clip.Name))
+            .ToList();
+        var active = OpenTabs.ActiveTab is { } a
+            ? new TabRef(a.Clip.FolderPath, a.Clip.Clip.Name)
+            : null;
+        return new SessionState(refs, active);
+    }
+
+    /// <summary>
+    /// Reopen every tab in <paramref name="state"/> that still resolves
+    /// against <see cref="FileMakerClips"/>. Refs that don't match any
+    /// loaded clip — because the clip was deleted or renamed between
+    /// sessions — are silently skipped. Restored tabs are permanent (not
+    /// preview). If the saved active tab survives, it becomes the active
+    /// tab; otherwise the last successfully restored tab stays active as
+    /// the natural side-effect of <see cref="OpenTabsViewModel.OpenAsPermanent"/>.
+    /// </summary>
+    public void RestoreSessionState(SessionState state)
+    {
+        foreach (var tabRef in state.OpenTabs)
+        {
+            var clip = FindClip(tabRef);
+            if (clip is not null) OpenTabs.OpenAsPermanent(clip);
+        }
+
+        if (state.ActiveTab is { } activeRef)
+        {
+            var clip = FindClip(activeRef);
+            if (clip is not null)
+            {
+                var existing = OpenTabs.Tabs.FirstOrDefault(t => ReferenceEquals(t.Clip, clip));
+                if (existing is not null) OpenTabs.ActiveTab = existing;
+            }
+        }
+    }
+
+    private ClipViewModel? FindClip(TabRef tabRef) =>
+        FileMakerClips.FirstOrDefault(c =>
+            c.Clip.Name == tabRef.Name &&
+            c.FolderPath.SequenceEqual(tabRef.FolderPath));
+
     public async Task OpenFolderPicker()
     {
         try
