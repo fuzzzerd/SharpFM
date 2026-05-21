@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private PluginService? _pluginService;
     private PluginUIHost? _pluginHost;
     private PluginConfigService? _pluginConfigService;
+    private SessionStateService? _sessionService;
 
     public MainWindow()
     {
@@ -49,7 +50,17 @@ public partial class MainWindow : Window
 
         // Wire up plugin UI when DataContext is set
         DataContextChanged += OnDataContextChanged;
+
+        // Persist open tabs on close so the next launch can restore them.
+        Closing += (_, _) =>
+        {
+            if (_sessionService is not null && DataContext is MainWindowViewModel vm)
+                _sessionService.Save(vm.CaptureSessionState());
+        };
     }
+
+    public void SetSessionService(SessionStateService sessionService) =>
+        _sessionService = sessionService;
 
     public void SetPluginServices(PluginService pluginService, PluginUIHost pluginHost, PluginConfigService pluginConfigService)
     {
