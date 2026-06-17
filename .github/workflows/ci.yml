@@ -9,6 +9,9 @@ on:
 jobs:
   release:
     name: CI Build
+    # Hung runners (notably macOS) otherwise run to GitHub's 360-minute cap;
+    # builds finish in ~1-3 min, so 15 kills a hang fast with wide margin.
+    timeout-minutes: 15
     strategy:
       matrix:
         kind: ['linux', 'windows', 'macOS']
