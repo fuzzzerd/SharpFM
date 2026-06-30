@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
+using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -19,15 +22,20 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
 
     public bool Lock { get; set; }
     public string ZoomLevel { get; set; }
+    public Calculation? ZoomCalculation { get; set; }
+
+    private SetZoomLevelStep() : base(false) { ZoomLevel = "100"; }
 
     public SetZoomLevelStep(
         bool @lock = false,
         string zoomLevel = "100",
+        Calculation? zoomCalculation = null,
         bool enabled = true)
         : base(enabled)
     {
         Lock = @lock;
         ZoomLevel = zoomLevel;
+        ZoomCalculation = zoomCalculation;
     }
 
     private static readonly IReadOnlyDictionary<string, string> _ZoomLevelXmlToHr =
@@ -66,24 +74,13 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
     private static string ZoomLevelFromHr(string h) =>
         _ZoomLevelHrToXml.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Lock", new XAttribute("state", Lock ? "True" : "False")),
-            new XElement("Zoom", new XAttribute("value", ZoomLevel)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Set Zoom Level [ " + "Lock: " + (Lock ? "On" : "Off") + " ; " + "Zoom level: " + ZoomLevelToHr(ZoomLevel) + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var @lock_val = step.Element("Lock")?.Attribute("state")?.Value == "True";
-        var zoomLevel_val = step.Element("Zoom")?.Attribute("value")?.Value ?? "";
-        return new SetZoomLevelStep(@lock_val, zoomLevel_val, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetZoomLevelStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -92,7 +89,7 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Lock:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(5).Trim(); @lock_val = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
         string zoomLevel_val = "100";
         foreach (var tok in tokens) { if (tok.StartsWith("Zoom level:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(11).Trim(); zoomLevel_val = ZoomLevelFromHr(v); break; } }
-        return new SetZoomLevelStep(@lock_val, zoomLevel_val, enabled);
+        return new SetZoomLevelStep(@lock_val, zoomLevel_val, enabled: enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -101,6 +98,14 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-zoom-level.html",
+        // Canonical: Lock, Zoom, and (only for the ByCalculation zoom) a bare
+        // <Calculation> carrying the zoom-percentage expression.
+        Shape =
+        [
+            new BoolStateChild("Lock") { PocoProperty = "Lock", HrLabel = "Lock", Display = DisplayMode.Native },
+            new EnumValueChild("Zoom") { PocoProperty = "ZoomLevel", HrLabel = "Zoom level", DefaultValue = "100", Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "ZoomCalculation", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

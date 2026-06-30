@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -19,10 +21,12 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
     public const int XmlId = 57;
     public const string XmlName = "Send Event";
 
-    public string ContentType { get; set; }
+    public string ContentType { get; set; } = "Text";
     public Calculation? Calculation { get; set; }
-    public string Text { get; set; }
-    public SendEventTarget Event { get; set; }
+    public string Text { get; set; } = "";
+    public SendEventTarget Event { get; set; } = SendEventTarget.Default();
+
+    private SendEventStep() : base(false) { }
 
     public SendEventStep(
         string contentType = "Text",
@@ -38,18 +42,7 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         Event = evt ?? SendEventTarget.Default();
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ContentType", new XAttribute("value", ContentType)));
-        if (Calculation is not null) step.Add(Calculation.ToXml("Calculation"));
-        step.Add(string.IsNullOrEmpty(Text) ? new XElement("Text") : new XElement("Text", Text));
-        step.Add(Event.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -63,17 +56,8 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         return $"Send Event [ {Event.TargetName} ; {Event.Class} ; {Event.Id} ; {content} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var contentType = step.Element("ContentType")?.Attribute("value")?.Value ?? "Text";
-        var calcEl = step.Element("Calculation");
-        var calc = calcEl is not null ? Values.Calculation.FromXml(calcEl) : null;
-        var text = step.Element("Text")?.Value ?? "";
-        var eventEl = step.Element("Event");
-        var evt = eventEl is not null ? SendEventTarget.FromXml(eventEl) : SendEventTarget.Default();
-        return new SendEventStep(contentType, calc, text, evt, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SendEventStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -89,6 +73,14 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/send-event.html",
+        // Canonical: ContentType, optional Calculation, optional Text, then Event.
+        Shape =
+        [
+            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Text", Display = DisplayMode.Hidden },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
+            new NamedTextChild("Text") { PocoProperty = "Text", Optional = true, Display = DisplayMode.Native },
+            new ValueTypeChild("Event") { PocoProperty = "Event", Display = DisplayMode.Hidden },
+        ],
         Params =
         [
             new ParamMetadata { Name = "ContentType", XmlElement = "ContentType", XmlAttr = "value", Type = "enum", ValidValues = ["Text", "File", "Calculation"], DefaultValue = "Text", Required = true },

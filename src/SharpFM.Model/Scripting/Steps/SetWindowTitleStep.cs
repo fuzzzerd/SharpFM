@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,10 +14,12 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
     public const int XmlId = 124;
     public const string XmlName = "Set Window Title";
 
-    public string Window { get; set; }
-    public Calculation OfWindow { get; set; }
+    public string Window { get; set; } = "ByName";
+    public Calculation OfWindow { get; set; } = new("");
     public bool CurrentFile { get; set; }
-    public Calculation NewTitle { get; set; }
+    public Calculation NewTitle { get; set; } = new("");
+
+    private SetWindowTitleStep() : base(false) { }
 
     public SetWindowTitleStep(
         string window = "ByName",
@@ -44,32 +48,13 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
     private static string WindowHr(string x) => _WindowToHr.TryGetValue(x, out var h) ? h : x;
     private static string WindowXml(string h) => _WindowFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Window", new XAttribute("value", Window)),
-            new XElement("Name", OfWindow.ToXml("Calculation")),
-            new XElement("LimitToWindowsOfCurrentFile", new XAttribute("state", CurrentFile ? "True" : "False")),
-            new XElement("NewName", NewTitle.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Set Window Title [ " + "Window: " + WindowHr(Window) + " ; " + "Of Window: " + OfWindow.Text + " ; " + "Current file: " + (CurrentFile ? "On" : "Off") + " ; " + "New Title: " + NewTitle.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var window_v = step.Element("Window")?.Attribute("value")?.Value ?? "ByName";
-        var ofWindow_vWrapEl = step.Element("Name");
-        var ofWindow_vCalcEl = ofWindow_vWrapEl?.Element("Calculation");
-        var ofWindow_v = ofWindow_vCalcEl is not null ? Calculation.FromXml(ofWindow_vCalcEl) : new Calculation("");
-        var currentFile_v = step.Element("LimitToWindowsOfCurrentFile")?.Attribute("state")?.Value == "True";
-        var newTitle_vWrapEl = step.Element("NewName");
-        var newTitle_vCalcEl = newTitle_vWrapEl?.Element("Calculation");
-        var newTitle_v = newTitle_vCalcEl is not null ? Calculation.FromXml(newTitle_vCalcEl) : new Calculation("");
-        return new SetWindowTitleStep(window_v, ofWindow_v, currentFile_v, newTitle_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetWindowTitleStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -91,6 +76,15 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-window-title.html",
+        // Canonical: LimitToWindowsOfCurrentFile leads, then Window, then the
+        // optional <Name> (of-window) and <NewName> (new-title) calculations.
+        Shape =
+        [
+            new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "CurrentFile", HrLabel = "Current file", Display = DisplayMode.Augmented },
+            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", Display = DisplayMode.Native },
+            new NamedCalcChild("Name") { PocoProperty = "OfWindow", HrLabel = "Of Window", Optional = true, Display = DisplayMode.Augmented },
+            new NamedCalcChild("NewName") { PocoProperty = "NewTitle", HrLabel = "New Title", Optional = true, Display = DisplayMode.Augmented },
+        ],
         Params =
         [
             new ParamMetadata

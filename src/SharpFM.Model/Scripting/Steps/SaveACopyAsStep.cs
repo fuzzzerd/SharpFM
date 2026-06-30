@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -14,8 +16,10 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
     public bool CreateFolders { get; set; }
     public bool AutomaticallyOpen { get; set; }
     public bool CreateEmail { get; set; }
-    public string CopyType { get; set; }
-    public string OutputPath { get; set; }
+    public string CopyType { get; set; } = "Copy";
+    public string OutputPath { get; set; } = "";
+
+    private SaveACopyAsStep() : base(false) { }
 
     public SaveACopyAsStep(
         bool createFolders = true,
@@ -57,30 +61,13 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
     private static string CopyTypeXml(string h) =>
         _CopyTypeFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("CreateDirectories", new XAttribute("state", CreateFolders ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutomaticallyOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("SaveAsType", new XAttribute("value", CopyType)),
-            new XElement("UniversalPathList", OutputPath));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Save a Copy as [ " + "Create folders: " + (CreateFolders ? "On" : "Off") + " ; " + "Automatically open: " + (AutomaticallyOpen ? "On" : "Off") + " ; " + "Create email: " + (CreateEmail ? "On" : "Off") + " ; " + "Copy type: " + CopyTypeHr(CopyType) + " ; " + "Output path: " + OutputPath + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var createFolders_v = step.Element("CreateDirectories")?.Attribute("state")?.Value == "True";
-        var automaticallyOpen_v = step.Element("AutoOpen")?.Attribute("state")?.Value == "True";
-        var createEmail_v = step.Element("CreateEmail")?.Attribute("state")?.Value == "True";
-        var copyType_v = step.Element("SaveAsType")?.Attribute("value")?.Value ?? "Copy";
-        var outputPath_v = step.Element("UniversalPathList")?.Value ?? "";
-        return new SaveACopyAsStep(createFolders_v, automaticallyOpen_v, createEmail_v, copyType_v, outputPath_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SaveACopyAsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -104,6 +91,16 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/save-a-copy-as.html",
+        // Canonical: CreateDirectories, AutoOpen, CreateEmail, SaveAsType, then
+        // the optional UniversalPathList (omitted when no output path is set).
+        Shape =
+        [
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateFolders", HrLabel = "Create folders", Display = DisplayMode.Augmented },
+            new BoolStateChild("AutoOpen") { PocoProperty = "AutomaticallyOpen", HrLabel = "Automatically open", Display = DisplayMode.Augmented },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Augmented },
+            new EnumValueChild("SaveAsType") { PocoProperty = "CopyType", HrLabel = "Copy type", DefaultValue = "Copy", Display = DisplayMode.Augmented },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "OutputPath", HrLabel = "Output path", Optional = true, Display = DisplayMode.Augmented },
+        ],
         Params =
         [
             new ParamMetadata

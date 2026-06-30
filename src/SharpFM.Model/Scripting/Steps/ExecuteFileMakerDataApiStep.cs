@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,7 +14,9 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
 
     public bool Select { get; set; }
     public FieldRef? Target { get; set; }
-    public Calculation Query { get; set; }
+    public Calculation? Query { get; set; }
+
+    private ExecuteFileMakerDataApiStep() : base(false) { }
 
     public ExecuteFileMakerDataApiStep(
         bool select = true,
@@ -23,44 +27,22 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
     {
         Select = select;
         Target = target;
-        Query = query ?? new Calculation("");
+        Query = query;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("SelectAll", new XAttribute("state", Select ? "True" : "False")),
-            Query.ToXml("Calculation"));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();
         parts.Add($"Select: {(Select ? "On" : "Off")}");
         if (Target is not null) parts.Add($"Target: {Target.ToDisplayString()}");
-        parts.Add(Query.Text);
+        parts.Add(Query?.Text ?? "");
         return $"Execute FileMaker Data API [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var select = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
-        var calcEl = step.Element("Calculation");
-        var query = calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new ExecuteFileMakerDataApiStep(select, target, query, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ExecuteFileMakerDataApiStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -90,6 +72,14 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/execute-filemaker-data-api.html",
+        // Canonical: SelectAll, then the optional bare <Calculation> (query) and
+        // field target (variable target gets the bare <Text/> marker).
+        Shape =
+        [
+            new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "Query", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select" },

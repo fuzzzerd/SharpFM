@@ -9,12 +9,17 @@ namespace SharpFM.Model.Scripting.Values;
 /// </summary>
 public sealed record SpeechOptions(bool WaitForCompletion, string VoiceName, string VoiceId, string VoiceCreator)
 {
-    public XElement ToXml() =>
-        new("SpeechOptions",
-            new XAttribute("WaitForCompletion", WaitForCompletion ? "True" : "False"),
-            new XAttribute("VoiceName", VoiceName),
-            new XAttribute("VoiceId", VoiceId),
-            new XAttribute("VoiceCreator", VoiceCreator));
+    public XElement ToXml()
+    {
+        // Canonical form carries WaitForCompletion always and only the populated
+        // voice attributes; empty optional attributes are not emitted.
+        var el = new XElement("SpeechOptions",
+            new XAttribute("WaitForCompletion", WaitForCompletion ? "True" : "False"));
+        if (!string.IsNullOrEmpty(VoiceName)) el.Add(new XAttribute("VoiceName", VoiceName));
+        if (!string.IsNullOrEmpty(VoiceId)) el.Add(new XAttribute("VoiceId", VoiceId));
+        if (!string.IsNullOrEmpty(VoiceCreator)) el.Add(new XAttribute("VoiceCreator", VoiceCreator));
+        return el;
+    }
 
     public static SpeechOptions FromXml(XElement element) =>
         new(

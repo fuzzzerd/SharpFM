@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -10,10 +12,12 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
     public const int XmlId = 193;
     public const string XmlName = "Read from Data File";
 
-    public Calculation FileId { get; set; }
+    public Calculation? FileId { get; set; }
     public Calculation? Count { get; set; }
     public FieldRef? Target { get; set; }
-    public string DataSourceType { get; set; }
+    public string DataSourceType { get; set; } = "3";
+
+    private ReadFromDataFileStep() : base(false) { }
 
     public ReadFromDataFileStep(
         Calculation? fileId = null,
@@ -23,29 +27,13 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
         bool enabled = true)
         : base(enabled)
     {
-        FileId = fileId ?? new Calculation("");
+        FileId = fileId;
         Count = count;
         Target = target;
         DataSourceType = dataSourceType;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("DataSourceType", new XAttribute("value", DataSourceType)),
-            FileId.ToXml("Calculation"));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        if (Count is not null)
-            step.Add(new XElement("Count", Count.ToXml("Calculation")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -57,25 +45,15 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
             _ => DataSourceType,
         };
         var amountLabel = DataSourceType == "1" ? "Amount" : "Amount (bytes)";
-        var parts = new System.Collections.Generic.List<string> { $"File ID: {FileId.Text}" };
+        var parts = new System.Collections.Generic.List<string> { $"File ID: {FileId?.Text ?? ""}" };
         if (Count is not null) parts.Add($"{amountLabel}: {Count.Text}");
         if (Target is not null) parts.Add($"Target: {Target.ToDisplayString()}");
         parts.Add($"Read as: {readAs}");
         return $"Read from Data File [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var type = step.Element("DataSourceType")?.Attribute("value")?.Value ?? "3";
-        var fileIdEl = step.Element("Calculation");
-        var fileId = fileIdEl is not null ? Calculation.FromXml(fileIdEl) : new Calculation("");
-        var countEl = step.Element("Count")?.Element("Calculation");
-        var count = countEl is not null ? Calculation.FromXml(countEl) : null;
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new ReadFromDataFileStep(fileId, count, target, type, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ReadFromDataFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -114,6 +92,16 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/read-from-data-file.html",
+        // Canonical: DataSourceType, then the optional bare <Calculation> (file
+        // id), field target (variable target gets the bare <Text/> marker), and
+        // the <Count> amount calculation.
+        Shape =
+        [
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", HrLabel = "Read as", DefaultValue = "3", Display = DisplayMode.Augmented },
+            new BareCalcChild { PocoProperty = "FileId", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
+            new NamedCalcChild("Count") { PocoProperty = "Count", HrLabel = "Amount (bytes)", Optional = true, Display = DisplayMode.Augmented },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "File ID", Required = true },

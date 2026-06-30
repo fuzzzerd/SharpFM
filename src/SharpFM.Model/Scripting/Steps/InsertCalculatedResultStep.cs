@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -20,7 +22,9 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
 
     public bool SelectAll { get; set; }
     public FieldRef? Target { get; set; }
-    public Calculation Calculation { get; set; }
+    public Calculation? Calculation { get; set; }
+
+    private InsertCalculatedResultStep() : base(false) { }
 
     public InsertCalculatedResultStep(
         bool selectAll = true,
@@ -31,42 +35,20 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
     {
         SelectAll = selectAll;
         Target = target;
-        Calculation = calculation ?? new Calculation("");
+        Calculation = calculation;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("SelectAll", new XAttribute("state", SelectAll ? "True" : "False")),
-            Calculation.ToXml("Calculation"));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
         var selectPart = SelectAll ? "Select ; " : "";
         var targetPart = Target is null ? "" : $"Target: {Target.ToDisplayString()} ; ";
-        return $"Insert Calculated Result [ {selectPart}{targetPart}{Calculation.Text} ]";
+        return $"Insert Calculated Result [ {selectPart}{targetPart}{Calculation?.Text ?? ""} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var selectAll = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
-        var calcEl = step.Element("Calculation");
-        var calc = calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new InsertCalculatedResultStep(selectAll, target, calc, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertCalculatedResultStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -96,6 +78,15 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-calculated-result.html",
+        // Canonical: SelectAll, then the optional calculation and field target.
+        // The bare <Calculation> and <Field> are emitted only when configured;
+        // a variable target is preceded by the bare <Text/> marker.
+        Shape =
+        [
+            new BoolStateChild("SelectAll") { PocoProperty = "SelectAll", HrLabel = "Select", Display = DisplayMode.Hidden },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },

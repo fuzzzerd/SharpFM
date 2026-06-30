@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,9 +15,11 @@ public sealed class RevertTransactionStep : ScriptStep, IStepFactory
     public const string XmlName = "Revert Transaction";
 
     public bool Option { get; set; }
-    public Calculation Condition { get; set; }
-    public Calculation ErrorCode { get; set; }
-    public Calculation ErrorMessage { get; set; }
+    public Calculation? Condition { get; set; }
+    public Calculation? ErrorCode { get; set; }
+    public Calculation? ErrorMessage { get; set; }
+
+    private RevertTransactionStep() : base(false) { }
 
     public RevertTransactionStep(
         bool option = false,
@@ -26,39 +30,18 @@ public sealed class RevertTransactionStep : ScriptStep, IStepFactory
         : base(enabled)
     {
         Option = option;
-        Condition = condition ?? new Calculation("");
-        ErrorCode = errorCode ?? new Calculation("");
-        ErrorMessage = errorMessage ?? new Calculation("");
+        Condition = condition;
+        ErrorCode = errorCode;
+        ErrorMessage = errorMessage;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", Option ? "True" : "False")),
-            new XElement("Condition", Condition.ToXml("Calculation")),
-            new XElement("ErrorCode", ErrorCode.ToXml("Calculation")),
-            new XElement("ErrorMessage", ErrorMessage.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
-        "Revert Transaction [ " + (Option ? "On" : "Off") + " ; " + "Condition: " + Condition.Text + " ; " + "Error Code: " + ErrorCode.Text + " ; " + "Error Message: " + ErrorMessage.Text + " ]";
+        "Revert Transaction [ " + (Option ? "On" : "Off") + " ; " + "Condition: " + (Condition?.Text ?? "") + " ; " + "Error Code: " + (ErrorCode?.Text ?? "") + " ; " + "Error Message: " + (ErrorMessage?.Text ?? "") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var option_v = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var condition_vWrapEl = step.Element("Condition");
-        var condition_vCalcEl = condition_vWrapEl?.Element("Calculation");
-        var condition_v = condition_vCalcEl is not null ? Calculation.FromXml(condition_vCalcEl) : new Calculation("");
-        var errorCode_vWrapEl = step.Element("ErrorCode");
-        var errorCode_vCalcEl = errorCode_vWrapEl?.Element("Calculation");
-        var errorCode_v = errorCode_vCalcEl is not null ? Calculation.FromXml(errorCode_vCalcEl) : new Calculation("");
-        var errorMessage_vWrapEl = step.Element("ErrorMessage");
-        var errorMessage_vCalcEl = errorMessage_vWrapEl?.Element("Calculation");
-        var errorMessage_v = errorMessage_vCalcEl is not null ? Calculation.FromXml(errorMessage_vCalcEl) : new Calculation("");
-        return new RevertTransactionStep(option_v, condition_v, errorCode_v, errorMessage_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<RevertTransactionStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -79,6 +62,15 @@ public sealed class RevertTransactionStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/revert-transaction.html",
+        // Canonical: Option, then the optional Condition / ErrorCode /
+        // ErrorMessage calculations (omitted when unconfigured).
+        Shape =
+        [
+            new BoolStateChild("Option") { PocoProperty = "Option", Display = DisplayMode.Native },
+            new NamedCalcChild("Condition") { PocoProperty = "Condition", HrLabel = "Condition", Optional = true, Display = DisplayMode.Augmented },
+            new NamedCalcChild("ErrorCode") { PocoProperty = "ErrorCode", HrLabel = "Error Code", Optional = true, Display = DisplayMode.Augmented },
+            new NamedCalcChild("ErrorMessage") { PocoProperty = "ErrorMessage", HrLabel = "Error Message", Optional = true, Display = DisplayMode.Augmented },
+        ],
         Params =
         [
             new ParamMetadata

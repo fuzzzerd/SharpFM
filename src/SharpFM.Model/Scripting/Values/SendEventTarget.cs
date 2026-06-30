@@ -16,15 +16,20 @@ public sealed record SendEventTarget(
     string Id,
     string Class)
 {
-    public XElement ToXml() =>
-        new("Event",
+    public XElement ToXml()
+    {
+        // Canonical form carries the three behaviour booleans always and only the
+        // populated target attributes; empty target descriptors are not emitted.
+        var el = new XElement("Event",
             new XAttribute("CopyResultToClipboard", CopyResultToClipboard ? "True" : "False"),
             new XAttribute("WaitForCompletion", WaitForCompletion ? "True" : "False"),
-            new XAttribute("BringTargetToForeground", BringTargetToForeground ? "True" : "False"),
-            new XAttribute("TargetType", TargetType),
-            new XAttribute("TargetName", TargetName),
-            new XAttribute("id", Id),
-            new XAttribute("class", Class));
+            new XAttribute("BringTargetToForeground", BringTargetToForeground ? "True" : "False"));
+        if (!string.IsNullOrEmpty(TargetType)) el.Add(new XAttribute("TargetType", TargetType));
+        if (!string.IsNullOrEmpty(TargetName)) el.Add(new XAttribute("TargetName", TargetName));
+        if (!string.IsNullOrEmpty(Id)) el.Add(new XAttribute("id", Id));
+        if (!string.IsNullOrEmpty(Class)) el.Add(new XAttribute("class", Class));
+        return el;
+    }
 
     public static SendEventTarget FromXml(XElement element) =>
         new(

@@ -9,60 +9,59 @@ namespace SharpFM.Tests.CanonicalSkill;
 /// sync with reality.
 ///
 /// <para>
-/// Entries are fixture base names (file name without extension). A trailing
-/// <c>-N</c> marks one of several documented variants for the same step id
-/// (e.g. configured vs unconfigured forms).
+/// The remaining entries are the structurally hard cases that need further
+/// engine work or preserve-don't-synthesize handling — grouped below with the
+/// specific capability each is waiting on.
 /// </para>
 /// </summary>
 public static class KnownDivergences
 {
     public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.Ordinal)
     {
-        // Complex / multi-variant save forms (optional <UniversalPathList>, JSON options).
+        // Attribute-dictionaries + lists of complex value types (ImportOptions,
+        // Profile, ExportEntries, TargetFields) with no shape primitive yet.
         "003-SaveACopyAsXML-1",
         "003-SaveACopyAsXML-2",
         "035-ImportRecords",
         "036-ExportRecords",
-        "037-SaveACopyAs",
-        // Value types that over-emit empty attributes (SendEventTarget, SpeechOptions).
-        "057-SendEvent",
-        "066-Speak",
-        // Conditional variable-<Text> marker before <Field>.
-        "077-InsertCalculatedResult",
-        "192-WriteToDataFile",
-        "193-ReadFromDataFile",
-        "203-ExecuteFileMakerDataAPI",
-        // Multi-variant optional dimensions / title.
+
+        // Multi-variant dialog: Title/Message and the dimension calcs are each
+        // independently optional across variants.
         "087-ShowCustomDialog-1",
         "087-ShowCustomDialog-2",
         "087-ShowCustomDialog-3",
-        // Comment CR/LF normalization.
+
+        // Comment text needs CR/LF normalization on parse (editor line-sync);
+        // NamedTextChild does no normalization.
         "089-Comment-1",
-        // Element reorders / renames.
+
+        // SerialNumberOptions value type omits increment/InitialValue attributes
+        // the canonical <SerialNumbers/> carries.
         "091-ReplaceFieldContents",
-        "097-SetZoomLevel-2",
-        "119-MoveResizeWindow",
-        "121-CloseWindow-1",
-        "123-SelectWindow",
-        "124-SetWindowTitle",
-        "139-ConvertFile",
-        "146-SetWebViewer-1",
-        "146-SetWebViewer-2",
-        "146-SetWebViewer-3",
-        "195-SetDataFilePosition",
-        "205-OpenTransaction",
-        "207-RevertTransaction",
-        "210-PerformScriptOnServerWithCallback",
-        "228-GoToListOfRecords",
-        // Conditionally-omitted populated wrappers (<Profile>, <PDFOptions>).
+
+        // Populated wrappers (<Profile>, <PDFOptions>) that must be omitted when
+        // unconfigured but carry attributes/children when set — needs an
+        // optional value-type wrapper primitive.
         "143-SaveRecordsAsExcel",
         "144-SaveRecordsAsPDF-1",
         "144-SaveRecordsAsPDF-2",
-        // Verbatim device-options subtree (needs Passthrough parsing).
+
+        // <URL custom="False"><Calculation>… — an element carrying both an
+        // attribute and a calc child; no primitive models that.
+        "146-SetWebViewer-1",
+        "146-SetWebViewer-2",
+        "146-SetWebViewer-3",
+
+        // Verbatim device-options subtree — needs Passthrough parsing
+        // (StepXmlParser throws NotSupported on Passthrough today).
         "161-InsertFromDevice",
-        // PerformJavaScript optional FunctionName.
+
+        // Parameters list models <P><Calculation> as List<Calculation>; the
+        // ParametersList primitive parses <P> text into List<string>.
         "175-PerformJavaScriptInWebViewer-1",
-        // Configure Prompt Template wrapper.
-        "226-ConfigurePromptTemplate",
+
+        // PerformScriptTarget VariantBlock — StepXmlParser throws NotSupported on
+        // VariantBlock parsing.
+        "210-PerformScriptOnServerWithCallback",
     };
 }

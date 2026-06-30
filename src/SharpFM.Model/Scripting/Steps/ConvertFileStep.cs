@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,9 +20,17 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
 
     public bool OpenFile { get; set; }
     public bool SkipIndexes { get; set; }
-    public bool WithDialog { get; set; }
-    public string DataSourceType { get; set; }
+
+    /// <summary>Raw <c>&lt;NoInteract&gt;</c> state. <see cref="WithDialog"/> is its inverse.</summary>
+    public bool NoInteract { get; set; }
+
+    /// <summary>UI-facing "with dialog" flag — the inverse of the wire <c>NoInteract</c> state.</summary>
+    public bool WithDialog { get => !NoInteract; set => NoInteract = !value; }
+
+    public string DataSourceType { get; set; } = "File";
     public bool VerifySSLCertificates { get; set; }
+
+    private ConvertFileStep() : base(false) { }
 
     public ConvertFileStep(
         bool openFile = false,
@@ -38,16 +48,7 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
         VerifySSLCertificates = verifySSLCertificates;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", OpenFile ? "True" : "False")),
-            new XElement("SkipIndexes", new XAttribute("state", SkipIndexes ? "True" : "False")),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("DataSourceType", new XAttribute("value", DataSourceType)),
-            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySSLCertificates ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Convert File [ "
@@ -58,22 +59,8 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
         + " ; Verify SSL Certificates: " + (VerifySSLCertificates ? "On" : "Off")
         + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var option = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var skipIdx = step.Element("SkipIndexes")?.Attribute("state")?.Value == "True";
-        var noInteract = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
-        var dataType = step.Element("DataSourceType")?.Attribute("value")?.Value ?? "File";
-        var sslVerify = step.Element("VerifySSLCertificates")?.Attribute("state")?.Value == "True";
-        return new ConvertFileStep(
-            openFile: option,
-            skipIndexes: skipIdx,
-            withDialog: !noInteract,
-            dataSourceType: dataType,
-            verifySSLCertificates: sslVerify,
-            enabled: enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ConvertFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -112,6 +99,16 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/convert-file.html",
+        // Canonical order: NoInteract, Option, SkipIndexes, VerifySSLCertificates,
+        // then the optional DataSourceType (omitted for the default File source).
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", Display = DisplayMode.Augmented },
+            new BoolStateChild("Option") { PocoProperty = "OpenFile", HrLabel = "Open File", Display = DisplayMode.Augmented },
+            new BoolStateChild("SkipIndexes") { PocoProperty = "SkipIndexes", HrLabel = "Skip Indexes", Display = DisplayMode.Augmented },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySSLCertificates", HrLabel = "Verify SSL Certificates", Display = DisplayMode.Augmented },
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

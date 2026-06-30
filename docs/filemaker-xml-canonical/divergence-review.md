@@ -101,3 +101,20 @@ fixes above. Every migrated step now round-trips to its skill canonical form
 `*Tests.cs` constants were updated to the canonical XML where they encoded the
 old form.
 - [ ] Reviewed (spot-check the per-step diffs in this commit)
+
+### Value types — stop emitting empty optional attributes
+- **Speak / `SpeechOptions`**: emit `WaitForCompletion` always but only the
+  populated `VoiceName`/`VoiceId`/`VoiceCreator` attributes.
+- **Send Event / `SendEventTarget`**: emit the three behaviour booleans always
+  but only the populated `TargetType`/`TargetName`/`id`/`class` attributes; the
+  step no longer emits an empty `<Text/>` element.
+- **Skill:** the canonical `<SpeechOptions>` / `<Event>` forms omit empty
+  optional attributes.
+- [ ] Reviewed
+
+### Second reorder/wrapper batch (16 steps)
+Move/Resize Window, Set Window Title, Convert File, Open Transaction (now emits
+`<Restore>`), Configure Prompt Template (now wraps in `<ConfigurePromptTemplate>`)
+and the data-file / window / object steps were reordered or had optional
+children dropped to match canonical, with their per-step test constants updated.
+- [ ] Reviewed

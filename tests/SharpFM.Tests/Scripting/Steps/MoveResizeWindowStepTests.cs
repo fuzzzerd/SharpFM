@@ -8,7 +8,7 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class MoveResizeWindowStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="119" name="Move/Resize Window"><Window value="ByName"/><Name><Calculation><![CDATA[$x]]></Calculation></Name><LimitToWindowsOfCurrentFile state="True"/><Height><Calculation><![CDATA[$x]]></Calculation></Height><Width><Calculation><![CDATA[$x]]></Calculation></Width><DistanceFromTop><Calculation><![CDATA[$x]]></Calculation></DistanceFromTop><DistanceFromLeft><Calculation><![CDATA[$x]]></Calculation></DistanceFromLeft></Step>""";
+    private const string CanonicalXml = """<Step enable="True" id="119" name="Move/Resize Window"><LimitToWindowsOfCurrentFile state="True"/><Window value="ByName"/><Name><Calculation><![CDATA[$x]]></Calculation></Name><Height><Calculation><![CDATA[$x]]></Calculation></Height><Width><Calculation><![CDATA[$x]]></Calculation></Width><DistanceFromTop><Calculation><![CDATA[$x]]></Calculation></DistanceFromTop><DistanceFromLeft><Calculation><![CDATA[$x]]></Calculation></DistanceFromLeft></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()
