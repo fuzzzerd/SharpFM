@@ -40,12 +40,17 @@ public sealed class CommentStep : ScriptStep, IStepFactory
         return new CommentStep(enabled, text);
     }
 
-    public override XElement ToXml() =>
-        new("Step",
+    public override XElement ToXml()
+    {
+        var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Text", Text));
+            new XAttribute("name", XmlName));
+        // Canonical (skill §8.1): a bare divider comment is the self-closing
+        // form, not an empty <Text/>. Emit <Text> only when there is text.
+        if (!string.IsNullOrEmpty(Text)) step.Add(new XElement("Text", Text));
+        return step;
+    }
 
     public override string ToDisplayLine() =>
         // FM Pro convention: an empty-text comment renders as a blank

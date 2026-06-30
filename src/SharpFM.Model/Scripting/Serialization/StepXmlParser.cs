@@ -31,6 +31,18 @@ public static class StepXmlParser
         instance.Enabled = step.Attribute("enable")?.Value != "False";
         foreach (var node in meta.Shape)
             Populate(instance, step, node);
+
+        // A trailing Passthrough slot captures every child element the shape did
+        // not model, so partially-known steps round-trip unknown children verbatim.
+        if (meta.Shape.OfType<Passthrough>().FirstOrDefault() is { } pt)
+        {
+            var modeled = meta.Shape.SelectMany(StepXmlValidator.ElementNamesOf).ToHashSet();
+            var extras = step.Elements()
+                .Where(e => !modeled.Contains(e.Name.LocalName))
+                .Select(e => new XElement(e))
+                .ToList();
+            Set(instance, pt.PocoProperty ?? "Passthrough", extras);
+        }
         return instance;
     }
 
@@ -133,6 +145,8 @@ public static class StepXmlParser
             }
 
             case Passthrough:
+                return; // handled after the loop in Parse, with full-shape context
+
             case VariantBlock:
                 throw new NotSupportedException(
                     $"Shape node {node.GetType().Name} parsing is not yet implemented; " +

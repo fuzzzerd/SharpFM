@@ -53,11 +53,12 @@ public static class StepXmlValidator
     {
         var names = new List<string>();
         foreach (var node in shape)
-            names.AddRange(ElementNames(node));
+            names.AddRange(ElementNamesOf(node));
         return names;
     }
 
-    private static IEnumerable<string> ElementNames(ShapeNode node) => node switch
+    /// <summary>The XML element names a single shape node can emit (empty for attribute/step-level nodes).</summary>
+    public static IEnumerable<string> ElementNamesOf(ShapeNode node) => node switch
     {
         AttributeNode or Passthrough => [],
         BoolStateChild b => [b.Element],
@@ -71,7 +72,7 @@ public static class StepXmlValidator
         ValueTypeChild vt => [vt.Element],
         ParametersList pl => [pl.Wrapper],
         WrapperChild w => [w.Element],
-        VariantBlock vb => vb.Cases.SelectMany(c => c.Children.SelectMany(ElementNames)),
+        VariantBlock vb => vb.Cases.SelectMany(c => c.Children.SelectMany(ElementNamesOf)),
         _ => [],
     };
 }

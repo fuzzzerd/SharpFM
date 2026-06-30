@@ -31,10 +31,6 @@ public static class KnownDivergences
         "087-ShowCustomDialog-2",
         "087-ShowCustomDialog-3",
 
-        // Comment text needs CR/LF normalization on parse (editor line-sync);
-        // NamedTextChild does no normalization.
-        "089-Comment-1",
-
         // SerialNumberOptions value type omits increment/InitialValue attributes
         // the canonical <SerialNumbers/> carries.
         "091-ReplaceFieldContents",
@@ -51,10 +47,6 @@ public static class KnownDivergences
         "146-SetWebViewer-1",
         "146-SetWebViewer-2",
         "146-SetWebViewer-3",
-
-        // Verbatim device-options subtree — needs Passthrough parsing
-        // (StepXmlParser throws NotSupported on Passthrough today).
-        "161-InsertFromDevice",
 
         // Parameters list models <P><Calculation> as List<Calculation>; the
         // ParametersList primitive parses <P> text into List<string>.

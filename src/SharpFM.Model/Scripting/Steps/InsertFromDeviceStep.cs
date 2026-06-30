@@ -17,7 +17,7 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
     public const string XmlName = "Insert from Device";
 
     public string InsertFrom { get; set; }
-    public FieldRef Target { get; set; }
+    public FieldRef? Target { get; set; }
     public StepChildBag DeviceOptions { get; set; }
 
     public InsertFromDeviceStep(
@@ -28,18 +28,21 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
         : base(enabled)
     {
         InsertFrom = insertFrom;
-        Target = target ?? FieldRef.ForField("", 0, "");
+        Target = target;
         DeviceOptions = deviceOptions ?? new StepChildBag();
     }
 
     public override XElement ToXml()
     {
+        // The DeviceOptions subtree varies by device and is preserved verbatim
+        // (preserve-don't-synthesize). The target Field is emitted only when set,
+        // matching the canonical unconfigured form.
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("InsertFrom", new XAttribute("value", InsertFrom)),
-            Target.ToXml("Field"));
+            new XElement("InsertFrom", new XAttribute("value", InsertFrom)));
+        if (Target is not null) step.Add(Target.ToXml("Field"));
         var opts = new XElement("DeviceOptions");
         DeviceOptions.AppendTo(opts);
         step.Add(opts);
@@ -47,14 +50,14 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
     }
 
     public override string ToDisplayLine() =>
-        $"Insert from Device [ {InsertFrom} ; {Target.ToDisplayString()} ]";
+        $"Insert from Device [ {InsertFrom}{(Target is not null ? $" ; {Target.ToDisplayString()}" : "")} ]";
 
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
         var insertFrom = step.Element("InsertFrom")?.Attribute("value")?.Value ?? "Camera";
         var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField("", 0, "");
+        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
         var optsEl = step.Element("DeviceOptions");
         var opts = optsEl is not null ? StepChildBag.FromParent(optsEl) : new StepChildBag();
         return new InsertFromDeviceStep(insertFrom, target, opts, enabled);
