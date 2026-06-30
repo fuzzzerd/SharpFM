@@ -68,7 +68,7 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
             foreach (var kv in Profile) prof.Add(new XAttribute(kv.Key, kv.Value));
             step.Add(prof);
         }
-        step.Add(new XElement("UniversalPathList", Path));
+        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
         if (ExportOptions is not null)
         {
             var opts = new XElement("ExportOptions");

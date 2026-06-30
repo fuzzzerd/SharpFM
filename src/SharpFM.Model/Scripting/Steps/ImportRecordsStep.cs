@@ -53,9 +53,14 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
             new XAttribute("name", XmlName),
             new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
             new XElement("Restore", new XAttribute("state", RestoreStoredOrder ? "True" : "False")),
-            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")),
-            new XElement("DataSourceType", new XAttribute("value", DataSourceType)),
-            new XElement("UniversalPathList", Path));
+            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")));
+        // The data-source descriptor and path are emitted only when a source is
+        // configured; the canonical unconfigured form omits them.
+        if (!string.IsNullOrEmpty(Path))
+        {
+            step.Add(new XElement("DataSourceType", new XAttribute("value", DataSourceType)));
+            step.Add(new XElement("UniversalPathList", Path));
+        }
         if (ImportOptions is not null)
         {
             var opts = new XElement("ImportOptions");

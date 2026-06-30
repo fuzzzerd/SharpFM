@@ -54,8 +54,8 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
             new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
             new XElement("Restore", new XAttribute("state", RestoreStoredOptions ? "True" : "False")),
             new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("UniversalPathList", Path));
+            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")));
+        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
         if (StoredLabel is not null) step.Add(StoredLabel.ToXml("Calculation"));
         if (Options is not null) step.Add(Options.ToXml());
         return step;

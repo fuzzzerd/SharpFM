@@ -17,20 +17,10 @@ public static class KnownDivergences
         "003-SaveACopyAsXML-1",
         "003-SaveACopyAsXML-2",
 
-        // Import/Export Records — DataSourceType / source descriptors and lists of
-        // complex value types not yet modelled.
-        "035-ImportRecords",
-        "036-ExportRecords",
-
         // Multi-variant dialog: Title/Message and the dimension calcs are each
         // independently optional, and the <Buttons> block is a button list.
         "087-ShowCustomDialog-1",
         "087-ShowCustomDialog-2",
         "087-ShowCustomDialog-3",
-
-        // Save Records as PDF — the deep <PDFOptions> structure (Document/Pages/
-        // Security/View with a leading PDFSaveType) is not fully modelled.
-        "144-SaveRecordsAsPDF-1",
-        "144-SaveRecordsAsPDF-2",
     };
 }
