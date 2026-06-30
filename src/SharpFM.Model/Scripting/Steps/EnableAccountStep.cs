@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,8 +14,10 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
     public const int XmlId = 137;
     public const string XmlName = "Enable Account";
 
-    public Calculation AccountName { get; set; }
-    public string AccountOperation { get; set; }
+    public Calculation AccountName { get; set; } = new("");
+    public string AccountOperation { get; set; } = "Activate";
+
+    private EnableAccountStep() : base(false) { }
 
     public EnableAccountStep(
         Calculation? accountName = null,
@@ -38,26 +42,13 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
     private static string AccountOperationHr(string x) => _AccountOperationToHr.TryGetValue(x, out var h) ? h : x;
     private static string AccountOperationXml(string h) => _AccountOperationFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("AccountName", AccountName.ToXml("Calculation")),
-            new XElement("AccountOperation", new XAttribute("value", AccountOperation)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Enable Account [ " + "Account Name: " + AccountName.Text + " ; " + AccountOperationHr(AccountOperation) + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var accountName_vWrapEl = step.Element("AccountName");
-        var accountName_vCalcEl = accountName_vWrapEl?.Element("Calculation");
-        var accountName_v = accountName_vCalcEl is not null ? Calculation.FromXml(accountName_vCalcEl) : new Calculation("");
-        var accountOperation_v = step.Element("AccountOperation")?.Attribute("value")?.Value ?? "Activate";
-        return new EnableAccountStep(accountName_v, accountOperation_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<EnableAccountStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -74,6 +65,13 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "accounts",
         HelpUrl = "https://help.claris.com/en/pro-help/content/enable-account.html",
+        // AccountName (omitted when empty, Optional) then the always-present
+        // AccountOperation value flag.
+        Shape =
+        [
+            new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native },
+            new EnumValueChild("AccountOperation") { PocoProperty = "AccountOperation", DefaultValue = "Activate", Display = DisplayMode.Hidden },
+        ],
         Params =
         [
             new ParamMetadata

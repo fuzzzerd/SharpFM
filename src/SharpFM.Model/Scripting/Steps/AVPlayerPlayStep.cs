@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,14 +14,19 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
     public const int XmlId = 177;
     public const string XmlName = "AVPlayer Play";
 
-    public string Source { get; set; }
-    public Calculation Repetition { get; set; }
-    public string Presentation { get; set; }
-    public Calculation Position { get; set; }
-    public Calculation StartOffset { get; set; }
-    public Calculation EndOffset { get; set; }
-    public bool HideControls { get; set; }
-    public bool DisableInteraction { get; set; }
+    public string Source { get; set; } = "Object Name";
+    public Calculation? Repetition { get; set; }
+    public string Presentation { get; set; } = "Start Full Screen";
+    public Calculation? Position { get; set; }
+    public Calculation? StartOffset { get; set; }
+    public Calculation? EndOffset { get; set; }
+    // HideControls/DisableInteraction emit <El value="True|False"/>. They are
+    // string-backed (not bool) so the unconfigured canonical form, which omits
+    // them, round-trips: a blank value is dropped by the Optional EnumValueChild.
+    public string HideControls { get; set; } = "";
+    public string DisableInteraction { get; set; } = "";
+
+    private AVPlayerPlayStep() : base(false) { }
 
     public AVPlayerPlayStep(
         string source = "Object Name",
@@ -28,17 +35,17 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         Calculation? position = null,
         Calculation? startOffset = null,
         Calculation? endOffset = null,
-        bool hideControls = false,
-        bool disableInteraction = false,
+        string hideControls = "",
+        string disableInteraction = "",
         bool enabled = true)
         : base(enabled)
     {
         Source = source;
-        Repetition = repetition ?? new Calculation("");
+        Repetition = repetition;
         Presentation = presentation;
-        Position = position ?? new Calculation("");
-        StartOffset = startOffset ?? new Calculation("");
-        EndOffset = endOffset ?? new Calculation("");
+        Position = position;
+        StartOffset = startOffset;
+        EndOffset = endOffset;
         HideControls = hideControls;
         DisableInteraction = disableInteraction;
     }
@@ -77,44 +84,13 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
     private static string PresentationHr(string x) => _PresentationToHr.TryGetValue(x, out var h) ? h : x;
     private static string PresentationXml(string h) => _PresentationFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Source", new XAttribute("value", Source)),
-            new XElement("Repetition", Repetition.ToXml("Calculation")),
-            new XElement("Presentation", new XAttribute("value", Presentation)),
-            new XElement("PlaybackPosition", Position.ToXml("Calculation")),
-            new XElement("StartOffset", StartOffset.ToXml("Calculation")),
-            new XElement("EndOffset", EndOffset.ToXml("Calculation")),
-            new XElement("HideControls", new XAttribute("value", HideControls ? "True" : "False")),
-            new XElement("DisableInteraction", new XAttribute("value", DisableInteraction ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
-        "AVPlayer Play [ " + SourceHr(Source) + " ; " + "Repetition: " + Repetition.Text + " ; " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Position: " + Position.Text + " ; " + "Start Offset: " + StartOffset.Text + " ; " + "End Offset: " + EndOffset.Text + " ; " + "Hide Controls: " + (HideControls ? "On" : "Off") + " ; " + "Disable Interaction: " + (DisableInteraction ? "On" : "Off") + " ]";
+        "AVPlayer Play [ " + SourceHr(Source) + " ; " + "Repetition: " + (Repetition?.Text ?? "") + " ; " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Position: " + (Position?.Text ?? "") + " ; " + "Start Offset: " + (StartOffset?.Text ?? "") + " ; " + "End Offset: " + (EndOffset?.Text ?? "") + " ; " + "Hide Controls: " + (HideControls == "True" ? "On" : "Off") + " ; " + "Disable Interaction: " + (DisableInteraction == "True" ? "On" : "Off") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var source_v = step.Element("Source")?.Attribute("value")?.Value ?? "Object Name";
-        var repetition_vWrapEl = step.Element("Repetition");
-        var repetition_vCalcEl = repetition_vWrapEl?.Element("Calculation");
-        var repetition_v = repetition_vCalcEl is not null ? Calculation.FromXml(repetition_vCalcEl) : new Calculation("");
-        var presentation_v = step.Element("Presentation")?.Attribute("value")?.Value ?? "Start Full Screen";
-        var position_vWrapEl = step.Element("PlaybackPosition");
-        var position_vCalcEl = position_vWrapEl?.Element("Calculation");
-        var position_v = position_vCalcEl is not null ? Calculation.FromXml(position_vCalcEl) : new Calculation("");
-        var startOffset_vWrapEl = step.Element("StartOffset");
-        var startOffset_vCalcEl = startOffset_vWrapEl?.Element("Calculation");
-        var startOffset_v = startOffset_vCalcEl is not null ? Calculation.FromXml(startOffset_vCalcEl) : new Calculation("");
-        var endOffset_vWrapEl = step.Element("EndOffset");
-        var endOffset_vCalcEl = endOffset_vWrapEl?.Element("Calculation");
-        var endOffset_v = endOffset_vCalcEl is not null ? Calculation.FromXml(endOffset_vCalcEl) : new Calculation("");
-        var hideControls_v = step.Element("HideControls")?.Attribute("value")?.Value == "True";
-        var disableInteraction_v = step.Element("DisableInteraction")?.Attribute("value")?.Value == "True";
-        return new AVPlayerPlayStep(source_v, repetition_v, presentation_v, position_v, startOffset_v, endOffset_v, hideControls_v, disableInteraction_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<AVPlayerPlayStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -130,10 +106,10 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Start Offset:", StringComparison.OrdinalIgnoreCase)) { startOffset_v = new Calculation(tok.Substring(13).Trim()); break; } }
         Calculation? endOffset_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("End Offset:", StringComparison.OrdinalIgnoreCase)) { endOffset_v = new Calculation(tok.Substring(11).Trim()); break; } }
-        bool hideControls_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool disableInteraction_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
+        string hideControls_v = "";
+        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        string disableInteraction_v = "";
+        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
         return new AVPlayerPlayStep(source_v, repetition_v, presentation_v, position_v, startOffset_v, endOffset_v, hideControls_v, disableInteraction_v, enabled);
     }
 
@@ -143,6 +119,21 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/avplayer-play.html",
+        // Canonical form carries only Source; every other option element is
+        // omitted until configured, so all but Source are Optional. HideControls
+        // and DisableInteraction use a value="True|False" attribute and are
+        // modeled as EnumValueChild over a string so they can be dropped.
+        Shape =
+        [
+            new EnumValueChild("Source") { PocoProperty = "Source", ValidValues = ["Object Name", "Field", "URL"] },
+            new NamedCalcChild("Repetition") { PocoProperty = "Repetition", HrLabel = "Repetition", Optional = true },
+            new EnumValueChild("Presentation") { PocoProperty = "Presentation", HrLabel = "Presentation", Optional = true },
+            new NamedCalcChild("PlaybackPosition") { PocoProperty = "Position", HrLabel = "Position", Optional = true },
+            new NamedCalcChild("StartOffset") { PocoProperty = "StartOffset", HrLabel = "Start Offset", Optional = true },
+            new NamedCalcChild("EndOffset") { PocoProperty = "EndOffset", HrLabel = "End Offset", Optional = true },
+            new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true },
+            new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata

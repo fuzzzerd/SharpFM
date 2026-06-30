@@ -10,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// </summary>
 public sealed class GoToPreviousFieldStep : ScriptStep, IStepFactory
 {
-    public const int XmlId = 4;
+    public const int XmlId = 5;
     public const string XmlName = "Go to Previous Field";
 
     public GoToPreviousFieldStep(bool enabled = true) : base(enabled) { }

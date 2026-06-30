@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,7 +14,17 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
     public const string XmlName = "Relookup Field Contents";
 
     public bool WithDialog { get; set; }
-    public FieldRef Target { get; set; }
+    public FieldRef? Target { get; set; }
+
+    /// <summary>
+    /// XML-facing inverse of <see cref="WithDialog"/>: canonical
+    /// <c>&lt;NoInteract state="…"/&gt;</c> suppresses the dialog, so it is the
+    /// negation of the display-facing flag. The shape binds this so the raw
+    /// state round-trips without re-applying the inversion.
+    /// </summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+
+    private RelookupFieldContentsStep() : base(false) { }
 
     public RelookupFieldContentsStep(
         bool withDialog = true,
@@ -21,28 +33,16 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
         : base(enabled)
     {
         WithDialog = withDialog;
-        Target = target ?? FieldRef.ForField("", 0, "");
+        Target = target;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            Target.ToXml("Field"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
-        "Relookup Field Contents [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + Target.ToDisplayString() + " ]";
+        "Relookup Field Contents [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (Target?.ToDisplayString() ?? "") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField("", 0, "");
-        return new RelookupFieldContentsStep(withDialog_v, target, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<RelookupFieldContentsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -60,6 +60,14 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/relookup-field-contents.html",
+        // Canonical 040-RelookupFieldContents: NoInteract (always present, the
+        // inverse of WithDialog) then a <Field> omitted until a target is bound
+        // (Optional).
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata

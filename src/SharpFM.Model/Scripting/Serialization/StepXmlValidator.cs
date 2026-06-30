@@ -62,6 +62,7 @@ public static class StepXmlValidator
         AttributeNode or Passthrough => [],
         BoolStateChild b => [b.Element],
         EnumValueChild e => [e.Element],
+        FlagChild fl => [fl.Element],
         BareCalcChild => ["Calculation"],
         NamedCalcChild nc => [nc.Element],
         NamedTextChild nt => [nt.Element],

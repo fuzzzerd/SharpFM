@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,8 +14,10 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
     public const int XmlId = 147;
     public const string XmlName = "Set Field By Name";
 
-    public Calculation TargetFieldName { get; set; }
-    public Calculation CalculatedResult { get; set; }
+    public Calculation TargetFieldName { get; set; } = new("");
+    public Calculation CalculatedResult { get; set; } = new("");
+
+    private SetFieldByNameStep() : base(false) { }
 
     public SetFieldByNameStep(
         Calculation? targetFieldName = null,
@@ -25,28 +29,13 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
         CalculatedResult = calculatedResult ?? new Calculation("");
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("TargetName", TargetFieldName.ToXml("Calculation")),
-            new XElement("Result", CalculatedResult.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Set Field By Name [ " + "Target field name: " + TargetFieldName.Text + " ; " + "Calculated result: " + CalculatedResult.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var targetFieldName_vWrapEl = step.Element("TargetName");
-        var targetFieldName_vCalcEl = targetFieldName_vWrapEl?.Element("Calculation");
-        var targetFieldName_v = targetFieldName_vCalcEl is not null ? Calculation.FromXml(targetFieldName_vCalcEl) : new Calculation("");
-        var calculatedResult_vWrapEl = step.Element("Result");
-        var calculatedResult_vCalcEl = calculatedResult_vWrapEl?.Element("Calculation");
-        var calculatedResult_v = calculatedResult_vCalcEl is not null ? Calculation.FromXml(calculatedResult_vCalcEl) : new Calculation("");
-        return new SetFieldByNameStep(targetFieldName_v, calculatedResult_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetFieldByNameStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -64,6 +53,12 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-field-by-name.html",
+        // TargetName and Result wrappers are omitted by the unconfigured form (Optional).
+        Shape =
+        [
+            new NamedCalcChild("TargetName") { PocoProperty = "TargetFieldName", HrLabel = "Target field name", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("Result") { PocoProperty = "CalculatedResult", HrLabel = "Calculated result", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

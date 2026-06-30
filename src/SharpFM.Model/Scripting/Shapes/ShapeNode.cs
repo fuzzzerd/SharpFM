@@ -84,11 +84,24 @@ public abstract record ShapeNode
 /// <summary>Step-level extra attribute, e.g. <c>&lt;Step Source="MBSP" index="2" …&gt;</c> (MBS plugin).</summary>
 public sealed record AttributeNode(string AttrName) : ShapeNode;
 
-/// <summary><c>&lt;El state="True|False"/&gt;</c> bound to a <see cref="bool"/> property (Restore, SelectAll, NoInteract, Set, Option…).</summary>
-public sealed record BoolStateChild(string Element) : ShapeNode;
+/// <summary>
+/// A boolean child carried on an attribute: <c>&lt;El state="True|False"/&gt;</c>
+/// by default, or <c>&lt;El value="True|False"/&gt;</c> when <see cref="Attr"/> is
+/// <c>"value"</c> (e.g. Add Account's <c>ChgPwdOnNextLogin</c>). Bound to a
+/// <see cref="bool"/> property.
+/// </summary>
+public sealed record BoolStateChild(string Element, string Attr = "state") : ShapeNode;
 
 /// <summary><c>&lt;El value="X"/&gt;</c> bound to a string/enum property (FlushType, PauseTime, CallbackScriptState…).</summary>
 public sealed record EnumValueChild(string Element) : ShapeNode;
+
+/// <summary>
+/// A presence-as-boolean flag element bound to a <see cref="bool"/> property:
+/// the bare element <c>&lt;El/&gt;</c> is emitted when the value is true and
+/// omitted when false (FileMaker's "flagElement" convention — e.g. Insert
+/// Embedding in Found Set's <c>Overwrite</c>/<c>ContinueOnError</c>/<c>ShowSummary</c>).
+/// </summary>
+public sealed record FlagChild(string Element) : ShapeNode;
 
 /// <summary><c>&lt;Calculation&gt;&lt;![CDATA[…]]&gt;&lt;/Calculation&gt;</c> bound to a <c>Calculation</c> property (If condition, Exit Script return).</summary>
 public sealed record BareCalcChild : ShapeNode;
@@ -109,8 +122,17 @@ public sealed record NamedCalcChild(string Element) : ShapeNode;
 /// </summary>
 public sealed record NamedTextChild(string Element) : ShapeNode;
 
-/// <summary><c>&lt;Field table=… id=… name=…/&gt;</c> or <c>&lt;Field&gt;$var&lt;/Field&gt;</c> bound to a <c>FieldRef</c> property.</summary>
-public sealed record FieldChild(string Element = "Field") : ShapeNode;
+/// <summary>
+/// <c>&lt;Field table=… id=… name=…/&gt;</c> or <c>&lt;Field&gt;$var&lt;/Field&gt;</c>
+/// bound to a <c>FieldRef</c> property. When <see cref="VariableTextMarker"/> is
+/// set and the bound reference is a variable, FileMaker's bare <c>&lt;Text/&gt;</c>
+/// marker element is emitted immediately before the <c>&lt;Field&gt;</c> (Insert
+/// Calculated Result, Write to Data File, …).
+/// </summary>
+public sealed record FieldChild(string Element = "Field") : ShapeNode
+{
+    public bool VariableTextMarker { get; init; }
+}
 
 /// <summary><c>&lt;Script id=… name=…/&gt;</c>, <c>&lt;Layout …/&gt;</c>, <c>&lt;Table …/&gt;</c> bound to a <c>NamedRef</c> property.</summary>
 public sealed record NamedRefChild(string Element) : ShapeNode;

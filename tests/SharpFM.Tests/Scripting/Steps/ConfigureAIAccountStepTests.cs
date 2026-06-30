@@ -8,7 +8,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class ConfigureAIAccountStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="212" name="Configure AI Account"><AccoutName><Calculation><![CDATA[$x]]></Calculation></AccoutName><LLMType value="OpenAI"/><Endpoint><Calculation><![CDATA[$x]]></Calculation></Endpoint><VerifySSLCertificates state="True"/><AccessAPIKey><Calculation><![CDATA[$x]]></Calculation></AccessAPIKey></Step>""";
+    // Canonical (skill): optional VerifySSLCertificates, then LLMType, then the
+    // <SetLLMAccount> wrapper (was a flat form with the <AccoutName> typo).
+    private const string CanonicalXml = """<Step enable="True" id="212" name="Configure AI Account"><VerifySSLCertificates state="True"/><LLMType value="OpenAI"/><SetLLMAccount><AccountName><Calculation><![CDATA[$x]]></Calculation></AccountName><Endpoint><Calculation><![CDATA[$x]]></Calculation></Endpoint><AccessAPIKey><Calculation><![CDATA[$x]]></Calculation></AccessAPIKey></SetLLMAccount></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

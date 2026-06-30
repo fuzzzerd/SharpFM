@@ -51,8 +51,10 @@ public static class StepXmlRenderer
 
             case BoolStateChild b:
             {
-                var v = (bool)(ShapeReflection.Get(src, b.PocoProperty ?? b.Element) ?? false);
-                parent.Add(new XElement(b.Element, new XAttribute("state", v ? "True" : "False")));
+                var raw = ShapeReflection.Get(src, b.PocoProperty ?? b.Element);
+                if (b.Optional && raw is null) return; // optional bool? absent
+                var v = (bool)(raw ?? false);
+                parent.Add(new XElement(b.Element, new XAttribute(b.Attr, v ? "True" : "False")));
                 return;
             }
 
@@ -61,6 +63,13 @@ public static class StepXmlRenderer
                 var v = ShapeReflection.Get(src, e.PocoProperty ?? e.Element);
                 if (e.Optional && IsBlank(v)) return;
                 parent.Add(new XElement(e.Element, new XAttribute("value", Str(v))));
+                return;
+            }
+
+            case FlagChild fl:
+            {
+                if ((bool)(ShapeReflection.Get(src, fl.PocoProperty ?? fl.Element) ?? false))
+                    parent.Add(new XElement(fl.Element));
                 return;
             }
 
@@ -96,6 +105,7 @@ public static class StepXmlRenderer
                     if (!f.Optional) parent.Add(new XElement(f.Element));
                     return;
                 }
+                if (f.VariableTextMarker && fr.IsVariable) parent.Add(new XElement("Text"));
                 parent.Add(fr.ToXml(f.Element));
                 return;
             }

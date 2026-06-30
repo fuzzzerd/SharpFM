@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,33 +13,26 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
     public const int XmlId = 157;
     public const string XmlName = "Install Plug-In File";
 
-    public FieldRef Target { get; set; }
+    // Nullable so the unconfigured form (no Field) omits the optional <Field> node.
+    public FieldRef? Target { get; set; }
+
+    private InstallPlugInFileStep() : base(false) { }
 
     public InstallPlugInFileStep(
         FieldRef? target = null,
         bool enabled = true)
         : base(enabled)
     {
-        Target = target ?? FieldRef.ForField("", 0, "");
+        Target = target;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            Target.ToXml("Field"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
-        "Install Plug-In File [ " + Target.ToDisplayString() + " ]";
+        "Install Plug-In File [ " + (Target is null ? "" : Target.ToDisplayString()) + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField("", 0, "");
-        return new InstallPlugInFileStep(target, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InstallPlugInFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -53,6 +48,11 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/install-plug-in-file.html",
+        // The target Field is omitted by the unconfigured form (Optional).
+        Shape =
+        [
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

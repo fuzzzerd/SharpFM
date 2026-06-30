@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -15,6 +17,8 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
     public bool AutoOpen { get; set; }
     public bool CreateEmail { get; set; }
     public bool CreateDirectories { get; set; }
+
+    private ExportFieldContentsStep() : base(false) { }
 
     public ExportFieldContentsStep(
         FieldRef? field = null,
@@ -32,19 +36,7 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         CreateDirectories = createDirectories;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("UniversalPathList", Path));
-        if (Field is not null) step.Add(Field.ToXml("Field"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -57,17 +49,8 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         return $"Export Field Contents [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var createDirs = step.Element("CreateDirectories")?.Attribute("state")?.Value == "True";
-        var autoOpen = step.Element("AutoOpen")?.Attribute("state")?.Value == "True";
-        var createEmail = step.Element("CreateEmail")?.Attribute("state")?.Value == "True";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var fieldEl = step.Element("Field");
-        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new ExportFieldContentsStep(field, path, autoOpen, createEmail, createDirs, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ExportFieldContentsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -102,6 +85,16 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/export-field-contents.html",
+        // Canonical order: CreateDirectories, AutoOpen, CreateEmail, then the
+        // path list and Field which the unconfigured form omits (Optional).
+        Shape =
+        [
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories", HrLabel = "Create folders", Display = DisplayMode.Hidden },
+            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen", HrLabel = "Automatically open", Display = DisplayMode.Hidden },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Hidden },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field" },

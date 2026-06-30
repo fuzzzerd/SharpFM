@@ -70,12 +70,34 @@ confirmed the change is correct.
 - **Skill:** navigation reference (documents no Animation for this step).
 - [ ] Reviewed
 
-## Pending (flagged, not yet changed)
+## Phase 6 — batch migration
 
-### Go to Next Field (4) / Go to Previous Field (5) — id swap
-- Our POCOs emit id **5** for "Go to Next Field" and **4** for "Go to Previous
-  Field"; the skill and the inspector catalog have them the other way round.
-  Tracked by fixtures `004-GoToNextField` / `005-GoToPreviousField` in
-  `KnownDivergences`. Will be corrected in the navigation batch (phase 6) and
-  moved to a reviewed entry above.
-- [!] Confirm the skill's ids (4 = Next, 5 = Previous) before flipping.
+### Go to Next Field (4) / Go to Previous Field (5) — id swap fixed
+- **Before:** our POCOs emitted id **5** for "Go to Next Field" and **4** for
+  "Go to Previous Field".
+- **Now:** Next = 4, Previous = 5.
+- **Sources:** both the skill and the inspector `FM_STEP_IDS` catalog agree
+  (4 = Next, 5 = Previous). Confirmed before flipping.
+- [ ] Reviewed
+
+### Trigger Claris Connect Flow (211) — step id 0 → 211
+- **Before:** `XmlId` was left 0 ("canonical id unconfirmed"); the step emitted
+  `<Step id="0" …>`.
+- **Now:** id 211 per the skill's control reference. The rest of the step's XML
+  was already canonical.
+- [ ] Reviewed
+
+### Batch migration — 64 steps to the shape engine
+The bulk of the remaining steps were migrated to the shape-driven renderer in
+one batch. The dominant change is **no longer emitting optional/empty child
+elements** (`<Field/>`, `<Calculation/>`, `<UniversalPathList/>`, dimension
+calcs, etc.) that FileMaker omits from an unconfigured step's canonical form;
+several steps also had element **reorders**, wrapper **nesting** (Add Account →
+`<AddAccount>`, Configure AI Account → `<SetLLMAccount>`, Insert Embedding →
+`<LLMEmbedding>`/`<LLMBulkEmbedding>`), a typo fix (`AccoutName` → `AccountName`
+on Configure AI Account), and the field-id and Trigger-Claris-Connect-Flow id
+fixes above. Every migrated step now round-trips to its skill canonical form
+(the `CanonicalSkillRoundTripTests` suite is the proof); the per-step
+`*Tests.cs` constants were updated to the canonical XML where they encoded the
+old form.
+- [ ] Reviewed (spot-check the per-step diffs in this commit)

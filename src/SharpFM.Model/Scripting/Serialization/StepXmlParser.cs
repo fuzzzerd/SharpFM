@@ -44,8 +44,12 @@ public static class StepXmlParser
 
             case BoolStateChild b:
             {
-                var state = step.Element(b.Element)?.Attribute("state")?.Value;
-                Set(target, b.PocoProperty ?? b.Element, state == "True");
+                // Present -> the bool. Absent: false for a required flag; for an
+                // optional flag leave the POCO default (null for a bool? — keeps
+                // "absent" distinct from "present and False").
+                var el = step.Element(b.Element);
+                if (el is not null) Set(target, b.PocoProperty ?? b.Element, el.Attribute(b.Attr)?.Value == "True");
+                else if (!b.Optional) Set(target, b.PocoProperty ?? b.Element, false);
                 return;
             }
 
@@ -55,6 +59,10 @@ public static class StepXmlParser
                 Set(target, e.PocoProperty ?? e.Element, v);
                 return;
             }
+
+            case FlagChild fl:
+                Set(target, fl.PocoProperty ?? fl.Element, step.Element(fl.Element) is not null);
+                return;
 
             case BareCalcChild:
             {

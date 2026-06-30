@@ -8,7 +8,8 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class PasteStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="48" name="Paste"><SelectAll state="False"/><NoStyle state="False"/><LinkAvail state="False"/><Field table="Invoices" id="12" name="Status"/></Step>""";
+    // Canonical (skill) bool order: NoStyle, SelectAll, LinkAvail (was SelectAll first).
+    private const string CanonicalXml = """<Step enable="True" id="48" name="Paste"><NoStyle state="False"/><SelectAll state="False"/><LinkAvail state="False"/><Field table="Invoices" id="12" name="Status"/></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

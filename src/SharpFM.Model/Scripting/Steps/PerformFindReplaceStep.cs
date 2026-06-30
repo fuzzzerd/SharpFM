@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -16,9 +18,14 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
     public const string XmlName = "Perform Find/Replace";
 
     public bool WithDialog { get; set; }
-    public FindReplaceOperation Operation { get; set; }
-    public Calculation FindText { get; set; }
+    public FindReplaceOperation Operation { get; set; } = FindReplaceOperation.Default();
+    public Calculation FindText { get; set; } = new("");
     public Calculation? ReplaceText { get; set; }
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private PerformFindReplaceStep() : base(false) { }
 
     public PerformFindReplaceStep(
         bool withDialog = true,
@@ -34,19 +41,7 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         ReplaceText = replaceText;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            Operation.ToXml(),
-            new XElement("FindCalc", FindText.ToXml("Calculation")));
-        if (ReplaceText is not null)
-            step.Add(new XElement("ReplaceCalc", ReplaceText.ToXml("Calculation")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -68,19 +63,8 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         return $"Perform Find/Replace [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        // NoInteract inverted: state="True" = With dialog: Off
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var opEl = step.Element("FindReplaceOperation");
-        var op = opEl is not null ? FindReplaceOperation.FromXml(opEl) : FindReplaceOperation.Default();
-        var findEl = step.Element("FindCalc")?.Element("Calculation");
-        var find = findEl is not null ? Calculation.FromXml(findEl) : new Calculation("");
-        var replaceEl = step.Element("ReplaceCalc")?.Element("Calculation");
-        var replace = replaceEl is not null ? Calculation.FromXml(replaceEl) : null;
-        return new PerformFindReplaceStep(withDialog, op, find, replace, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<PerformFindReplaceStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -110,6 +94,15 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "editing",
         HelpUrl = "https://help.claris.com/en/pro-help/content/perform-find-replace.html",
+        // Canonical: NoInteract (inverts WithDialog) then FindReplaceOperation;
+        // the FindCalc/ReplaceCalc wrappers are omitted when empty (Optional).
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Hidden },
+            new ValueTypeChild("FindReplaceOperation") { PocoProperty = "Operation", Display = DisplayMode.Hidden },
+            new NamedCalcChild("FindCalc") { PocoProperty = "FindText", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("ReplaceCalc") { PocoProperty = "ReplaceText", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

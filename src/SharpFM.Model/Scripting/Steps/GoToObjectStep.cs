@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,8 +14,10 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
     public const int XmlId = 145;
     public const string XmlName = "Go to Object";
 
-    public Calculation Calculation { get; set; }
-    public Calculation Calculation2 { get; set; }
+    public Calculation Calculation { get; set; } = new("");
+    public Calculation Calculation2 { get; set; } = new("");
+
+    private GoToObjectStep() : base(false) { }
 
     public GoToObjectStep(
         Calculation? calculation = null,
@@ -25,28 +29,13 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
         Calculation2 = calculation2 ?? new Calculation("");
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ObjectName", Calculation.ToXml("Calculation")),
-            new XElement("Repetition", Calculation2.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Go to Object [ " + Calculation.Text + " ; " + Calculation2.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var calculation_vWrapEl = step.Element("ObjectName");
-        var calculation_vCalcEl = calculation_vWrapEl?.Element("Calculation");
-        var calculation_v = calculation_vCalcEl is not null ? Calculation.FromXml(calculation_vCalcEl) : new Calculation("");
-        var calculation2_vWrapEl = step.Element("Repetition");
-        var calculation2_vCalcEl = calculation2_vWrapEl?.Element("Calculation");
-        var calculation2_v = calculation2_vCalcEl is not null ? Calculation.FromXml(calculation2_vCalcEl) : new Calculation("");
-        return new GoToObjectStep(calculation_v, calculation2_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<GoToObjectStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -64,6 +53,13 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-object.html",
+        // ObjectName and Repetition wrappers are omitted by the unconfigured
+        // form (Optional).
+        Shape =
+        [
+            new NamedCalcChild("ObjectName") { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("Repetition") { PocoProperty = "Calculation2", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

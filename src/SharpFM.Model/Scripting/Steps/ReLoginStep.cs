@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,8 +15,13 @@ public sealed class ReLoginStep : ScriptStep, IStepFactory
     public const string XmlName = "Re-Login";
 
     public bool WithDialog { get; set; }
-    public Calculation AccountName { get; set; }
-    public Calculation Password { get; set; }
+    public Calculation AccountName { get; set; } = new("");
+    public Calculation Password { get; set; } = new("");
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private ReLoginStep() : base(false) { }
 
     public ReLoginStep(
         bool withDialog = true,
@@ -28,30 +35,13 @@ public sealed class ReLoginStep : ScriptStep, IStepFactory
         Password = password ?? new Calculation("");
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("AccountName", AccountName.ToXml("Calculation")),
-            new XElement("Password", Password.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Re-Login [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + "Account Name: " + AccountName.Text + " ; " + "Password: " + Password.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var accountName_vWrapEl = step.Element("AccountName");
-        var accountName_vCalcEl = accountName_vWrapEl?.Element("Calculation");
-        var accountName_v = accountName_vCalcEl is not null ? Calculation.FromXml(accountName_vCalcEl) : new Calculation("");
-        var password_vWrapEl = step.Element("Password");
-        var password_vCalcEl = password_vWrapEl?.Element("Calculation");
-        var password_v = password_vCalcEl is not null ? Calculation.FromXml(password_vCalcEl) : new Calculation("");
-        return new ReLoginStep(withDialog_v, accountName_v, password_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ReLoginStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -71,6 +61,14 @@ public sealed class ReLoginStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "accounts",
         HelpUrl = "https://help.claris.com/en/pro-help/content/re-login.html",
+        // NoInteract (inverts WithDialog) then AccountName/Password, which the
+        // unconfigured form omits (Optional).
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Hidden },
+            new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("Password") { PocoProperty = "Password", HrLabel = "Password", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

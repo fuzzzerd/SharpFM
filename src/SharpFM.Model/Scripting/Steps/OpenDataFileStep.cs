@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,8 @@ public sealed class OpenDataFileStep : ScriptStep, IStepFactory
     public string Path { get; set; }
     public FieldRef? Target { get; set; }
 
+    private OpenDataFileStep() : base(false) { Path = ""; }
+
     public OpenDataFileStep(string path = "", FieldRef? target = null, bool enabled = true)
         : base(enabled)
     {
@@ -20,30 +24,15 @@ public sealed class OpenDataFileStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", Path));
-        if (Target is not null) step.Add(Target.ToXml("Field"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         Target is null
             ? $"Open Data File [ {Path} ]"
             : $"Open Data File [ {Path} ; Target: {Target.ToDisplayString()} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new OpenDataFileStep(path, target, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<OpenDataFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -72,6 +61,12 @@ public sealed class OpenDataFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/open-data-file.html",
+        // Canonical unconfigured form is empty: path and target are omitted when absent.
+        Shape =
+        [
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Required = true, Optional = true },
+            new FieldChild() { PocoProperty = "Target", HrLabel = "Target", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata

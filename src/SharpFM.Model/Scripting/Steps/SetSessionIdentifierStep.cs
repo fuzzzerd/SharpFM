@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,33 +14,25 @@ public sealed class SetSessionIdentifierStep : ScriptStep, IStepFactory
     public const int XmlId = 208;
     public const string XmlName = "Set Session Identifier";
 
-    public Calculation SessionIdentifier { get; set; }
+    public Calculation? SessionIdentifier { get; set; }
+
+    private SetSessionIdentifierStep() : base(false) { }
 
     public SetSessionIdentifierStep(
         Calculation? sessionIdentifier = null,
         bool enabled = true)
         : base(enabled)
     {
-        SessionIdentifier = sessionIdentifier ?? new Calculation("");
+        SessionIdentifier = sessionIdentifier;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            SessionIdentifier.ToXml("Calculation"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
-        "Set Session Identifier [ " + "Session identifier: " + SessionIdentifier.Text + " ]";
+        "Set Session Identifier [ " + "Session identifier: " + (SessionIdentifier?.Text ?? "") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var sessionIdentifier_vEl = step.Element("Calculation");
-        var sessionIdentifier_v = sessionIdentifier_vEl is not null ? Calculation.FromXml(sessionIdentifier_vEl) : new Calculation("");
-        return new SetSessionIdentifierStep(sessionIdentifier_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetSessionIdentifierStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -54,6 +48,11 @@ public sealed class SetSessionIdentifierStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-session-identifier.html",
+        // Canonical unconfigured form is empty: the bare identifier calc is omitted when blank.
+        Shape =
+        [
+            new BareCalcChild { PocoProperty = "SessionIdentifier", HrLabel = "Session identifier", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata

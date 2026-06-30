@@ -1,30 +1,34 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Insert Embedding in Found Set: The LLMBulkEmbedding parent element
-/// carries most params. The Target field is a sibling of LLMBulkEmbedding
-/// (outside it); SourceField is a Field element inside LLMBulkEmbedding.
-/// Flag elements (Overwrite, ContinueOnError, ShowSummary) use
-/// presence = On, absence = Off.
+/// Insert Embedding in Found Set (216). Canonical form (skill, AI reference): an
+/// optional target <c>Field</c> sibling, then an <c>&lt;LLMBulkEmbedding&gt;</c>
+/// wrapper holding the optional account/model calcs, the source <c>Field</c>,
+/// the presence-flag options (Overwrite / ContinueOnError / ShowSummary) and the
+/// optional parameters calc. Emitted as an empty wrapper when unconfigured.
 /// </summary>
 public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
 {
     public const int XmlId = 216;
     public const string XmlName = "Insert Embedding in Found Set";
 
-    public Calculation AccountName { get; set; }
-    public Calculation Model { get; set; }
+    public Calculation AccountName { get; set; } = new("");
+    public Calculation Model { get; set; } = new("");
     public FieldRef? SourceField { get; set; }
     public FieldRef? TargetField { get; set; }
     public bool Overwrite { get; set; }
     public bool ContinueOnError { get; set; }
     public bool ShowSummary { get; set; }
     public Calculation? Parameters { get; set; }
+
+    private InsertEmbeddingInFoundSetStep() : base(false) { }
 
     public InsertEmbeddingInFoundSetStep(
         Calculation? accountName = null,
@@ -48,29 +52,7 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         Parameters = parameters;
     }
 
-    public override XElement ToXml()
-    {
-        var bulk = new XElement("LLMBulkEmbedding",
-            new XElement("AccountName", AccountName.ToXml("Calculation")),
-            new XElement("Model", Model.ToXml("Calculation")));
-        if (SourceField is not null) bulk.Add(SourceField.ToXml("Field"));
-        if (Overwrite) bulk.Add(new XElement("Overwrite"));
-        if (ContinueOnError) bulk.Add(new XElement("ContinueOnError"));
-        if (ShowSummary) bulk.Add(new XElement("ShowSummary"));
-        if (Parameters is not null) bulk.Add(new XElement("Parameters", Parameters.ToXml("Calculation")));
-
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        if (TargetField is not null)
-        {
-            if (TargetField.IsVariable) step.Add(new XElement("Text"));
-            step.Add(TargetField.ToXml("Field"));
-        }
-        step.Add(bulk);
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -88,31 +70,8 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         return $"Insert Embedding in Found Set [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var bulk = step.Element("LLMBulkEmbedding");
-        var account = bulk?.Element("AccountName")?.Element("Calculation");
-        var model = bulk?.Element("Model")?.Element("Calculation");
-        var sourceEl = bulk?.Element("Field");
-        var source = sourceEl is not null ? FieldRef.FromXml(sourceEl) : null;
-        var overwrite = bulk?.Element("Overwrite") is not null;
-        var continueErr = bulk?.Element("ContinueOnError") is not null;
-        var summary = bulk?.Element("ShowSummary") is not null;
-        var paramsEl = bulk?.Element("Parameters")?.Element("Calculation");
-        var targetEl = step.Element("Field");
-        var target = targetEl is not null ? FieldRef.FromXml(targetEl) : null;
-        return new InsertEmbeddingInFoundSetStep(
-            account is not null ? Calculation.FromXml(account) : new Calculation(""),
-            model is not null ? Calculation.FromXml(model) : new Calculation(""),
-            source,
-            target,
-            overwrite,
-            continueErr,
-            summary,
-            paramsEl is not null ? Calculation.FromXml(paramsEl) : null,
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertEmbeddingInFoundSetStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -148,6 +107,23 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         Name = XmlName,
         Id = XmlId,
         Category = "artificial intelligence",
+        // Canonical: optional target Field sibling, then the <LLMBulkEmbedding>
+        // wrapper with optional account/model, source Field, presence-flag
+        // options, and the optional parameters calc.
+        Shape =
+        [
+            new FieldChild("Field") { PocoProperty = "TargetField", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
+            new WrapperChild("LLMBulkEmbedding",
+            [
+                new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
+                new NamedCalcChild("Model") { PocoProperty = "Model", HrLabel = "Embedding Model", Optional = true, Display = DisplayMode.Augmented },
+                new FieldChild("Field") { PocoProperty = "SourceField", HrLabel = "Source Field", Optional = true, Display = DisplayMode.Native },
+                new FlagChild("Overwrite") { PocoProperty = "Overwrite", HrLabel = "Replace target contents" },
+                new FlagChild("ContinueOnError") { PocoProperty = "ContinueOnError", HrLabel = "Continue on error" },
+                new FlagChild("ShowSummary") { PocoProperty = "ShowSummary", HrLabel = "Show summary" },
+                new NamedCalcChild("Parameters") { PocoProperty = "Parameters", HrLabel = "Parameters", Optional = true, Display = DisplayMode.Augmented },
+            ]),
+        ],
         Params =
         [
             new ParamMetadata { Name = "AccountName", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Account Name", Required = true },

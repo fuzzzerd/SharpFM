@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -15,6 +17,8 @@ public sealed class SaveRecordsAsSnapshotLinkStep : ScriptStep, IStepFactory
     public bool CreateEmail { get; set; }
     public string Records { get; set; }
     public string OutputPath { get; set; }
+
+    private SaveRecordsAsSnapshotLinkStep() : base(false) { }
 
     public SaveRecordsAsSnapshotLinkStep(
         bool createFolders = false,
@@ -50,28 +54,13 @@ public sealed class SaveRecordsAsSnapshotLinkStep : ScriptStep, IStepFactory
     private static string RecordsXml(string h) =>
         _RecordsFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("CreateDirectories", new XAttribute("state", CreateFolders ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("SaveType", new XAttribute("value", Records)),
-            new XElement("UniversalPathList", OutputPath));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Save Records as Snapshot Link [ " + "Create folders: " + (CreateFolders ? "On" : "Off") + " ; " + "Create email: " + (CreateEmail ? "On" : "Off") + " ; " + "Records: " + RecordsHr(Records) + " ; " + "Output path: " + OutputPath + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var createFolders_v = step.Element("CreateDirectories")?.Attribute("state")?.Value == "True";
-        var createEmail_v = step.Element("CreateEmail")?.Attribute("state")?.Value == "True";
-        var records_v = step.Element("SaveType")?.Attribute("value")?.Value ?? "BrowsedRecords";
-        var outputPath_v = step.Element("UniversalPathList")?.Value ?? "";
-        return new SaveRecordsAsSnapshotLinkStep(createFolders_v, createEmail_v, records_v, outputPath_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SaveRecordsAsSnapshotLinkStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -93,6 +82,15 @@ public sealed class SaveRecordsAsSnapshotLinkStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/save-records-as-snapshot-link.html",
+        // Canonical: CreateDirectories, CreateEmail, SaveType, then the path list
+        // which the unconfigured form omits (Optional).
+        Shape =
+        [
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateFolders", HrLabel = "Create folders", Display = DisplayMode.Hidden },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Hidden },
+            new EnumValueChild("SaveType") { PocoProperty = "Records", HrLabel = "Records", DefaultValue = "BrowsedRecords", Display = DisplayMode.Hidden },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "OutputPath", HrLabel = "Output path", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

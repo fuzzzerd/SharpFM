@@ -12,7 +12,7 @@ namespace SharpFM.Tests.Scripting.Steps;
 /// </summary>
 public class GoToPreviousFieldStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="4" name="Go to Previous Field"/>""";
+    private const string CanonicalXml = """<Step enable="True" id="5" name="Go to Previous Field"/>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()
@@ -34,7 +34,7 @@ public class GoToPreviousFieldStepTests
     [Fact]
     public void Disabled_RoundTrips()
     {
-        var source = XElement.Parse("""<Step enable="False" id="4" name="Go to Previous Field"/>""");
+        var source = XElement.Parse("""<Step enable="False" id="5" name="Go to Previous Field"/>""");
         var step = GoToPreviousFieldStep.Metadata.FromXml!(source);
 
         Assert.False(step.Enabled);
@@ -45,7 +45,7 @@ public class GoToPreviousFieldStepTests
     public void Registry_HasStep()
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Go to Previous Field", out var metadata));
-        Assert.Equal(4, metadata!.Id);
+        Assert.Equal(5, metadata!.Id);
         Assert.Empty(metadata.Params);
     }
 }

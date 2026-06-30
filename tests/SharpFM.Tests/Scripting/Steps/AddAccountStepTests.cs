@@ -8,7 +8,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class AddAccountStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="134" name="Add Account"><AccountType value="FileMaker"/><AccountName><Calculation><![CDATA[$x]]></Calculation></AccountName><Password><Calculation><![CDATA[$x]]></Calculation></Password><PrivilegeSet>$example</PrivilegeSet><ChgPwdOnNextLogin value="True"/></Step>""";
+    // Canonical (skill): ChgPwdOnNextLogin first, then the <AddAccount> wrapper
+    // with a text <AccountType> (was a flat, value-attr, wrapper-less form).
+    private const string CanonicalXml = """<Step enable="True" id="134" name="Add Account"><ChgPwdOnNextLogin value="True"/><AddAccount><AccountType>FileMaker</AccountType><AccountName><Calculation><![CDATA[$x]]></Calculation></AccountName><Password><Calculation><![CDATA[$x]]></Calculation></Password><PrivilegeSet>$example</PrivilegeSet></AddAccount></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

@@ -3,20 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
+/// <summary>
+/// Add Account (134). Canonical form (skill, accounts reference):
+/// <c>&lt;ChgPwdOnNextLogin value="…"/&gt;</c> first, then an
+/// <c>&lt;AddAccount&gt;</c> wrapper holding the text <c>&lt;AccountType&gt;</c>
+/// and the optional account name / password / privilege-set fields.
+/// </summary>
 public sealed class AddAccountStep : ScriptStep, IStepFactory
 {
     public const int XmlId = 134;
     public const string XmlName = "Add Account";
 
-    public string AuthenticateVia { get; set; }
-    public Calculation AccountName { get; set; }
-    public Calculation Password { get; set; }
-    public string PrivilegeSet { get; set; }
+    public string AuthenticateVia { get; set; } = "FileMaker";
+    public Calculation AccountName { get; set; } = new("");
+    public Calculation Password { get; set; } = new("");
+    public string PrivilegeSet { get; set; } = "";
     public bool ExpirePassword { get; set; }
+
+    private AddAccountStep() : base(false) { }
 
     public AddAccountStep(
         string authenticateVia = "FileMaker",
@@ -57,34 +67,13 @@ public sealed class AddAccountStep : ScriptStep, IStepFactory
     private static string AuthenticateViaHr(string x) => _AuthenticateViaToHr.TryGetValue(x, out var h) ? h : x;
     private static string AuthenticateViaXml(string h) => _AuthenticateViaFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("AccountType", new XAttribute("value", AuthenticateVia)),
-            new XElement("AccountName", AccountName.ToXml("Calculation")),
-            new XElement("Password", Password.ToXml("Calculation")),
-            new XElement("PrivilegeSet", PrivilegeSet),
-            new XElement("ChgPwdOnNextLogin", new XAttribute("value", ExpirePassword ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Add Account [ " + "Authenticate via: " + AuthenticateViaHr(AuthenticateVia) + " ; " + "Account Name: " + AccountName.Text + " ; " + "Password: " + Password.Text + " ; " + "Privilege Set: " + PrivilegeSet + " ; " + "Expire password: " + (ExpirePassword ? "On" : "Off") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var authenticateVia_v = step.Element("AccountType")?.Attribute("value")?.Value ?? "FileMaker";
-        var accountName_vWrapEl = step.Element("AccountName");
-        var accountName_vCalcEl = accountName_vWrapEl?.Element("Calculation");
-        var accountName_v = accountName_vCalcEl is not null ? Calculation.FromXml(accountName_vCalcEl) : new Calculation("");
-        var password_vWrapEl = step.Element("Password");
-        var password_vCalcEl = password_vWrapEl?.Element("Calculation");
-        var password_v = password_vCalcEl is not null ? Calculation.FromXml(password_vCalcEl) : new Calculation("");
-        var privilegeSet_v = step.Element("PrivilegeSet")?.Value ?? "";
-        var expirePassword_v = step.Element("ChgPwdOnNextLogin")?.Attribute("value")?.Value == "True";
-        return new AddAccountStep(authenticateVia_v, accountName_v, password_v, privilegeSet_v, expirePassword_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<AddAccountStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -108,6 +97,19 @@ public sealed class AddAccountStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "accounts",
         HelpUrl = "https://help.claris.com/en/pro-help/content/add-account.html",
+        // Canonical: ChgPwdOnNextLogin (value attr) first, then the <AddAccount>
+        // wrapper with text <AccountType> and the optional account fields.
+        Shape =
+        [
+            new BoolStateChild("ChgPwdOnNextLogin", "value") { PocoProperty = "ExpirePassword", HrLabel = "Expire password", Display = DisplayMode.Augmented },
+            new WrapperChild("AddAccount",
+            [
+                new NamedTextChild("AccountType") { PocoProperty = "AuthenticateVia", HrLabel = "Authenticate via", DefaultValue = "FileMaker", Display = DisplayMode.Augmented },
+                new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
+                new NamedCalcChild("Password") { PocoProperty = "Password", HrLabel = "Password", Optional = true, Display = DisplayMode.Augmented },
+                new NamedTextChild("PrivilegeSet") { PocoProperty = "PrivilegeSet", HrLabel = "Privilege Set", Optional = true, Display = DisplayMode.Augmented },
+            ]),
+        ],
         Params =
         [
             new ParamMetadata

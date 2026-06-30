@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,8 +14,10 @@ public sealed class RefreshObjectStep : ScriptStep, IStepFactory
     public const int XmlId = 167;
     public const string XmlName = "Refresh Object";
 
-    public Calculation ObjectName { get; set; }
-    public Calculation Repetition { get; set; }
+    public Calculation ObjectName { get; set; } = new("");
+    public Calculation Repetition { get; set; } = new("");
+
+    private RefreshObjectStep() : base(false) { }
 
     public RefreshObjectStep(
         Calculation? objectName = null,
@@ -25,28 +29,13 @@ public sealed class RefreshObjectStep : ScriptStep, IStepFactory
         Repetition = repetition ?? new Calculation("");
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ObjectName", ObjectName.ToXml("Calculation")),
-            new XElement("Repetition", Repetition.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Refresh Object [ " + "Object Name: " + ObjectName.Text + " ; " + "Repetition: " + Repetition.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var objectName_vWrapEl = step.Element("ObjectName");
-        var objectName_vCalcEl = objectName_vWrapEl?.Element("Calculation");
-        var objectName_v = objectName_vCalcEl is not null ? Calculation.FromXml(objectName_vCalcEl) : new Calculation("");
-        var repetition_vWrapEl = step.Element("Repetition");
-        var repetition_vCalcEl = repetition_vWrapEl?.Element("Calculation");
-        var repetition_v = repetition_vCalcEl is not null ? Calculation.FromXml(repetition_vCalcEl) : new Calculation("");
-        return new RefreshObjectStep(objectName_v, repetition_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<RefreshObjectStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -64,6 +53,13 @@ public sealed class RefreshObjectStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/refresh-object.html",
+        // ObjectName and Repetition wrappers are omitted by the unconfigured
+        // form (Optional).
+        Shape =
+        [
+            new NamedCalcChild("ObjectName") { PocoProperty = "ObjectName", HrLabel = "Object Name", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("Repetition") { PocoProperty = "Repetition", HrLabel = "Repetition", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

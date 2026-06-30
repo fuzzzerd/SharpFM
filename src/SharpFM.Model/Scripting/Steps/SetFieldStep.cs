@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -7,51 +9,33 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <summary>
 /// Typed domain representation of FileMaker's "Set Field" script step.
 /// FM Pro emits the source XML as <c>[Calculation, Field]</c> but renders
-/// display as <c>[ Field ; Calculation ]</c>; this step honors both.
+/// display as <c>[ Field ; Calculation ]</c>; this step honors both. An
+/// unconfigured Set Field carries neither child, so both are Optional.
 /// </summary>
 public sealed class SetFieldStep : ScriptStep, IStepFactory
 {
     public const int XmlId = 76;
     public const string XmlName = "Set Field";
 
-    public FieldRef Target { get; set; }
-    public Calculation Expression { get; set; }
+    public FieldRef? Target { get; set; }
+    public Calculation? Expression { get; set; }
 
-    public SetFieldStep(bool enabled, FieldRef target, Calculation expression)
+    private SetFieldStep() : base(false) { }
+
+    public SetFieldStep(bool enabled, FieldRef? target, Calculation? expression)
         : base(enabled)
     {
         Target = target;
         Expression = expression;
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetFieldStep>(step, Metadata);
 
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField(null, 0, "");
-
-        var calcEl = step.Element("Calculation");
-        var expression = calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
-
-        return new SetFieldStep(enabled, target, expression);
-    }
-
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        step.Add(Expression.ToXml());
-        step.Add(Target.ToXml("Field"));
-
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
-        $"Set Field [ {Target.ToDisplayString()} ; {Expression.Text} ]";
+        $"Set Field [ {Target?.ToDisplayString() ?? ""} ; {Expression?.Text ?? ""} ]";
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -73,6 +57,13 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-field.html",
+        // Canonical 076-SetField: source order is bare <Calculation> then
+        // <Field>. The unconfigured variant (-1) has neither, so both Optional.
+        Shape =
+        [
+            new BareCalcChild { PocoProperty = "Expression", Optional = true },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", Required = true },

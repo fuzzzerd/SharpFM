@@ -11,14 +11,12 @@ namespace SharpFM.Model.Scripting.Steps;
 /// target variable.
 ///
 /// <para>
-/// The step id is defaulted to 0; the canonical id has not been confirmed
-/// from real FM Pro clipboard output. Whatever id appears on the source
-/// XML is preserved through round-trip.
+/// The canonical step id is 211 (vendored FileMaker XML skill, control reference).
 /// </para>
 /// </summary>
 public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
 {
-    public const int XmlId = 0;
+    public const int XmlId = 211;
     public const string XmlName = "Trigger Claris Connect Flow";
 
     public bool WithDialog { get; set; }
