@@ -48,10 +48,6 @@ public static class KnownDivergences
         "146-SetWebViewer-2",
         "146-SetWebViewer-3",
 
-        // Parameters list models <P><Calculation> as List<Calculation>; the
-        // ParametersList primitive parses <P> text into List<string>.
-        "175-PerformJavaScriptInWebViewer-1",
-
         // PerformScriptTarget VariantBlock — StepXmlParser throws NotSupported on
         // VariantBlock parsing.
         "210-PerformScriptOnServerWithCallback",

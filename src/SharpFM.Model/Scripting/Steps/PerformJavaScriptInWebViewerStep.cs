@@ -18,7 +18,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
     public const string XmlName = "Perform JavaScript in Web Viewer";
 
     public Calculation? ObjectName { get; set; }
-    public Calculation FunctionName { get; set; }
+    public Calculation? FunctionName { get; set; }
     public IReadOnlyList<Calculation> Parameters { get; set; }
 
     public PerformJavaScriptInWebViewerStep(
@@ -29,18 +29,20 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         : base(enabled)
     {
         ObjectName = objectName;
-        FunctionName = functionName ?? new Calculation("\"\"");
+        FunctionName = functionName;
         Parameters = parameters ?? new List<Calculation>();
     }
 
     public override XElement ToXml()
     {
+        // Canonical unconfigured form is empty; FunctionName (and ObjectName /
+        // Parameters) are emitted only when set.
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName));
         if (ObjectName is not null) step.Add(new XElement("ObjectName", ObjectName.ToXml("Calculation")));
-        step.Add(new XElement("FunctionName", FunctionName.ToXml("Calculation")));
+        if (FunctionName is not null) step.Add(new XElement("FunctionName", FunctionName.ToXml("Calculation")));
         if (Parameters.Count > 0)
         {
             var parameters = new XElement("Parameters", new XAttribute("Count", Parameters.Count));
@@ -55,7 +57,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
     {
         var parts = new List<string>();
         if (ObjectName is not null) parts.Add($"Object Name: {ObjectName.Text}");
-        parts.Add($"Function Name: {FunctionName.Text}");
+        if (FunctionName is not null) parts.Add($"Function Name: {FunctionName.Text}");
         if (Parameters.Count > 0)
             parts.Add($"Parameters: {string.Join(", ", Parameters.Select(p => p.Text))}");
         return $"Perform JavaScript in Web Viewer [ {string.Join(" ; ", parts)} ]";
@@ -67,7 +69,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         var objEl = step.Element("ObjectName")?.Element("Calculation");
         var obj = objEl is not null ? Calculation.FromXml(objEl) : null;
         var fnEl = step.Element("FunctionName")?.Element("Calculation");
-        var fn = fnEl is not null ? Calculation.FromXml(fnEl) : new Calculation("\"\"");
+        var fn = fnEl is not null ? Calculation.FromXml(fnEl) : null;
         var paramsList = step.Element("Parameters")?.Elements("P")
             .Select(p => p.Element("Calculation") is { } c ? Calculation.FromXml(c) : new Calculation(""))
             .ToList() ?? new List<Calculation>();
