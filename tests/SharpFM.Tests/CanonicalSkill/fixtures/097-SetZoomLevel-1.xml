@@ -1,0 +1,4 @@
+<Step enable="True" id="97" name="Set Zoom Level">
+  <Lock state="False" />
+  <Zoom value="100" />
+</Step>

@@ -1,0 +1,19 @@
+<Step enable="True" id="175" name="Perform JavaScript in Web Viewer">
+  <ObjectName>
+    <Calculation><![CDATA["myWebViewer"]]></Calculation>
+  </ObjectName>
+  <FunctionName>
+    <Calculation><![CDATA["updateData"]]></Calculation>
+  </FunctionName>
+  <Parameters Count="3">
+    <P>
+      <Calculation><![CDATA["first arg"]]></Calculation>
+    </P>
+    <P>
+      <Calculation><![CDATA[42]]></Calculation>
+    </P>
+    <P>
+      <Calculation><![CDATA[$variable_arg]]></Calculation>
+    </P>
+  </Parameters>
+</Step>

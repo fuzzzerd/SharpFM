@@ -1,0 +1,6 @@
+<Step enable="True" id="218" name="Perform Semantic Find">
+  <LLMSemanticFind>
+    <Query type="1" />
+    <Records type="1" />
+  </LLMSemanticFind>
+</Step>

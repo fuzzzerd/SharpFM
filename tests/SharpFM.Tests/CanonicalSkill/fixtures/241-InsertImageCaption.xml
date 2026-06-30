@@ -1,0 +1,3 @@
+<Step enable="True" id="241" name="Insert Image Caption">
+  <LLMEmbedding />
+</Step>

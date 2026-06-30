@@ -1,0 +1,8 @@
+<Step enable="True" id="245" name="Close PDF">
+  <CreateDirectories state="False" />
+  <AutoOpen state="False" />
+  <CreateEmail state="False" />
+  <ClosePDFFile>
+    <PDFSaveType>File</PDFSaveType>
+  </ClosePDFFile>
+</Step>

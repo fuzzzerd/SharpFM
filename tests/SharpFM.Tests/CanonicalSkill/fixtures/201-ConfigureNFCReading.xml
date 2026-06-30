@@ -1,0 +1,3 @@
+<Step enable="True" id="201" name="Configure NFC Reading">
+  <Action value="Read" />
+</Step>

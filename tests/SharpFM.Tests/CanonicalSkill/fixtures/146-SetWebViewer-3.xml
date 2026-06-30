@@ -1,0 +1,9 @@
+<Step enable="True" id="146" name="Set Web Viewer">
+  <Action value="GoToURL" />
+  <ObjectName>
+    <Calculation><![CDATA["myWebViewer"]]></Calculation>
+  </ObjectName>
+  <URL custom="False">
+    <Calculation><![CDATA["https://example.com/test"]]></Calculation>
+  </URL>
+</Step>

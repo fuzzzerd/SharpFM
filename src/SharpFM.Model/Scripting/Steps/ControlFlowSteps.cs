@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -8,22 +9,17 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <summary>
 /// Typed POCOs for FileMaker's block-pair control-flow steps:
 /// <c>If</c>, <c>Else If</c>, <c>Else</c>, <c>End If</c>, <c>Loop</c>,
-/// <c>End Loop</c>, <c>Exit Loop If</c>.
+/// <c>End Loop</c>, <c>Exit Loop If</c>. Serialization is shape-driven
+/// (<see cref="StepXmlRenderer"/> / <see cref="StepXmlParser"/>).
 /// <para>
-/// Every step here is an <see cref="IStepFactory"/>. The single-file
-/// layout keeps the related steps and their shared helpers
-/// (<see cref="IfStep.BuildConditionedStep"/>, <see cref="ElseStep.BuildBareStep"/>)
-/// colocated.
-/// </para>
-/// <para>
-/// Zero-loss audit:
-/// <list type="bullet">
-/// <item><c>If</c> / <c>Else If</c> / <c>Loop</c> carry a <c>Restore</c> element in some upstream XML
-/// sources. FM Pro never writes it and never changes the value; we drop it on read and never emit it.
-/// See <c>docs/advanced-filemaker-scripting-syntax.md</c>.</item>
-/// <item><c>Loop</c>'s <c>FlushType</c> enum is also absent from FM Pro clipboard output. Not surfaced
-/// in display and not round-tripped — same "semantically fixed / never-changed" justification.</item>
-/// </list>
+/// Canonical-form note: per the vendored FileMaker XML skill (§8.1), FileMaker
+/// Pro <em>does</em> emit <c>&lt;Restore state="False"/&gt;</c> on
+/// <c>If</c> / <c>Else If</c> / <c>Else</c> / <c>Loop</c>, and
+/// <c>&lt;FlushType value="Always"/&gt;</c> on <c>Loop</c>. These are paste-clean
+/// canonical elements, so SharpFM emits them. They carry fixed values FileMaker
+/// never varies, so they are hidden from the display line but round-tripped in
+/// XML. (Earlier revisions dropped them on the belief FM never wrote them; the
+/// skill's round-trip testing against FM Pro 2025/2026 supersedes that.)
 /// </para>
 /// </summary>
 public sealed class IfStep : ScriptStep, IStepFactory
@@ -31,7 +27,12 @@ public sealed class IfStep : ScriptStep, IStepFactory
     public const int XmlId = 68;
     public const string XmlName = "If";
 
-    public Calculation Condition { get; set; }
+    public Calculation Condition { get; set; } = new("");
+
+    /// <summary>The canonical <c>&lt;Restore state="False"/&gt;</c> flag (skill §8.1); fixed-value, XML-only.</summary>
+    public bool Restore { get; set; }
+
+    private IfStep() : base(false) { }
 
     public IfStep(bool enabled, Calculation condition)
         : base(enabled)
@@ -40,12 +41,9 @@ public sealed class IfStep : ScriptStep, IStepFactory
     }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new IfStep(
-            step.Attribute("enable")?.Value != "False",
-            ReadCalculation(step));
+        StepXmlParser.Parse<IfStep>(step, Metadata);
 
-    public override XElement ToXml() =>
-        BuildConditionedStep(this, XmlName, XmlId, Condition);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => $"If [ {Condition.Text} ]";
 
@@ -64,6 +62,12 @@ public sealed class IfStep : ScriptStep, IStepFactory
             Role = BlockPairRole.Open,
             Partners = ["Else", "Else If", "End If"],
         },
+        // Canonical §8.1: <Restore state="False"/> then <Calculation>.
+        Shape =
+        [
+            new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
+            new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata
@@ -79,24 +83,8 @@ public sealed class IfStep : ScriptStep, IStepFactory
         FromDisplay = FromDisplayParams,
     };
 
-    internal static Calculation ReadCalculation(XElement step)
-    {
-        var calc = step.Element("Calculation");
-        return calc is not null ? Calculation.FromXml(calc) : new Calculation("");
-    }
-
     internal static Calculation ParseCondition(string[] hrParams) =>
         hrParams.Length >= 1 ? new Calculation(hrParams[0].Trim()) : new Calculation("");
-
-    internal static XElement BuildConditionedStep(ScriptStep owner, string name, int id, Calculation condition)
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", owner.Enabled ? "True" : "False"),
-            new XAttribute("id", id),
-            new XAttribute("name", name));
-        step.Add(condition.ToXml());
-        return step;
-    }
 }
 
 public sealed class ElseIfStep : ScriptStep, IStepFactory
@@ -104,7 +92,12 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
     public const int XmlId = 125;
     public const string XmlName = "Else If";
 
-    public Calculation Condition { get; set; }
+    public Calculation Condition { get; set; } = new("");
+
+    /// <summary>The canonical <c>&lt;Restore state="False"/&gt;</c> flag (skill §8.1); fixed-value, XML-only.</summary>
+    public bool Restore { get; set; }
+
+    private ElseIfStep() : base(false) { }
 
     public ElseIfStep(bool enabled, Calculation condition)
         : base(enabled)
@@ -113,12 +106,9 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
     }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new ElseIfStep(
-            step.Attribute("enable")?.Value != "False",
-            IfStep.ReadCalculation(step));
+        StepXmlParser.Parse<ElseIfStep>(step, Metadata);
 
-    public override XElement ToXml() =>
-        IfStep.BuildConditionedStep(this, XmlName, XmlId, Condition);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => $"Else If [ {Condition.Text} ]";
 
@@ -137,6 +127,12 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
             Role = BlockPairRole.Middle,
             Partners = ["If", "End If"],
         },
+        // Canonical §8.1: <Restore state="False"/> then <Calculation>.
+        Shape =
+        [
+            new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
+            new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata
@@ -157,13 +153,18 @@ public sealed class ElseStep : ScriptStep, IStepFactory
     public const int XmlId = 69;
     public const string XmlName = "Else";
 
+    /// <summary>The canonical <c>&lt;Restore state="False"/&gt;</c> flag (skill §8.1); fixed-value, XML-only.</summary>
+    public bool Restore { get; set; }
+
+    private ElseStep() : base(false) { }
+
     public ElseStep(bool enabled)
         : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new ElseStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<ElseStep>(step, Metadata);
 
-    public override XElement ToXml() => BuildBareStep(this, XmlName, XmlId);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => XmlName;
 
@@ -182,15 +183,11 @@ public sealed class ElseStep : ScriptStep, IStepFactory
             Role = BlockPairRole.Middle,
             Partners = ["If", "End If"],
         },
+        // Canonical §8.1: <Restore state="False"/>.
+        Shape = [new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden }],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };
-
-    internal static XElement BuildBareStep(ScriptStep owner, string name, int id) =>
-        new("Step",
-            new XAttribute("enable", owner.Enabled ? "True" : "False"),
-            new XAttribute("id", id),
-            new XAttribute("name", name));
 }
 
 public sealed class EndIfStep : ScriptStep, IStepFactory
@@ -198,13 +195,15 @@ public sealed class EndIfStep : ScriptStep, IStepFactory
     public const int XmlId = 70;
     public const string XmlName = "End If";
 
+    private EndIfStep() : base(false) { }
+
     public EndIfStep(bool enabled)
         : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new EndIfStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<EndIfStep>(step, Metadata);
 
-    public override XElement ToXml() => ElseStep.BuildBareStep(this, XmlName, XmlId);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => XmlName;
 
@@ -233,13 +232,21 @@ public sealed class LoopStep : ScriptStep, IStepFactory
     public const int XmlId = 71;
     public const string XmlName = "Loop";
 
+    /// <summary>The canonical <c>&lt;Restore state="False"/&gt;</c> flag (skill §8.1); fixed-value, XML-only.</summary>
+    public bool Restore { get; set; }
+
+    /// <summary>The canonical <c>&lt;FlushType value="Always"/&gt;</c> flag (skill §8.1); fixed-value, XML-only.</summary>
+    public string FlushType { get; set; } = "Always";
+
+    private LoopStep() : base(false) { }
+
     public LoopStep(bool enabled)
         : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new LoopStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<LoopStep>(step, Metadata);
 
-    public override XElement ToXml() => ElseStep.BuildBareStep(this, XmlName, XmlId);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => XmlName;
 
@@ -258,6 +265,12 @@ public sealed class LoopStep : ScriptStep, IStepFactory
             Role = BlockPairRole.Open,
             Partners = ["End Loop"],
         },
+        // Canonical §8.1: <Restore state="False"/> then <FlushType value="Always"/>.
+        Shape =
+        [
+            new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
+            new EnumValueChild("FlushType") { PocoProperty = "FlushType", DefaultValue = "Always", Display = DisplayMode.Hidden },
+        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };
@@ -268,13 +281,15 @@ public sealed class EndLoopStep : ScriptStep, IStepFactory
     public const int XmlId = 73;
     public const string XmlName = "End Loop";
 
+    private EndLoopStep() : base(false) { }
+
     public EndLoopStep(bool enabled)
         : base(enabled) { }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new EndLoopStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<EndLoopStep>(step, Metadata);
 
-    public override XElement ToXml() => ElseStep.BuildBareStep(this, XmlName, XmlId);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => XmlName;
 
@@ -303,7 +318,9 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
     public const int XmlId = 72;
     public const string XmlName = "Exit Loop If";
 
-    public Calculation Condition { get; set; }
+    public Calculation Condition { get; set; } = new("");
+
+    private ExitLoopIfStep() : base(false) { }
 
     public ExitLoopIfStep(bool enabled, Calculation condition)
         : base(enabled)
@@ -312,12 +329,9 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
     }
 
     public static new ScriptStep FromXml(XElement step) =>
-        new ExitLoopIfStep(
-            step.Attribute("enable")?.Value != "False",
-            IfStep.ReadCalculation(step));
+        StepXmlParser.Parse<ExitLoopIfStep>(step, Metadata);
 
-    public override XElement ToXml() =>
-        IfStep.BuildConditionedStep(this, XmlName, XmlId, Condition);
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() => $"Exit Loop If [ {Condition.Text} ]";
 
@@ -336,6 +350,8 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
             Role = BlockPairRole.Middle,
             Partners = ["Loop", "End Loop"],
         },
+        // Canonical §8.1: bare <Calculation> only — no <Restore> on Exit Loop If.
+        Shape = [new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native }],
         Params =
         [
             new ParamMetadata

@@ -1,0 +1,4 @@
+<Step enable="True" id="124" name="Set Window Title">
+  <LimitToWindowsOfCurrentFile state="True" />
+  <Window value="Current" />
+</Step>

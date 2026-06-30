@@ -2,6 +2,8 @@ using System;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -18,9 +20,11 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
     public const int XmlId = 141;
     public const string XmlName = "Set Variable";
 
-    public string Name { get; set; }
-    public Calculation Value { get; set; }
-    public Calculation Repetition { get; set; }
+    public string Name { get; set; } = "";
+    public Calculation Value { get; set; } = new("");
+    public Calculation Repetition { get; set; } = new("1");
+
+    private SetVariableStep() : base(false) { }
 
     public SetVariableStep(bool enabled, string name, Calculation value, Calculation? repetition = null)
         : base(enabled)
@@ -30,34 +34,10 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
         Repetition = repetition ?? new Calculation("1");
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetVariableStep>(step, Metadata);
 
-        var name = step.Element("Name")?.Value ?? "";
-
-        var valueCalc = step.Element("Value")?.Element("Calculation");
-        var value = valueCalc is not null ? Calculation.FromXml(valueCalc) : new Calculation("");
-
-        var repCalc = step.Element("Repetition")?.Element("Calculation");
-        var repetition = repCalc is not null ? Calculation.FromXml(repCalc) : new Calculation("1");
-
-        return new SetVariableStep(enabled, name, value, repetition);
-    }
-
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        step.Add(new XElement("Value", Value.ToXml()));
-        step.Add(new XElement("Repetition", Repetition.ToXml()));
-        step.Add(new XElement("Name", Name));
-
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -110,6 +90,19 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-variable.html",
+        // Canonical shape per skill §3 / §7.1 / §7.4: Value, Repetition, then
+        // Name LAST as a plain-text child (the variable-name silent-drop trap).
+        // Repetition is always emitted in XML (never Optional) but hidden from
+        // the display line when it holds the default "1".
+        Shape =
+        [
+            new NamedCalcChild("Value") { PocoProperty = "Value", HrLabel = "Value", Required = true, Display = DisplayMode.Augmented },
+            new NamedCalcChild("Repetition") { PocoProperty = "Repetition", HrLabel = "rep", Display = DisplayMode.Augmented, DefaultValue = "1" },
+            new NamedTextChild("Name") { PocoProperty = "Name", Required = true, Display = DisplayMode.Native },
+        ],
+        // Params is retained alongside Shape only to feed the not-yet-migrated
+        // legacy consumers (FmScript.SynthesizeHrParams, ScriptValidator). It is
+        // deleted at the end of phase 6 once those read Shape directly.
         Params =
         [
             new ParamMetadata { Name = "Name", XmlElement = "Name", Type = "text", Required = true },

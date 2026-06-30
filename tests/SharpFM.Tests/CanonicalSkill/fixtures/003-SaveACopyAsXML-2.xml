@@ -1,0 +1,36 @@
+<Step enable="True" id="3" name="Save a Copy as XML">
+    <Option state="False" />
+    <OutputEntireBinaryData state="False" />
+    <SpecifyJSONOptions state="False" />
+    <SaXML>
+      <JSONOptions>
+        <Calculation><![CDATA[JSONSetElement ( "{}" ;
+  [ "catalogs_included" ; JSONMakeArray (
+  "PersistentStoreCatalog
+  BaseDirectoryCatalog
+  FileAccessCatalog
+  ExternalDataSourceCatalog
+  BaseTableCatalog
+  TableOccurrenceCatalog
+  CustomFunctionsCatalog
+  ValueListCatalog
+  FieldCatalog
+  RelationshipCatalog
+  CustomMenuCatalog
+  CustomMenuSetCatalog
+  ScriptCatalog
+  ThemeCatalog
+  LayoutCatalog
+  LibraryCatalog
+  PrivilegeSetsCatalog
+  ExtendedPrivilegesCatalog
+  AccountsCatalog
+  Metadata"
+  ; " " ; JSONString ) ; JSONArray ] ;
+  [ "include_details" ; False ; JSONBoolean ] ;
+  [ "split_catalogs" ; False ; JSONBoolean ] ;
+  [ "standalone_binarydata" ; False ; JSONBoolean ]
+)]]></Calculation>
+      </JSONOptions>
+    </SaXML>
+  </Step>

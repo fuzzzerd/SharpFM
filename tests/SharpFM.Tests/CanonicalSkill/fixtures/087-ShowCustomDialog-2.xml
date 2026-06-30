@@ -1,0 +1,29 @@
+<Step enable="True" id="87" name="Show Custom Dialog">
+  <Title>
+    <Calculation><![CDATA["Dialog Title"]]></Calculation>
+  </Title>
+  <Message>
+    <Calculation><![CDATA["Message text"]]></Calculation>
+  </Message>
+  <Height>
+    <Calculation><![CDATA[200]]></Calculation>
+  </Height>
+  <Width>
+    <Calculation><![CDATA[400]]></Calculation>
+  </Width>
+  <DistanceFromTop>
+    <Calculation><![CDATA[100]]></Calculation>
+  </DistanceFromTop>
+  <DistanceFromLeft>
+    <Calculation><![CDATA[100]]></Calculation>
+  </DistanceFromLeft>
+  <Buttons>
+    <Button CommitState="True">
+      <Calculation><![CDATA["OK"]]></Calculation>
+    </Button>
+    <Button CommitState="False">
+      <Calculation><![CDATA["Cancel"]]></Calculation>
+    </Button>
+    <Button CommitState="False" />
+  </Buttons>
+</Step>

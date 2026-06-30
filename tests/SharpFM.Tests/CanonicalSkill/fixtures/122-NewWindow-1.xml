@@ -1,0 +1,4 @@
+<Step enable="True" id="122" name="New Window">
+  <LayoutDestination value="CurrentLayout" />
+  <NewWndStyles Style="Document" Close="Yes" Minimize="Yes" Maximize="Yes" Resize="Yes" Styles="3606018" />
+</Step>

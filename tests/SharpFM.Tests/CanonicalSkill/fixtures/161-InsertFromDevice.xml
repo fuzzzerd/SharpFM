@@ -1,0 +1,8 @@
+<Step enable="True" id="161" name="Insert from Device">
+  <InsertFrom value="Camera" />
+  <DeviceOptions>
+    <Camera choice="Back" />
+    <Resolution choice="Full" />
+    <LightMode choice="Auto" />
+  </DeviceOptions>
+</Step>

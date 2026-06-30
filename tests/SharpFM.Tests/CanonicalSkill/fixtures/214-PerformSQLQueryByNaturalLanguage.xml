@@ -1,0 +1,11 @@
+<Step enable="True" id="214" name="Perform SQL Query by Natural Language">
+  <Option state="False" />
+  <Stream state="False" />
+  <UniversalPathList type="Embedded" />
+  <PerformSQLQuerybyNaturalLanguage>
+    <OptionsSelectionType>By List</OptionsSelectionType>
+    <Action>Query</Action>
+    <TablesSelectionType>By List</TablesSelectionType>
+    <TableAliases />
+  </PerformSQLQuerybyNaturalLanguage>
+</Step>

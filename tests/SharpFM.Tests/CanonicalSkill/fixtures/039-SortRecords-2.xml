@@ -1,0 +1,16 @@
+<Step enable="True" id="39" name="Sort Records">
+  <NoInteract state="True" />
+  <Restore state="True" />
+  <SortList Maintain="True" value="True">
+    <Sort type="Ascending">
+      <PrimaryField>
+        <Field table="TableOccurrence" id="N" name="field_a" />
+      </PrimaryField>
+    </Sort>
+    <Sort type="Ascending">
+      <PrimaryField>
+        <Field table="TableOccurrence" id="N" name="field_b" />
+      </PrimaryField>
+    </Sort>
+  </SortList>
+</Step>

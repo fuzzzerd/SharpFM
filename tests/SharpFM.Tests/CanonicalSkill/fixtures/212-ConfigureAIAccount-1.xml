@@ -1,0 +1,4 @@
+<Step enable="True" id="212" name="Configure AI Account">
+  <LLMType value="ChatGPT" />
+  <SetLLMAccount />
+</Step>

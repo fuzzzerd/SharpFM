@@ -1,0 +1,6 @@
+<Step enable="True" id="219" name="Perform RAG Action">
+  <RAGSpace>
+    <RAGSpaceAction>Add</RAGSpaceAction>
+    <DataSource>FromText</DataSource>
+  </RAGSpace>
+</Step>

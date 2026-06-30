@@ -8,7 +8,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class ConfigureRAGAccountStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="227" name="Configure RAG Account "><RAGAccountName><Calculation><![CDATA[$x]]></Calculation></RAGAccountName><Endpoint><Calculation><![CDATA[$x]]></Calculation></Endpoint><AccessAPIKey><Calculation><![CDATA[$x]]></Calculation></AccessAPIKey><VerifySSLCertificates state="True"/></Step>""";
+    // Canonical (skill): VerifySSLCertificates first, then a <ConfigureRAGAccount>
+    // wrapper holding the account fields (was a flat, wrapper-less, mis-ordered form).
+    private const string CanonicalXml = """<Step enable="True" id="227" name="Configure RAG Account "><VerifySSLCertificates state="True"/><ConfigureRAGAccount><RAGAccountName><Calculation><![CDATA[$x]]></Calculation></RAGAccountName><Endpoint><Calculation><![CDATA[$x]]></Calculation></Endpoint><AccessAPIKey><Calculation><![CDATA[$x]]></Calculation></AccessAPIKey></ConfigureRAGAccount></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

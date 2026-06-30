@@ -1,0 +1,4 @@
+<Step enable="True" id="17" name="Go to Field">
+  <SelectAll state="False" />
+  <Field table="TableOccurrence" id="N" name="field_name" />
+</Step>

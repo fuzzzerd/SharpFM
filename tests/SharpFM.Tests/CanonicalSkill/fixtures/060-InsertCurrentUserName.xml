@@ -1,0 +1,3 @@
+<Step enable="True" id="60" name="Insert Current User Name">
+  <SelectAll state="True" />
+</Step>

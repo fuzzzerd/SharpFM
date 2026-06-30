@@ -1,0 +1,158 @@
+using System;
+using System.Collections.Generic;
+
+namespace SharpFM.Model.Scripting.Shapes;
+
+/// <summary>
+/// How a shape node's value participates in the human-readable display line
+/// SharpFM renders for a step. FileMaker Pro's own script display is lossy —
+/// it hides values the XML carries (options, repetitions, targets) behind its
+/// UI. Because SharpFM is an XML-faithful editor it must surface those hidden
+/// values with an invented but <em>consistent</em> syntax so they stay visible
+/// and editable.
+/// </summary>
+public enum DisplayMode
+{
+    /// <summary>Rendered the way FileMaker Pro shows it.</summary>
+    Native,
+
+    /// <summary>
+    /// FileMaker Pro's UI hides this value, but the XML carries it. SharpFM
+    /// surfaces it through one uniform convention (a trailing
+    /// <c>[HrLabel: value]</c> segment) applied identically across every step
+    /// that needs it.
+    /// </summary>
+    Augmented,
+
+    /// <summary>Never shown in the display line (round-tripped in XML only).</summary>
+    Hidden,
+}
+
+/// <summary>
+/// One ordered entry in a step's declarative <c>Shape</c> — the single source
+/// of truth for how a child (or step-level attribute) serializes to XML,
+/// parses back, validates, and renders in the display line. A step's
+/// <c>Shape</c> is an ordered <see cref="IReadOnlyList{ShapeNode}"/>; element
+/// order in the emitted XML matches shape order exactly, which is what fixes
+/// the canonical element-order requirements FileMaker's paste handler enforces.
+///
+/// <para>
+/// The base carries the metadata that used to live on <c>ParamMetadata</c>
+/// (<see cref="HrLabel"/>, <see cref="Required"/>, <see cref="ValidValues"/>,
+/// <see cref="DefaultValue"/>) so each shape entry is the single description of
+/// both its wire emission and its display/agent-facing role. Concrete records
+/// add the per-kind emission rule.
+/// </para>
+///
+/// <para>
+/// <see cref="PocoProperty"/> binds the node to a property on the step POCO by
+/// name (resolved by the renderer/parser via cached reflection). When omitted
+/// it defaults to the node's element/attribute name, which is the common case
+/// (element <c>Name</c> ↔ property <c>Name</c>).
+/// </para>
+/// </summary>
+public abstract record ShapeNode
+{
+    /// <summary>POCO property this node reads/writes. Defaults to the node's element/attribute name.</summary>
+    public string? PocoProperty { get; init; }
+
+    /// <summary>Human-readable label for display text and completion.</summary>
+    public string? HrLabel { get; init; }
+
+    /// <summary>True when the child must be present in valid canonical XML.</summary>
+    public bool Required { get; init; }
+
+    /// <summary>
+    /// True when the child is emitted only if its bound value is populated /
+    /// non-default. FileMaker omits most optional children from the canonical
+    /// form of an unconfigured step and emits them once configured; this flag
+    /// is what keeps SharpFM from emitting empty placeholder elements FileMaker
+    /// does not write.
+    /// </summary>
+    public bool Optional { get; init; }
+
+    /// <summary>Closed set of permissible values for enum / boolean nodes.</summary>
+    public IReadOnlyList<string>? ValidValues { get; init; }
+
+    /// <summary>Default value assumed when the child is absent.</summary>
+    public string? DefaultValue { get; init; }
+
+    /// <summary>How this node participates in the display line.</summary>
+    public DisplayMode Display { get; init; } = DisplayMode.Native;
+}
+
+/// <summary>Step-level extra attribute, e.g. <c>&lt;Step Source="MBSP" index="2" …&gt;</c> (MBS plugin).</summary>
+public sealed record AttributeNode(string AttrName) : ShapeNode;
+
+/// <summary><c>&lt;El state="True|False"/&gt;</c> bound to a <see cref="bool"/> property (Restore, SelectAll, NoInteract, Set, Option…).</summary>
+public sealed record BoolStateChild(string Element) : ShapeNode;
+
+/// <summary><c>&lt;El value="X"/&gt;</c> bound to a string/enum property (FlushType, PauseTime, CallbackScriptState…).</summary>
+public sealed record EnumValueChild(string Element) : ShapeNode;
+
+/// <summary><c>&lt;Calculation&gt;&lt;![CDATA[…]]&gt;&lt;/Calculation&gt;</c> bound to a <c>Calculation</c> property (If condition, Exit Script return).</summary>
+public sealed record BareCalcChild : ShapeNode;
+
+/// <summary>
+/// <c>&lt;El&gt;&lt;Calculation&gt;…&lt;/Calculation&gt;&lt;/El&gt;</c> bound to a
+/// <c>Calculation</c> property (Set Variable Value/Repetition; Show Custom
+/// Dialog Title/Message). Also covers the Install OnTimer Script
+/// <c>&lt;Interval&gt;&lt;Calculation&gt;</c> §7.3 trap — structurally the same
+/// rule, declared as <c>NamedCalcChild("Interval")</c>.
+/// </summary>
+public sealed record NamedCalcChild(string Element) : ShapeNode;
+
+/// <summary>
+/// <c>&lt;El&gt;text&lt;/El&gt;</c> bound to a <see cref="string"/> property —
+/// the Set Variable <c>&lt;Name&gt;$var&lt;/Name&gt;</c> §7.1/7.4 trap, plus
+/// Configure Persistent Data <c>&lt;Name&gt;</c>, Flow, Text, etc.
+/// </summary>
+public sealed record NamedTextChild(string Element) : ShapeNode;
+
+/// <summary><c>&lt;Field table=… id=… name=…/&gt;</c> or <c>&lt;Field&gt;$var&lt;/Field&gt;</c> bound to a <c>FieldRef</c> property.</summary>
+public sealed record FieldChild(string Element = "Field") : ShapeNode;
+
+/// <summary><c>&lt;Script id=… name=…/&gt;</c>, <c>&lt;Layout …/&gt;</c>, <c>&lt;Table …/&gt;</c> bound to a <c>NamedRef</c> property.</summary>
+public sealed record NamedRefChild(string Element) : ShapeNode;
+
+/// <summary>
+/// Delegates emission/parsing to a value type's own
+/// <c>XElement ToXml(string)</c> / <c>static FromXml(XElement)</c> convention
+/// (<c>NewWindowStyles</c>, <c>Animation</c>, print-settings types…). The bound
+/// property's type owns the element's full attribute/child shape.
+/// </summary>
+public sealed record ValueTypeChild(string Element) : ShapeNode;
+
+/// <summary>
+/// <c>&lt;Parameters Count="N"&gt;&lt;P&gt;…&lt;/P&gt;…&lt;/Parameters&gt;</c>
+/// bound to a list property — the Perform JavaScript in Web Viewer §7.2 trap
+/// (parameters must be <c>&lt;P&gt;</c>, never flat <c>&lt;Parameter&gt;</c>).
+/// </summary>
+public sealed record ParametersList(string Wrapper = "Parameters", string Child = "P") : ShapeNode;
+
+/// <summary>
+/// A nested wrapper element that encloses <see cref="Children"/>, e.g. Configure
+/// RAG Account's <c>&lt;ConfigureRAGAccount&gt;</c> grouping. The wrapper is
+/// always emitted (empty when every child is omitted); children bind to the
+/// owning step's properties and their XML lookups are relative to the wrapper.
+/// </summary>
+public sealed record WrapperChild(string Element, IReadOnlyList<ShapeNode> Children) : ShapeNode;
+
+/// <summary>One case of a <see cref="VariantBlock"/>: when the bound property's runtime type is <see cref="WhenType"/>, emit <see cref="Children"/>.</summary>
+public sealed record VariantCase(Type WhenType, IReadOnlyList<ShapeNode> Children);
+
+/// <summary>
+/// Discriminated-union selection. Picks the <see cref="VariantCase"/> whose
+/// <see cref="VariantCase.WhenType"/> matches the bound property's runtime type
+/// and emits that case's children, which bind to the variant value's own
+/// properties. Used by <c>PerformScriptTarget</c> (ByReference vs
+/// ByCalculation) and <c>LayoutTarget</c>.
+/// </summary>
+public sealed record VariantBlock(IReadOnlyList<VariantCase> Cases) : ShapeNode;
+
+/// <summary>
+/// Preserves unrecognized child elements verbatim. Bound to a property holding
+/// captured <c>XElement</c>s so a partially-known step round-trips children the
+/// shape does not model (e.g. Print PDF <c>&lt;PlatformData&gt;</c> blobs).
+/// </summary>
+public sealed record Passthrough : ShapeNode;

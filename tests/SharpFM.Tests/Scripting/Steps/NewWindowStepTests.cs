@@ -8,7 +8,11 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class NewWindowStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="122" name="New Window"><LayoutDestination value="SelectedLayout"/><Name><Calculation><![CDATA[$x]]></Calculation></Name><Height><Calculation><![CDATA[$x]]></Calculation></Height><Width><Calculation><![CDATA[$x]]></Calculation></Width><DistanceFromTop><Calculation><![CDATA[$x]]></Calculation></DistanceFromTop><DistanceFromLeft><Calculation><![CDATA[$x]]></Calculation></DistanceFromLeft><NewWndStyles>$example</NewWndStyles></Step>""";
+    // Canonical (skill): LayoutDestination, optional Name, the NewWndStyles
+    // attribute element (NewWindowStyles value type), optional Layout. Was a
+    // mechanically-generated form with a text-bodied <NewWndStyles> and always-
+    // emitted empty dimension elements.
+    private const string CanonicalXml = """<Step enable="True" id="122" name="New Window"><LayoutDestination value="SelectedLayout"/><Name><Calculation><![CDATA["win"]]></Calculation></Name><NewWndStyles Style="Document" Close="Yes" Minimize="Yes" Maximize="Yes" Resize="Yes" Styles="3606018"/><Layout id="5" name="Detail"/></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

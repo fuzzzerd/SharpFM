@@ -1,0 +1,6 @@
+<Step enable="True" id="246" name="Open PDF">
+  <Option state="False" />
+  <OpenPDFFile>
+    <PDFSaveType>File</PDFSaveType>
+  </OpenPDFFile>
+</Step>

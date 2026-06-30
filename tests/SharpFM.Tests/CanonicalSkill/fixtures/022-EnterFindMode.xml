@@ -1,0 +1,4 @@
+<Step enable="True" id="22" name="Enter Find Mode">
+  <Pause state="True" />
+  <Restore state="False" />
+</Step>

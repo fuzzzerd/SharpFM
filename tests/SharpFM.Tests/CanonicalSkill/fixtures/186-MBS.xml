@@ -1,0 +1,49 @@
+<Step index="2" Source="MBSP" enable="True" id="186" name="MBS">
+  <PluginStep>
+    <Parameter ShowInLine="true" Label="Destination" Type="target" />
+    <Parameter ID="0" Label="Function" ShowInline="true" DataType="text" Type="calc" />
+    <Parameter ID="1" Label="P1" ShowInline="true" DataType="text" Type="calc" />
+    <Parameter ID="2" Label="P2" ShowInline="true" DataType="text" Type="calc" />
+    <Parameter ID="3" Label="P3" ShowInline="true" DataType="text" Type="calc" />
+    <Parameter ID="4" Label="P4" ShowInline="true" DataType="text" Type="calc" />
+    <Parameter ID="5" Label="P5" ShowInline="false" DataType="text" Type="calc" />
+    <Parameter ID="6" Label="P6" ShowInline="false" DataType="text" Type="calc" />
+    <Parameter ID="7" Label="P7" ShowInline="false" DataType="text" Type="calc" />
+    <Parameter ID="8" Label="P8" ShowInline="false" DataType="text" Type="calc" />
+    <Parameter ID="9" Label="P9" ShowInline="false" DataType="text" Type="calc" />
+  </PluginStep>
+  <SelectAll state="True" />
+  <Field />
+  <ParameterValues>
+    <Object index="0" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="1" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="2" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="3" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="4" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="5" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="6" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="7" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="8" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+    <Object index="9" type="Calc">
+      <Calculation><![CDATA[]]></Calculation>
+    </Object>
+  </ParameterValues>
+</Step>

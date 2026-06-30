@@ -1,0 +1,4 @@
+<Step enable="True" id="6" name="Go to Layout">
+  <LayoutDestination value="SelectedLayout" />
+  <Layout id="N" name="layout name" />
+</Step>

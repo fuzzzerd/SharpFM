@@ -1,0 +1,5 @@
+<Step enable="True" id="48" name="Paste">
+  <NoStyle state="True" />
+  <SelectAll state="True" />
+  <LinkAvail state="False" />
+</Step>

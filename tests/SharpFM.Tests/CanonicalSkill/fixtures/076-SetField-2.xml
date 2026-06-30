@@ -1,0 +1,4 @@
+<Step enable="True" id="76" name="Set Field">
+  <Calculation><![CDATA[expression]]></Calculation>
+  <Field table="TableOccurrence" id="N" name="field_name" />
+</Step>

@@ -1,0 +1,10 @@
+<Step enable="True" id="246" name="Open PDF">
+  <Option state="True" />
+  <UniversalPathList>$variable_or_path</UniversalPathList>
+  <OpenPDFFile>
+    <PDFSaveType>File</PDFSaveType>
+    <OpenPassword>
+      <Calculation><![CDATA[password expression]]></Calculation>
+    </OpenPassword>
+  </OpenPDFFile>
+</Step>

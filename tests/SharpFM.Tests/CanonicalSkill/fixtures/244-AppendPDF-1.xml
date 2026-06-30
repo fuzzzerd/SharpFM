@@ -1,0 +1,6 @@
+<Step enable="True" id="244" name="Append PDF">
+  <Option state="False" />
+  <AppendPDFFile>
+    <PDFSaveType>File</PDFSaveType>
+  </AppendPDFFile>
+</Step>

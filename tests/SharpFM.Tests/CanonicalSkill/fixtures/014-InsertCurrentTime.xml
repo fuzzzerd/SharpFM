@@ -1,0 +1,3 @@
+<Step enable="True" id="14" name="Insert Current Time">
+  <SelectAll state="True" />
+</Step>

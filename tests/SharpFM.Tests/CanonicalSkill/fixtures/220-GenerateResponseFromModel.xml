@@ -1,0 +1,10 @@
+<Step enable="True" id="220" name="Generate Response from Model">
+  <Option state="False" />
+  <SelectAll state="False" />
+  <Stream state="False" />
+  <Set state="True" />
+  <LinkAvail state="False" />
+  <Restore state="False" />
+  <UniversalPathList type="Embedded" />
+  <LLMRequestWithTools />
+</Step>

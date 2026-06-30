@@ -1,0 +1,4 @@
+<Step enable="True" id="80" name="Refresh Window">
+  <Option state="False" />
+  <FlushSQLData state="False" />
+</Step>

@@ -1,0 +1,12 @@
+<Step enable="True" id="87" name="Show Custom Dialog">
+  <Message>
+    <Calculation><![CDATA["message text"]]></Calculation>
+  </Message>
+  <Buttons>
+    <Button CommitState="True">
+      <Calculation><![CDATA["OK"]]></Calculation>
+    </Button>
+    <Button CommitState="False" />
+    <Button CommitState="False" />
+  </Buttons>
+</Step>

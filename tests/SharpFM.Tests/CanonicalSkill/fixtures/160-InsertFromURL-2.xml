@@ -1,0 +1,12 @@
+<Step enable="True" id="160" name="Insert from URL">
+  <NoInteract state="True" />
+  <DontEncodeURL state="False" />
+  <SelectAll state="True" />
+  <VerifySSLCertificates state="False" />
+  <CURLOptions>
+    <Calculation><![CDATA[$curl]]></Calculation>
+  </CURLOptions>
+  <Calculation><![CDATA[$endpoint]]></Calculation>
+  <Text />
+  <Field>$result</Field>
+</Step>

@@ -1,0 +1,6 @@
+<Step enable="True" id="222" name="Configure Regression Model">
+  <LLMTrain>
+    <LLMTrainAction>LLMTrainTrainModel</LLMTrainAction>
+    <LLMAlgorithm>LLMTrainAlgForest</LLMAlgorithm>
+  </LLMTrain>
+</Step>

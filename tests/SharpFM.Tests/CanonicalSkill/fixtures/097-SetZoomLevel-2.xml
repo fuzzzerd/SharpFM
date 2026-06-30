@@ -1,0 +1,5 @@
+<Step enable="True" id="97" name="Set Zoom Level">
+  <Lock state="False" />
+  <Zoom value="ByCalculation" />
+  <Calculation><![CDATA[zoom percentage expression]]></Calculation>
+</Step>

@@ -1,0 +1,9 @@
+<Step enable="True" id="143" name="Save Records as Excel">
+  <NoInteract state="True" />
+  <CreateDirectories state="True" />
+  <Restore state="False" />
+  <AutoOpen state="False" />
+  <CreateEmail state="False" />
+  <SaveType value="BrowsedRecords" />
+  <UseFieldNames state="False" />
+</Step>

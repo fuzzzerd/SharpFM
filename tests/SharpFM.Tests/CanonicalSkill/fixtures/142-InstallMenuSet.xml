@@ -1,0 +1,4 @@
+<Step enable="True" id="142" name="Install Menu Set">
+  <UseAsFileDefault state="False" />
+  <CustomMenuSet id="1" name="[Standard FileMaker Menus]" />
+</Step>

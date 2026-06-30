@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -18,6 +20,8 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
     public NamedRef? Script { get; set; }
     public Calculation? Interval { get; set; }
 
+    private InstallOnTimerScriptStep() : base(false) { }
+
     public InstallOnTimerScriptStep(NamedRef? script = null, Calculation? interval = null, bool enabled = true)
         : base(enabled)
     {
@@ -25,16 +29,7 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
         Interval = interval;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        if (Script is not null) step.Add(Script.ToXml("Script"));
-        if (Interval is not null) step.Add(new XElement("Interval", Interval.ToXml("Calculation")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -44,15 +39,8 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
             : $"Install OnTimer Script [ {script} ; Interval: {Interval.Text} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var scriptEl = step.Element("Script");
-        var script = scriptEl is not null ? NamedRef.FromXml(scriptEl) : null;
-        var intervalEl = step.Element("Interval")?.Element("Calculation");
-        var interval = intervalEl is not null ? Calculation.FromXml(intervalEl) : null;
-        return new InstallOnTimerScriptStep(script, interval, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InstallOnTimerScriptStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -84,6 +72,14 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/install-ontimer-script.html",
+        // Canonical §8.1: element order Interval -> Script (the §7.3 trap is the
+        // interval being wrapped in <Interval>, which NamedCalcChild guarantees).
+        // Both are optional — the cancel-all form has neither child.
+        Shape =
+        [
+            new NamedCalcChild("Interval") { PocoProperty = "Interval", HrLabel = "Interval", Optional = true, Display = DisplayMode.Augmented },
+            new NamedRefChild("Script") { PocoProperty = "Script", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },

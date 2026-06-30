@@ -1,0 +1,8 @@
+<Step enable="True" id="131" name="Insert File">
+  <UniversalPathList type="Embedded" />
+  <DialogOptions asFile="True" enable="False">
+    <Storage type="UserChoice" />
+    <Compress type="UserChoice" />
+    <FilterList />
+  </DialogOptions>
+</Step>
