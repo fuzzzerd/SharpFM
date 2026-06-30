@@ -10,13 +10,8 @@ namespace SharpFM.Tests.CanonicalSkill;
 /// </summary>
 public static class KnownDivergences
 {
-    public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.Ordinal)
-    {
-        // Save a Copy as XML — the canonical configured form emits an entirely
-        // different element set (OutputEntireBinaryData / SpecifyJSONOptions /
-        // SaXML) than the generic path/calc the POCO currently models; it needs
-        // a dedicated remodel of its XML/JSON export options.
-        "003-SaveACopyAsXML-1",
-        "003-SaveACopyAsXML-2",
-    };
+    // Empty: every documented step now round-trips to the skill's canonical form.
+    // Add a fixture name here only if a future skill refresh introduces a step
+    // whose canonical shape the model does not yet reproduce.
+    public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.Ordinal);
 }
