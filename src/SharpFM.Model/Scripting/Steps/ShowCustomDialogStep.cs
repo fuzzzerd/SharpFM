@@ -32,6 +32,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
 
     public Calculation Title { get; set; }
     public Calculation Message { get; set; }
+    public Calculation? Height { get; set; }
+    public Calculation? Width { get; set; }
+    public Calculation? DistanceFromTop { get; set; }
+    public Calculation? DistanceFromLeft { get; set; }
     public IReadOnlyList<ShowCustomDialogButton> Buttons { get; set; }
     public IReadOnlyList<ShowCustomDialogInputField>? InputFields { get; set; }
 
@@ -68,23 +72,42 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
             ? inputsEl.Elements("InputField").Select(ShowCustomDialogInputField.FromXml).ToList()
             : null;
 
-        return new ShowCustomDialogStep(enabled, title, message, buttons, inputs);
+        static Calculation? ReadCalc(XElement? parent) =>
+            parent?.Element("Calculation") is { } c ? Calculation.FromXml(c) : null;
+
+        return new ShowCustomDialogStep(enabled, title, message, buttons, inputs)
+        {
+            Height = ReadCalc(step.Element("Height")),
+            Width = ReadCalc(step.Element("Width")),
+            DistanceFromTop = ReadCalc(step.Element("DistanceFromTop")),
+            DistanceFromLeft = ReadCalc(step.Element("DistanceFromLeft")),
+        };
     }
 
     public override XElement ToXml()
     {
+        // Canonical: optional Title and Message, the optional dialog-geometry
+        // calcs, then the (optional) Buttons list and InputFields. An
+        // unconfigured dialog omits every child.
         var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName));
 
-        step.Add(new XElement("Title", Title.ToXml()));
-        step.Add(new XElement("Message", Message.ToXml()));
+        if (!string.IsNullOrEmpty(Title.Text)) step.Add(new XElement("Title", Title.ToXml()));
+        if (!string.IsNullOrEmpty(Message.Text)) step.Add(new XElement("Message", Message.ToXml()));
+        if (Height is not null) step.Add(new XElement("Height", Height.ToXml()));
+        if (Width is not null) step.Add(new XElement("Width", Width.ToXml()));
+        if (DistanceFromTop is not null) step.Add(new XElement("DistanceFromTop", DistanceFromTop.ToXml()));
+        if (DistanceFromLeft is not null) step.Add(new XElement("DistanceFromLeft", DistanceFromLeft.ToXml()));
 
-        var buttonsEl = new XElement("Buttons");
-        foreach (var button in Buttons)
-            buttonsEl.Add(button.ToXml());
-        step.Add(buttonsEl);
+        if (Buttons.Count > 0)
+        {
+            var buttonsEl = new XElement("Buttons");
+            foreach (var button in Buttons)
+                buttonsEl.Add(button.ToXml());
+            step.Add(buttonsEl);
+        }
 
         if (InputFields is not null)
         {

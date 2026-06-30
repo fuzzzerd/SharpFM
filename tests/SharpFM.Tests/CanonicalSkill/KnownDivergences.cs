@@ -12,15 +12,11 @@ public static class KnownDivergences
 {
     public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.Ordinal)
     {
-        // Save a Copy as XML — the configured forms emit a different element set
-        // (OutputEntireBinaryData / SpecifyJSONOptions / SaXML) than the POCO models.
+        // Save a Copy as XML — the canonical configured form emits an entirely
+        // different element set (OutputEntireBinaryData / SpecifyJSONOptions /
+        // SaXML) than the generic path/calc the POCO currently models; it needs
+        // a dedicated remodel of its XML/JSON export options.
         "003-SaveACopyAsXML-1",
         "003-SaveACopyAsXML-2",
-
-        // Multi-variant dialog: Title/Message and the dimension calcs are each
-        // independently optional, and the <Buttons> block is a button list.
-        "087-ShowCustomDialog-1",
-        "087-ShowCustomDialog-2",
-        "087-ShowCustomDialog-3",
     };
 }
