@@ -70,13 +70,18 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
             new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
             new XElement("Restore", new XAttribute("state", RestoreStoredOptions ? "True" : "False")),
             new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("Profile",
+            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")));
+        // Profile (export format) and the path are emitted only when configured;
+        // the canonical unconfigured form omits them.
+        var profileDefault = FieldDelimiter == "\t" && IsPredefined == "-1"
+            && FieldNameRow == "-1" && DataType == "XLXE";
+        if (!profileDefault)
+            step.Add(new XElement("Profile",
                 new XAttribute("FieldDelimiter", FieldDelimiter),
                 new XAttribute("IsPredefined", IsPredefined),
                 new XAttribute("FieldNameRow", FieldNameRow),
-                new XAttribute("DataType", DataType)),
-            new XElement("UniversalPathList", Path));
+                new XAttribute("DataType", DataType)));
+        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
         if (WorkSheet is not null) step.Add(new XElement("WorkSheet", WorkSheet.ToXml("Calculation")));
         if (Title is not null) step.Add(new XElement("Title", Title.ToXml("Calculation")));
         if (Subject is not null) step.Add(new XElement("Subject", Subject.ToXml("Calculation")));

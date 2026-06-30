@@ -7,49 +7,30 @@ namespace SharpFM.Tests.CanonicalSkill;
 /// and starts round-tripping, remove its fixture name here; the round-trip
 /// test's guard fails until you do, so the list cannot silently drift out of
 /// sync with reality.
-///
-/// <para>
-/// The remaining entries are the structurally hard cases that need further
-/// engine work or preserve-don't-synthesize handling — grouped below with the
-/// specific capability each is waiting on.
-/// </para>
 /// </summary>
 public static class KnownDivergences
 {
     public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.Ordinal)
     {
-        // Attribute-dictionaries + lists of complex value types (ImportOptions,
-        // Profile, ExportEntries, TargetFields) with no shape primitive yet.
+        // Save a Copy as XML — the configured forms emit a different element set
+        // (OutputEntireBinaryData / SpecifyJSONOptions / SaXML) than the POCO models.
         "003-SaveACopyAsXML-1",
         "003-SaveACopyAsXML-2",
+
+        // Import/Export Records — DataSourceType / source descriptors and lists of
+        // complex value types not yet modelled.
         "035-ImportRecords",
         "036-ExportRecords",
 
         // Multi-variant dialog: Title/Message and the dimension calcs are each
-        // independently optional across variants.
+        // independently optional, and the <Buttons> block is a button list.
         "087-ShowCustomDialog-1",
         "087-ShowCustomDialog-2",
         "087-ShowCustomDialog-3",
 
-        // SerialNumberOptions value type omits increment/InitialValue attributes
-        // the canonical <SerialNumbers/> carries.
-        "091-ReplaceFieldContents",
-
-        // Populated wrappers (<Profile>, <PDFOptions>) that must be omitted when
-        // unconfigured but carry attributes/children when set — needs an
-        // optional value-type wrapper primitive.
-        "143-SaveRecordsAsExcel",
+        // Save Records as PDF — the deep <PDFOptions> structure (Document/Pages/
+        // Security/View with a leading PDFSaveType) is not fully modelled.
         "144-SaveRecordsAsPDF-1",
         "144-SaveRecordsAsPDF-2",
-
-        // <URL custom="False"><Calculation>… — an element carrying both an
-        // attribute and a calc child; no primitive models that.
-        "146-SetWebViewer-1",
-        "146-SetWebViewer-2",
-        "146-SetWebViewer-3",
-
-        // PerformScriptTarget VariantBlock — StepXmlParser throws NotSupported on
-        // VariantBlock parsing.
-        "210-PerformScriptOnServerWithCallback",
     };
 }

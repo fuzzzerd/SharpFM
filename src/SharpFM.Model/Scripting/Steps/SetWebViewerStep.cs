@@ -47,14 +47,21 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
     private static string ActionHr(string x) => _ActionToHr.TryGetValue(x, out var h) ? h : x;
     private static string ActionXml(string h) => _ActionFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
+    public override XElement ToXml()
+    {
+        // Canonical order: Action first, then the optional ObjectName and URL;
+        // <URL> carries a custom flag attribute alongside its calculation.
+        var step = new XElement("Step",
             new XAttribute("enable", Enabled ? "True" : "False"),
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
-            new XElement("ObjectName", ObjectName.ToXml("Calculation")),
-            new XElement("Action", new XAttribute("value", Action)),
-            new XElement("URL", URL.ToXml("Calculation")));
+            new XElement("Action", new XAttribute("value", Action)));
+        if (!string.IsNullOrEmpty(ObjectName.Text))
+            step.Add(new XElement("ObjectName", ObjectName.ToXml("Calculation")));
+        if (!string.IsNullOrEmpty(URL.Text))
+            step.Add(new XElement("URL", new XAttribute("custom", "False"), URL.ToXml("Calculation")));
+        return step;
+    }
 
     public override string ToDisplayLine() =>
         "Set Web Viewer [ " + "Object Name: " + ObjectName.Text + " ; " + "Action: " + ActionHr(Action) + " ; " + "URL: " + URL.Text + " ]";

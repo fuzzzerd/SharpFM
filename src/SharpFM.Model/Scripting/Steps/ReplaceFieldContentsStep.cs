@@ -6,11 +6,11 @@ using SharpFM.Model.Scripting.Values;
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Replace Field Contents. The <c>&lt;Restore state="True"/&gt;</c> element
-/// is <b>intentionally dropped</b> per the zero-loss audit in
-/// <c>docs/advanced-filemaker-scripting-syntax.md</c> — FM Pro never changes
-/// the value and never emits the element in clipboard output, matching the
-/// same drop pattern as <see cref="IfStep"/>.
+/// Replace Field Contents. Canonical form (skill): <c>NoInteract</c>,
+/// <c>&lt;Restore state="False"/&gt;</c>, <c>&lt;With value="…"/&gt;</c>, then the
+/// optional replacement payload (a <c>&lt;Calculation&gt;</c> or a
+/// <c>&lt;SerialNumbers/&gt;</c> block) and an optional target <c>&lt;Field&gt;</c>.
+/// (Earlier revisions dropped <c>&lt;Restore&gt;</c>; the skill round-trips it.)
 /// </summary>
 public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
 {
@@ -18,7 +18,8 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
     public const string XmlName = "Replace Field Contents";
 
     public bool WithDialog { get; set; }
-    public FieldRef Field { get; set; }
+    public bool RestoreState { get; set; }
+    public FieldRef? Field { get; set; }
     public string Mode { get; set; }
     public Calculation? Calculation { get; set; }
     public SerialNumberOptions? SerialOptions { get; set; }
@@ -33,7 +34,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         : base(enabled)
     {
         WithDialog = withDialog;
-        Field = field ?? FieldRef.ForField("", 0, "");
+        Field = field;
         Mode = mode;
         Calculation = calculation;
         SerialOptions = serialOptions;
@@ -46,10 +47,11 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
             new XAttribute("id", XmlId),
             new XAttribute("name", XmlName),
             new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
+            new XElement("Restore", new XAttribute("state", RestoreState ? "True" : "False")),
             new XElement("With", new XAttribute("value", Mode)));
         if (Calculation is not null) step.Add(Calculation.ToXml("Calculation"));
         if (SerialOptions is not null) step.Add(SerialOptions.ToXml());
-        step.Add(Field.ToXml("Field"));
+        if (Field is not null) step.Add(Field.ToXml("Field"));
         return step;
     }
 
@@ -58,8 +60,8 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         var parts = new System.Collections.Generic.List<string>
         {
             $"With dialog: {(WithDialog ? "On" : "Off")}",
-            Field.ToDisplayString(),
         };
+        if (Field is not null) parts.Add(Field.ToDisplayString());
         var modePart = Mode switch
         {
             "CurrentContents" => "Current contents",
@@ -82,8 +84,11 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         var snEl = step.Element("SerialNumbers");
         var sn = snEl is not null ? SerialNumberOptions.FromXml(snEl) : null;
         var fieldEl = step.Element("Field");
-        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField("", 0, "");
-        return new ReplaceFieldContentsStep(withDialog, field, mode, calc, sn, enabled);
+        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
+        return new ReplaceFieldContentsStep(withDialog, field, mode, calc, sn, enabled)
+        {
+            RestoreState = step.Element("Restore")?.Attribute("state")?.Value == "True",
+        };
     }
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)

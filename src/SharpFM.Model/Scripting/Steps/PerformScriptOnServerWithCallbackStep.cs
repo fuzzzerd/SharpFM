@@ -49,7 +49,10 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
             case PerformScriptTarget.ByReference byRef:
                 step.Add(new XElement("CallbackScriptState", new XAttribute("value", State)));
                 if (Parameter is not null) step.Add(Parameter.ToXml());
-                step.Add(byRef.Script.ToXml("Script"));
+                // The main target Script is emitted only when configured; the
+                // canonical unconfigured form carries no <Script>.
+                if (byRef.Script.Id != 0 || !string.IsNullOrEmpty(byRef.Script.Name))
+                    step.Add(byRef.Script.ToXml("Script"));
                 break;
             case PerformScriptTarget.ByCalculation byCalc:
                 step.Add(new XElement("Calculated", byCalc.NameCalc.ToXml()));
@@ -58,13 +61,13 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
                 break;
         }
 
-        if (CallbackScript is not null)
-        {
-            var cb = new XElement("CallbackScript", CallbackScript.ToXml("ScriptName"));
-            if (CallbackParameter is not null)
-                cb.Add(new XElement("ScriptParameter", CallbackParameter.ToXml("Calculation")));
-            step.Add(cb);
-        }
+        // The <CallbackScript> element is always present (empty when no callback
+        // script is set), per the canonical form.
+        var cb = new XElement("CallbackScript");
+        if (CallbackScript is not null) cb.Add(CallbackScript.ToXml("ScriptName"));
+        if (CallbackParameter is not null)
+            cb.Add(new XElement("ScriptParameter", CallbackParameter.ToXml("Calculation")));
+        step.Add(cb);
         return step;
     }
 
