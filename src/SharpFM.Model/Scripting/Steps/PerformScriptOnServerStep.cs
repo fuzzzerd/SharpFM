@@ -127,12 +127,6 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Parameter", Optional = true, HrLabel = "Parameter" },
             new NamedRefChild("Script") { PocoProperty = "ScriptWire", Optional = true, HrLabel = "Script" },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "WaitForCompletion", XmlElement = "WaitForCompletion", XmlAttr = "state", Type = "boolean", HrLabel = "Wait for completion" },
-            new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Parameter" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

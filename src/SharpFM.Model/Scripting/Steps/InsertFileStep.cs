@@ -94,12 +94,6 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
             new FieldChild { PocoProperty = "Target", Optional = true, VariableTextMarker = true, HrLabel = "Target" },
             new ValueTypeChild("DialogOptions"),
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
-            new ParamMetadata { Name = "DialogOptions", XmlElement = "DialogOptions", Type = "complex" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

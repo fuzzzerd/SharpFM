@@ -81,20 +81,7 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/view-as.html",
         Shape =
         [
-            new EnumValueChild("View") { HrLabel = "View", DefaultValue = "Cycle", ValidValues = ["Cycle", "Form", "List", "Table"] },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "View",
-                XmlElement = "View",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "View",
-                DefaultValue = "Cycle",
-                ValidValues = ["Cycle", "View as Form", "View as List", "View as Table"],
-            },
+            new EnumValueChild("View") { HrLabel = "View", DefaultValue = "Cycle", ValidValues = ["Cycle", "Form", "List", "Table"], DisplayValues = ["Cycle", "View as Form", "View as List", "View as Table"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

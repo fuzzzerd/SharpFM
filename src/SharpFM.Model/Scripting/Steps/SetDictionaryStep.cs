@@ -58,25 +58,6 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
             new EnumValueChild("MainDictionary") { PocoProperty = "SpellingLanguage", HrLabel = "Spelling Language", DefaultValue = "US English" },
             new NamedTextChild("UniversalPathList") { PocoProperty = "UserDictionary", HrLabel = "User Dictionary", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "MainDictionary",
-                XmlElement = "MainDictionary",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Spelling Language",
-                DefaultValue = "US English",
-            },
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-                HrLabel = "User Dictionary",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

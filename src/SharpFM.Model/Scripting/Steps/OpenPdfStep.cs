@@ -68,19 +68,16 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
         // optional open-password calc.
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Hidden },
+            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Native },
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, Display = DisplayMode.Native },
             new WrapperChild("OpenPDFFile",
             [
                 new NamedTextChild("PDFSaveType") { PocoProperty = "SaveType", Required = true, DefaultValue = "File", Display = DisplayMode.Hidden },
                 new NamedCalcChild("OpenPassword") { PocoProperty = "OpenPassword", Optional = true, Display = DisplayMode.Hidden },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "OpenPDFFile", XmlElement = "OpenPDFFile", Type = "complex" },
+            // The wrapper's save type / password surface as one opaque display
+            // slot, mirroring the legacy OpenPDFFile param.
+            new HrOnly("OpenPDFFile"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

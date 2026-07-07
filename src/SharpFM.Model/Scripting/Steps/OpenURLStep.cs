@@ -65,38 +65,9 @@ public sealed class OpenURLStep : ScriptStep, IStepFactory
         // unconfigured form omits (Optional). <NoInteract state> inverts WithDialog.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Hidden },
-            new BoolStateChild("Option") { PocoProperty = "InExternalBrowser", HrLabel = "In external browser", Display = DisplayMode.Hidden },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
+            new BoolStateChild("Option") { PocoProperty = "InExternalBrowser", HrLabel = "In external browser", Display = DisplayMode.Augmented },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "In external browser",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

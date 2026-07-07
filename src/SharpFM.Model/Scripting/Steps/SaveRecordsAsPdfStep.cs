@@ -107,17 +107,6 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "StoredLabel", Optional = true },
             new ValueTypeChild("PDFOptions") { PocoProperty = "Options", Optional = true, Display = DisplayMode.Hidden },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean", HrLabel = "Append" },
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text", Required = true },
-            new ParamMetadata { Name = "PDFOptions", XmlElement = "PDFOptions", Type = "complex" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -104,54 +104,11 @@ public sealed class AddAccountStep : ScriptStep, IStepFactory
             new BoolStateChild("ChgPwdOnNextLogin", "value") { PocoProperty = "ExpirePassword", HrLabel = "Expire password", Display = DisplayMode.Augmented },
             new WrapperChild("AddAccount",
             [
-                new NamedTextChild("AccountType") { PocoProperty = "AuthenticateVia", HrLabel = "Authenticate via", DefaultValue = "FileMaker", Display = DisplayMode.Augmented },
+                new NamedTextChild("AccountType") { PocoProperty = "AuthenticateVia", HrLabel = "Authenticate via", DefaultValue = "FileMaker", DisplayValues = ["FileMaker", "External Server", "Apple Account", "Amazon", "Google", "Microsoft Entra ID", "Custom OAuth"], Display = DisplayMode.Augmented },
                 new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
                 new NamedCalcChild("Password") { PocoProperty = "Password", HrLabel = "Password", Optional = true, Display = DisplayMode.Augmented },
                 new NamedTextChild("PrivilegeSet") { PocoProperty = "PrivilegeSet", HrLabel = "Privilege Set", Optional = true, Display = DisplayMode.Augmented },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "AccountType",
-                XmlElement = "AccountType",
-                Type = "enum",
-                HrLabel = "Authenticate via",
-                ValidValues = ["FileMaker", "External Server", "Apple Account", "Amazon", "Google", "Microsoft Entra ID", "Custom OAuth"],
-                DefaultValue = "FileMaker",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Password",
-            },
-            new ParamMetadata
-            {
-                Name = "PrivilegeSet",
-                XmlElement = "PrivilegeSet",
-                Type = "text",
-                HrLabel = "Privilege Set",
-            },
-            new ParamMetadata
-            {
-                Name = "ChgPwdOnNextLogin",
-                XmlElement = "ChgPwdOnNextLogin",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Expire password",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -71,46 +71,6 @@ public sealed class PasteStep : ScriptStep, IStepFactory
             new BoolStateChild("LinkAvail") { PocoProperty = "LinkIfAvailable", HrLabel = "Link if available", ValidValues = ["On", "Off"], DefaultValue = "False" },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Table::Field", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "SelectAll",
-                XmlElement = "SelectAll",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Select",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "NoStyle",
-                XmlElement = "NoStyle",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "No style",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "LinkAvail",
-                XmlElement = "LinkAvail",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Link if available",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Field",
-                XmlElement = "Field",
-                Type = "field",
-                HrLabel = "Table::Field",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

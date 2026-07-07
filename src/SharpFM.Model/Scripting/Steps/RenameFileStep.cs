@@ -59,23 +59,6 @@ public sealed class RenameFileStep : ScriptStep, IStepFactory
             new NamedTextChild("UniversalPathList") { PocoProperty = "SourceFile", HrLabel = "Source file", Optional = true },
             new BareCalcChild { PocoProperty = "NewName", HrLabel = "New name", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-                HrLabel = "Source file",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "New name",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

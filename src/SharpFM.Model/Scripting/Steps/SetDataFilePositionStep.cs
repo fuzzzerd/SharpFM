@@ -60,23 +60,6 @@ public sealed class SetDataFilePositionStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("position") { PocoProperty = "NewPosition", HrLabel = "New position", Optional = true, Display = DisplayMode.Augmented },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "File ID",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "New position",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -59,19 +59,6 @@ public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                // invertedHr: display 'On' means XML state='False'.
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

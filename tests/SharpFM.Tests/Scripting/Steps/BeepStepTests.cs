@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -59,6 +60,6 @@ public class BeepStepTests
         Assert.Equal(93, metadata!.Id);
         Assert.Equal("miscellaneous", metadata.Category);
         Assert.Null(metadata.BlockPair);
-        Assert.Empty(metadata.Params);
+        Assert.Empty(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

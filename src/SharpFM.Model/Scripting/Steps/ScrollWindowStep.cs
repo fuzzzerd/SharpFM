@@ -87,20 +87,8 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
                 HrLabel = "Direction",
                 DefaultValue = "Home",
                 ValidValues = ["Home", "End", "PageUp", "PageDown", "ToSelection"],
+                DisplayValues = ["Home", "End", "Page Up", "Page Down", "To Selection"],
                 Display = DisplayMode.Native,
-            },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "ScrollOperation",
-                XmlElement = "ScrollOperation",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Direction",
-                DefaultValue = "Home",
-                ValidValues = ["Home", "End", "Page Up", "Page Down", "To Selection"],
             },
         ],
         FromXml = FromXml,

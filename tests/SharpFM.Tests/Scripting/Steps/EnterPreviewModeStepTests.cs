@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -44,6 +45,6 @@ public class EnterPreviewModeStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Enter Preview Mode", out var metadata));
         Assert.Equal(41, metadata!.Id);
-        Assert.Single(metadata.Params);
+        Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

@@ -64,6 +64,9 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-audio-video.html",
         Shape =
         [
+            // The wire element surfaces as the labeled Reference slot; the path
+            // text it also carries gets its own HR-only positional slot.
+            new HrOnly("UniversalPathList"),
             new NamedTextChild("UniversalPathList")
             {
                 PocoProperty = "Path",
@@ -72,20 +75,6 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
                 AttrDefault = "Embedded",
                 HrLabel = "Reference",
                 ValidValues = ["Embedded", "Reference"],
-            },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "UniversalPathList", XmlElement = "UniversalPathList",
-                Type = "text",
-            },
-            new ParamMetadata
-            {
-                Name = "Reference", XmlElement = "UniversalPathList", Type = "enum",
-                XmlAttr = "type", HrLabel = "Reference",
-                ValidValues = ["Embedded", "Reference"], DefaultValue = "Embedded",
             },
         ],
         FromXml = FromXml,

@@ -80,11 +80,6 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
             new NamedCalcChild("Interval") { PocoProperty = "Interval", HrLabel = "Interval", Optional = true, Display = DisplayMode.Augmented },
             new NamedRefChild("Script") { PocoProperty = "Script", Optional = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Interval" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

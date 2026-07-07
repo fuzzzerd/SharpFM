@@ -127,81 +127,12 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("Source") { PocoProperty = "Source", ValidValues = ["Object Name", "Field", "URL"] },
             new NamedCalcChild("Repetition") { PocoProperty = "Repetition", HrLabel = "Repetition", Optional = true },
-            new EnumValueChild("Presentation") { PocoProperty = "Presentation", HrLabel = "Presentation", Optional = true },
+            new EnumValueChild("Presentation") { PocoProperty = "Presentation", HrLabel = "Presentation", Optional = true, DisplayValues = ["Start Full Screen", "Full Screen Only", "Start Embedded", "Embedded Only", "Audio Only"] },
             new NamedCalcChild("PlaybackPosition") { PocoProperty = "Position", HrLabel = "Position", Optional = true },
             new NamedCalcChild("StartOffset") { PocoProperty = "StartOffset", HrLabel = "Start Offset", Optional = true },
             new NamedCalcChild("EndOffset") { PocoProperty = "EndOffset", HrLabel = "End Offset", Optional = true },
-            new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true },
-            new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Source",
-                XmlElement = "Source",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["Object Name", "Field", "URL"],
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Repetition",
-            },
-            new ParamMetadata
-            {
-                Name = "Presentation",
-                XmlElement = "Presentation",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Presentation",
-                ValidValues = ["Start Full Screen", "Full Screen Only", "Start Embedded", "Embedded Only", "Audio Only"],
-                DefaultValue = "Start Full Screen",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Position",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Start Offset",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "End Offset",
-            },
-            new ParamMetadata
-            {
-                Name = "HideControls",
-                XmlElement = "HideControls",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Hide Controls",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "DisableInteraction",
-                XmlElement = "DisableInteraction",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Disable Interaction",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
+            new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true, DisplayValues = ["On", "Off"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

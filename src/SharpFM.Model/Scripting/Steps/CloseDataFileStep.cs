@@ -53,16 +53,6 @@ public sealed class CloseDataFileStep : ScriptStep, IStepFactory
         [
             new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "File ID",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting;
 
@@ -100,7 +101,8 @@ public static class ScriptValidator
             if (bracketPos >= 0)
             {
                 var parsed = ScriptLineParser.ParseRaw(rawLine);
-                var usedParams = new bool[metadata.Params.Count];
+                var hrSlots = ShapeHrView.HrNodes(metadata.Shape);
+                var usedParams = new bool[hrSlots.Count];
 
                 foreach (var hrParam in parsed.Params)
                 {
@@ -108,36 +110,36 @@ public static class ScriptValidator
                     bool matchedLabel = false;
 
                     // First: try labeled match
-                    for (int pi = 0; pi < metadata.Params.Count; pi++)
+                    for (int pi = 0; pi < hrSlots.Count; pi++)
                     {
-                        var catalogParam = metadata.Params[pi];
-                        var label = catalogParam.HrLabel;
+                        var slot = hrSlots[pi];
+                        var label = slot.HrLabel;
                         if (label == null) continue;
                         if (!paramTrimmed.StartsWith(label + ":", StringComparison.OrdinalIgnoreCase))
                             continue;
 
                         var value = paramTrimmed.Substring(label.Length + 1).TrimStart();
-                        ValidateParamValue(value, label, catalogParam, rawLine, lineNum, diagnostics);
+                        ValidateParamValue(value, label, slot, rawLine, lineNum, diagnostics);
                         usedParams[pi] = true;
                         matchedLabel = true;
                         break;
                     }
 
                     // Flag-style match: a bare token that exactly equals
-                    // an unused boolean/flag param's HrLabel is a presence
+                    // an unused boolean/flag slot's HrLabel is a presence
                     // marker (e.g. "Select", "Verify SSL Certificates",
                     // "Append line feed"). Not a value — consume the
-                    // param and skip value validation.
+                    // slot and skip value validation.
                     bool matchedFlag = false;
                     if (!matchedLabel)
                     {
-                        for (int pi = 0; pi < metadata.Params.Count; pi++)
+                        for (int pi = 0; pi < hrSlots.Count; pi++)
                         {
                             if (usedParams[pi]) continue;
-                            var catalogParam = metadata.Params[pi];
-                            if (catalogParam.HrLabel is null) continue;
-                            if (catalogParam.Type is not ("boolean" or "flagBoolean" or "flagElement")) continue;
-                            if (!paramTrimmed.Equals(catalogParam.HrLabel, StringComparison.OrdinalIgnoreCase)) continue;
+                            var slot = hrSlots[pi];
+                            if (slot.HrLabel is null) continue;
+                            if (!IsFlagLike(slot)) continue;
+                            if (!paramTrimmed.Equals(slot.HrLabel, StringComparison.OrdinalIgnoreCase)) continue;
 
                             usedParams[pi] = true;
                             matchedFlag = true;
@@ -145,25 +147,25 @@ public static class ScriptValidator
                         }
                     }
 
-                    // Positional match — consume the next available param
-                    // in order. Only validate the value when that param
+                    // Positional match — consume the next available slot
+                    // in order. Only validate the value when that slot
                     // has restricted values (enum/boolean). Non-enum
-                    // params (field, calc, text) accept anything, so we
+                    // slots (field, calc, text) accept anything, so we
                     // must NOT keep searching past them looking for an
                     // enum — that produced false-positive warnings on
                     // field references like "Assets::Selected File".
                     if (!matchedLabel && !matchedFlag && !LooksLikeCalculation(paramTrimmed))
                     {
-                        for (int pi = 0; pi < metadata.Params.Count; pi++)
+                        for (int pi = 0; pi < hrSlots.Count; pi++)
                         {
                             if (usedParams[pi]) continue;
-                            var catalogParam = metadata.Params[pi];
-                            var validValues = StepRegistry.GetValidValues(catalogParam);
+                            var slot = hrSlots[pi];
+                            var validValues = ShapeHrView.DisplayValuesOf(slot);
                             if (validValues.Count > 0
                                 && !validValues.Contains(paramTrimmed, StringComparer.OrdinalIgnoreCase))
                             {
-                                var paramLabel = catalogParam.HrLabel ?? catalogParam.XmlElement;
-                                ValidateParamValue(paramTrimmed, paramLabel, catalogParam, rawLine, lineNum, diagnostics);
+                                var paramLabel = slot.HrLabel ?? ShapeHrView.NameOf(slot);
+                                ValidateParamValue(paramTrimmed, paramLabel, slot, rawLine, lineNum, diagnostics);
                             }
                             usedParams[pi] = true;
                             break;
@@ -188,11 +190,15 @@ public static class ScriptValidator
         return diagnostics;
     }
 
+    /// <summary>A slot whose display domain is exactly On/Off — its bare HrLabel is a presence marker.</summary>
+    private static bool IsFlagLike(ShapeNode slot) =>
+        ShapeHrView.DisplayValuesOf(slot) is ["On", "Off"];
+
     private static void ValidateParamValue(
-        string value, string label, ParamMetadata catalogParam,
+        string value, string label, ShapeNode slot,
         string rawLine, int lineNum, List<ScriptDiagnostic> diagnostics)
     {
-        var validValues = StepRegistry.GetValidValues(catalogParam);
+        var validValues = ShapeHrView.DisplayValuesOf(slot);
         if (validValues.Count > 0 && !validValues.Contains(value, StringComparer.OrdinalIgnoreCase))
         {
             var bracketStart = rawLine.IndexOf('[');

@@ -173,6 +173,9 @@ public static class StepXmlRenderer
                 return;
             }
 
+            case HrOnly:
+                return; // display-grammar slot; no wire form of its own
+
             case Passthrough:
             {
                 var v = ShapeReflection.Get(src, node.PocoProperty ?? "Passthrough");

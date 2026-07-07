@@ -115,23 +115,13 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
-            new BoolStateChild("DontEncodeURL") { PocoProperty = "DontEncodeUrl" },
+            new BoolStateChild("DontEncodeURL") { PocoProperty = "DontEncodeUrl", Display = DisplayMode.Augmented },
             new BoolStateChild("SelectAll") { HrLabel = "Select" },
             new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates", HrLabel = "Verify SSL Certificates" },
             new NamedCalcChild("CURLOptions") { PocoProperty = "CurlOptions", Optional = true, HrLabel = "cURL options" },
             new BareCalcChild { PocoProperty = "Url", Optional = true },
-            new FlagChild("Text") { PocoProperty = "TargetIsVariable" },
+            new FlagChild("Text") { PocoProperty = "TargetIsVariable", Display = DisplayMode.Hidden },
             new FieldChild { PocoProperty = "Target", Optional = true, HrLabel = "Target" },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select" },
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-            new ParamMetadata { Name = "VerifySSLCertificates", XmlElement = "VerifySSLCertificates", XmlAttr = "state", Type = "boolean", HrLabel = "Verify SSL Certificates" },
-            new ParamMetadata { Name = "CURLOptions", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "cURL options" },
-            new ParamMetadata { Name = "DontEncodeURL", XmlElement = "DontEncodeURL", XmlAttr = "state", Type = "boolean" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

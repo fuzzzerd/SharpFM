@@ -89,12 +89,6 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
             new NamedCalcChild("FunctionName") { PocoProperty = "FunctionName", HrLabel = "Function Name", Optional = true, Display = DisplayMode.Augmented },
             new ParametersList() { PocoProperty = "Parameters", HrLabel = "Parameters", Optional = true, Display = DisplayMode.Augmented },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "ObjectName", XmlElement = "ObjectName", Type = "namedCalc", HrLabel = "Object Name" },
-            new ParamMetadata { Name = "FunctionName", XmlElement = "FunctionName", Type = "namedCalc", HrLabel = "Function Name", Required = true },
-            new ParamMetadata { Name = "Parameters", XmlElement = "Parameters", Type = "complex", HrLabel = "Parameters" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -37,11 +37,11 @@ public enum DisplayMode
 /// the canonical element-order requirements FileMaker's paste handler enforces.
 ///
 /// <para>
-/// The base carries the metadata that used to live on <c>ParamMetadata</c>
-/// (<see cref="HrLabel"/>, <see cref="Required"/>, <see cref="ValidValues"/>,
-/// <see cref="DefaultValue"/>) so each shape entry is the single description of
-/// both its wire emission and its display/agent-facing role. Concrete records
-/// add the per-kind emission rule.
+/// The base carries the display/agent-facing metadata (<see cref="HrLabel"/>,
+/// <see cref="Required"/>, <see cref="ValidValues"/>, <see cref="DisplayValues"/>,
+/// <see cref="DefaultValue"/>, <see cref="Description"/>) so each shape entry is
+/// the single description of both its wire emission and its human-readable
+/// role. Concrete records add the per-kind emission rule.
 /// </para>
 ///
 /// <para>
@@ -71,14 +71,25 @@ public abstract record ShapeNode
     /// </summary>
     public bool Optional { get; init; }
 
-    /// <summary>Closed set of permissible values for enum / boolean nodes.</summary>
+    /// <summary>Closed set of permissible wire values for enum / boolean nodes.</summary>
     public IReadOnlyList<string>? ValidValues { get; init; }
+
+    /// <summary>
+    /// Display-text forms of the permissible values when they differ from the
+    /// wire forms (e.g. View As shows "View as Form" for the wire value
+    /// "Form"). Display consumers fall back to <see cref="ValidValues"/> when
+    /// unset.
+    /// </summary>
+    public IReadOnlyList<string>? DisplayValues { get; init; }
 
     /// <summary>Default value assumed when the child is absent.</summary>
     public string? DefaultValue { get; init; }
 
     /// <summary>How this node participates in the display line.</summary>
     public DisplayMode Display { get; init; } = DisplayMode.Native;
+
+    /// <summary>Human-facing explanation of the value — tooltip / hover source.</summary>
+    public string? Description { get; init; }
 }
 
 /// <summary>Step-level extra attribute, e.g. <c>&lt;Step Source="MBSP" index="2" …&gt;</c> (MBS plugin).</summary>
@@ -211,3 +222,17 @@ public sealed record VariantBlock(IReadOnlyList<VariantCase> Cases) : ShapeNode;
 /// shape does not model (e.g. Print PDF <c>&lt;PlatformData&gt;</c> blobs).
 /// </summary>
 public sealed record Passthrough : ShapeNode;
+
+/// <summary>
+/// A display-grammar-only slot: emits and parses no XML of its own, but
+/// carries the label/values metadata for a display-line token whose wire form
+/// lives inside a sibling <see cref="Passthrough"/> bag or a value type's own
+/// serializer (e.g. Send Mail's To/Cc/Bcc, Enter Find Mode's stored requests).
+/// Keeps the display consumers (validation, completion, param synthesis)
+/// working for those tokens without duplicating the wire description.
+/// </summary>
+public sealed record HrOnly(string Name) : ShapeNode
+{
+    /// <summary>True when the token is an On/Off or presence flag.</summary>
+    public bool Boolean { get; init; }
+}

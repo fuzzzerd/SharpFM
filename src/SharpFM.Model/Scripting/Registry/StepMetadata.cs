@@ -46,20 +46,12 @@ public sealed record StepMetadata
     /// </summary>
     public StepBlockPair? BlockPair { get; init; }
 
-    /// <summary>Typed descriptions of the step's parameters.</summary>
-    /// <remarks>
-    /// Being superseded by <see cref="Shape"/>. While the cutover is in flight
-    /// (phases 5–6) a step may carry either; once every step declares a
-    /// <see cref="Shape"/>, <c>Params</c> and <c>ParamMetadata</c> are removed.
-    /// </remarks>
-    public IReadOnlyList<ParamMetadata> Params { get; init; } = [];
-
     /// <summary>
     /// Ordered declarative description of the step's wire shape — the single
-    /// source of truth that drives XML emission, parsing, validation, and
-    /// display rendering for migrated steps. Empty until the step is cut over
-    /// to the shape-driven renderer. Element order in emitted XML matches this
-    /// list, satisfying FileMaker's canonical element-order requirements.
+    /// source of truth that drives XML emission, parsing, validation, and the
+    /// display consumers (param synthesis, script validation, completion via
+    /// <see cref="Shapes.ShapeHrView"/>). Element order in emitted XML matches
+    /// this list, satisfying FileMaker's canonical element-order requirements.
     /// </summary>
     public IReadOnlyList<ShapeNode> Shape { get; init; } = [];
 

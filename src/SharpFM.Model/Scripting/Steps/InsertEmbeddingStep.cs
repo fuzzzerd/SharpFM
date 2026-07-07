@@ -84,20 +84,13 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
         // account/model/input children are emitted only when set.
         Shape =
         [
-            new FieldChild("Field") { PocoProperty = "Target", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, Display = DisplayMode.Native },
             new WrapperChild("LLMEmbedding",
             [
                 new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
                 new NamedCalcChild("Model") { PocoProperty = "Model", HrLabel = "Embedding Model", Optional = true, Display = DisplayMode.Augmented },
                 new NamedCalcChild("InputText") { PocoProperty = "InputText", HrLabel = "Input", Optional = true, Display = DisplayMode.Augmented },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "AccountName", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Account Name", Required = true },
-            new ParamMetadata { Name = "Model", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Embedding Model", Required = true },
-            new ParamMetadata { Name = "InputText", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Input", Required = true },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

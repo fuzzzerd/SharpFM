@@ -59,8 +59,9 @@ the same flag:
 
 - `Exit after last: On` on found-set iterators.
 - `With dialog: Off` on steps that can suppress their confirmation UI.
-- `Restore: On|Off` — **reserved**. Not currently emitted by any POCO;
-  see "What to drop vs. surface" below for the rationale.
+- `Restore: On|Off` — emitted by steps whose XML carries a meaningful
+  stored-state flag (e.g. Enter Find Mode); see "What to drop vs.
+  surface" below for the fixed-value cases that stay XML-only.
 
 ### Form 3 — trailing `; Kind: [...]` blocks
 
@@ -125,16 +126,16 @@ Pro never alters it, never emits it in clipboard output, and no user
 workflow produces a different value. Round-tripping such state adds
 visual noise for zero information.
 
-### Canonical drop: `<Restore state="False"/>` on `If`
+### Canonical hidden state: `<Restore state="False"/>` on `If`
 
-Upstream `agentic-fm` snippets include the element; FM Pro's own
-clipboard output never does; no FM Pro user interaction produces
-`state="True"`. `IfStep` drops it on both read and write. The audit
-entry documents the drop:
-
-> &lt;Restore state="False"/&gt; — intentionally dropped. FM Pro never
-> changes the value and never emits the element in clipboard output; it
-> carries no information worth round-tripping.
+The vendored canonical reference (`docs/filemaker-xml-canonical/`,
+round-trip verified against FM Pro 2025/2026) shows FM Pro *does* write
+the element, so `IfStep` emits it in XML — but the value is fixed (no FM
+Pro user interaction produces `state="True"`), so it stays hidden from
+the display line: the shape declares it `Display = DisplayMode.Hidden`
+and it round-trips in XML only. The same treatment applies to Loop's
+`<Restore>`/`<FlushType>` pair. See the divergence review log in
+`docs/filemaker-xml-canonical/divergence-review.md`.
 
 ### Canonical surface: field `id` via `(#id)` suffix
 

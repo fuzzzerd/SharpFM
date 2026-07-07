@@ -59,23 +59,6 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
             new NamedCalcChild("TargetName") { PocoProperty = "TargetFieldName", HrLabel = "Target field name", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("Result") { PocoProperty = "CalculatedResult", HrLabel = "Calculated result", Optional = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Target field name",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Calculated result",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

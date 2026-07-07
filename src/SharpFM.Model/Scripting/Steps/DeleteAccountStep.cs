@@ -53,16 +53,6 @@ public sealed class DeleteAccountStep : ScriptStep, IStepFactory
         [
             new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

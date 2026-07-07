@@ -68,16 +68,6 @@ public sealed class IfStep : ScriptStep, IStepFactory
             new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
             new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "condition",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                Required = true,
-            },
-        ],
         Notes = new StepNotes { Constraints = "Requires a matching End If step." },
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
@@ -132,16 +122,6 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
             new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "condition",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                Required = true,
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
@@ -352,16 +332,6 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
         },
         // Canonical §8.1: bare <Calculation> only — no <Restore> on Exit Loop If.
         Shape = [new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native }],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "condition",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                Required = true,
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using SharpFM.Model.Scripting.Values;
 using Xunit;
@@ -80,11 +81,11 @@ public class IfStepTests
     }
 
     [Fact]
-    public void Metadata_Params_DescribeCalculation()
+    public void Metadata_Shape_DescribesCalculation()
     {
         var metadata = StepRegistry.ByName["If"];
-        var param = Assert.Single(metadata.Params);
-        Assert.Equal("Calculation", param.XmlElement);
-        Assert.Equal("calculation", param.Type);
+        var param = Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
+        Assert.IsType<BareCalcChild>(param);
+        Assert.Equal("calculation", ShapeHrView.KindOf(param));
     }
 }

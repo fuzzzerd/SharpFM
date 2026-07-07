@@ -93,16 +93,9 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("AppendLineFeed") { PocoProperty = "AppendLineFeed", HrLabel = "Append line feed", Display = DisplayMode.Augmented },
-            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", HrLabel = "Write as", DefaultValue = "2", Display = DisplayMode.Augmented },
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", HrLabel = "Write as", DefaultValue = "2", DisplayValues = ["UTF-16", "UTF-8"], Display = DisplayMode.Augmented },
             new BareCalcChild { PocoProperty = "FileId", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "DataSource", HrLabel = "Data source", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "File ID", Required = true },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Data source" },
-            new ParamMetadata { Name = "DataSourceType", XmlElement = "DataSourceType", XmlAttr = "value", Type = "enum", HrLabel = "Write as", ValidValues = ["UTF-16", "UTF-8"], DefaultValue = "2" },
-            new ParamMetadata { Name = "AppendLineFeed", XmlElement = "AppendLineFeed", XmlAttr = "state", Type = "flagBoolean", HrLabel = "Append line feed" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

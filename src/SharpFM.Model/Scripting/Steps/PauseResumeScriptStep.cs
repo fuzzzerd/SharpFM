@@ -69,27 +69,8 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         // <Calculation> duration is omitted when blank (Optional).
         Shape =
         [
-            new EnumValueChild("PauseTime") { PocoProperty = "PauseTime", DefaultValue = "ForDuration" },
+            new EnumValueChild("PauseTime") { PocoProperty = "PauseTime", DefaultValue = "ForDuration", DisplayValues = ["Indefinitely", "Duration (seconds)"] },
             new BareCalcChild { PocoProperty = "DurationSeconds", HrLabel = "Duration (seconds)", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "PauseTime",
-                XmlElement = "PauseTime",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["Indefinitely", "Duration (seconds)"],
-                DefaultValue = "ForDuration",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "Duration (seconds)",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -77,43 +77,6 @@ public sealed class GetFolderPathStep : ScriptStep, IStepFactory
             new NamedCalcChild("DefaultLocation") { PocoProperty = "Calculation2", Optional = true },
             new NamedCalcChild("Repetition") { PocoProperty = "Calculation3", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "AllowFolderCreation",
-                XmlElement = "AllowFolderCreation",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Allow Folder Creation",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Name",
-                XmlElement = "Name",
-                Type = "text",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

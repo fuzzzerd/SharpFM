@@ -99,36 +99,10 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
         Shape =
         [
             // Canonical order: Action first, then the optional ObjectName and URL.
-            new EnumValueChild("Action") { HrLabel = "Action", ValidValues = ["GoToURL", "Reset", "Reload", "GoForward", "GoBack"], DefaultValue = "GoToURL" },
+            new EnumValueChild("Action") { HrLabel = "Action", ValidValues = ["GoToURL", "Reset", "Reload", "GoForward", "GoBack"], DisplayValues = ["Go to URL", "Reset", "Reload", "Go Forward", "Go Back"], DefaultValue = "GoToURL" },
             new NamedCalcChild("ObjectName") { Optional = true, HrLabel = "Object Name" },
             new Passthrough { PocoProperty = "UrlWire" },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Object Name",
-            },
-            new ParamMetadata
-            {
-                Name = "Action",
-                XmlElement = "Action",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Action",
-                ValidValues = ["Go to URL", "Reset", "Reload", "Go Forward", "Go Back"],
-                DefaultValue = "GoToURL",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "URL",
-            },
+            new HrOnly("URL") { HrLabel = "URL" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

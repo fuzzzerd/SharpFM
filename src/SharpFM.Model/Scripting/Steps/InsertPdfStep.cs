@@ -60,12 +60,13 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
                 AttrProperty = "StorageType",
                 AttrDefault = "Embedded",
                 ValidValues = ["Embedded", "Reference"],
+                Display = DisplayMode.Hidden,
             },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "StorageType", XmlElement = "UniversalPathList", XmlAttr = "type", Type = "enum", ValidValues = ["Embedded", "Reference"], DefaultValue = "Embedded" },
+            // The single wire element carries both the path text and the type
+            // attribute; these HR-only slots surface them as the two separate
+            // display tokens.
+            new HrOnly("UniversalPathList"),
+            new HrOnly("StorageType") { DisplayValues = ["Embedded", "Reference"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -60,25 +60,6 @@ public sealed class CreateDataFileStep : ScriptStep, IStepFactory
             new NamedTextChild("UniversalPathList") { PocoProperty = "UniversalPathList", Optional = true },
             new BoolStateChild("CreateDirectories") { PocoProperty = "CreateFolders", HrLabel = "Create folders" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-            },
-            new ParamMetadata
-            {
-                Name = "CreateDirectories",
-                XmlElement = "CreateDirectories",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Create folders",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

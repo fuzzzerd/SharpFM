@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -50,6 +51,6 @@ public class ConvertFileStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Convert File", out var metadata));
         Assert.Equal(139, metadata!.Id);
-        Assert.Equal(5, metadata.Params.Count);
+        Assert.Equal(5, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

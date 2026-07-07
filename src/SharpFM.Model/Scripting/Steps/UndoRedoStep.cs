@@ -81,19 +81,6 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("UndoRedo") { PocoProperty = "Action", HrLabel = "Action", DefaultValue = "Undo", ValidValues = ["Undo", "Redo", "Toggle"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "UndoRedo",
-                XmlElement = "UndoRedo",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Action",
-                DefaultValue = "Undo",
-                ValidValues = ["Undo", "Redo", "Toggle"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

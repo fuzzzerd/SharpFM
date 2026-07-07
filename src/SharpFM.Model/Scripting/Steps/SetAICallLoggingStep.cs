@@ -95,23 +95,6 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
                 new FlagChild("TruncateEmbeddingVectorsMode") { PocoProperty = "TruncateMessages", HrLabel = "Truncate Messages" },
             ]),
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "Logging",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-                Required = true,
-            },
-            new ParamMetadata { Name = "FileName", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Filename" },
-            new ParamMetadata { Name = "VerboseMode", XmlElement = "VerboseMode", Type = "flagElement", HrLabel = "Verbose" },
-            new ParamMetadata { Name = "TruncateEmbeddingVectorsMode", XmlElement = "TruncateEmbeddingVectorsMode", Type = "flagElement", HrLabel = "Truncate Messages" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

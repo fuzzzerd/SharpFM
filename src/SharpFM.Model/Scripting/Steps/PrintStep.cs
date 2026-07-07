@@ -67,12 +67,8 @@ public sealed class PrintStep : ScriptStep, IStepFactory
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredSettings", HrLabel = "Restore", Display = DisplayMode.Augmented },
             new ValueTypeChild("PrintSettings") { PocoProperty = "Settings", Optional = true, Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "PrintSettings", XmlElement = "PrintSettings", Type = "complex" },
+            new HrOnly("Restore") { Boolean = true },
+            new HrOnly("PrintSettings"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

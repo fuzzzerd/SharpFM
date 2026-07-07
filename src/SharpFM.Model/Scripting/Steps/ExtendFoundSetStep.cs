@@ -55,11 +55,6 @@ public sealed class ExtendFoundSetStep : ScriptStep, IStepFactory
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests" },
             new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Query", XmlElement = "Query", Type = "findRequests" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

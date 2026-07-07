@@ -93,27 +93,6 @@ public sealed class OpenTransactionStep : ScriptStep, IStepFactory
             new BoolStateChild("SkipAutoEntry") { PocoProperty = "SkipAutoEnterOptions", HrLabel = "Skip auto-enter options", Display = DisplayMode.Augmented },
             new BoolStateChild("Restore") { PocoProperty = "RestoreState", Display = DisplayMode.Hidden },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "SkipAutoEntry", XmlElement = "SkipAutoEntry", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Skip auto-enter options",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Option", XmlElement = "Option", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Skip data entry validation",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "ESSForceCommit", XmlElement = "ESSForceCommit", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Override ESS locking conflicts",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

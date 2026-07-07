@@ -68,20 +68,6 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
             new BoolStateChild("UseAsFileDefault") { PocoProperty = "UseAsFileDefault", HrLabel = "Use as file default", Display = DisplayMode.Augmented },
             new NamedRefChild("CustomMenuSet") { PocoProperty = "MenuSet", Required = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "CustomMenuSet", XmlElement = "CustomMenuSet", Type = "menuSet", Required = true },
-            new ParamMetadata
-            {
-                Name = "UseAsFileDefault",
-                XmlElement = "UseAsFileDefault",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "Use as file default",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

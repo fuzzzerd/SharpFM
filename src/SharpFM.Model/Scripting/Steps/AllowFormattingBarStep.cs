@@ -48,17 +48,6 @@ public sealed class AllowFormattingBarStep : ScriptStep, IStepFactory
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/allow-formatting-bar.html",
         Shape = [new BoolStateChild("Set")],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

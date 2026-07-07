@@ -96,57 +96,13 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySSLCertificates", HrLabel = "Verify SSL Certificates", Optional = true, Display = DisplayMode.Augmented },
-            new EnumValueChild("LLMType") { PocoProperty = "ModelProvider", HrLabel = "Model Provider", DefaultValue = "OpenAI", Display = DisplayMode.Augmented },
+            new EnumValueChild("LLMType") { PocoProperty = "ModelProvider", HrLabel = "Model Provider", DefaultValue = "OpenAI", DisplayValues = ["OpenAI", "Anthropic", "Cohere", "Custom"], Display = DisplayMode.Augmented },
             new WrapperChild("SetLLMAccount",
             [
                 new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
                 new NamedCalcChild("Endpoint") { PocoProperty = "Endpoint", HrLabel = "Endpoint", Optional = true, Display = DisplayMode.Augmented },
                 new NamedCalcChild("AccessAPIKey") { PocoProperty = "APIKey", HrLabel = "API key", Optional = true, Display = DisplayMode.Augmented },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
-            new ParamMetadata
-            {
-                Name = "LLMType",
-                XmlElement = "LLMType",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Model Provider",
-                ValidValues = ["OpenAI", "Anthropic", "Cohere", "Custom"],
-                DefaultValue = "OpenAI",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Endpoint",
-            },
-            new ParamMetadata
-            {
-                Name = "VerifySSLCertificates",
-                XmlElement = "VerifySSLCertificates",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Verify SSL Certificates",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "API key",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

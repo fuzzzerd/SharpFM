@@ -52,13 +52,8 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
         // unconfigured form (Optional).
         Shape =
         [
-            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Field", HrLabel = "Field", Optional = true, Display = DisplayMode.Native },
             new BareCalcChild { PocoProperty = "NextValue", HrLabel = "Next value", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Field", Required = true },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Next value", Required = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

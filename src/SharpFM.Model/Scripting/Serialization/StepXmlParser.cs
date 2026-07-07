@@ -183,6 +183,9 @@ public static class StepXmlParser
                 return;
             }
 
+            case HrOnly:
+                return; // display-grammar slot; no wire form of its own
+
             case Passthrough:
                 return; // handled after the loop in Parse, with full-shape context
 

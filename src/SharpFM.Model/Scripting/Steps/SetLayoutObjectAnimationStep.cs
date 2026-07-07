@@ -55,18 +55,6 @@ public sealed class SetLayoutObjectAnimationStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Set") { PocoProperty = "Animation", HrLabel = "Animation" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Animation",
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

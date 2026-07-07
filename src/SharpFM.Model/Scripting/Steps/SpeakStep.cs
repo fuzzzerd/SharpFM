@@ -54,11 +54,7 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
         [
             new BareCalcChild { PocoProperty = "Text", HrLabel = "Text to speak", Optional = true, Display = DisplayMode.Native },
             new ValueTypeChild("SpeechOptions") { PocoProperty = "Options", Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Text to speak", Required = true },
-            new ParamMetadata { Name = "SpeechOptions", XmlElement = "SpeechOptions", Type = "complex", HrLabel = "Speech options" },
+            new HrOnly("SpeechOptions") { HrLabel = "Speech options" },
         ],
         Notes = new StepNotes
         {

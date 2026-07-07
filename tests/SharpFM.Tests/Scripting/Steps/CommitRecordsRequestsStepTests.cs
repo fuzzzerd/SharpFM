@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -62,6 +63,6 @@ public class CommitRecordsRequestsStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Commit Records/Requests", out var metadata));
         Assert.Equal(75, metadata!.Id);
-        Assert.Equal(3, metadata.Params.Count);
+        Assert.Equal(3, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

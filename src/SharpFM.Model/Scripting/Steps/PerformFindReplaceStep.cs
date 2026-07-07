@@ -98,17 +98,10 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         // the FindCalc/ReplaceCalc wrappers are omitted when empty (Optional).
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Hidden },
-            new ValueTypeChild("FindReplaceOperation") { PocoProperty = "Operation", Display = DisplayMode.Hidden },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Native },
+            new ValueTypeChild("FindReplaceOperation") { PocoProperty = "Operation", Display = DisplayMode.Native },
             new NamedCalcChild("FindCalc") { PocoProperty = "FindText", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("ReplaceCalc") { PocoProperty = "ReplaceText", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "FindReplaceOperation", XmlElement = "FindReplaceOperation", Type = "complex", Required = true },
-            new ParamMetadata { Name = "FindCalc", XmlElement = "Calculation", Type = "namedCalc", Required = true },
-            new ParamMetadata { Name = "ReplaceCalc", XmlElement = "Calculation", Type = "namedCalc" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

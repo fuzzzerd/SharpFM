@@ -95,69 +95,12 @@ public sealed class MoveResizeWindowStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "CurrentFile", HrLabel = "Current file", Display = DisplayMode.Augmented },
-            new EnumValueChild("Window") { PocoProperty = "Window", DefaultValue = "ByName", Display = DisplayMode.Native },
+            new EnumValueChild("Window") { PocoProperty = "Window", DefaultValue = "ByName", DisplayValues = ["ByName", "Current Window"], Display = DisplayMode.Native },
             new NamedCalcChild("Name") { PocoProperty = "Name", HrLabel = "Name", Optional = true, Display = DisplayMode.Augmented },
             new NamedCalcChild("Height") { PocoProperty = "Height", HrLabel = "Height", Optional = true, Display = DisplayMode.Augmented },
             new NamedCalcChild("Width") { PocoProperty = "Width", HrLabel = "Width", Optional = true, Display = DisplayMode.Augmented },
             new NamedCalcChild("DistanceFromTop") { PocoProperty = "Top", HrLabel = "Top", Optional = true, Display = DisplayMode.Augmented },
             new NamedCalcChild("DistanceFromLeft") { PocoProperty = "Left", HrLabel = "Left", Optional = true, Display = DisplayMode.Augmented },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Window",
-                XmlElement = "Window",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["ByName", "Current Window"],
-                DefaultValue = "ByName",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Name",
-            },
-            new ParamMetadata
-            {
-                Name = "LimitToWindowsOfCurrentFile",
-                XmlElement = "LimitToWindowsOfCurrentFile",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Current file",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Height",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Width",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Top",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Left",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

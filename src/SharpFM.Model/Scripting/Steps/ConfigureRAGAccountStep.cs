@@ -81,40 +81,6 @@ public sealed class ConfigureRAGAccountStep : ScriptStep, IStepFactory
                 new NamedCalcChild("AccessAPIKey") { PocoProperty = "APIKey", HrLabel = "API key", Optional = true, Display = DisplayMode.Augmented },
             ]),
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "RAG Account Name",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Endpoint",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "API key",
-            },
-            new ParamMetadata
-            {
-                Name = "VerifySSLCertificates",
-                XmlElement = "VerifySSLCertificates",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Verify SSL Certificates",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

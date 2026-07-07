@@ -64,12 +64,9 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
             new BoolStateChild("Pause") { PocoProperty = "Pause", HrLabel = "Pause" },
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
             new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true, Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Pause", XmlElement = "Pause", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Query", XmlElement = "Query", Type = "findRequests" },
+            new HrOnly("Pause") { Boolean = true },
+            new HrOnly("Restore") { Boolean = true },
+            new HrOnly("Query"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -66,13 +66,8 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder", HrLabel = "Restore" },
+            new HrOnly("Restore") { Boolean = true },
             new ValueTypeChild("SortList") { PocoProperty = "Sort" },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "SortList", XmlElement = "SortList", Type = "complex" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

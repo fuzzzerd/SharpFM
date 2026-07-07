@@ -57,28 +57,8 @@ public sealed class SaveACopyAsAddOnPackageStep : ScriptStep, IStepFactory
         // unconfigured form omits (Optional).
         Shape =
         [
-            new BoolStateChild("LinkAvail") { PocoProperty = "ReplaceUUIDs", HrLabel = "Replace UUIDs", Display = DisplayMode.Hidden },
+            new BoolStateChild("LinkAvail") { PocoProperty = "ReplaceUUIDs", HrLabel = "Replace UUIDs", Display = DisplayMode.Augmented },
             new BareCalcChild { PocoProperty = "WindowName", HrLabel = "Window name", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "LinkAvail",
-                XmlElement = "LinkAvail",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Replace UUIDs",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "Window name",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

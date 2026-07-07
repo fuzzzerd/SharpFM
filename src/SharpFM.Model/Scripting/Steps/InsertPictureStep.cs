@@ -58,12 +58,10 @@ public sealed class InsertPictureStep : ScriptStep, IStepFactory
                 AttrProperty = "StorageType",
                 AttrDefault = "Embedded",
                 ValidValues = ["Embedded", "Reference"],
+                Display = DisplayMode.Hidden,
             },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "StorageType", XmlElement = "UniversalPathList", XmlAttr = "type", Type = "enum", ValidValues = ["Embedded", "Reference"], DefaultValue = "Embedded" },
+            new HrOnly("UniversalPathList"),
+            new HrOnly("StorageType") { DisplayValues = ["Embedded", "Reference"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

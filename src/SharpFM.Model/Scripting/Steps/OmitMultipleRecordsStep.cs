@@ -69,25 +69,6 @@ public sealed class OmitMultipleRecordsStep : ScriptStep, IStepFactory
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

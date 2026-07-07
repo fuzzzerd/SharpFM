@@ -98,58 +98,8 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
             new BoolStateChild("CreateDirectories") { PocoProperty = "CreateFolders", HrLabel = "Create folders", Display = DisplayMode.Augmented },
             new BoolStateChild("AutoOpen") { PocoProperty = "AutomaticallyOpen", HrLabel = "Automatically open", Display = DisplayMode.Augmented },
             new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Augmented },
-            new EnumValueChild("SaveAsType") { PocoProperty = "CopyType", HrLabel = "Copy type", DefaultValue = "Copy", Display = DisplayMode.Augmented },
+            new EnumValueChild("SaveAsType") { PocoProperty = "CopyType", HrLabel = "Copy type", DefaultValue = "Copy", DisplayValues = ["copy of current file", "compacted copy (smaller)", "clone (no records)", "self-contained copy (single file)"], Display = DisplayMode.Augmented },
             new NamedTextChild("UniversalPathList") { PocoProperty = "OutputPath", HrLabel = "Output path", Optional = true, Display = DisplayMode.Augmented },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "CreateDirectories",
-                XmlElement = "CreateDirectories",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Create folders",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "AutoOpen",
-                XmlElement = "AutoOpen",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Automatically open",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "CreateEmail",
-                XmlElement = "CreateEmail",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Create email",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "SaveAsType",
-                XmlElement = "SaveAsType",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Copy type",
-                ValidValues = ["copy of current file", "compacted copy (smaller)", "clone (no records)", "self-contained copy (single file)"],
-                DefaultValue = "Copy",
-            },
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-                HrLabel = "Output path",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -70,15 +70,9 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
         // unconfigured form (Optional).
         Shape =
         [
-            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Field", HrLabel = "Field", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("StartPosition") { PocoProperty = "StartPosition", HrLabel = "Start Position", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("EndPosition") { PocoProperty = "EndPosition", HrLabel = "End Position", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Field" },
-            new ParamMetadata { Name = "StartPosition", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Start Position", Required = true },
-            new ParamMetadata { Name = "EndPosition", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "End Position", Required = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

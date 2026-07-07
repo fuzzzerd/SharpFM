@@ -97,18 +97,12 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
         Shape =
         [
             new NamedCalcChild("Value") { PocoProperty = "Value", HrLabel = "Value", Required = true, Display = DisplayMode.Augmented },
-            new NamedCalcChild("Repetition") { PocoProperty = "Repetition", HrLabel = "rep", Display = DisplayMode.Augmented, DefaultValue = "1" },
+            new NamedCalcChild("Repetition") { PocoProperty = "Repetition", Display = DisplayMode.Augmented, DefaultValue = "1" },
             new NamedTextChild("Name") { PocoProperty = "Name", Required = true, Display = DisplayMode.Native },
         ],
         // Params is retained alongside Shape only to feed the not-yet-migrated
         // legacy consumers (FmScript.SynthesizeHrParams, ScriptValidator). It is
         // deleted at the end of phase 6 once those read Shape directly.
-        Params =
-        [
-            new ParamMetadata { Name = "Name", XmlElement = "Name", Type = "text", Required = true },
-            new ParamMetadata { Name = "Value", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Value", Required = true },
-            new ParamMetadata { Name = "Repetition", XmlElement = "Calculation", Type = "namedCalc" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

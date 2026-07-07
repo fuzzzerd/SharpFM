@@ -110,25 +110,17 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         // No <Animation> for this step (skill).
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "ShowOnlyRelated", HrLabel = "Show only related records", Display = DisplayMode.Hidden },
-            new BoolStateChild("MatchAllRecords") { PocoProperty = "MatchAllRecords", HrLabel = "Match found set", Display = DisplayMode.Hidden },
-            new BoolStateChild("ShowInNewWindow") { PocoProperty = "ShowInNewWindow", HrLabel = "New window", Display = DisplayMode.Hidden },
+            new BoolStateChild("Option") { PocoProperty = "ShowOnlyRelated", HrLabel = "Show only related records", Display = DisplayMode.Augmented },
+            new BoolStateChild("MatchAllRecords") { PocoProperty = "MatchAllRecords", HrLabel = "Match found set", Display = DisplayMode.Augmented },
+            new BoolStateChild("ShowInNewWindow") { PocoProperty = "ShowInNewWindow", HrLabel = "New window", Display = DisplayMode.Augmented },
             new BoolStateChild("Restore") { PocoProperty = "RestoreWindowGeometry", Display = DisplayMode.Hidden },
             new EnumValueChild("LayoutDestination") { PocoProperty = "LayoutDestination", DefaultValue = "SelectedLayout", Display = DisplayMode.Hidden },
             new ValueTypeChild("NewWndStyles") { PocoProperty = "WindowStyles", Display = DisplayMode.Hidden },
+            new HrOnly("Restore") { Boolean = true },
+            new HrOnly("LayoutDestination") { DisplayValues = ["CurrentLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc", "UseExternalTableLayouts"] },
             new NamedRefChild("Table") { PocoProperty = "Table", Required = true, Display = DisplayMode.Native },
             new NamedRefChild("Layout") { PocoProperty = "Layout", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean", HrLabel = "Show only related records" },
-            new ParamMetadata { Name = "MatchAllRecords", XmlElement = "MatchAllRecords", XmlAttr = "state", Type = "boolean", HrLabel = "Match found set" },
-            new ParamMetadata { Name = "ShowInNewWindow", XmlElement = "ShowInNewWindow", XmlAttr = "state", Type = "boolean", HrLabel = "New window" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum", ValidValues = ["CurrentLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc", "UseExternalTableLayouts"] },
-            new ParamMetadata { Name = "Table", XmlElement = "Table", Type = "tableOccurrence", Required = true },
-            new ParamMetadata { Name = "Layout", XmlElement = "Layout", Type = "layoutRef" },
-            new ParamMetadata { Name = "NewWndStyles", XmlElement = "NewWndStyles", Type = "complex" },
+            new HrOnly("NewWndStyles"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

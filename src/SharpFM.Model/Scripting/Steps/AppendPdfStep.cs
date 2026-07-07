@@ -68,19 +68,16 @@ public sealed class AppendPdfStep : ScriptStep, IStepFactory
         // optional open-password calculation.
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Hidden },
+            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Native },
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
             new WrapperChild("AppendPDFFile",
             [
                 new NamedTextChild("PDFSaveType") { PocoProperty = "SaveType", DefaultValue = "File", Display = DisplayMode.Hidden },
                 new NamedCalcChild("OpenPassword") { PocoProperty = "OpenPassword", Optional = true, Display = DisplayMode.Hidden },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "AppendPDFFile", XmlElement = "AppendPDFFile", Type = "complex" },
+            // The wrapper's save type / password surface as one opaque display
+            // slot, mirroring the legacy AppendPDFFile param.
+            new HrOnly("AppendPDFFile"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

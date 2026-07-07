@@ -2,6 +2,7 @@ using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -84,10 +85,11 @@ public class SetErrorCaptureStepTests
         Assert.Equal("control", metadata.Category);
         Assert.Null(metadata.BlockPair);
 
-        var param = Assert.Single(metadata.Params);
-        Assert.Equal("Set", param.XmlElement);
-        Assert.Equal("boolean", param.Type);
-        Assert.Equal("state", param.XmlAttr);
+        var param = Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
+        var state = Assert.IsType<BoolStateChild>(param);
+        Assert.Equal("Set", state.Element);
+        Assert.Equal("state", state.Attr);
+        Assert.Equal("boolean", ShapeHrView.KindOf(param));
 
         // Description is sourced from agentic-fm's snippet comment
         // and powers tooltip / hover UIs as they're wired up later.
@@ -99,7 +101,7 @@ public class SetErrorCaptureStepTests
     public void GetValidValues_ReturnsOnAndOff()
     {
         var metadata = StepRegistry.ByName["Set Error Capture"];
-        var values = StepRegistry.GetValidValues(metadata.Params[0]);
+        var values = ShapeHrView.DisplayValuesOf(ShapeHrView.HrNodes(metadata.Shape)[0]);
         Assert.Contains("On", values);
         Assert.Contains("Off", values);
     }

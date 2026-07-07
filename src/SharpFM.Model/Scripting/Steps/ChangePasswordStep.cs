@@ -75,33 +75,6 @@ public sealed class ChangePasswordStep : ScriptStep, IStepFactory
             new NamedCalcChild("NewPassword") { PocoProperty = "Password", HrLabel = "Password", Optional = true },
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Old Password",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Password",
-            },
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

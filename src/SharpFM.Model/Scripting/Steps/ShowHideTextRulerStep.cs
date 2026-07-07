@@ -81,19 +81,6 @@ public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("ShowHide") { PocoProperty = "Action", HrLabel = "Action", DefaultValue = "Show", ValidValues = ["Show", "Hide", "Toggle"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "ShowHide",
-                XmlElement = "ShowHide",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Action",
-                DefaultValue = "Show",
-                ValidValues = ["Show", "Hide", "Toggle"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

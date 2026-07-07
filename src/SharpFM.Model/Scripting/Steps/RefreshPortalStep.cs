@@ -53,16 +53,6 @@ public sealed class RefreshPortalStep : ScriptStep, IStepFactory
         [
             new NamedCalcChild("ObjectName") { PocoProperty = "ObjectName", HrLabel = "Object Name", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Object Name",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

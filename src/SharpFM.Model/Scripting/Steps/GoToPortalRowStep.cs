@@ -102,14 +102,6 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
             new BoolStateChild("Exit") { PocoProperty = "ExitWire", Optional = true, HrLabel = "Exit after last" },
             new BareCalcChild { PocoProperty = "CalculationWire", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select" },
-            new ParamMetadata { Name = "RowPageLocation", XmlElement = "RowPageLocation", XmlAttr = "value", Type = "enum", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"] },
-            new ParamMetadata { Name = "Exit", XmlElement = "Exit", XmlAttr = "state", Type = "boolean", HrLabel = "Exit after last" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

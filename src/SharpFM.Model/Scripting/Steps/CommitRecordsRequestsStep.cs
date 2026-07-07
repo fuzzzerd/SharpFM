@@ -89,28 +89,6 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "SkipDataEntryValidation", HrLabel = "Skip data entry validation" },
             new BoolStateChild("ESSForceCommit") { PocoProperty = "ForceCommit", HrLabel = "Force commit" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract", XmlElement = "NoInteract", Type = "boolean",
-                XmlAttr = "state", HrLabel = "With dialog",
-                // Inverted: XML state=True means HR "With dialog: Off".
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Option", XmlElement = "Option", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Skip data entry validation",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "ESSForceCommit", XmlElement = "ESSForceCommit", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Force commit",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

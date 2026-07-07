@@ -94,39 +94,6 @@ public sealed class ShowHideToolbarsStep : ScriptStep, IStepFactory
             new BoolStateChild("Lock") { HrLabel = "Lock" },
             new EnumValueChild("ShowHide") { PocoProperty = "Action", HrLabel = "Action", ValidValues = ["Show", "Hide", "Toggle"], DefaultValue = "Hide" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "IncludeEditRecordToolbar",
-                XmlElement = "IncludeEditRecordToolbar",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Include Edit Record Toolbar",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Lock",
-                XmlElement = "Lock",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Lock",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "ShowHide",
-                XmlElement = "ShowHide",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Action",
-                ValidValues = ["Show", "Hide", "Toggle"],
-                DefaultValue = "Hide",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

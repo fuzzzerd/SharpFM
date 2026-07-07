@@ -53,16 +53,6 @@ public sealed class SetSessionIdentifierStep : ScriptStep, IStepFactory
         [
             new BareCalcChild { PocoProperty = "SessionIdentifier", HrLabel = "Session identifier", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "Session identifier",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

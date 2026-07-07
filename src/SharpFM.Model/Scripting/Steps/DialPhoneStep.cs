@@ -82,36 +82,8 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
-            new EnumValueChild("UseDialPreferences") { PocoProperty = "UseDialPreferencesValue", Optional = true },
+            new EnumValueChild("UseDialPreferences") { PocoProperty = "UseDialPreferencesValue", Optional = true, DisplayValues = ["On", "Off"] },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "UseDialPreferences",
-                XmlElement = "UseDialPreferences",
-                Type = "boolean",
-                XmlAttr = "value",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -59,20 +59,12 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
         HrSignature = "[ On|Off ]",
         Shape =
         [
-            new BoolStateChild("Set") { PocoProperty = "CaptureErrors" },
-        ],
-        Params =
-        [
-            new ParamMetadata
+            new BoolStateChild("Set")
             {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
+                PocoProperty = "CaptureErrors",
+                DefaultValue = "True",
                 Description = "\"True\" (On) suppresses FileMaker Pro alert messages and some "
                     + "dialog boxes. \"False\" (Off) reenables the alert messages.",
-                DefaultValue = "True",
             },
         ],
         FromXml = FromXml,

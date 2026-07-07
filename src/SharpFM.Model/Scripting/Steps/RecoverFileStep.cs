@@ -59,27 +59,8 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
         // when empty (Optional), and <NoInteract state> is the inverse of WithDialog.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Hidden },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
             new NamedTextChild("UniversalPathList") { PocoProperty = "UniversalPathList", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

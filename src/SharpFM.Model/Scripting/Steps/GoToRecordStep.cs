@@ -159,13 +159,6 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
             new EnumValueChild("RowPageLocation") { PocoProperty = "LocationWire", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"], DefaultValue = "Next" },
             new BareCalcChild { PocoProperty = "LocationCalcWire", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "RowPageLocation", XmlElement = "RowPageLocation", XmlAttr = "value", Type = "enum", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"], DefaultValue = "Next" },
-            new ParamMetadata { Name = "Exit", XmlElement = "Exit", XmlAttr = "state", Type = "boolean", HrLabel = "Exit after last" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

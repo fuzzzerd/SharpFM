@@ -53,14 +53,6 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
         [
             new NamedTextChild("UniversalPathList") { PocoProperty = "TargetFile", HrLabel = "Target file", Required = true, Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "UniversalPathList", XmlElement = "UniversalPathList",
-                Type = "text", HrLabel = "Target file", Required = true,
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

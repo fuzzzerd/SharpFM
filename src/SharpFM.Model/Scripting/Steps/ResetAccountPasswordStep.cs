@@ -67,34 +67,7 @@ public sealed class ResetAccountPasswordStep : ScriptStep, IStepFactory
         [
             new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("Password") { PocoProperty = "Password", HrLabel = "Password", Optional = true, Display = DisplayMode.Native },
-            new EnumValueChild("ChgPwdOnNextLogin") { PocoProperty = "ExpirePasswordValue", HrLabel = "Expire password", DefaultValue = "False", Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Password",
-            },
-            new ParamMetadata
-            {
-                Name = "ChgPwdOnNextLogin",
-                XmlElement = "ChgPwdOnNextLogin",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Expire password",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
+            new EnumValueChild("ChgPwdOnNextLogin") { PocoProperty = "ExpirePasswordValue", HrLabel = "Expire password", DefaultValue = "False", DisplayValues = ["On", "Off"], Display = DisplayMode.Augmented },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

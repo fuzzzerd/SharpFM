@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -37,7 +38,7 @@ public class AdjustWindowStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Adjust Window", out var metadata));
         Assert.Equal(31, metadata!.Id);
-        Assert.Single(metadata.Params);
-        Assert.Equal("enum", metadata.Params[0].Type);
+        Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
+        Assert.Equal("enum", ShapeHrView.KindOf(ShapeHrView.HrNodes(metadata.Shape)[0]));
     }
 }

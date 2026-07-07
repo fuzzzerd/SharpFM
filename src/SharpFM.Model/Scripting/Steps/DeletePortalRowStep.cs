@@ -64,19 +64,6 @@ public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                // invertedHr: display 'On' means XML state='False'.
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

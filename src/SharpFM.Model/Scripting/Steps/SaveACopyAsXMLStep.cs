@@ -73,29 +73,16 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Option") { PocoProperty = "IncludeDetailsForAnalysisTools", HrLabel = "Include details for analysis tools" },
             // FM 26 flags are bool? — absent stays distinct from "present and False".
-            new BoolStateChild("OutputEntireBinaryData") { Optional = true },
-            new BoolStateChild("SpecifyJSONOptions") { Optional = true },
+            new BoolStateChild("OutputEntireBinaryData") { Optional = true, Display = DisplayMode.Hidden },
+            new BoolStateChild("SpecifyJSONOptions") { Optional = true, Display = DisplayMode.Hidden },
             // <SaXML> is emitted only when the JSON export options are set.
             new WrapperChild("SaXML",
             [
                 new WrapperChild("JSONOptions",
                 [
-                    new BareCalcChild { PocoProperty = "JsonOptions" },
+                    new BareCalcChild { PocoProperty = "JsonOptions", Display = DisplayMode.Hidden },
                 ]),
             ]) { PocoProperty = "JsonOptions", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Include details for analysis tools",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

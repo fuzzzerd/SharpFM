@@ -112,7 +112,7 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         // options, and the optional parameters calc.
         Shape =
         [
-            new FieldChild("Field") { PocoProperty = "TargetField", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "TargetField", HrLabel = "Target Field", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
             new WrapperChild("LLMBulkEmbedding",
             [
                 new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
@@ -123,17 +123,6 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
                 new FlagChild("ShowSummary") { PocoProperty = "ShowSummary", HrLabel = "Show summary" },
                 new NamedCalcChild("Parameters") { PocoProperty = "Parameters", HrLabel = "Parameters", Optional = true, Display = DisplayMode.Augmented },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "AccountName", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Account Name", Required = true },
-            new ParamMetadata { Name = "Model", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Embedding Model", Required = true },
-            new ParamMetadata { Name = "SourceField", XmlElement = "Field", Type = "field", HrLabel = "Source Field" },
-            new ParamMetadata { Name = "TargetField", XmlElement = "Field", Type = "field", HrLabel = "Target Field" },
-            new ParamMetadata { Name = "Overwrite", XmlElement = "Overwrite", Type = "flagElement", HrLabel = "Replace target contents" },
-            new ParamMetadata { Name = "ContinueOnError", XmlElement = "ContinueOnError", Type = "flagElement", HrLabel = "Continue on error" },
-            new ParamMetadata { Name = "ShowSummary", XmlElement = "ShowSummary", Type = "flagElement", HrLabel = "Show summary" },
-            new ParamMetadata { Name = "Parameters", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Parameters" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

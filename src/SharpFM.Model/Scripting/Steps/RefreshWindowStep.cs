@@ -64,29 +64,6 @@ public sealed class RefreshWindowStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "FlushCachedJoinResults", HrLabel = "Flush cached join results", Display = DisplayMode.Augmented },
             new BoolStateChild("FlushSQLData") { PocoProperty = "FlushCachedExternalData", HrLabel = "Flush cached external data", Display = DisplayMode.Augmented },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Flush cached join results",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "FlushSQLData",
-                XmlElement = "FlushSQLData",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Flush cached external data",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

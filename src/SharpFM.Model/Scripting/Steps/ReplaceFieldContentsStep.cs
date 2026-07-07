@@ -112,19 +112,13 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
-            new BoolStateChild("Restore") { PocoProperty = "RestoreState" },
-            new EnumValueChild("With") { PocoProperty = "Mode", ValidValues = ["CurrentContents", "SerialNumbers", "Calculation", "None"], DefaultValue = "Calculation" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreState", Display = DisplayMode.Hidden },
+            new HrOnly("Field"),
+            new EnumValueChild("With") { PocoProperty = "Mode", ValidValues = ["CurrentContents", "SerialNumbers", "Calculation", "None"], DisplayValues = ["Current contents", "Serial numbers", "Calculation"], DefaultValue = "Calculation" },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true },
             new ValueTypeChild("SerialNumbers") { PocoProperty = "SerialOptions", Optional = true, Display = DisplayMode.Hidden },
+            new HrOnly("SerialNumbers"),
             new FieldChild("Field") { Optional = true, HrLabel = "Field" },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", Required = true },
-            new ParamMetadata { Name = "With", XmlElement = "With", XmlAttr = "value", Type = "enum", ValidValues = ["Current contents", "Serial numbers", "Calculation"], DefaultValue = "Calculation" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-            new ParamMetadata { Name = "SerialNumbers", XmlElement = "SerialNumbers", Type = "complex" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

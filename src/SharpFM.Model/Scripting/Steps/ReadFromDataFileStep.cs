@@ -97,17 +97,10 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
         // the <Count> amount calculation.
         Shape =
         [
-            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", HrLabel = "Read as", DefaultValue = "3", Display = DisplayMode.Augmented },
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", HrLabel = "Read as", DefaultValue = "3", DisplayValues = ["UTF-16", "UTF-8", "Bytes"], Display = DisplayMode.Augmented },
             new BareCalcChild { PocoProperty = "FileId", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
             new NamedCalcChild("Count") { PocoProperty = "Count", HrLabel = "Amount (bytes)", Optional = true, Display = DisplayMode.Augmented },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "File ID", Required = true },
-            new ParamMetadata { Name = "Count", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Amount (bytes)" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Target" },
-            new ParamMetadata { Name = "DataSourceType", XmlElement = "DataSourceType", XmlAttr = "value", Type = "enum", HrLabel = "Read as", ValidValues = ["UTF-16", "UTF-8", "Bytes"], DefaultValue = "3" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -86,50 +86,10 @@ public sealed class SaveRecordsAsSnapshotLinkStep : ScriptStep, IStepFactory
         // which the unconfigured form omits (Optional).
         Shape =
         [
-            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateFolders", HrLabel = "Create folders", Display = DisplayMode.Hidden },
-            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Hidden },
-            new EnumValueChild("SaveType") { PocoProperty = "Records", HrLabel = "Records", DefaultValue = "BrowsedRecords", Display = DisplayMode.Hidden },
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateFolders", HrLabel = "Create folders", Display = DisplayMode.Native },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Native },
+            new EnumValueChild("SaveType") { PocoProperty = "Records", HrLabel = "Records", DefaultValue = "BrowsedRecords", DisplayValues = ["Records being browsed", "Current record"], Display = DisplayMode.Native },
             new NamedTextChild("UniversalPathList") { PocoProperty = "OutputPath", HrLabel = "Output path", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "CreateDirectories",
-                XmlElement = "CreateDirectories",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Create folders",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "CreateEmail",
-                XmlElement = "CreateEmail",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Create email",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "SaveType",
-                XmlElement = "SaveType",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Records",
-                ValidValues = ["Records being browsed", "Current record"],
-                DefaultValue = "BrowsedRecords",
-            },
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-                HrLabel = "Output path",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

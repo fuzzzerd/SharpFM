@@ -76,18 +76,6 @@ public sealed class EnableTouchKeyboardStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("ShowHide") { PocoProperty = "ShowHide", DefaultValue = "Show", ValidValues = ["On", "Off", "Toggle"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "ShowHide",
-                XmlElement = "ShowHide",
-                Type = "enum",
-                XmlAttr = "value",
-                DefaultValue = "Show",
-                ValidValues = ["On", "Off", "Toggle"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

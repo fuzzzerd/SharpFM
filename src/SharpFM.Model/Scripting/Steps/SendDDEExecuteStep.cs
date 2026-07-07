@@ -74,18 +74,6 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "File", ValidValues = ["File"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "ContentType",
-                XmlElement = "ContentType",
-                Type = "enum",
-                XmlAttr = "value",
-                DefaultValue = "File",
-                ValidValues = ["File"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

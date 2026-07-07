@@ -53,15 +53,6 @@ public sealed class PerformQuickFindStep : ScriptStep, IStepFactory
         [
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -130,21 +130,12 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
             // <Profile> precedes the path; the parse side of this slot also
             // absorbs the trailing complex children (see ProfileWire).
             new Passthrough { PocoProperty = "ProfileWire" },
+            new HrOnly("Profile"),
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
             new Passthrough { PocoProperty = "TrailingWire" },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Profile", XmlElement = "Profile", Type = "complex" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "ExportOptions", XmlElement = "ExportOptions", Type = "complex" },
-            new ParamMetadata { Name = "ExportEntries", XmlElement = "ExportEntries", Type = "complex" },
-            new ParamMetadata { Name = "SummaryFields", XmlElement = "SummaryFields", Type = "complex" },
+            new HrOnly("ExportOptions"),
+            new HrOnly("ExportEntries"),
+            new HrOnly("SummaryFields"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

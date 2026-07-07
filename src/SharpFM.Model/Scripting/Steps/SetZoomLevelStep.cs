@@ -103,31 +103,8 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("Lock") { PocoProperty = "Lock", HrLabel = "Lock", Display = DisplayMode.Native },
-            new EnumValueChild("Zoom") { PocoProperty = "ZoomLevel", HrLabel = "Zoom level", DefaultValue = "100", Display = DisplayMode.Native },
-            new BareCalcChild { PocoProperty = "ZoomCalculation", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Lock",
-                XmlElement = "Lock",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Lock",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Zoom",
-                XmlElement = "Zoom",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Zoom level",
-                ValidValues = ["25%", "50%", "75%", "100%", "150%", "200%", "300%", "400%", "Zoom In", "Zoom Out"],
-                DefaultValue = "100",
-            },
+            new EnumValueChild("Zoom") { PocoProperty = "ZoomLevel", HrLabel = "Zoom level", DefaultValue = "100", DisplayValues = ["25%", "50%", "75%", "100%", "150%", "200%", "300%", "400%", "Zoom In", "Zoom Out"], Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "ZoomCalculation", Optional = true, Display = DisplayMode.Hidden },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

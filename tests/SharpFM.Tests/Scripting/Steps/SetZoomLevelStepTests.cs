@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -39,6 +40,6 @@ public class SetZoomLevelStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Set Zoom Level", out var metadata));
         Assert.Equal(97, metadata!.Id);
-        Assert.Equal(2, metadata.Params.Count);
+        Assert.Equal(2, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

@@ -130,13 +130,6 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
                 new NamedCalcChild("ScriptParameter") { PocoProperty = "CallbackParameter", Optional = true },
             ]),
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "CallbackScriptState", XmlElement = "CallbackScriptState", XmlAttr = "value", Type = "enum", HrLabel = "State", ValidValues = ["Continue", "Halt", "Exit", "Resume", "Pause"], DefaultValue = "Continue" },
-            new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Parameter" },
-            new ParamMetadata { Name = "CallbackScript", XmlElement = "CallbackScript", Type = "complex" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -67,23 +67,6 @@ public sealed class OpenDataFileStep : ScriptStep, IStepFactory
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Required = true, Optional = true },
             new FieldChild() { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-                Required = true,
-            },
-            new ParamMetadata
-            {
-                Name = "Field",
-                XmlElement = "Field",
-                Type = "field",
-                HrLabel = "Target",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -77,16 +77,11 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         Shape =
         [
             new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Text", Display = DisplayMode.Hidden },
+            new HrOnly("ContentType") { DisplayValues = ["Text", "File", "Calculation"] },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
             new NamedTextChild("Text") { PocoProperty = "Text", Optional = true, Display = DisplayMode.Native },
             new ValueTypeChild("Event") { PocoProperty = "Event", Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "ContentType", XmlElement = "ContentType", XmlAttr = "value", Type = "enum", ValidValues = ["Text", "File", "Calculation"], DefaultValue = "Text", Required = true },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text" },
-            new ParamMetadata { Name = "Event", XmlElement = "Event", Type = "complex", Required = true },
+            new HrOnly("Event"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

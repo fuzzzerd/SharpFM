@@ -83,15 +83,9 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
         // a variable target is preceded by the bare <Text/> marker.
         Shape =
         [
-            new BoolStateChild("SelectAll") { PocoProperty = "SelectAll", HrLabel = "Select", Display = DisplayMode.Hidden },
+            new BoolStateChild("SelectAll") { PocoProperty = "SelectAll", HrLabel = "Select", Display = DisplayMode.Augmented },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -130,6 +130,7 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
             // ProfileWire view emits it only when configured and parses it
             // back through this passthrough slot.
             new Passthrough { PocoProperty = "ProfileWire" },
+            new HrOnly("Profile"),
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
             new NamedCalcChild("WorkSheet") { Optional = true },
             new NamedCalcChild("Title") { Optional = true },
@@ -137,22 +138,6 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
             new NamedCalcChild("Author") { Optional = true },
             new EnumValueChild("SaveType") { ValidValues = ["BrowsedRecords", "CurrentRecord"], DefaultValue = "BrowsedRecords" },
             new BoolStateChild("UseFieldNames"),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Profile", XmlElement = "Profile", Type = "complex" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "WorkSheet", XmlElement = "WorkSheet", Type = "namedCalc" },
-            new ParamMetadata { Name = "Title", XmlElement = "Title", Type = "namedCalc" },
-            new ParamMetadata { Name = "Subject", XmlElement = "Subject", Type = "namedCalc" },
-            new ParamMetadata { Name = "Author", XmlElement = "Author", Type = "namedCalc" },
-            new ParamMetadata { Name = "SaveType", XmlElement = "SaveType", XmlAttr = "value", Type = "enum", ValidValues = ["BrowsedRecords", "CurrentRecord"] },
-            new ParamMetadata { Name = "UseFieldNames", XmlElement = "UseFieldNames", XmlAttr = "state", Type = "boolean" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

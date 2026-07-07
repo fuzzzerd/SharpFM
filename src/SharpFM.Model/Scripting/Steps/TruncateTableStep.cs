@@ -1,6 +1,7 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -83,26 +84,13 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/truncate-table.html",
-        Params =
+        // Shape backs the HR/display metadata and canonical-order lint only;
+        // ToXml/FromXml stay hand-written so the optional BaseTable comment
+        // attribute is preserved, and the shape renderer/parser never runs.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "BaseTable",
-                XmlElement = "BaseTable",
-                Type = "tableReference",
-                HrLabel = "Table",
-                Required = true,
-            },
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog" },
+            new NamedRefChild("BaseTable") { PocoProperty = "Table", HrLabel = "Table" },
         ],
         Notes = new StepNotes
         {

@@ -60,14 +60,8 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("Option") { PocoProperty = "WithoutIndexes" },
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
-            new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true, Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Query", XmlElement = "Query", Type = "findRequests" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests" },
+            new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -33,7 +33,6 @@ public sealed class CancelPdfStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/cancel-pdf.html",
-        Params = [],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

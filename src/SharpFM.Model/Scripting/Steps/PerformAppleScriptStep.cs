@@ -74,33 +74,9 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
         // so both are Optional.
         Shape =
         [
-            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Calculation" },
+            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Calculation", DisplayValues = ["Calculation", "Text"] },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true },
             new NamedTextChild("Text") { PocoProperty = "Text", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "ContentType",
-                XmlElement = "ContentType",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["Calculation", "Text"],
-                DefaultValue = "Calculation",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-            },
-            new ParamMetadata
-            {
-                Name = "Text",
-                XmlElement = "Text",
-                Type = "text",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

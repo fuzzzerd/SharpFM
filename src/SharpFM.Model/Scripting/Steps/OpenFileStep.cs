@@ -69,25 +69,6 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "OpenHidden", HrLabel = "Open hidden", Display = DisplayMode.Augmented },
             new ValueTypeChild("FileReference") { PocoProperty = "File", Optional = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "Open hidden",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "FileReference",
-                XmlElement = "FileReference",
-                Type = "fileReference",
-            },
-        ],
         Notes = new StepNotes
         {
             Behavioral = "Opens a FileMaker file or reestablishes the link to an ODBC data source. Script steps after Open File execute in the file containing the script, not the opened file.",

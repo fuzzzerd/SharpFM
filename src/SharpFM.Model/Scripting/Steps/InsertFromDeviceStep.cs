@@ -68,12 +68,7 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
             [
                 new Passthrough { PocoProperty = "DeviceOptions" },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "InsertFrom", XmlElement = "InsertFrom", XmlAttr = "value", Type = "enum", ValidValues = ["Camera", "Video Camera", "Microphone", "Photo Library", "Music Library", "Barcode", "Signature"] },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", Required = true },
-            new ParamMetadata { Name = "DeviceOptions", XmlElement = "DeviceOptions", Type = "complex" },
+            new HrOnly("DeviceOptions"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

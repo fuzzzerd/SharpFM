@@ -68,25 +68,6 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
             new FieldChild("Field") { PocoProperty = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Field",
-                XmlElement = "Field",
-                Type = "field",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

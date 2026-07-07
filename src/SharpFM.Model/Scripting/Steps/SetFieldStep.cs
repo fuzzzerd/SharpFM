@@ -64,11 +64,6 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Expression", Optional = true },
             new FieldChild("Field") { PocoProperty = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", Required = true },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", Required = true },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

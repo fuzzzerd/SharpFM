@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -39,6 +40,6 @@ public class ShowHideMenubarStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Show/Hide Menubar", out var metadata));
         Assert.Equal(166, metadata!.Id);
-        Assert.Equal(2, metadata.Params.Count);
+        Assert.Equal(2, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

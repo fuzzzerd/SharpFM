@@ -109,15 +109,11 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
             new Passthrough { PocoProperty = "ExtraChildren" },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "To", XmlElement = "To", Type = "namedCalc", HrLabel = "To" },
-            new ParamMetadata { Name = "Cc", XmlElement = "Cc", Type = "namedCalc", HrLabel = "Cc" },
-            new ParamMetadata { Name = "Bcc", XmlElement = "Bcc", Type = "namedCalc", HrLabel = "Bcc" },
-            new ParamMetadata { Name = "Subject", XmlElement = "Subject", Type = "namedCalc", HrLabel = "Subject" },
-            new ParamMetadata { Name = "Message", XmlElement = "Message", Type = "namedCalc", HrLabel = "Message" },
+            new HrOnly("To") { HrLabel = "To" },
+            new HrOnly("Cc") { HrLabel = "Cc" },
+            new HrOnly("Bcc") { HrLabel = "Bcc" },
+            new HrOnly("Subject") { HrLabel = "Subject" },
+            new HrOnly("Message") { HrLabel = "Message" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

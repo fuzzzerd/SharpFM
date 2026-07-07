@@ -74,35 +74,8 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "LimitToWindowsOfCurrentFile", Display = DisplayMode.Native },
-            new EnumValueChild("Window") { PocoProperty = "Window", DefaultValue = "ByName", Display = DisplayMode.Native },
+            new EnumValueChild("Window") { PocoProperty = "Window", DefaultValue = "ByName", DisplayValues = ["ByName", "Current"], Display = DisplayMode.Native },
             new NamedCalcChild("Name") { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "LimitToWindowsOfCurrentFile",
-                XmlElement = "LimitToWindowsOfCurrentFile",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Window",
-                XmlElement = "Window",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["ByName", "Current"],
-                DefaultValue = "ByName",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

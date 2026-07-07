@@ -83,22 +83,17 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
         // save type.
         Shape =
         [
-            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories", Display = DisplayMode.Hidden },
-            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen", HrLabel = "Automatically open" },
-            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email" },
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories", Display = DisplayMode.Native },
+            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen" },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail" },
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
             new WrapperChild("ClosePDFFile",
             [
                 new NamedTextChild("PDFSaveType") { PocoProperty = "SaveType", DefaultValue = "File", Display = DisplayMode.Hidden },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "ClosePDFFile", XmlElement = "ClosePDFFile", Type = "complex" },
+            // The wrapper's save type surfaces as one opaque display slot,
+            // mirroring the legacy ClosePDFFile param.
+            new HrOnly("ClosePDFFile"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

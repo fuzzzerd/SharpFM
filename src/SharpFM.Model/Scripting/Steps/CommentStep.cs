@@ -76,10 +76,6 @@ public sealed class CommentStep : ScriptStep, IStepFactory
         [
             new NamedTextChild("Text") { Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

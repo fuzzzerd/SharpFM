@@ -56,18 +56,6 @@ public sealed class EnterPreviewModeStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Pause") { PocoProperty = "Pause", HrLabel = "Pause" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Pause",
-                XmlElement = "Pause",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Pause",
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

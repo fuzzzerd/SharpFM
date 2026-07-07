@@ -161,118 +161,17 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
         // EnumValueChild over a string so a blank (unconfigured) value is dropped.
         Shape =
         [
-            new EnumValueChild("Presentation") { PocoProperty = "Presentation", HrLabel = "Presentation", Optional = true },
-            new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true },
-            new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true },
-            new EnumValueChild("DisableExternalControls") { PocoProperty = "DisableExternalControls", HrLabel = "Disable External Controls", Optional = true },
-            new EnumValueChild("PauseInBackground") { PocoProperty = "PauseInBackground", HrLabel = "Pause in Background", Optional = true },
+            new EnumValueChild("Presentation") { PocoProperty = "Presentation", HrLabel = "Presentation", Optional = true, DisplayValues = ["Start Full Screen", "Full Screen Only", "Start Embedded", "Embedded Only", "Audio Only"] },
+            new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("DisableExternalControls") { PocoProperty = "DisableExternalControls", HrLabel = "Disable External Controls", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("PauseInBackground") { PocoProperty = "PauseInBackground", HrLabel = "Pause in Background", Optional = true, DisplayValues = ["On", "Off"] },
             new NamedCalcChild("PlaybackPosition") { PocoProperty = "Position", HrLabel = "Position", Optional = true },
             new NamedCalcChild("StartOffset") { PocoProperty = "StartOffset", HrLabel = "Start Offset", Optional = true },
             new NamedCalcChild("EndOffset") { PocoProperty = "EndOffset", HrLabel = "End Offset", Optional = true },
             new NamedCalcChild("Volume") { PocoProperty = "Volume", HrLabel = "Volume", Optional = true },
-            new EnumValueChild("Zoom") { PocoProperty = "Zoom", HrLabel = "Zoom", Optional = true },
-            new EnumValueChild("Sequence") { PocoProperty = "Sequence", HrLabel = "Sequence", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Presentation",
-                XmlElement = "Presentation",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Presentation",
-                ValidValues = ["Start Full Screen", "Full Screen Only", "Start Embedded", "Embedded Only", "Audio Only"],
-                DefaultValue = "Start Full Screen",
-            },
-            new ParamMetadata
-            {
-                Name = "DisableInteraction",
-                XmlElement = "DisableInteraction",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Disable Interaction",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "HideControls",
-                XmlElement = "HideControls",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Hide Controls",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "DisableExternalControls",
-                XmlElement = "DisableExternalControls",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Disable External Controls",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "PauseInBackground",
-                XmlElement = "PauseInBackground",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Pause in Background",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Position",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Start Offset",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "End Offset",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Volume",
-            },
-            new ParamMetadata
-            {
-                Name = "Zoom",
-                XmlElement = "Zoom",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Zoom",
-                ValidValues = ["Fit", "Fill", "Stretch", "Fit Only", "Fill Only", "Stretch Only"],
-                DefaultValue = "Fit",
-            },
-            new ParamMetadata
-            {
-                Name = "Sequence",
-                XmlElement = "Sequence",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Sequence",
-                ValidValues = ["None", "Next", "Previous"],
-                DefaultValue = "None",
-            },
+            new EnumValueChild("Zoom") { PocoProperty = "Zoom", HrLabel = "Zoom", Optional = true, DisplayValues = ["Fit", "Fill", "Stretch", "Fit Only", "Fill Only", "Stretch Only"] },
+            new EnumValueChild("Sequence") { PocoProperty = "Sequence", HrLabel = "Sequence", Optional = true, DisplayValues = ["None", "Next", "Previous"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -55,6 +56,6 @@ public class OpenTransactionStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Open Transaction", out var metadata));
         Assert.Equal(205, metadata!.Id);
-        Assert.Equal(3, metadata.Params.Count);
+        Assert.Equal(3, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

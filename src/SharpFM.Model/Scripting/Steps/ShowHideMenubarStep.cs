@@ -88,29 +88,6 @@ public sealed class ShowHideMenubarStep : ScriptStep, IStepFactory
             new BoolStateChild("Lock") { PocoProperty = "Lock", HrLabel = "Lock" },
             new EnumValueChild("ShowHide") { PocoProperty = "Action", HrLabel = "Action", ValidValues = ["Show", "Hide", "Toggle"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Lock",
-                XmlElement = "Lock",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Lock",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "ShowHide",
-                XmlElement = "ShowHide",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Action",
-                ValidValues = ["Show", "Hide", "Toggle"],
-                DefaultValue = "Hide",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

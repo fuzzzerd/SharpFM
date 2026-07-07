@@ -83,22 +83,10 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
                 PocoProperty = "Mode",
                 DefaultValue = "FindMatchingReplace",
                 ValidValues = ["FindMatchingReplace", "FindMatchingConstrain", "FindMatchingExtend"],
+                DisplayValues = ["Replace", "Constrain", "Extend"],
                 Display = DisplayMode.Native,
             },
             new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "FindMatchingRecordsByField",
-                XmlElement = "FindMatchingRecordsByField",
-                XmlAttr = "value",
-                Type = "enum",
-                ValidValues = ["Replace", "Constrain", "Extend"],
-                DefaultValue = "FindMatchingReplace",
-            },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

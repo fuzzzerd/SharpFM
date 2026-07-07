@@ -57,28 +57,8 @@ public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
         // unconfigured form omits (Optional).
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "Logging", HrLabel = "Logging", Display = DisplayMode.Hidden },
+            new BoolStateChild("Option") { PocoProperty = "Logging", HrLabel = "Logging", Display = DisplayMode.Native },
             new BareCalcChild { PocoProperty = "CustomDebugInfo", HrLabel = "Custom debug info", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Logging",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "Custom debug info",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

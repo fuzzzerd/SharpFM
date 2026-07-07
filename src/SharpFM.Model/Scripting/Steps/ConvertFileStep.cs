@@ -107,41 +107,7 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "OpenFile", HrLabel = "Open File", Display = DisplayMode.Augmented },
             new BoolStateChild("SkipIndexes") { PocoProperty = "SkipIndexes", HrLabel = "Skip Indexes", Display = DisplayMode.Augmented },
             new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySSLCertificates", HrLabel = "Verify SSL Certificates", Display = DisplayMode.Augmented },
-            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Option", XmlElement = "Option", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Open File",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "SkipIndexes", XmlElement = "SkipIndexes", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Skip Indexes",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "NoInteract", XmlElement = "NoInteract", Type = "boolean",
-                XmlAttr = "state", HrLabel = "With dialog",
-                // Inverted: XML state=True means HR "With dialog: Off".
-                ValidValues = ["On", "Off"], DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "DataSourceType", XmlElement = "DataSourceType", Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["File", "XMLSource"], DefaultValue = "File",
-            },
-            new ParamMetadata
-            {
-                Name = "VerifySSLCertificates", XmlElement = "VerifySSLCertificates", Type = "boolean",
-                XmlAttr = "state", HrLabel = "Verify SSL Certificates",
-                ValidValues = ["On", "Off"], DefaultValue = "False",
-            },
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", Optional = true, DisplayValues = ["File", "XMLSource"], Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

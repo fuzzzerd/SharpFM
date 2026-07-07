@@ -55,18 +55,6 @@ public sealed class SetUseSystemFormatsStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Set") { PocoProperty = "UseSystemFormats", HrLabel = "Use system formats" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Use system formats",
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

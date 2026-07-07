@@ -72,20 +72,17 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
         // Document / Security / View blocks.
         Shape =
         [
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOptions", HrLabel = "Restore" },
-            new BareCalcChild { PocoProperty = "StoredLabel", Optional = true, Display = DisplayMode.Hidden },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOptions" },
+            new BareCalcChild { PocoProperty = "StoredLabel", Optional = true },
             new WrapperChild("CreatePDFFile",
             [
                 new ValueTypeChild("Document") { PocoProperty = "Document", Display = DisplayMode.Hidden },
                 new ValueTypeChild("Security") { PocoProperty = "Security", Display = DisplayMode.Hidden },
                 new ValueTypeChild("View") { PocoProperty = "View", Display = DisplayMode.Hidden },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-            new ParamMetadata { Name = "CreatePDFFile", XmlElement = "CreatePDFFile", Type = "complex" },
+            // The wrapper's Document/Security/View blocks surface as one opaque
+            // display slot, mirroring the legacy CreatePDFFile param.
+            new HrOnly("CreatePDFFile"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

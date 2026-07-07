@@ -59,26 +59,6 @@ public sealed class InsertCurrentDateStep : ScriptStep, IStepFactory
             new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "SelectAll",
-                XmlElement = "SelectAll",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Select",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Field",
-                XmlElement = "Field",
-                Type = "fieldOrVariable",
-                HrLabel = "Target",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

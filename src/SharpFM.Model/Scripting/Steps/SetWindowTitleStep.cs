@@ -81,46 +81,9 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "CurrentFile", HrLabel = "Current file", Display = DisplayMode.Augmented },
-            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", Display = DisplayMode.Native },
+            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", DisplayValues = ["Current Window", "Of Window"], Display = DisplayMode.Native },
             new NamedCalcChild("Name") { PocoProperty = "OfWindow", HrLabel = "Of Window", Optional = true, Display = DisplayMode.Augmented },
             new NamedCalcChild("NewName") { PocoProperty = "NewTitle", HrLabel = "New Title", Optional = true, Display = DisplayMode.Augmented },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Window",
-                XmlElement = "Window",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Window",
-                ValidValues = ["Current Window", "Of Window"],
-                DefaultValue = "ByName",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Of Window",
-            },
-            new ParamMetadata
-            {
-                Name = "LimitToWindowsOfCurrentFile",
-                XmlElement = "LimitToWindowsOfCurrentFile",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Current file",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "New Title",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

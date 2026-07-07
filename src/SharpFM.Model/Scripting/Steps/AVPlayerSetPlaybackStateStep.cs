@@ -76,18 +76,6 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("PlaybackState") { PocoProperty = "PlaybackState", DefaultValue = "Stopped", ValidValues = ["Stopped", "Paused", "Playing"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "PlaybackState",
-                XmlElement = "PlaybackState",
-                Type = "enum",
-                XmlAttr = "value",
-                DefaultValue = "Stopped",
-                ValidValues = ["Stopped", "Paused", "Playing"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

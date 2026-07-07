@@ -113,16 +113,6 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
             new NamedCalcChild("CURLOptions") { PocoProperty = "CurlOptions", Optional = true, HrLabel = "cURL options" },
             new NamedTextChild("Text") { PocoProperty = "TargetVariable", HrLabel = "Target variable" },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },
-            new ParamMetadata { Name = "DontEncodeURL", XmlElement = "DontEncodeURL", XmlAttr = "state", Type = "boolean", HrLabel = "Don't encode URL" },
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select entire contents" },
-            new ParamMetadata { Name = "VerifySSLCertificates", XmlElement = "VerifySSLCertificates", XmlAttr = "state", Type = "boolean", HrLabel = "Verify SSL certificates" },
-            new ParamMetadata { Name = "Flow", XmlElement = "Flow", Type = "text", HrLabel = "Flow URL" },
-            new ParamMetadata { Name = "CURLOptions", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "cURL options" },
-            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text", HrLabel = "Target variable" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

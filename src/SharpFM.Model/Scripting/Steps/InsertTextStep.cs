@@ -82,12 +82,6 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
             new NamedTextChild("Text") { PocoProperty = "Text", Optional = true },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
-            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text", Required = true },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

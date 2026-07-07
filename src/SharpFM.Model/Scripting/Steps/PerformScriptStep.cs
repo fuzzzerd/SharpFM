@@ -159,12 +159,7 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
                     [new NamedCalcChild("Calculated") { PocoProperty = "NameCalc" }])
                 { MatchElement = "Calculated" },
             ]) { PocoProperty = "Target", Required = true },
-            new BareCalcChild { PocoProperty = "ParameterAfterCalculated", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },
-            new ParamMetadata { Name = "Parameter", XmlElement = "Calculation", Type = "calculation", HrLabel = "Parameter" },
+            new BareCalcChild { PocoProperty = "ParameterAfterCalculated", Optional = true, Display = DisplayMode.Hidden },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

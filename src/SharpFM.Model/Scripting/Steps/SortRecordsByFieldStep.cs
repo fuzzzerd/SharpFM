@@ -81,22 +81,8 @@ public sealed class SortRecordsByFieldStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/sort-records-by-field.html",
         Shape =
         [
-            new EnumValueChild("SortRecordsByField") { PocoProperty = "SortOrder", HrLabel = "Sort order", DefaultValue = "SortAscending", ValidValues = ["SortAscending", "SortDescending", "SortValueList"] },
+            new EnumValueChild("SortRecordsByField") { PocoProperty = "SortOrder", HrLabel = "Sort order", DefaultValue = "SortAscending", ValidValues = ["SortAscending", "SortDescending", "SortValueList"], DisplayValues = ["Ascending", "Descending", "Associated value list"] },
             new FieldChild("Field") { PocoProperty = "Field", HrLabel = "Field", Optional = true },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "SortRecordsByField",
-                XmlElement = "SortRecordsByField",
-                XmlAttr = "value",
-                Type = "enum",
-                HrLabel = "Sort order",
-                ValidValues = ["Ascending", "Descending", "Associated value list"],
-                DefaultValue = "SortAscending",
-            },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Field" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

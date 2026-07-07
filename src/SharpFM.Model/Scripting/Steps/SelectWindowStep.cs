@@ -76,38 +76,8 @@ public sealed class SelectWindowStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "CurrentFile", HrLabel = "Current file", Display = DisplayMode.Native },
-            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", Display = DisplayMode.Native },
+            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", DisplayValues = ["Name: <calc>", "Current Window"], Display = DisplayMode.Native },
             new NamedCalcChild("Name") { PocoProperty = "Name", HrLabel = "Name", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "LimitToWindowsOfCurrentFile",
-                XmlElement = "LimitToWindowsOfCurrentFile",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                HrLabel = "Current file",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Window",
-                XmlElement = "Window",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Window",
-                ValidValues = ["Name: <calc>", "Current Window"],
-                DefaultValue = "ByName",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Name",
-            },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -59,25 +59,6 @@ public sealed class GoToFieldStep : ScriptStep, IStepFactory
             new BoolStateChild("SelectAll") { PocoProperty = "SelectPerform", HrLabel = "Select/perform", ValidValues = ["On", "Off"], DefaultValue = "True" },
             new FieldChild("Field") { PocoProperty = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "SelectAll",
-                XmlElement = "SelectAll",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Select/perform",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Field",
-                XmlElement = "Field",
-                Type = "field",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

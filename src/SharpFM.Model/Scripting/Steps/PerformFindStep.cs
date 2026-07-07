@@ -55,11 +55,8 @@ public sealed class PerformFindStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore", Display = DisplayMode.Native },
             new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true, Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Query", XmlElement = "Query", Type = "findRequests" },
+            new HrOnly("Restore") { Boolean = true },
+            new HrOnly("Query"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

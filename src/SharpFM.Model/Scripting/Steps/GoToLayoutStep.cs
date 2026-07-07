@@ -213,14 +213,10 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
                         new NamedRefChild("Layout"),
                     ])
                 { MatchElement = "LayoutDestination" },
-            ]) { PocoProperty = "Target", Required = true },
-            new ValueTypeChild("Animation") { HrLabel = "Animation", Display = DisplayMode.Augmented },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum", ValidValues = ["OriginalLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc"], DefaultValue = "SelectedLayout" },
-            new ParamMetadata { Name = "Layout", XmlElement = "Layout", Type = "layout" },
-            new ParamMetadata { Name = "Animation", XmlElement = "Animation", Type = "enum" },
+            ]) { PocoProperty = "Target", Required = true, Display = DisplayMode.Hidden },
+            new HrOnly("LayoutDestination") { DisplayValues = ["OriginalLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc"] },
+            new HrOnly("Layout"),
+            new ValueTypeChild("Animation") { Display = DisplayMode.Augmented },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

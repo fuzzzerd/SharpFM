@@ -55,18 +55,6 @@ public sealed class SetRevertTransactionOnErrorStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Set") { PocoProperty = "RevertOnError", HrLabel = "Revert on error" },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Revert on error",
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

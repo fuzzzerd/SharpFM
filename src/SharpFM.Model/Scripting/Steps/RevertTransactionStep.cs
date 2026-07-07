@@ -71,39 +71,6 @@ public sealed class RevertTransactionStep : ScriptStep, IStepFactory
             new NamedCalcChild("ErrorCode") { PocoProperty = "ErrorCode", HrLabel = "Error Code", Optional = true, Display = DisplayMode.Augmented },
             new NamedCalcChild("ErrorMessage") { PocoProperty = "ErrorMessage", HrLabel = "Error Message", Optional = true, Display = DisplayMode.Augmented },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "flagBoolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Condition",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Error Code",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Error Message",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

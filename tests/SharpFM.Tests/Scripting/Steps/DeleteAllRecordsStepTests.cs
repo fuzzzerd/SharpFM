@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -44,6 +45,6 @@ public class DeleteAllRecordsStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Delete All Records", out var metadata));
         Assert.Equal(10, metadata!.Id);
-        Assert.Single(metadata.Params);
+        Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

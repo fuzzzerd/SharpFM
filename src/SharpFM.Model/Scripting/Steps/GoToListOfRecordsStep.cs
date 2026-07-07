@@ -76,17 +76,10 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
         // calculation, then the NewWndStyles value type.
         Shape =
         [
-            new BoolStateChild("ShowInNewWindow") { PocoProperty = "ShowInNewWindow", Display = DisplayMode.Hidden },
-            new EnumValueChild("LayoutDestination") { PocoProperty = "LayoutDestination", HrLabel = "Layout", DefaultValue = "CurrentLayout", Display = DisplayMode.Native },
-            new NamedCalcChild("RowList") { PocoProperty = "RowList", HrLabel = "Records", Optional = true, Display = DisplayMode.Native },
-            new ValueTypeChild("NewWndStyles") { PocoProperty = "WindowStyles", Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "ShowInNewWindow", XmlElement = "ShowInNewWindow", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum" },
-            new ParamMetadata { Name = "RowList", XmlElement = "RowList", Type = "namedCalc", Required = true },
-            new ParamMetadata { Name = "NewWndStyles", XmlElement = "NewWndStyles", Type = "complex" },
+            new BoolStateChild("ShowInNewWindow") { PocoProperty = "ShowInNewWindow", Display = DisplayMode.Native },
+            new EnumValueChild("LayoutDestination") { PocoProperty = "LayoutDestination", DefaultValue = "CurrentLayout", Display = DisplayMode.Native },
+            new NamedCalcChild("RowList") { PocoProperty = "RowList", Optional = true, Display = DisplayMode.Native },
+            new ValueTypeChild("NewWndStyles") { PocoProperty = "WindowStyles", Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

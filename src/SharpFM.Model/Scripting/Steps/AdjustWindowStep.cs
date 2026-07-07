@@ -80,18 +80,6 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("WindowState") { PocoProperty = "WindowState", DefaultValue = "ResizeToFit", ValidValues = ["Resize to Fit", "Maximize", "Minimize", "Restore", "Hide"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "WindowState",
-                XmlElement = "WindowState",
-                Type = "enum",
-                XmlAttr = "value",
-                DefaultValue = "ResizeToFit",
-                ValidValues = ["Resize to Fit", "Maximize", "Minimize", "Restore", "Hide"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

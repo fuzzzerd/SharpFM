@@ -79,20 +79,7 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-multi-user.html",
         Shape =
         [
-            new EnumValueChild("MultiUser") { PocoProperty = "NetworkAccess", HrLabel = "Network access", DefaultValue = "True", ValidValues = ["True", "OnHidden", "False"] },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "MultiUser",
-                XmlElement = "MultiUser",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Network access",
-                DefaultValue = "True",
-                ValidValues = ["On", "On (Hidden)", "Off"],
-            },
+            new EnumValueChild("MultiUser") { PocoProperty = "NetworkAccess", HrLabel = "Network access", DefaultValue = "True", ValidValues = ["True", "OnHidden", "False"], DisplayValues = ["On", "On (Hidden)", "Off"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

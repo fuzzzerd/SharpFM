@@ -80,12 +80,6 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Query", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Target" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", Required = true },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

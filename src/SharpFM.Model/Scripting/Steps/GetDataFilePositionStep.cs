@@ -65,11 +65,6 @@ public sealed class GetDataFilePositionStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "FileId", HrLabel = "File ID", Required = true, Optional = true },
             new FieldChild() { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
-        Params =
-        [
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "File ID", Required = true },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Target" },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

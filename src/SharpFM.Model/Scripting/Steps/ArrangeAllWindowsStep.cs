@@ -78,18 +78,6 @@ public sealed class ArrangeAllWindowsStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("WindowArrangement") { PocoProperty = "WindowArrangement", DefaultValue = "Cascade Window", ValidValues = ["Tile Horizontally", "Tile Vertically", "Cascade Window", "Bring All To Front"] },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "WindowArrangement",
-                XmlElement = "WindowArrangement",
-                Type = "enum",
-                XmlAttr = "value",
-                DefaultValue = "Cascade Window",
-                ValidValues = ["Tile Horizontally", "Tile Vertically", "Cascade Window", "Bring All To Front"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

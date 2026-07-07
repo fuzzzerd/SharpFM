@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -46,6 +47,6 @@ public class SelectDictionariesStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Select Dictionaries", out var metadata));
         Assert.Equal(108, metadata!.Id);
-        Assert.Empty(metadata.Params);
+        Assert.Empty(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

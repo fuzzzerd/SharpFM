@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -44,6 +45,6 @@ public class AllowUserAbortStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Allow User Abort", out var metadata));
         Assert.Equal(85, metadata!.Id);
-        Assert.Single(metadata.Params);
+        Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

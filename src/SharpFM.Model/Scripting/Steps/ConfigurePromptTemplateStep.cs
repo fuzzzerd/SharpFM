@@ -120,74 +120,16 @@ public sealed class ConfigurePromptTemplateStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "Option", Display = DisplayMode.Native },
             new WrapperChild("ConfigurePromptTemplate",
             [
-                new NamedTextChild("ModelProvider") { PocoProperty = "ModelProvider", HrLabel = "Model Provider", Display = DisplayMode.Augmented },
-                new NamedTextChild("RequestType") { PocoProperty = "TemplateType", HrLabel = "Template Type", Display = DisplayMode.Augmented },
+                new NamedTextChild("ModelProvider") { PocoProperty = "ModelProvider", HrLabel = "Model Provider", DisplayValues = ["OpenAI", "Anthropic", "Cohere", "Custom"], Display = DisplayMode.Augmented },
+                new NamedTextChild("RequestType") { PocoProperty = "TemplateType", HrLabel = "Template Type", DisplayValues = ["SQL Query", "Find Request", "RAG Prompt"], Display = DisplayMode.Augmented },
             ]),
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Template Name",
-            },
-            new ParamMetadata
-            {
-                Name = "ModelProvider",
-                XmlElement = "ModelProvider",
-                Type = "enum",
-                HrLabel = "Model Provider",
-                ValidValues = ["OpenAI", "Anthropic", "Cohere", "Custom"],
-                DefaultValue = "OpenAI",
-            },
-            new ParamMetadata
-            {
-                Name = "RequestType",
-                XmlElement = "RequestType",
-                Type = "enum",
-                HrLabel = "Template Type",
-                ValidValues = ["SQL Query", "Find Request", "RAG Prompt"],
-                DefaultValue = "SQL Query",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "SQL Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Natural Language Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Find Request Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "RAG Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
+            // The name and per-mode prompt calcs have no wire children in the
+            // canonical form; HR-only slots keep their display tokens addressable.
+            new HrOnly("TemplateName") { HrLabel = "Template Name" },
+            new HrOnly("SQLPrompt") { HrLabel = "SQL Prompt" },
+            new HrOnly("NaturalLanguagePrompt") { HrLabel = "Natural Language Prompt" },
+            new HrOnly("FindRequestPrompt") { HrLabel = "Find Request Prompt" },
+            new HrOnly("RAGPrompt") { HrLabel = "RAG Prompt" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

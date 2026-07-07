@@ -53,15 +53,6 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
         [
             new FieldChild("Field") { PocoProperty = "Target", Optional = true, Display = DisplayMode.Native },
         ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Field",
-                XmlElement = "Field",
-                Type = "field",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

@@ -70,26 +70,7 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
         Shape =
         [
             new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native },
-            new EnumValueChild("AccountOperation") { PocoProperty = "AccountOperation", DefaultValue = "Activate", Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
-            new ParamMetadata
-            {
-                Name = "AccountOperation",
-                XmlElement = "AccountOperation",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["Activate", "Deactivate"],
-                DefaultValue = "Activate",
-            },
+            new EnumValueChild("AccountOperation") { PocoProperty = "AccountOperation", DefaultValue = "Activate", DisplayValues = ["Activate", "Deactivate"], Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

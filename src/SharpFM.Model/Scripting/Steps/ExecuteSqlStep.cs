@@ -81,11 +81,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
             new ValueTypeChild("Profile") { PocoProperty = "Profile", Optional = true, Display = DisplayMode.Hidden },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },
-            new ParamMetadata { Name = "Profile", XmlElement = "Profile", Type = "complex" },
+            new HrOnly("Profile"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -47,17 +47,6 @@ public sealed class AllowUserAbortStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         Shape = [new BoolStateChild("Set")],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

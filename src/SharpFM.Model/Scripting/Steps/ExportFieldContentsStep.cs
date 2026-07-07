@@ -89,19 +89,11 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         // path list and Field which the unconfigured form omits (Optional).
         Shape =
         [
-            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories", HrLabel = "Create folders", Display = DisplayMode.Hidden },
-            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen", HrLabel = "Automatically open", Display = DisplayMode.Hidden },
-            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Hidden },
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories", HrLabel = "Create folders", Display = DisplayMode.Augmented },
+            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen", HrLabel = "Automatically open", Display = DisplayMode.Augmented },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email", Display = DisplayMode.Augmented },
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
-        ],
-        Params =
-        [
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean", HrLabel = "Automatically open" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean", HrLabel = "Create email" },
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean", HrLabel = "Create folders", ValidValues = ["On", "Off"], DefaultValue = "True" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

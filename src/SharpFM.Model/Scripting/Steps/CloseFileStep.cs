@@ -53,15 +53,6 @@ public sealed class CloseFileStep : ScriptStep, IStepFactory
         // FileReference is emitted only when a specific file is configured;
         // its absence means "Current File".
         Shape = [new ValueTypeChild("FileReference") { PocoProperty = "File", Optional = true }],
-        Params =
-        [
-            new ParamMetadata
-            {
-                Name = "FileReference",
-                XmlElement = "FileReference",
-                Type = "fileReference",
-            },
-        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

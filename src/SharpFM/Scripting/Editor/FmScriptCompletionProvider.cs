@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AvaloniaEdit.CodeCompletion;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Scripting.Editor;
 
@@ -85,7 +86,7 @@ public static class FmScriptCompletionProvider
         if (colonPos >= 0)
         {
             var label = currentSegment.Substring(0, colonPos).Trim();
-            var matchingParam = metadata.Params.FirstOrDefault(p =>
+            var matchingParam = ShapeHrView.HrNodes(metadata.Shape).FirstOrDefault(p =>
                 p.HrLabel?.Equals(label, StringComparison.OrdinalIgnoreCase) == true);
 
             if (matchingParam != null)
@@ -189,7 +190,7 @@ public static class FmScriptCompletionProvider
 
     /// <summary>
     /// Build a Monaco-style snippet (<c>${N:placeholder}</c> tab-stops)
-    /// from the step's <see cref="ParamMetadata"/> so that accepting a
+    /// from the step's shape display slots so that accepting a
     /// step-name completion inserts the full bracketed form with the
     /// first parameter pre-selected for immediate editing.
     ///
@@ -202,20 +203,21 @@ public static class FmScriptCompletionProvider
     /// </summary>
     private static string SynthesizeStepSnippet(StepMetadata metadata)
     {
-        if (metadata.Params.Count == 0)
+        var hrSlots = ShapeHrView.HrNodes(metadata.Shape);
+        if (hrSlots.Count == 0)
             return metadata.Name;
 
-        var segments = new List<string>(metadata.Params.Count);
+        var segments = new List<string>(hrSlots.Count);
         int index = 1;
-        foreach (var param in metadata.Params)
+        foreach (var slot in hrSlots)
         {
-            var placeholder = param.ValidValues?.FirstOrDefault()
-                ?? param.DefaultValue
-                ?? param.HrLabel
-                ?? param.Name
-                ?? "value";
+            var placeholder = ShapeHrView.DisplayValuesOf(slot).FirstOrDefault()
+                ?? slot.DefaultValue
+                ?? slot.HrLabel
+                ?? ShapeHrView.NameOf(slot);
+            if (string.IsNullOrEmpty(placeholder)) placeholder = "value";
             var tabStop = $"${{{index++}:{placeholder}}}";
-            segments.Add(param.HrLabel != null ? $"{param.HrLabel}: {tabStop}" : tabStop);
+            segments.Add(slot.HrLabel != null ? $"{slot.HrLabel}: {tabStop}" : tabStop);
         }
 
         return $"{metadata.Name} [ {string.Join(" ; ", segments)} ]";
@@ -226,16 +228,16 @@ public static class FmScriptCompletionProvider
     {
         var items = new List<ICompletionData>();
 
-        foreach (var param in metadata.Params)
+        foreach (var slot in ShapeHrView.HrNodes(metadata.Shape))
         {
-            var label = param.HrLabel;
+            var label = slot.HrLabel;
             if (label == null) continue;
 
             if (existingParams.Contains(label + ":", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var desc = param.Type;
-            var validValues = StepRegistry.GetValidValues(param);
+            var desc = ShapeHrView.KindOf(slot);
+            var validValues = ShapeHrView.DisplayValuesOf(slot);
             if (validValues.Count > 0)
                 desc += $" ({string.Join("|", validValues)})";
 
@@ -245,10 +247,9 @@ public static class FmScriptCompletionProvider
         return items;
     }
 
-    private static IList<ICompletionData> GetParamValueCompletions(ParamMetadata param)
+    private static IList<ICompletionData> GetParamValueCompletions(ShapeNode slot)
     {
-        var validValues = StepRegistry.GetValidValues(param);
-        return validValues
+        return ShapeHrView.DisplayValuesOf(slot)
             .Select(v => (ICompletionData)new FmScriptCompletionData(v))
             .ToList();
     }
@@ -267,25 +268,26 @@ public static class FmScriptCompletionProvider
             .Where(s => s.Length > 0)
             .ToList();
 
+        var hrSlots = ShapeHrView.HrNodes(metadata.Shape);
         int positionalIndex = 0;
         foreach (var seg in segments)
         {
-            bool hasLabel = metadata.Params.Any(p =>
+            bool hasLabel = hrSlots.Any(p =>
                 p.HrLabel != null && seg.StartsWith(p.HrLabel + ":", StringComparison.OrdinalIgnoreCase));
             if (!hasLabel)
                 positionalIndex++;
         }
 
         int unlabeledCount = 0;
-        foreach (var param in metadata.Params)
+        foreach (var slot in hrSlots)
         {
-            if (param.HrLabel != null) continue;
+            if (slot.HrLabel != null) continue;
 
             if (unlabeledCount == positionalIndex)
             {
-                var values = StepRegistry.GetValidValues(param);
+                var values = ShapeHrView.DisplayValuesOf(slot);
                 foreach (var v in values)
-                    items.Add(new FmScriptCompletionData(v, param.XmlElement));
+                    items.Add(new FmScriptCompletionData(v, ShapeHrView.NameOf(slot)));
                 break;
             }
             unlabeledCount++;
