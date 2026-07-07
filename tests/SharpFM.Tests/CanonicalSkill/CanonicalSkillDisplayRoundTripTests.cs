@@ -27,7 +27,13 @@ public class CanonicalSkillDisplayRoundTripTests
         var canonical = CanonicalSkillFixtures.Load(fixtureName);
         var step = ScriptStep.FromXml(canonical);
         if (!step.IsFullyEditable)
-            return; // sealed (RawStep): display edits are anchor-preserved, not parsed
+        {
+            // Sealed: display edits are anchor-preserved, never parsed — the
+            // editor cannot lose this step's state, so it is not a divergence.
+            Assert.False(KnownDisplayDivergences.Names.Contains(fixtureName),
+                $"'{fixtureName}' is sealed — remove it from KnownDisplayDivergences.");
+            return;
+        }
 
         var display = step.ToDisplayLine();
         var reparsed = ReparseDisplay(display, step);

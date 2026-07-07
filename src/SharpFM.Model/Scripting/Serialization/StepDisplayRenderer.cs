@@ -40,8 +40,21 @@ public static class StepDisplayRenderer
 
         foreach (var node in ShapeHrView.HrNodes(meta.Shape))
         {
+            // A true presence flag renders as its bare label; false renders
+            // nothing (FileMaker's "Select" / "Verify SSL Certificates" form).
+            if (node is FlagChild flag)
+            {
+                if ((bool)(Get(step, flag.PocoProperty ?? flag.Element) ?? false))
+                    tokens.Add(node.HrLabel ?? flag.Element);
+                continue;
+            }
+
             var value = DisplayValue(step, node);
-            if (string.IsNullOrEmpty(value)) continue;
+            if (string.IsNullOrEmpty(value))
+            {
+                if (node.DisplayEmptyAs is null) continue;
+                value = node.DisplayEmptyAs;
+            }
 
             if (node.Display == DisplayMode.Augmented)
             {
@@ -66,7 +79,7 @@ public static class StepDisplayRenderer
     private static string? DisplayValue(object src, ShapeNode node) => node switch
     {
         AttributeNode a => Get(src, a.PocoProperty ?? a.AttrName)?.ToString(),
-        BoolStateChild b => (bool)(Get(src, b.PocoProperty ?? b.Element) ?? false) ? "On" : "Off",
+        BoolStateChild b => (bool)(Get(src, b.PocoProperty ?? b.Element) ?? false) != b.DisplayInverted ? "On" : "Off",
         EnumValueChild e => ToDisplayValue(node, Get(src, e.PocoProperty ?? e.Element)?.ToString()),
         BareCalcChild => (Get(src, node.PocoProperty ?? "Calculation") as Calculation)?.Text,
         NamedCalcChild nc => (Get(src, nc.PocoProperty ?? nc.Element) as Calculation)?.Text,

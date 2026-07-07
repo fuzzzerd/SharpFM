@@ -88,6 +88,20 @@ public abstract record ShapeNode
     /// <summary>How this node participates in the display line.</summary>
     public DisplayMode Display { get; init; } = DisplayMode.Native;
 
+    /// <summary>
+    /// True when the display form is the logical inverse of the wire boolean —
+    /// FileMaker's <c>With dialog: On</c> is the wire's
+    /// <c>NoInteract state="False"</c>.
+    /// </summary>
+    public bool DisplayInverted { get; init; }
+
+    /// <summary>
+    /// Display text rendered when the bound value is blank, instead of
+    /// dropping the token (e.g. Close File's <c>Current File</c>; an empty
+    /// string keeps FileMaker's empty-slot token). Null drops blank tokens.
+    /// </summary>
+    public string? DisplayEmptyAs { get; init; }
+
     /// <summary>Human-facing explanation of the value — tooltip / hover source.</summary>
     public string? Description { get; init; }
 }
