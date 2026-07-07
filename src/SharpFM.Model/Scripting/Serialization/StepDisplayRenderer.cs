@@ -10,21 +10,20 @@ namespace SharpFM.Model.Scripting.Serialization;
 
 /// <summary>
 /// Renders a step's human-readable display line from the same
-/// <see cref="StepMetadata.Shape"/> that drives XML emission, applying one
-/// uniform convention so every step surfaces FileMaker-hidden values
-/// identically:
+/// <see cref="StepMetadata.Shape"/> that drives XML emission, reproducing the
+/// shipped display grammar exactly:
 ///
 /// <para>
-/// <c>Step Name [ native ; native ] [Label: value] [Label: value]</c>
+/// <c>Step Name [ native ; Label: value ; Label: value ]</c>
 /// </para>
 ///
 /// <list type="bullet">
-///   <item><see cref="DisplayMode.Native"/> nodes render bare inside the main
-///   bracket, joined by <c>;</c> — the way FileMaker Pro shows them.</item>
-///   <item><see cref="DisplayMode.Augmented"/> nodes — values FileMaker's lossy
-///   UI hides but the XML carries — each render as their own trailing
-///   <c>[HrLabel: value]</c> group, so invented syntax is visually distinct
-///   from FileMaker-native display.</item>
+///   <item>Slots render in <see cref="Shapes.ShapeHrView.HrNodes"/> order
+///   (<see cref="DisplayMode.Native"/> first, then
+///   <see cref="DisplayMode.Augmented"/>) inside one bracket, joined by
+///   <c>;</c> — the way FileMaker Pro shows them.</item>
+///   <item>A labeled slot renders as <c>HrLabel: value</c>; an unlabeled
+///   native renders bare.</item>
 ///   <item><see cref="DisplayMode.Hidden"/> nodes never appear.</item>
 /// </list>
 ///
@@ -37,13 +36,10 @@ public static class StepDisplayRenderer
 {
     public static string Render(ScriptStep step, StepMetadata meta)
     {
-        var natives = new List<string>();
-        var augmented = new List<(string label, string value)>();
+        var tokens = new List<string>();
 
-        foreach (var node in meta.Shape)
+        foreach (var node in ShapeHrView.HrNodes(meta.Shape))
         {
-            if (node.Display == DisplayMode.Hidden) continue;
-
             var value = DisplayValue(step, node);
             if (string.IsNullOrEmpty(value)) continue;
 
@@ -54,37 +50,46 @@ public static class StepDisplayRenderer
                 // emitted in XML (e.g. Set Variable's Repetition) yet hidden in
                 // the display line when it holds its default.
                 if (node.DefaultValue is not null && value == node.DefaultValue) continue;
-                augmented.Add((node.HrLabel ?? ElementLabel(node), value));
+                tokens.Add($"{node.HrLabel ?? ElementLabel(node)}: {value}");
             }
             else
             {
-                natives.Add(value);
+                tokens.Add(node.HrLabel is not null ? $"{node.HrLabel}: {value}" : value);
             }
         }
 
-        var sb = new StringBuilder(meta.Name);
-        if (natives.Count > 0)
-            sb.Append(" [ ").Append(string.Join(" ; ", natives)).Append(" ]");
-        foreach (var (label, value) in augmented)
-            sb.Append(" [").Append(label).Append(": ").Append(value).Append(']');
-        return sb.ToString();
+        return tokens.Count == 0
+            ? meta.Name
+            : $"{meta.Name} [ {string.Join(" ; ", tokens)} ]";
     }
 
     private static string? DisplayValue(object src, ShapeNode node) => node switch
     {
         AttributeNode a => Get(src, a.PocoProperty ?? a.AttrName)?.ToString(),
         BoolStateChild b => (bool)(Get(src, b.PocoProperty ?? b.Element) ?? false) ? "On" : "Off",
-        EnumValueChild e => Get(src, e.PocoProperty ?? e.Element)?.ToString(),
+        EnumValueChild e => ToDisplayValue(node, Get(src, e.PocoProperty ?? e.Element)?.ToString()),
         BareCalcChild => (Get(src, node.PocoProperty ?? "Calculation") as Calculation)?.Text,
         NamedCalcChild nc => (Get(src, nc.PocoProperty ?? nc.Element) as Calculation)?.Text,
         NamedTextChild nt => Get(src, nt.PocoProperty ?? nt.Element)?.ToString(),
         FieldChild f => (Get(src, f.PocoProperty ?? f.Element) as FieldRef)?.ToDisplayString(),
         NamedRefChild nr => (Get(src, nr.PocoProperty ?? nr.Element) as NamedRef)?.Name,
         ParametersList pl => FormatList(Get(src, pl.PocoProperty ?? pl.Wrapper)),
-        // ValueTypeChild / VariantBlock / Passthrough have no uniform display
-        // contribution yet; they are surfaced per-step as those steps migrate.
+        // ValueTypeChild / VariantBlock / Passthrough / HrOnly have no uniform
+        // display contribution; steps needing them keep hand-written display.
         _ => null,
     };
+
+    /// <summary>
+    /// Translate a wire value to its display form via the node's parallel
+    /// ValidValues/DisplayValues lists (e.g. "SortAscending" → "Ascending").
+    /// Values outside the declared set pass through unchanged.
+    /// </summary>
+    private static string? ToDisplayValue(ShapeNode node, string? wire)
+    {
+        if (wire is null || node.DisplayValues is null || node.ValidValues is null) return wire;
+        var i = node.ValidValues.ToList().IndexOf(wire);
+        return i >= 0 && i < node.DisplayValues.Count ? node.DisplayValues[i] : wire;
+    }
 
     private static string? FormatList(object? value) =>
         value is IEnumerable e and not string

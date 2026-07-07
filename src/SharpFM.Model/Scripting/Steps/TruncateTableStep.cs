@@ -21,6 +21,9 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
     public NamedRef Table { get; set; }
     public string? TableComment { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+
     public TruncateTableStep(bool withDialog = true, NamedRef? table = null, string? tableComment = null, bool enabled = true)
         : base(enabled)
     {
