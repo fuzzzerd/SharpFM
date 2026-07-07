@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,6 +20,11 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
 
     /// <summary>The enum XML value emitted on the <c>&lt;UndoRedo&gt;</c> element.</summary>
     public string Action { get; set; }
+
+    private UndoRedoStep() : base(false)
+    {
+        Action = "Undo";
+    }
 
     public UndoRedoStep(string action = "Undo", bool enabled = true)
         : base(enabled)
@@ -47,23 +54,13 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UndoRedo",
-                new XAttribute("value", Action)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Undo/Redo [ Action: {ToHr(Action)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("UndoRedo")?.Attribute("value")?.Value ?? "Undo";
-        return new UndoRedoStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<UndoRedoStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -80,6 +77,10 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "editing",
         HelpUrl = "https://help.claris.com/en/pro-help/content/undo-redo.html",
+        Shape =
+        [
+            new EnumValueChild("UndoRedo") { PocoProperty = "Action", HrLabel = "Action", DefaultValue = "Undo", ValidValues = ["Undo", "Redo", "Toggle"] },
+        ],
         Params =
         [
             new ParamMetadata

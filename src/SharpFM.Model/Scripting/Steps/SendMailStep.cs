@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -31,6 +33,21 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
     public StepChildBag Children { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>Shape-facing view of <see cref="Children"/> for the trailing passthrough slot.</summary>
+    public List<XElement> ExtraChildren
+    {
+        get => Children.Children.ToList();
+        set => Children = new StepChildBag(value);
+    }
+
+    private SendMailStep() : base(false)
+    {
+        Children = new StepChildBag();
+    }
+
     public SendMailStep(bool withDialog = true, StepChildBag? children = null, bool enabled = true)
         : base(enabled)
     {
@@ -38,16 +55,7 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         Children = children ?? new StepChildBag();
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")));
-        Children.AppendTo(step);
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -58,17 +66,8 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         return $"Send Mail [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        // Skip NoInteract — it's already captured as WithDialog; preserve
-        // everything else verbatim.
-        var children = step.Elements()
-            .Where(e => e.Name.LocalName != "NoInteract")
-            .ToList();
-        return new SendMailStep(withDialog, new StepChildBag(children), enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SendMailStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -104,6 +103,13 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/send-mail.html",
+        // NoInteract (inverse of WithDialog) followed by every other child
+        // preserved verbatim — the hybrid StepChildBag round-trip.
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
+            new Passthrough { PocoProperty = "ExtraChildren" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

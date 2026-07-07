@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,7 +19,9 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
     public const string XmlName = "AVPlayer Set Playback State";
 
     /// <summary>The enum XML value emitted on the <c>&lt;PlaybackState&gt;</c> element.</summary>
-    public string PlaybackState { get; set; }
+    public string PlaybackState { get; set; } = "Stopped";
+
+    private AVPlayerSetPlaybackStateStep() : base(false) { }
 
     public AVPlayerSetPlaybackStateStep(string playbackState = "Stopped", bool enabled = true)
         : base(enabled)
@@ -47,23 +51,13 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("PlaybackState",
-                new XAttribute("value", PlaybackState)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"AVPlayer Set Playback State [ {ToHr(PlaybackState)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("PlaybackState")?.Attribute("value")?.Value ?? "Stopped";
-        return new AVPlayerSetPlaybackStateStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<AVPlayerSetPlaybackStateStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -77,6 +71,11 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/avplayer-set-playback-state.html",
+        // Single always-emitted <PlaybackState value="..."/> enum child.
+        Shape =
+        [
+            new EnumValueChild("PlaybackState") { PocoProperty = "PlaybackState", DefaultValue = "Stopped", ValidValues = ["Stopped", "Paused", "Playing"] },
+        ],
         Params =
         [
             new ParamMetadata

@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,9 +14,27 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
 
     public bool WithDialog { get; set; }
     public bool SelectAll { get; set; }
-    public string Location { get; set; }
+    public string Location { get; set; } = "Next";
     public bool ExitAfterLast { get; set; }
     public Calculation? Calculation { get; set; }
+
+    // Wire bridges for the shape engine. NoInteract inverts WithDialog;
+    // <Exit> is emitted (always state="True") only for Previous/Next, and the
+    // bare <Calculation> only for ByCalculation — the getters return null
+    // outside those locations so the Optional nodes are omitted.
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+    public bool? ExitWire
+    {
+        get => ExitAfterLast && Location is "Previous" or "Next" ? true : null;
+        set => ExitAfterLast = value ?? false;
+    }
+    public Calculation? CalculationWire
+    {
+        get => Location == "ByCalculation" ? Calculation : null;
+        set => Calculation = value;
+    }
+
+    private GoToPortalRowStep() : base(false) { }
 
     public GoToPortalRowStep(
         bool withDialog = true,
@@ -32,21 +52,7 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
         Calculation = calculation;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("SelectAll", new XAttribute("state", SelectAll ? "True" : "False")),
-            new XElement("RowPageLocation", new XAttribute("value", Location)));
-        if (ExitAfterLast && (Location == "Previous" || Location == "Next"))
-            step.Add(new XElement("Exit", new XAttribute("state", "True")));
-        if (Location == "ByCalculation" && Calculation is not null)
-            step.Add(Calculation.ToXml("Calculation"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -57,17 +63,8 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
         return $"Go to Portal Row [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var selectAll = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
-        var location = step.Element("RowPageLocation")?.Attribute("value")?.Value ?? "Next";
-        var exit = step.Element("Exit")?.Attribute("state")?.Value == "True";
-        var calcEl = step.Element("Calculation");
-        var calc = calcEl is not null ? Calculation.FromXml(calcEl) : null;
-        return new GoToPortalRowStep(withDialog, selectAll, location, exit, calc, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<GoToPortalRowStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -97,6 +94,14 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-portal-row.html",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog" },
+            new BoolStateChild("SelectAll") { HrLabel = "Select" },
+            new EnumValueChild("RowPageLocation") { PocoProperty = "Location", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"], DefaultValue = "Next" },
+            new BoolStateChild("Exit") { PocoProperty = "ExitWire", Optional = true, HrLabel = "Exit after last" },
+            new BareCalcChild { PocoProperty = "CalculationWire", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

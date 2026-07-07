@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,8 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
     public bool OpenHidden { get; set; }
     public FileReference? File { get; set; }
 
+    private OpenFileStep() : base(false) { }
+
     public OpenFileStep(bool openHidden = false, FileReference? file = null, bool enabled = true)
         : base(enabled)
     {
@@ -20,16 +24,7 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
         File = file;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", OpenHidden ? "True" : "False")));
-        if (File is not null) step.Add(File.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -39,14 +34,8 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
             : $"Open File [ {hidden} ; {File.ToDisplayString()} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var hidden = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var fileEl = step.Element("FileReference");
-        var file = fileEl is not null ? FileReference.FromXml(fileEl) : null;
-        return new OpenFileStep(hidden, file, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<OpenFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -73,6 +62,13 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/open-file.html",
+        // Canonical: the Option (open hidden) toggle, then the optional
+        // FileReference which owns its own id/name/UniversalPathList shape.
+        Shape =
+        [
+            new BoolStateChild("Option") { PocoProperty = "OpenHidden", HrLabel = "Open hidden", Display = DisplayMode.Augmented },
+            new ValueTypeChild("FileReference") { PocoProperty = "File", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

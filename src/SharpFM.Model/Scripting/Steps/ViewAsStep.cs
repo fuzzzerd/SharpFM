@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,6 +20,11 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
 
     /// <summary>The enum XML value emitted on the <c>&lt;View&gt;</c> element.</summary>
     public string View { get; set; }
+
+    private ViewAsStep() : base(false)
+    {
+        View = "Cycle";
+    }
 
     public ViewAsStep(string view = "Cycle", bool enabled = true)
         : base(enabled)
@@ -49,23 +56,13 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("View",
-                new XAttribute("value", View)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"View As [ View: {ToHr(View)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("View")?.Attribute("value")?.Value ?? "Cycle";
-        return new ViewAsStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ViewAsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -82,6 +79,10 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/view-as.html",
+        Shape =
+        [
+            new EnumValueChild("View") { HrLabel = "View", DefaultValue = "Cycle", ValidValues = ["Cycle", "Form", "List", "Table"] },
+        ],
         Params =
         [
             new ParamMetadata

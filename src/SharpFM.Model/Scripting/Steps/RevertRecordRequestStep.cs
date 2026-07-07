@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,29 +19,24 @@ public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
     /// <summary>The <c>With dialog</c> flag on the step.</summary>
     public bool WithDialog { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private RevertRecordRequestStep() : base(false) { }
+
     public RevertRecordRequestStep(bool withdialog = true, bool enabled = true)
         : base(enabled)
     {
         WithDialog = withdialog;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract",
-                new XAttribute("state", WithDialog ? "False" : "True")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Revert Record/Request [ With dialog: {(WithDialog ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        return new RevertRecordRequestStep(state, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<RevertRecordRequestStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -57,6 +54,11 @@ public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/revert-record-request.html",
+        // Canonical: a single NoInteract child (inverts WithDialog).
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
+        ],
         Params =
         [
             new ParamMetadata

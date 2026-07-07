@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,6 +14,8 @@ public sealed class PerformFindStep : ScriptStep, IStepFactory
     public bool RestoreStoredRequests { get; set; }
     public FindRequestList? Query { get; set; }
 
+    private PerformFindStep() : base(false) { }
+
     public PerformFindStep(bool restoreStoredRequests = true, FindRequestList? query = null, bool enabled = true)
         : base(enabled)
     {
@@ -19,28 +23,13 @@ public sealed class PerformFindStep : ScriptStep, IStepFactory
         Query = query;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Restore", new XAttribute("state", RestoreStoredRequests ? "True" : "False")));
-        if (Query is not null) step.Add(Query.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Perform Find [ Restore: {(RestoreStoredRequests ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var qEl = step.Element("Query");
-        var q = qEl is not null ? FindRequestList.FromXml(qEl) : null;
-        return new PerformFindStep(restore, q, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<PerformFindStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -60,6 +49,13 @@ public sealed class PerformFindStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "found sets",
         HelpUrl = "https://help.claris.com/en/pro-help/content/perform-find.html",
+        // Canonical order: always-emitted <Restore state=.../>, then the
+        // <Query> request list only when the step carries stored requests.
+        Shape =
+        [
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore", Display = DisplayMode.Native },
+            new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true, Display = DisplayMode.Hidden },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },

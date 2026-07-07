@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,8 +20,10 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
     public bool CreateDirectories { get; set; }
     public bool AutoOpen { get; set; }
     public bool CreateEmail { get; set; }
-    public string Path { get; set; }
-    public string SaveType { get; set; }
+    public string Path { get; set; } = "";
+    public string SaveType { get; set; } = "File";
+
+    private ClosePdfStep() : base(false) { }
 
     public ClosePdfStep(
         bool createDirectories = false,
@@ -37,19 +41,7 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
         SaveType = saveType;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")));
-        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
-        step.Add(new XElement("ClosePDFFile", new XElement("PDFSaveType", SaveType)));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -62,16 +54,8 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
             : $"Close PDF [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var createDirs = step.Element("CreateDirectories")?.Attribute("state")?.Value == "True";
-        var autoOpen = step.Element("AutoOpen")?.Attribute("state")?.Value == "True";
-        var createEmail = step.Element("CreateEmail")?.Attribute("state")?.Value == "True";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var saveType = step.Element("ClosePDFFile")?.Element("PDFSaveType")?.Value ?? "File";
-        return new ClosePdfStep(createDirs, autoOpen, createEmail, path, saveType, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ClosePdfStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -94,6 +78,20 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/close-pdf.html",
+        // Three state flags always emitted; <UniversalPathList> only when a
+        // path is set; the <ClosePDFFile> wrapper always emitted with its
+        // save type.
+        Shape =
+        [
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories", Display = DisplayMode.Hidden },
+            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen", HrLabel = "Automatically open" },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail", HrLabel = "Create email" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new WrapperChild("ClosePDFFile",
+            [
+                new NamedTextChild("PDFSaveType") { PocoProperty = "SaveType", DefaultValue = "File", Display = DisplayMode.Hidden },
+            ]),
+        ],
         Params =
         [
             new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },

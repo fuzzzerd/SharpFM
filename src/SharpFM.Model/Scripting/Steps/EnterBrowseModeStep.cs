@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,29 +19,21 @@ public sealed class EnterBrowseModeStep : ScriptStep, IStepFactory
     /// <summary>The <c>Pause</c> flag on the step.</summary>
     public bool Pause { get; set; }
 
+    private EnterBrowseModeStep() : base(false) { }
+
     public EnterBrowseModeStep(bool pause = false, bool enabled = true)
         : base(enabled)
     {
         Pause = pause;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Pause",
-                new XAttribute("state", Pause ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Enter Browse Mode [ Pause: {(Pause ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("Pause")?.Attribute("state")?.Value == "True";
-        return new EnterBrowseModeStep(state, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<EnterBrowseModeStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -57,6 +51,11 @@ public sealed class EnterBrowseModeStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/enter-browse-mode.html",
+        // Single always-emitted <Pause state="..."/> child.
+        Shape =
+        [
+            new BoolStateChild("Pause") { PocoProperty = "Pause", HrLabel = "Pause" },
+        ],
         Params =
         [
             new ParamMetadata

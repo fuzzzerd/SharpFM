@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,7 +19,9 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
     public const string XmlName = "Adjust Window";
 
     /// <summary>The enum XML value emitted on the <c>&lt;WindowState&gt;</c> element.</summary>
-    public string WindowState { get; set; }
+    public string WindowState { get; set; } = "ResizeToFit";
+
+    private AdjustWindowStep() : base(false) { }
 
     public AdjustWindowStep(string windowState = "ResizeToFit", bool enabled = true)
         : base(enabled)
@@ -51,23 +55,13 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("WindowState",
-                new XAttribute("value", WindowState)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Adjust Window [ {ToHr(WindowState)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("WindowState")?.Attribute("value")?.Value ?? "ResizeToFit";
-        return new AdjustWindowStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<AdjustWindowStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -81,6 +75,11 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/adjust-window.html",
+        // Single always-emitted <WindowState value="..."/> enum child.
+        Shape =
+        [
+            new EnumValueChild("WindowState") { PocoProperty = "WindowState", DefaultValue = "ResizeToFit", ValidValues = ["Resize to Fit", "Maximize", "Minimize", "Restore", "Hide"] },
+        ],
         Params =
         [
             new ParamMetadata

@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,34 +13,23 @@ public sealed class CloseFileStep : ScriptStep, IStepFactory
 
     public FileReference? File { get; set; }
 
+    private CloseFileStep() : base(false) { }
+
     public CloseFileStep(FileReference? file = null, bool enabled = true)
         : base(enabled)
     {
         File = file;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        if (File is not null) step.Add(File.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         File is null
             ? "Close File [ Current File ]"
             : $"Close File [ {File.ToDisplayString()} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var fileEl = step.Element("FileReference");
-        var file = fileEl is not null ? FileReference.FromXml(fileEl) : null;
-        return new CloseFileStep(file, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<CloseFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -59,6 +50,9 @@ public sealed class CloseFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/close-file.html",
+        // FileReference is emitted only when a specific file is configured;
+        // its absence means "Current File".
+        Shape = [new ValueTypeChild("FileReference") { PocoProperty = "File", Optional = true }],
         Params =
         [
             new ParamMetadata

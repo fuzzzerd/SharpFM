@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,6 +20,11 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
 
     /// <summary>The enum XML value emitted on the <c>&lt;MultiUser&gt;</c> element.</summary>
     public string NetworkAccess { get; set; }
+
+    private SetMultiUserStep() : base(false)
+    {
+        NetworkAccess = "True";
+    }
 
     public SetMultiUserStep(string networkAccess = "True", bool enabled = true)
         : base(enabled)
@@ -47,23 +54,13 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("MultiUser",
-                new XAttribute("value", NetworkAccess)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Set Multi-User [ Network access: {ToHr(NetworkAccess)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("MultiUser")?.Attribute("value")?.Value ?? "True";
-        return new SetMultiUserStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetMultiUserStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -80,6 +77,10 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-multi-user.html",
+        Shape =
+        [
+            new EnumValueChild("MultiUser") { PocoProperty = "NetworkAccess", HrLabel = "Network access", DefaultValue = "True", ValidValues = ["True", "OnHidden", "False"] },
+        ],
         Params =
         [
             new ParamMetadata

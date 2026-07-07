@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -39,6 +41,40 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
     public IReadOnlyList<ShowCustomDialogButton> Buttons { get; set; }
     public IReadOnlyList<ShowCustomDialogInputField>? InputFields { get; set; }
 
+    /// <summary>
+    /// Shape-facing view of the trailing <c>&lt;Buttons&gt;</c> /
+    /// <c>&lt;InputFields&gt;</c> wrappers (typed child lists no shape
+    /// primitive models), emitted and parsed back through the shape's
+    /// passthrough slot. Buttons are emitted only when populated; InputFields
+    /// whenever configured (an empty configured list still writes the wrapper,
+    /// preserving the source's slot count).
+    /// </summary>
+    public List<XElement> ButtonsAndInputsWire
+    {
+        get
+        {
+            var list = new List<XElement>();
+            if (Buttons.Count > 0)
+                list.Add(new XElement("Buttons", Buttons.Select(b => b.ToXml())));
+            if (InputFields is not null)
+                list.Add(new XElement("InputFields", InputFields.Select(i => i.ToXml())));
+            return list;
+        }
+        set
+        {
+            Buttons = value.FirstOrDefault(e => e.Name.LocalName == "Buttons")
+                ?.Elements("Button").Select(ShowCustomDialogButton.FromXml).ToList()
+                ?? new List<ShowCustomDialogButton>();
+            var inputsEl = value.FirstOrDefault(e => e.Name.LocalName == "InputFields");
+            InputFields = inputsEl?.Elements("InputField").Select(ShowCustomDialogInputField.FromXml).ToList();
+        }
+    }
+
+    private ShowCustomDialogStep()
+        : this(true, new Calculation(""), new Calculation(""), new List<ShowCustomDialogButton>())
+    {
+    }
+
     public ShowCustomDialogStep(
         bool enabled,
         Calculation title,
@@ -53,72 +89,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         InputFields = inputFields;
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ShowCustomDialogStep>(step, Metadata);
 
-        var titleCalc = step.Element("Title")?.Element("Calculation");
-        var title = titleCalc is not null ? Calculation.FromXml(titleCalc) : new Calculation("");
-
-        var messageCalc = step.Element("Message")?.Element("Calculation");
-        var message = messageCalc is not null ? Calculation.FromXml(messageCalc) : new Calculation("");
-
-        var buttons = step.Element("Buttons")?.Elements("Button")
-            .Select(ShowCustomDialogButton.FromXml).ToList()
-            ?? new List<ShowCustomDialogButton>();
-
-        var inputsEl = step.Element("InputFields");
-        List<ShowCustomDialogInputField>? inputs = inputsEl is not null
-            ? inputsEl.Elements("InputField").Select(ShowCustomDialogInputField.FromXml).ToList()
-            : null;
-
-        static Calculation? ReadCalc(XElement? parent) =>
-            parent?.Element("Calculation") is { } c ? Calculation.FromXml(c) : null;
-
-        return new ShowCustomDialogStep(enabled, title, message, buttons, inputs)
-        {
-            Height = ReadCalc(step.Element("Height")),
-            Width = ReadCalc(step.Element("Width")),
-            DistanceFromTop = ReadCalc(step.Element("DistanceFromTop")),
-            DistanceFromLeft = ReadCalc(step.Element("DistanceFromLeft")),
-        };
-    }
-
-    public override XElement ToXml()
-    {
-        // Canonical: optional Title and Message, the optional dialog-geometry
-        // calcs, then the (optional) Buttons list and InputFields. An
-        // unconfigured dialog omits every child.
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        if (!string.IsNullOrEmpty(Title.Text)) step.Add(new XElement("Title", Title.ToXml()));
-        if (!string.IsNullOrEmpty(Message.Text)) step.Add(new XElement("Message", Message.ToXml()));
-        if (Height is not null) step.Add(new XElement("Height", Height.ToXml()));
-        if (Width is not null) step.Add(new XElement("Width", Width.ToXml()));
-        if (DistanceFromTop is not null) step.Add(new XElement("DistanceFromTop", DistanceFromTop.ToXml()));
-        if (DistanceFromLeft is not null) step.Add(new XElement("DistanceFromLeft", DistanceFromLeft.ToXml()));
-
-        if (Buttons.Count > 0)
-        {
-            var buttonsEl = new XElement("Buttons");
-            foreach (var button in Buttons)
-                buttonsEl.Add(button.ToXml());
-            step.Add(buttonsEl);
-        }
-
-        if (InputFields is not null)
-        {
-            var inputsEl = new XElement("InputFields");
-            foreach (var input in InputFields)
-                inputsEl.Add(input.ToXml());
-            step.Add(inputsEl);
-        }
-
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -390,6 +364,19 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/show-custom-dialog.html",
+        Shape =
+        [
+            // Canonical: optional Title and Message, the optional
+            // dialog-geometry calcs, then the (optional) Buttons list and
+            // InputFields. An unconfigured dialog omits every child.
+            new NamedCalcChild("Title") { Optional = true, HrLabel = "Title" },
+            new NamedCalcChild("Message") { Optional = true, HrLabel = "Message" },
+            new NamedCalcChild("Height") { Optional = true },
+            new NamedCalcChild("Width") { Optional = true },
+            new NamedCalcChild("DistanceFromTop") { Optional = true },
+            new NamedCalcChild("DistanceFromLeft") { Optional = true },
+            new Passthrough { PocoProperty = "ButtonsAndInputsWire" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Title", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Title" },

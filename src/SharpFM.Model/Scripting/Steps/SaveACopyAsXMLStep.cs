@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -26,6 +28,8 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
     public bool? SpecifyJSONOptions { get; set; }
     public Calculation? JsonOptions { get; set; }
 
+    private SaveACopyAsXMLStep() : base(false) { }
+
     public SaveACopyAsXMLStep(
         bool includeDetailsForAnalysisTools = false,
         bool? outputEntireBinaryData = null,
@@ -40,37 +44,14 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
         JsonOptions = jsonOptions;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", IncludeDetailsForAnalysisTools ? "True" : "False")));
-        if (OutputEntireBinaryData is { } oebd)
-            step.Add(new XElement("OutputEntireBinaryData", new XAttribute("state", oebd ? "True" : "False")));
-        if (SpecifyJSONOptions is { } sjo)
-            step.Add(new XElement("SpecifyJSONOptions", new XAttribute("state", sjo ? "True" : "False")));
-        if (JsonOptions is not null)
-            step.Add(new XElement("SaXML",
-                new XElement("JSONOptions", JsonOptions.ToXml("Calculation"))));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Save a Copy as XML [ Include details for analysis tools: "
         + (IncludeDetailsForAnalysisTools ? "On" : "Off") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var include = step.Element("Option")?.Attribute("state")?.Value == "True";
-        bool? oebd = step.Element("OutputEntireBinaryData") is { } o ? o.Attribute("state")?.Value == "True" : null;
-        bool? sjo = step.Element("SpecifyJSONOptions") is { } s ? s.Attribute("state")?.Value == "True" : null;
-        var jsonCalc = step.Element("SaXML")?.Element("JSONOptions")?.Element("Calculation");
-        var json = jsonCalc is not null ? Calculation.FromXml(jsonCalc) : null;
-        return new SaveACopyAsXMLStep(include, oebd, sjo, json, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SaveACopyAsXMLStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -88,6 +69,21 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/save-a-copy-as-xml.html",
+        Shape =
+        [
+            new BoolStateChild("Option") { PocoProperty = "IncludeDetailsForAnalysisTools", HrLabel = "Include details for analysis tools" },
+            // FM 26 flags are bool? — absent stays distinct from "present and False".
+            new BoolStateChild("OutputEntireBinaryData") { Optional = true },
+            new BoolStateChild("SpecifyJSONOptions") { Optional = true },
+            // <SaXML> is emitted only when the JSON export options are set.
+            new WrapperChild("SaXML",
+            [
+                new WrapperChild("JSONOptions",
+                [
+                    new BareCalcChild { PocoProperty = "JsonOptions" },
+                ]),
+            ]) { PocoProperty = "JsonOptions", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata

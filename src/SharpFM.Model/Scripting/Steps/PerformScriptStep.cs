@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -21,6 +23,14 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
     public PerformScriptTarget Target { get; set; }
     public Calculation? Parameter { get; set; }
 
+    // Emit-only wire projections: FM Pro emits the parameter Calculation
+    // before <Script> for ByReference but after <Calculated> for
+    // ByCalculation. Get-only, so the shape parser skips them.
+    public Calculation? ParameterBeforeScript =>
+        Target is PerformScriptTarget.ByReference ? Parameter : null;
+    public Calculation? ParameterAfterCalculated =>
+        Target is PerformScriptTarget.ByCalculation ? Parameter : null;
+
     public PerformScriptStep(bool enabled, PerformScriptTarget target, Calculation? parameter = null)
         : base(enabled)
     {
@@ -28,6 +38,9 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
         Parameter = parameter;
     }
 
+    // Hand-written rather than StepXmlParser: tolerates the degenerate
+    // no-reference form and binds the step-level Parameter regardless of
+    // which side of the variant it appeared on.
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
@@ -58,33 +71,7 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
         return new PerformScriptStep(enabled, target, parameter);
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        // FM Pro emits parameter before Script for ByReference,
-        // but after Calculated for ByCalculation. Match per-variant
-        // order for clipboard-round-trip fidelity.
-        switch (Target)
-        {
-            case PerformScriptTarget.ByReference byRef:
-                if (Parameter is not null)
-                    step.Add(Parameter.ToXml());
-                step.Add(byRef.Script.ToXml("Script"));
-                break;
-
-            case PerformScriptTarget.ByCalculation byCalc:
-                step.Add(new XElement("Calculated", byCalc.NameCalc.ToXml()));
-                if (Parameter is not null)
-                    step.Add(Parameter.ToXml());
-                break;
-        }
-
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -161,6 +148,19 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/perform-script.html",
+        Shape =
+        [
+            new BareCalcChild { PocoProperty = "ParameterBeforeScript", Optional = true, HrLabel = "Parameter", Display = DisplayMode.Augmented },
+            new VariantBlock(
+            [
+                new VariantCase(typeof(PerformScriptTarget.ByReference),
+                    [new NamedRefChild("Script")]) { MatchElement = "Script" },
+                new VariantCase(typeof(PerformScriptTarget.ByCalculation),
+                    [new NamedCalcChild("Calculated") { PocoProperty = "NameCalc" }])
+                { MatchElement = "Calculated" },
+            ]) { PocoProperty = "Target", Required = true },
+            new BareCalcChild { PocoProperty = "ParameterAfterCalculated", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },

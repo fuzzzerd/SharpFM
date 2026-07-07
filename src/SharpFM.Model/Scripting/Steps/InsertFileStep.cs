@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -14,6 +16,8 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
     public string PathType { get; set; }
     public FieldRef? Target { get; set; }
     public InsertFileDialogOptions? DialogOptions { get; set; }
+
+    private InsertFileStep() : this(enabled: true) { }
 
     public InsertFileStep(
         string path = "",
@@ -29,21 +33,7 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         DialogOptions = dialogOptions;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", new XAttribute("type", PathType), Path));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        if (DialogOptions is not null) step.Add(DialogOptions.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -72,18 +62,8 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         return parts.Count == 0 ? "Insert File" : $"Insert File [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var pathEl = step.Element("UniversalPathList");
-        var path = pathEl?.Value ?? "";
-        var pathType = pathEl?.Attribute("type")?.Value ?? "Embedded";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        var dialogEl = step.Element("DialogOptions");
-        var dialog = dialogEl is not null ? InsertFileDialogOptions.FromXml(dialogEl) : null;
-        return new InsertFileStep(path, pathType, target, dialog, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertFileStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -108,6 +88,12 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-file.html",
+        Shape =
+        [
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Attr = "type", AttrProperty = "PathType", AttrDefault = "Embedded" },
+            new FieldChild { PocoProperty = "Target", Optional = true, VariableTextMarker = true, HrLabel = "Target" },
+            new ValueTypeChild("DialogOptions"),
+        ],
         Params =
         [
             new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },

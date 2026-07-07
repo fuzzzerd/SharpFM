@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -15,6 +17,27 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
     public Calculation ObjectName { get; set; }
     public string Action { get; set; }
     public Calculation URL { get; set; }
+
+    /// <summary>
+    /// Shape-facing view of the <c>&lt;URL&gt;</c> element (a calc wrapper that
+    /// also carries a <c>custom</c> attribute, which no shape primitive
+    /// models): emitted only when a URL is configured and parsed back through
+    /// the shape's passthrough slot. The attribute is always written as
+    /// <c>"False"</c>, matching FM Pro's canonical form.
+    /// </summary>
+    public List<XElement> UrlWire
+    {
+        get => string.IsNullOrEmpty(URL.Text)
+            ? []
+            : [new XElement("URL", new XAttribute("custom", "False"), URL.ToXml("Calculation"))];
+        set
+        {
+            var calcEl = value.FirstOrDefault(e => e.Name.LocalName == "URL")?.Element("Calculation");
+            URL = calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
+        }
+    }
+
+    private SetWebViewerStep() : this(enabled: true) { }
 
     public SetWebViewerStep(
         Calculation? objectName = null,
@@ -47,37 +70,13 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
     private static string ActionHr(string x) => _ActionToHr.TryGetValue(x, out var h) ? h : x;
     private static string ActionXml(string h) => _ActionFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml()
-    {
-        // Canonical order: Action first, then the optional ObjectName and URL;
-        // <URL> carries a custom flag attribute alongside its calculation.
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Action", new XAttribute("value", Action)));
-        if (!string.IsNullOrEmpty(ObjectName.Text))
-            step.Add(new XElement("ObjectName", ObjectName.ToXml("Calculation")));
-        if (!string.IsNullOrEmpty(URL.Text))
-            step.Add(new XElement("URL", new XAttribute("custom", "False"), URL.ToXml("Calculation")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Set Web Viewer [ " + "Object Name: " + ObjectName.Text + " ; " + "Action: " + ActionHr(Action) + " ; " + "URL: " + URL.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var objectName_vWrapEl = step.Element("ObjectName");
-        var objectName_vCalcEl = objectName_vWrapEl?.Element("Calculation");
-        var objectName_v = objectName_vCalcEl is not null ? Calculation.FromXml(objectName_vCalcEl) : new Calculation("");
-        var action_v = step.Element("Action")?.Attribute("value")?.Value ?? "GoToURL";
-        var uRL_vWrapEl = step.Element("URL");
-        var uRL_vCalcEl = uRL_vWrapEl?.Element("Calculation");
-        var uRL_v = uRL_vCalcEl is not null ? Calculation.FromXml(uRL_vCalcEl) : new Calculation("");
-        return new SetWebViewerStep(objectName_v, action_v, uRL_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetWebViewerStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -97,6 +96,13 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-web-viewer.html",
+        Shape =
+        [
+            // Canonical order: Action first, then the optional ObjectName and URL.
+            new EnumValueChild("Action") { HrLabel = "Action", ValidValues = ["GoToURL", "Reset", "Reload", "GoForward", "GoBack"], DefaultValue = "GoToURL" },
+            new NamedCalcChild("ObjectName") { Optional = true, HrLabel = "Object Name" },
+            new Passthrough { PocoProperty = "UrlWire" },
+        ],
         Params =
         [
             new ParamMetadata

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,7 +19,9 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
     public const string XmlName = "Scroll Window";
 
     /// <summary>The enum XML value emitted on the <c>&lt;ScrollOperation&gt;</c> element.</summary>
-    public string Direction { get; set; }
+    public string Direction { get; set; } = "Home";
+
+    private ScrollWindowStep() : base(false) { }
 
     public ScrollWindowStep(string direction = "Home", bool enabled = true)
         : base(enabled)
@@ -51,23 +55,13 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ScrollOperation",
-                new XAttribute("value", Direction)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Scroll Window [ Direction: {ToHr(Direction)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("ScrollOperation")?.Attribute("value")?.Value ?? "Home";
-        return new ScrollWindowStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ScrollWindowStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -84,6 +78,18 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/scroll-window.html",
+        // Canonical: a single ScrollOperation enum child.
+        Shape =
+        [
+            new EnumValueChild("ScrollOperation")
+            {
+                PocoProperty = "Direction",
+                HrLabel = "Direction",
+                DefaultValue = "Home",
+                ValidValues = ["Home", "End", "PageUp", "PageDown", "ToSelection"],
+                Display = DisplayMode.Native,
+            },
+        ],
         Params =
         [
             new ParamMetadata

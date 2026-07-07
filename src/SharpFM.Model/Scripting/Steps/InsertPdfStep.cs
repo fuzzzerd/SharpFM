@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -18,6 +20,8 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
     public string Path { get; set; }
     public string StorageType { get; set; }
 
+    private InsertPdfStep() : this("") { }
+
     public InsertPdfStep(string path = "", string storageType = "Embedded", bool enabled = true)
         : base(enabled)
     {
@@ -25,25 +29,13 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
         StorageType = storageType;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", new XAttribute("type", StorageType), Path));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         string.IsNullOrEmpty(Path) ? XmlName : $"Insert PDF [ {Path} ; {StorageType} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var pathEl = step.Element("UniversalPathList");
-        return new InsertPdfStep(
-            pathEl?.Value ?? "",
-            pathEl?.Attribute("type")?.Value ?? "Embedded",
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertPdfStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -59,6 +51,17 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-pdf.html",
+        Shape =
+        [
+            new NamedTextChild("UniversalPathList")
+            {
+                PocoProperty = "Path",
+                Attr = "type",
+                AttrProperty = "StorageType",
+                AttrDefault = "Embedded",
+                ValidValues = ["Embedded", "Reference"],
+            },
+        ],
         Params =
         [
             new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },

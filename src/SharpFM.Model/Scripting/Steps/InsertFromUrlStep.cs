@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -17,6 +19,20 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
     public FieldRef? Target { get; set; }
     public Calculation? Url { get; set; }
     public Calculation? CurlOptions { get; set; }
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>
+    /// Emit-only projection of FileMaker's bare <c>&lt;Text/&gt;</c> marker,
+    /// written before <c>&lt;Field&gt;</c> when the target is a variable.
+    /// Declared as an explicit shape node (rather than
+    /// <c>FieldChild.VariableTextMarker</c>) so the canonical-shape validator
+    /// recognizes the marker element. Get-only, so the shape parser skips it.
+    /// </summary>
+    public bool TargetIsVariable => Target?.IsVariable == true;
+
+    private InsertFromUrlStep() : this(enabled: true) { }
 
     public InsertFromUrlStep(
         bool selectAll = true,
@@ -38,28 +54,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         CurlOptions = curlOptions;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            // NoInteract is inverted: state="True" suppresses the dialog
-            // (= With dialog: Off). state="False" shows it.
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("DontEncodeURL", new XAttribute("state", DontEncodeUrl ? "True" : "False")),
-            new XElement("SelectAll", new XAttribute("state", SelectAll ? "True" : "False")),
-            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")));
-        if (CurlOptions is not null)
-            step.Add(new XElement("CURLOptions", CurlOptions.ToXml("Calculation")));
-        if (Url is not null) step.Add(Url.ToXml("Calculation"));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -74,22 +69,8 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         return $"Insert from URL [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        // NoInteract inverted: state="True" = dialog suppressed = WithDialog: Off.
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var dontEncode = step.Element("DontEncodeURL")?.Attribute("state")?.Value == "True";
-        var selectAll = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
-        var verify = step.Element("VerifySSLCertificates")?.Attribute("state")?.Value == "True";
-        var curlEl = step.Element("CURLOptions")?.Element("Calculation");
-        var curl = curlEl is not null ? Calculation.FromXml(curlEl) : null;
-        var urlEl = step.Element("Calculation");
-        var url = urlEl is not null ? Calculation.FromXml(urlEl) : null;
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new InsertFromUrlStep(selectAll, withDialog, verify, dontEncode, target, url, curl, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertFromUrlStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -131,6 +112,17 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-from-url.html",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("DontEncodeURL") { PocoProperty = "DontEncodeUrl" },
+            new BoolStateChild("SelectAll") { HrLabel = "Select" },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates", HrLabel = "Verify SSL Certificates" },
+            new NamedCalcChild("CURLOptions") { PocoProperty = "CurlOptions", Optional = true, HrLabel = "cURL options" },
+            new BareCalcChild { PocoProperty = "Url", Optional = true },
+            new FlagChild("Text") { PocoProperty = "TargetIsVariable" },
+            new FieldChild { PocoProperty = "Target", Optional = true, HrLabel = "Target" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select" },

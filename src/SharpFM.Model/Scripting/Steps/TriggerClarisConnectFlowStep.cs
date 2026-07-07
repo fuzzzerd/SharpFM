@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -27,6 +29,21 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
     public Calculation? CurlOptions { get; set; }
     public string TargetVariable { get; set; }
 
+    // Wire adapter: the XML carries <NoInteract state>, the inverse of the
+    // With-dialog option the UI (and display line) exposes. Get/set so the
+    // shape renderer and parser both go through it.
+    public bool NoInteract
+    {
+        get => !WithDialog;
+        set => WithDialog = !value;
+    }
+
+    private TriggerClarisConnectFlowStep() : base(false)
+    {
+        FlowUrl = "";
+        TargetVariable = "";
+    }
+
     public TriggerClarisConnectFlowStep(
         bool withDialog = true,
         bool dontEncodeUrl = false,
@@ -47,22 +64,7 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
         TargetVariable = targetVariable;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("DontEncodeURL", new XAttribute("state", DontEncodeUrl ? "True" : "False")),
-            new XElement("SelectAll", new XAttribute("state", SelectAll ? "True" : "False")),
-            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")),
-            new XElement("Flow", FlowUrl));
-        if (CurlOptions is not null)
-            step.Add(new XElement("CURLOptions", CurlOptions.ToXml("Calculation")));
-        step.Add(new XElement("Text", TargetVariable));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -75,19 +77,8 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
         return $"Trigger Claris Connect Flow [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var dontEncode = step.Element("DontEncodeURL")?.Attribute("state")?.Value == "True";
-        var selectAll = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
-        var verify = step.Element("VerifySSLCertificates")?.Attribute("state")?.Value == "True";
-        var flowUrl = step.Element("Flow")?.Value ?? "";
-        var curlEl = step.Element("CURLOptions")?.Element("Calculation");
-        var curl = curlEl is not null ? Calculation.FromXml(curlEl) : null;
-        var text = step.Element("Text")?.Value ?? "";
-        return new TriggerClarisConnectFlowStep(withDialog, dontEncode, selectAll, verify, flowUrl, curl, text, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<TriggerClarisConnectFlowStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -112,6 +103,16 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
         Name = XmlName,
         Id = XmlId,
         Category = "control",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog" },
+            new BoolStateChild("DontEncodeURL") { PocoProperty = "DontEncodeUrl", HrLabel = "Don't encode URL" },
+            new BoolStateChild("SelectAll") { HrLabel = "Select entire contents" },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates", HrLabel = "Verify SSL certificates" },
+            new NamedTextChild("Flow") { PocoProperty = "FlowUrl", HrLabel = "Flow URL" },
+            new NamedCalcChild("CURLOptions") { PocoProperty = "CurlOptions", Optional = true, HrLabel = "cURL options" },
+            new NamedTextChild("Text") { PocoProperty = "TargetVariable", HrLabel = "Target variable" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },

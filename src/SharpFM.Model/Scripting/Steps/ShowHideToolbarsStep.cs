@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -20,6 +22,11 @@ public sealed class ShowHideToolbarsStep : ScriptStep, IStepFactory
     public bool IncludeEditRecordToolbar { get; set; }
     public bool Lock { get; set; }
     public string Action { get; set; }
+
+    private ShowHideToolbarsStep() : base(false)
+    {
+        Action = "Hide";
+    }
 
     public ShowHideToolbarsStep(
         bool includeEditRecordToolbar = false,
@@ -55,26 +62,13 @@ public sealed class ShowHideToolbarsStep : ScriptStep, IStepFactory
     private static string ActionFromHr(string h) =>
         _ActionHrToXml.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("IncludeEditRecordToolbar", new XAttribute("state", IncludeEditRecordToolbar ? "True" : "False")),
-            new XElement("Lock", new XAttribute("state", Lock ? "True" : "False")),
-            new XElement("ShowHide", new XAttribute("value", Action)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Show/Hide Toolbars [ " + "Include Edit Record Toolbar: " + (IncludeEditRecordToolbar ? "On" : "Off") + " ; " + "Lock: " + (Lock ? "On" : "Off") + " ; " + "Action: " + ActionToHr(Action) + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var includeEditRecordToolbar_val = step.Element("IncludeEditRecordToolbar")?.Attribute("state")?.Value == "True";
-        var @lock_val = step.Element("Lock")?.Attribute("state")?.Value == "True";
-        var action_val = step.Element("ShowHide")?.Attribute("value")?.Value ?? "";
-        return new ShowHideToolbarsStep(includeEditRecordToolbar_val, @lock_val, action_val, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ShowHideToolbarsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -94,6 +88,12 @@ public sealed class ShowHideToolbarsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/show-hide-toolbars.html",
+        Shape =
+        [
+            new BoolStateChild("IncludeEditRecordToolbar") { HrLabel = "Include Edit Record Toolbar" },
+            new BoolStateChild("Lock") { HrLabel = "Lock" },
+            new EnumValueChild("ShowHide") { PocoProperty = "Action", HrLabel = "Action", ValidValues = ["Show", "Hide", "Toggle"], DefaultValue = "Hide" },
+        ],
         Params =
         [
             new ParamMetadata

@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,11 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
     public bool RestoreStoredSettings { get; set; }
     public PageFormat? Format { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private PrintSetupStep() : base(false) { }
+
     public PrintSetupStep(
         bool withDialog = false,
         bool restoreStoredSettings = true,
@@ -25,30 +32,13 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
         Format = format;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredSettings ? "True" : "False")));
-        if (Format is not null) step.Add(Format.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Print Setup [ With dialog: {(WithDialog ? "On" : "Off")} ; Restore: {(RestoreStoredSettings ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var formatEl = step.Element("PageFormat");
-        var format = formatEl is not null ? PageFormat.FromXml(formatEl) : null;
-        return new PrintSetupStep(withDialog, restore, format, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<PrintSetupStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -70,6 +60,14 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/print-setup.html",
+        // Canonical: NoInteract (inverts WithDialog), Restore, then the optional
+        // PageFormat which owns its own attribute/PlatformData shape.
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredSettings", HrLabel = "Restore", Display = DisplayMode.Augmented },
+            new ValueTypeChild("PageFormat") { PocoProperty = "Format", Optional = true, Display = DisplayMode.Hidden },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

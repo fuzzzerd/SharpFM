@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,8 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
     public bool RestoreStoredRequests { get; set; }
     public FindRequestList? Query { get; set; }
 
+    private EnterFindModeStep() : base(false) { }
+
     public EnterFindModeStep(
         bool pause = true,
         bool restoreStoredRequests = true,
@@ -25,30 +29,13 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
         Query = query;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Pause", new XAttribute("state", Pause ? "True" : "False")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredRequests ? "True" : "False")));
-        if (Query is not null) step.Add(Query.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Enter Find Mode [ Pause: {(Pause ? "On" : "Off")} ; Restore: {(RestoreStoredRequests ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var pause = step.Element("Pause")?.Attribute("state")?.Value == "True";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var qEl = step.Element("Query");
-        var q = qEl is not null ? FindRequestList.FromXml(qEl) : null;
-        return new EnterFindModeStep(pause, restore, q, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<EnterFindModeStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -70,6 +57,14 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/enter-find-mode.html",
+        // Pause and Restore always emitted; <Query> only when a stored
+        // request list is present.
+        Shape =
+        [
+            new BoolStateChild("Pause") { PocoProperty = "Pause", HrLabel = "Pause" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
+            new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true, Display = DisplayMode.Hidden },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Pause", XmlElement = "Pause", XmlAttr = "state", Type = "boolean" },

@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -20,6 +22,12 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
     public FieldRef? Target { get; set; }
     public StepChildBag DeviceOptions { get; set; }
 
+    private InsertFromDeviceStep() : base(false)
+    {
+        InsertFrom = "Camera";
+        DeviceOptions = new StepChildBag();
+    }
+
     public InsertFromDeviceStep(
         string insertFrom = "Camera",
         FieldRef? target = null,
@@ -32,36 +40,13 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
         DeviceOptions = deviceOptions ?? new StepChildBag();
     }
 
-    public override XElement ToXml()
-    {
-        // The DeviceOptions subtree varies by device and is preserved verbatim
-        // (preserve-don't-synthesize). The target Field is emitted only when set,
-        // matching the canonical unconfigured form.
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("InsertFrom", new XAttribute("value", InsertFrom)));
-        if (Target is not null) step.Add(Target.ToXml("Field"));
-        var opts = new XElement("DeviceOptions");
-        DeviceOptions.AppendTo(opts);
-        step.Add(opts);
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Insert from Device [ {InsertFrom}{(Target is not null ? $" ; {Target.ToDisplayString()}" : "")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var insertFrom = step.Element("InsertFrom")?.Attribute("value")?.Value ?? "Camera";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        var optsEl = step.Element("DeviceOptions");
-        var opts = optsEl is not null ? StepChildBag.FromParent(optsEl) : new StepChildBag();
-        return new InsertFromDeviceStep(insertFrom, target, opts, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertFromDeviceStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
         new InsertFromDeviceStep(enabled: enabled);
@@ -72,6 +57,18 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-from-device.html",
+        // InsertFrom, optional target Field, then the always-present
+        // DeviceOptions wrapper whose device-specific subtree is preserved
+        // verbatim (preserve-don't-synthesize).
+        Shape =
+        [
+            new EnumValueChild("InsertFrom") { PocoProperty = "InsertFrom", DefaultValue = "Camera", ValidValues = ["Camera", "Video Camera", "Microphone", "Photo Library", "Music Library", "Barcode", "Signature"] },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true },
+            new WrapperChild("DeviceOptions",
+            [
+                new Passthrough { PocoProperty = "DeviceOptions" },
+            ]),
+        ],
         Params =
         [
             new ParamMetadata { Name = "InsertFrom", XmlElement = "InsertFrom", XmlAttr = "value", Type = "enum", ValidValues = ["Camera", "Video Camera", "Microphone", "Photo Library", "Music Library", "Barcode", "Signature"] },

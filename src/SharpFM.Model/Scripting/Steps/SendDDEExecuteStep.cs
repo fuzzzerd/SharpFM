@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,6 +20,11 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
 
     /// <summary>The enum XML value emitted on the <c>&lt;ContentType&gt;</c> element.</summary>
     public string ContentType { get; set; }
+
+    private SendDDEExecuteStep() : base(false)
+    {
+        ContentType = "File";
+    }
 
     public SendDDEExecuteStep(string contentType = "File", bool enabled = true)
         : base(enabled)
@@ -43,23 +50,13 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
     private static string FromHr(string hrValue) =>
         _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ContentType",
-                new XAttribute("value", ContentType)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Send DDE Execute [ {ToHr(ContentType)} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("ContentType")?.Attribute("value")?.Value ?? "File";
-        return new SendDDEExecuteStep(value, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SendDDEExecuteStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -73,6 +70,10 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/send-dde-execute-windows.html",
+        Shape =
+        [
+            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "File", ValidValues = ["File"] },
+        ],
         Params =
         [
             new ParamMetadata

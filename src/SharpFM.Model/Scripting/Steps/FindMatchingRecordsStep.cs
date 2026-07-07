@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -9,8 +11,10 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
     public const int XmlId = 155;
     public const string XmlName = "Find Matching Records";
 
-    public string Mode { get; set; }
+    public string Mode { get; set; } = "FindMatchingReplace";
     public FieldRef? Field { get; set; }
+
+    private FindMatchingRecordsStep() : base(false) { }
 
     public FindMatchingRecordsStep(string mode = "FindMatchingReplace", FieldRef? field = null, bool enabled = true)
         : base(enabled)
@@ -19,16 +23,7 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
         Field = field;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("FindMatchingRecordsByField", new XAttribute("value", Mode)));
-        if (Field is not null) step.Add(Field.ToXml("Field"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -44,14 +39,8 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
             : $"Find Matching Records [ {mode} ; {Field.ToDisplayString()} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var mode = step.Element("FindMatchingRecordsByField")?.Attribute("value")?.Value ?? "FindMatchingReplace";
-        var fieldEl = step.Element("Field");
-        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new FindMatchingRecordsStep(mode, field, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<FindMatchingRecordsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -86,6 +75,18 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "found sets",
         HelpUrl = "https://help.claris.com/en/pro-help/content/find-matching-records.html",
+        // Canonical: the always-present mode enum, then the optional target Field.
+        Shape =
+        [
+            new EnumValueChild("FindMatchingRecordsByField")
+            {
+                PocoProperty = "Mode",
+                DefaultValue = "FindMatchingReplace",
+                ValidValues = ["FindMatchingReplace", "FindMatchingConstrain", "FindMatchingExtend"],
+                Display = DisplayMode.Native,
+            },
+            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
+        ],
         Params =
         [
             new ParamMetadata

@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,8 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
     public bool RestoreStoredRequests { get; set; }
     public FindRequestList? Query { get; set; }
 
+    private ConstrainFoundSetStep() : base(false) { }
+
     public ConstrainFoundSetStep(
         bool withoutIndexes = true,
         bool restoreStoredRequests = true,
@@ -25,30 +29,13 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
         Query = query;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", WithoutIndexes ? "True" : "False")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredRequests ? "True" : "False")));
-        if (Query is not null) step.Add(Query.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Constrain Found Set [ Restore: {(RestoreStoredRequests ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var option = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var qEl = step.Element("Query");
-        var q = qEl is not null ? FindRequestList.FromXml(qEl) : null;
-        return new ConstrainFoundSetStep(option, restore, q, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ConstrainFoundSetStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -68,6 +55,14 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "found sets",
         HelpUrl = "https://help.claris.com/en/pro-help/content/constrain-found-set.html",
+        // Option and Restore always emitted; <Query> only when a stored
+        // request list is present.
+        Shape =
+        [
+            new BoolStateChild("Option") { PocoProperty = "WithoutIndexes" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
+            new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true, Display = DisplayMode.Hidden },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean" },

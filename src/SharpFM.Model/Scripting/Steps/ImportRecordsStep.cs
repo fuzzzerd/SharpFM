@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -26,6 +28,54 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
     public NamedRef? Table { get; set; }
     public IReadOnlyList<ImportTargetField> TargetFields { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>
+    /// <c>&lt;DataSourceType&gt;</c> wire projection: the descriptor is emitted
+    /// only when a source path is configured (null suppresses the element).
+    /// </summary>
+    public string? DataSourceTypeWire
+    {
+        get => string.IsNullOrEmpty(Path) ? null : DataSourceType;
+        set => DataSourceType = string.IsNullOrEmpty(value) ? "File" : value;
+    }
+
+    /// <summary>
+    /// Shape-facing view of the trailing complex children no primitive models
+    /// (attribute-dictionary <c>&lt;ImportOptions&gt;</c>, the target
+    /// <c>&lt;Table&gt;</c> reference and the <c>&lt;TargetFields&gt;</c> map),
+    /// emitted and parsed back through the shape's passthrough slot.
+    /// </summary>
+    public List<XElement> ComplexWire
+    {
+        get
+        {
+            var list = new List<XElement>();
+            if (ImportOptions is not null)
+            {
+                var opts = new XElement("ImportOptions");
+                foreach (var kv in ImportOptions) opts.Add(new XAttribute(kv.Key, kv.Value));
+                list.Add(opts);
+            }
+            if (Table is not null) list.Add(Table.ToXml("Table"));
+            if (TargetFields.Count > 0)
+                list.Add(new XElement("TargetFields", TargetFields.Select(f => f.ToXml())));
+            return list;
+        }
+        set
+        {
+            ImportOptions = value.FirstOrDefault(e => e.Name.LocalName == "ImportOptions")
+                ?.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
+            var tableEl = value.FirstOrDefault(e => e.Name.LocalName == "Table");
+            Table = tableEl is not null ? NamedRef.FromXml(tableEl) : null;
+            TargetFields = value.FirstOrDefault(e => e.Name.LocalName == "TargetFields")
+                ?.Elements("Field").Select(ImportTargetField.FromXml).ToList() ?? new List<ImportTargetField>();
+        }
+    }
+
+    private ImportRecordsStep() : this(enabled: true) { }
+
     public ImportRecordsStep(
         bool withDialog = false, bool restoreStoredOrder = true, bool verifySslCertificates = false,
         string dataSourceType = "File", string path = "",
@@ -45,64 +95,13 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
         TargetFields = targetFields ?? new List<ImportTargetField>();
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredOrder ? "True" : "False")),
-            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySslCertificates ? "True" : "False")));
-        // The data-source descriptor and path are emitted only when a source is
-        // configured; the canonical unconfigured form omits them.
-        if (!string.IsNullOrEmpty(Path))
-        {
-            step.Add(new XElement("DataSourceType", new XAttribute("value", DataSourceType)));
-            step.Add(new XElement("UniversalPathList", Path));
-        }
-        if (ImportOptions is not null)
-        {
-            var opts = new XElement("ImportOptions");
-            foreach (var kv in ImportOptions) opts.Add(new XAttribute(kv.Key, kv.Value));
-            step.Add(opts);
-        }
-        if (Table is not null) step.Add(Table.ToXml("Table"));
-        if (TargetFields.Count > 0)
-        {
-            var tf = new XElement("TargetFields");
-            foreach (var f in TargetFields) tf.Add(f.ToXml());
-            step.Add(tf);
-        }
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Import Records [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var optsEl = step.Element("ImportOptions");
-        Dictionary<string, string>? opts = null;
-        if (optsEl is not null)
-        {
-            opts = new Dictionary<string, string>();
-            foreach (var a in optsEl.Attributes()) opts[a.Name.LocalName] = a.Value;
-        }
-        var tableEl = step.Element("Table");
-        var targetEl = step.Element("TargetFields");
-        return new ImportRecordsStep(
-            step.Element("NoInteract")?.Attribute("state")?.Value != "True",
-            step.Element("Restore")?.Attribute("state")?.Value == "True",
-            step.Element("VerifySSLCertificates")?.Attribute("state")?.Value == "True",
-            step.Element("DataSourceType")?.Attribute("value")?.Value ?? "File",
-            step.Element("UniversalPathList")?.Value ?? "",
-            opts,
-            tableEl is not null ? NamedRef.FromXml(tableEl) : null,
-            targetEl?.Elements("Field").Select(ImportTargetField.FromXml).ToList(),
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ImportRecordsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
         new ImportRecordsStep(enabled: enabled);
@@ -113,6 +112,17 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/import-records.html",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder" },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates" },
+            // The data-source descriptor and path are emitted only when a
+            // source is configured; the canonical unconfigured form omits them.
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceTypeWire", Optional = true, ValidValues = ["File", "Folder", "XMLSource"], DefaultValue = "File" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new Passthrough { PocoProperty = "ComplexWire" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -19,7 +21,9 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
 
     public Calculation? ObjectName { get; set; }
     public Calculation? FunctionName { get; set; }
-    public IReadOnlyList<Calculation> Parameters { get; set; }
+    public IReadOnlyList<Calculation> Parameters { get; set; } = new List<Calculation>();
+
+    private PerformJavaScriptInWebViewerStep() : base(false) { }
 
     public PerformJavaScriptInWebViewerStep(
         Calculation? objectName = null,
@@ -33,25 +37,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         Parameters = parameters ?? new List<Calculation>();
     }
 
-    public override XElement ToXml()
-    {
-        // Canonical unconfigured form is empty; FunctionName (and ObjectName /
-        // Parameters) are emitted only when set.
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        if (ObjectName is not null) step.Add(new XElement("ObjectName", ObjectName.ToXml("Calculation")));
-        if (FunctionName is not null) step.Add(new XElement("FunctionName", FunctionName.ToXml("Calculation")));
-        if (Parameters.Count > 0)
-        {
-            var parameters = new XElement("Parameters", new XAttribute("Count", Parameters.Count));
-            foreach (var p in Parameters)
-                parameters.Add(new XElement("P", p.ToXml("Calculation")));
-            step.Add(parameters);
-        }
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -63,18 +49,8 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         return $"Perform JavaScript in Web Viewer [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var objEl = step.Element("ObjectName")?.Element("Calculation");
-        var obj = objEl is not null ? Calculation.FromXml(objEl) : null;
-        var fnEl = step.Element("FunctionName")?.Element("Calculation");
-        var fn = fnEl is not null ? Calculation.FromXml(fnEl) : null;
-        var paramsList = step.Element("Parameters")?.Elements("P")
-            .Select(p => p.Element("Calculation") is { } c ? Calculation.FromXml(c) : new Calculation(""))
-            .ToList() ?? new List<Calculation>();
-        return new PerformJavaScriptInWebViewerStep(obj, fn, paramsList, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<PerformJavaScriptInWebViewerStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -104,6 +80,15 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/perform-javascript-in-web-viewer.html",
+        // Canonical unconfigured form is empty; ObjectName, FunctionName, and
+        // the <Parameters Count><P><Calculation> list (§7.2) are emitted only
+        // when set.
+        Shape =
+        [
+            new NamedCalcChild("ObjectName") { PocoProperty = "ObjectName", HrLabel = "Object Name", Optional = true, Display = DisplayMode.Augmented },
+            new NamedCalcChild("FunctionName") { PocoProperty = "FunctionName", HrLabel = "Function Name", Optional = true, Display = DisplayMode.Augmented },
+            new ParametersList() { PocoProperty = "Parameters", HrLabel = "Parameters", Optional = true, Display = DisplayMode.Augmented },
+        ],
         Params =
         [
             new ParamMetadata { Name = "ObjectName", XmlElement = "ObjectName", Type = "namedCalc", HrLabel = "Object Name" },

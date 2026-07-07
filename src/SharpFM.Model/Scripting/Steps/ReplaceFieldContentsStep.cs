@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -24,6 +26,11 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
     public Calculation? Calculation { get; set; }
     public SerialNumberOptions? SerialOptions { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private ReplaceFieldContentsStep() : this(enabled: true) { }
+
     public ReplaceFieldContentsStep(
         bool withDialog = true,
         FieldRef? field = null,
@@ -40,20 +47,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         SerialOptions = serialOptions;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("Restore", new XAttribute("state", RestoreState ? "True" : "False")),
-            new XElement("With", new XAttribute("value", Mode)));
-        if (Calculation is not null) step.Add(Calculation.ToXml("Calculation"));
-        if (SerialOptions is not null) step.Add(SerialOptions.ToXml());
-        if (Field is not null) step.Add(Field.ToXml("Field"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -74,22 +68,8 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         return $"Replace Field Contents [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var mode = step.Element("With")?.Attribute("value")?.Value ?? "Calculation";
-        var calcEl = step.Element("Calculation");
-        var calc = calcEl is not null ? Values.Calculation.FromXml(calcEl) : null;
-        var snEl = step.Element("SerialNumbers");
-        var sn = snEl is not null ? SerialNumberOptions.FromXml(snEl) : null;
-        var fieldEl = step.Element("Field");
-        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new ReplaceFieldContentsStep(withDialog, field, mode, calc, sn, enabled)
-        {
-            RestoreState = step.Element("Restore")?.Attribute("state")?.Value == "True",
-        };
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ReplaceFieldContentsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -127,6 +107,17 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/replace-field-contents.html",
+        // Canonical: NoInteract, Restore, With, then the optional replacement
+        // payload (Calculation or SerialNumbers) and the optional target Field.
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreState" },
+            new EnumValueChild("With") { PocoProperty = "Mode", ValidValues = ["CurrentContents", "SerialNumbers", "Calculation", "None"], DefaultValue = "Calculation" },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true },
+            new ValueTypeChild("SerialNumbers") { PocoProperty = "SerialOptions", Optional = true, Display = DisplayMode.Hidden },
+            new FieldChild("Field") { Optional = true, HrLabel = "Field" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },

@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -23,6 +25,11 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
     /// <summary>Override ESS/ODBC locking conflicts on commit.</summary>
     public bool ForceCommit { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private CommitRecordsRequestsStep() : this(withDialog: true) { }
+
     public CommitRecordsRequestsStep(
         bool withDialog = true,
         bool skipDataEntryValidation = false,
@@ -35,14 +42,7 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
         ForceCommit = forceCommit;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("Option", new XAttribute("state", SkipDataEntryValidation ? "True" : "False")),
-            new XElement("ESSForceCommit", new XAttribute("state", ForceCommit ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         "Commit Records/Requests [ "
@@ -51,18 +51,8 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
         + " ; Force commit: " + (ForceCommit ? "On" : "Off")
         + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var noInteract = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
-        var option = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var essForce = step.Element("ESSForceCommit")?.Attribute("state")?.Value == "True";
-        return new CommitRecordsRequestsStep(
-            withDialog: !noInteract,
-            skipDataEntryValidation: option,
-            forceCommit: essForce,
-            enabled: enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<CommitRecordsRequestsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -93,6 +83,12 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/commit-records-requests.html",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("Option") { PocoProperty = "SkipDataEntryValidation", HrLabel = "Skip data entry validation" },
+            new BoolStateChild("ESSForceCommit") { PocoProperty = "ForceCommit", HrLabel = "Force commit" },
+        ],
         Params =
         [
             new ParamMetadata

@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -27,6 +29,9 @@ public sealed class CommentStep : ScriptStep, IStepFactory
         Text = text;
     }
 
+    // Hand-written rather than StepXmlParser: the reader must normalize the
+    // clipboard's CR/CRLF newlines to LF, a text transform the shape engine
+    // does not express.
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
@@ -40,17 +45,7 @@ public sealed class CommentStep : ScriptStep, IStepFactory
         return new CommentStep(enabled, text);
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        // Canonical (skill §8.1): a bare divider comment is the self-closing
-        // form, not an empty <Text/>. Emit <Text> only when there is text.
-        if (!string.IsNullOrEmpty(Text)) step.Add(new XElement("Text", Text));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         // FM Pro convention: an empty-text comment renders as a blank
@@ -75,6 +70,12 @@ public sealed class CommentStep : ScriptStep, IStepFactory
         Name = XmlName,
         Id = XmlId,
         Category = "control",
+        // Canonical (skill §8.1): a bare divider comment is the self-closing
+        // form, not an empty <Text/> — hence Optional.
+        Shape =
+        [
+            new NamedTextChild("Text") { Optional = true },
+        ],
         Params =
         [
             new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text" },

@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -25,29 +27,21 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
     /// </summary>
     public bool CaptureErrors { get; set; }
 
+    private SetErrorCaptureStep() : base(false) { }
+
     public SetErrorCaptureStep(bool captureErrors = false, bool enabled = true)
         : base(enabled)
     {
         CaptureErrors = captureErrors;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Set",
-                new XAttribute("state", CaptureErrors ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Set Error Capture [ {(CaptureErrors ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("Set")?.Attribute("state")?.Value == "True";
-        return new SetErrorCaptureStep(state, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetErrorCaptureStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -63,6 +57,10 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-error-capture.html",
         HrSignature = "[ On|Off ]",
+        Shape =
+        [
+            new BoolStateChild("Set") { PocoProperty = "CaptureErrors" },
+        ],
         Params =
         [
             new ParamMetadata

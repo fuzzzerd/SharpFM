@@ -130,9 +130,29 @@ as Excel, Replace Field Contents (re-emits `<Restore>`; `<SerialNumbers>` gains
 passwords), Speak / Send Event (value types stop emitting empty attributes), and
 Show Custom Dialog (optional title/message/geometry).
 
-**Result: 251 of 253 canonical fixtures round-trip (99.2%).** The only remaining
-divergence is **Save a Copy as XML (003)**, whose canonical form emits a
-different element set (`OutputEntireBinaryData` / `SpecifyJSONOptions` / `SaXML`)
-than the generic path/calc the POCO models — it needs a dedicated remodel and is
-left as a tracked `KnownDivergence`.
+**Result: 251 of 253 canonical fixtures round-trip (99.2%)** as of this batch;
+the Save a Copy as XML remodel below closed the gap to 100%.
+- [ ] Reviewed
+
+### Save a Copy as XML (003) — remodelled to the canonical element set
+- **Before:** a generic path/window-name model that could not express the
+  canonical children; tracked as the last `KnownDivergence`.
+- **Now:** the `<Option>` flag, the optional FM 26 `<OutputEntireBinaryData>` /
+  `<SpecifyJSONOptions>` flags, and the optional
+  `<SaXML><JSONOptions><Calculation>` export-options block.
+- **Skill:** files reference.
+- **Result: all 253 canonical fixtures round-trip (100%); `KnownDivergences` is
+  empty.**
+- [ ] Reviewed
+
+## Phase 7 — missing typed coverage
+
+### FM 26 PDF steps (243–247) — new typed POCOs
+- **Before:** Create PDF (243), Append PDF (244), Close PDF (245), Open PDF
+  (246) and Cancel PDF (247) fell through to `RawStep`.
+- **Now:** dedicated typed steps; Create PDF reuses the `PdfDocument` /
+  `PdfSecurity` / `PdfView` value types. Print PDF (242) and the MBS plugin step
+  (186) intentionally remain `RawStep` — their `PlatformData` blobs and
+  file-specific plugin `index` are preserved verbatim, never synthesized.
+- **Skill:** PDF reference.
 - [ ] Reviewed

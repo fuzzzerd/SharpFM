@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -16,9 +18,11 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
     public const string XmlName = "Open PDF";
 
     public bool SpecifyFile { get; set; }
-    public string Path { get; set; }
-    public string SaveType { get; set; }
+    public string Path { get; set; } = "";
+    public string SaveType { get; set; } = "File";
     public Calculation? OpenPassword { get; set; }
+
+    private OpenPdfStep() : base(false) { }
 
     public OpenPdfStep(
         bool specifyFile = false,
@@ -34,34 +38,13 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
         OpenPassword = openPassword;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", SpecifyFile ? "True" : "False")));
-        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
-        var file = new XElement("OpenPDFFile", new XElement("PDFSaveType", SaveType));
-        if (OpenPassword is not null) file.Add(new XElement("OpenPassword", OpenPassword.ToXml("Calculation")));
-        step.Add(file);
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         string.IsNullOrEmpty(Path) ? "Open PDF" : $"Open PDF [ {Path} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var specifyFile = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var file = step.Element("OpenPDFFile");
-        var saveType = file?.Element("PDFSaveType")?.Value ?? "File";
-        var pwdEl = file?.Element("OpenPassword")?.Element("Calculation");
-        var pwd = pwdEl is not null ? Calculation.FromXml(pwdEl) : null;
-        return new OpenPdfStep(specifyFile, path, saveType, pwd, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<OpenPdfStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -80,6 +63,19 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/open-pdf.html",
+        // Canonical: Option, the optional UniversalPathList, then the
+        // always-present OpenPDFFile wrapper holding the save type and the
+        // optional open-password calc.
+        Shape =
+        [
+            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Hidden },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, Display = DisplayMode.Native },
+            new WrapperChild("OpenPDFFile",
+            [
+                new NamedTextChild("PDFSaveType") { PocoProperty = "SaveType", Required = true, DefaultValue = "File", Display = DisplayMode.Hidden },
+                new NamedCalcChild("OpenPassword") { PocoProperty = "OpenPassword", Optional = true, Display = DisplayMode.Hidden },
+            ]),
+        ],
         Params =
         [
             new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean" },

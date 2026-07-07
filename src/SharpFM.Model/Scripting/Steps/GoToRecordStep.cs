@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -27,6 +29,15 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
     public Calculation? LocationCalc { get; set; }
     public bool ExitAfterLast { get; set; }
     public bool NoInteract { get; set; }
+
+    // Emit-only wire projections for the shape renderer: get-only, so the
+    // shape parser skips them (FromXml stays hand-written for the typed enum).
+    // Null means "element not emitted for this location".
+    public string LocationWire => LocationWireValue(Location);
+    public bool? ExitWire =>
+        Location is RowPageLocationKind.Next or RowPageLocationKind.Previous ? ExitAfterLast : null;
+    public Calculation? LocationCalcWire =>
+        Location == RowPageLocationKind.ByCalculation ? LocationCalc : null;
 
     public GoToRecordStep(
         bool enabled,
@@ -62,32 +73,7 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
         return new GoToRecordStep(enabled, location, locationCalc, exitAfterLast, noInteract);
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        // FM Pro always emits <NoInteract> regardless of location.
-        step.Add(new XElement("NoInteract",
-            new XAttribute("state", NoInteract ? "True" : "False")));
-
-        // <Exit> is emitted only for Next / Previous.
-        if (Location is RowPageLocationKind.Next or RowPageLocationKind.Previous)
-        {
-            step.Add(new XElement("Exit",
-                new XAttribute("state", ExitAfterLast ? "True" : "False")));
-        }
-
-        step.Add(new XElement("RowPageLocation",
-            new XAttribute("value", LocationWireValue(Location))));
-
-        if (Location == RowPageLocationKind.ByCalculation && LocationCalc is not null)
-            step.Add(LocationCalc.ToXml());
-
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine()
     {
@@ -163,6 +149,16 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-record-request-page.html",
+        Shape =
+        [
+            // FM Pro always emits <NoInteract>; <Exit> only for Next/Previous;
+            // a bare <Calculation> only for ByCalculation (the emit-only wire
+            // projections above return null outside those locations).
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog" },
+            new BoolStateChild("Exit") { PocoProperty = "ExitWire", Optional = true, HrLabel = "Exit after last" },
+            new EnumValueChild("RowPageLocation") { PocoProperty = "LocationWire", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"], DefaultValue = "Next" },
+            new BareCalcChild { PocoProperty = "LocationCalcWire", Optional = true },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

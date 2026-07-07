@@ -1,5 +1,9 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -32,6 +36,44 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
     public string SaveType { get; set; }
     public bool UseFieldNames { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>
+    /// Shape-facing view of the <c>&lt;Profile&gt;</c> element (a multi-attribute
+    /// element no shape primitive models): emitted only when the export format
+    /// differs from the defaults, and parsed back through the shape's
+    /// passthrough slot.
+    /// </summary>
+    public List<XElement> ProfileWire
+    {
+        get
+        {
+            var profileDefault = FieldDelimiter == "\t" && IsPredefined == "-1"
+                && FieldNameRow == "-1" && DataType == "XLXE";
+            return profileDefault
+                ? []
+                :
+                [
+                    new XElement("Profile",
+                        new XAttribute("FieldDelimiter", FieldDelimiter),
+                        new XAttribute("IsPredefined", IsPredefined),
+                        new XAttribute("FieldNameRow", FieldNameRow),
+                        new XAttribute("DataType", DataType)),
+                ];
+        }
+        set
+        {
+            var profile = value.FirstOrDefault(e => e.Name.LocalName == "Profile");
+            FieldDelimiter = profile?.Attribute("FieldDelimiter")?.Value ?? "\t";
+            IsPredefined = profile?.Attribute("IsPredefined")?.Value ?? "-1";
+            FieldNameRow = profile?.Attribute("FieldNameRow")?.Value ?? "-1";
+            DataType = profile?.Attribute("DataType")?.Value ?? "XLXE";
+        }
+    }
+
+    private SaveRecordsAsExcelStep() : this(enabled: true) { }
+
     public SaveRecordsAsExcelStep(
         bool withDialog = false, bool createDirectories = true, bool restoreStoredOptions = true,
         bool autoOpen = false, bool createEmail = false,
@@ -60,64 +102,13 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
         UseFieldNames = useFieldNames;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredOptions ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")));
-        // Profile (export format) and the path are emitted only when configured;
-        // the canonical unconfigured form omits them.
-        var profileDefault = FieldDelimiter == "\t" && IsPredefined == "-1"
-            && FieldNameRow == "-1" && DataType == "XLXE";
-        if (!profileDefault)
-            step.Add(new XElement("Profile",
-                new XAttribute("FieldDelimiter", FieldDelimiter),
-                new XAttribute("IsPredefined", IsPredefined),
-                new XAttribute("FieldNameRow", FieldNameRow),
-                new XAttribute("DataType", DataType)));
-        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
-        if (WorkSheet is not null) step.Add(new XElement("WorkSheet", WorkSheet.ToXml("Calculation")));
-        if (Title is not null) step.Add(new XElement("Title", Title.ToXml("Calculation")));
-        if (Subject is not null) step.Add(new XElement("Subject", Subject.ToXml("Calculation")));
-        if (Author is not null) step.Add(new XElement("Author", Author.ToXml("Calculation")));
-        step.Add(new XElement("SaveType", new XAttribute("value", SaveType)));
-        step.Add(new XElement("UseFieldNames", new XAttribute("state", UseFieldNames ? "True" : "False")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Save Records as Excel [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        static Calculation? ReadCalc(XElement? parent) => parent?.Element("Calculation") is { } c ? Calculation.FromXml(c) : null;
-        var profile = step.Element("Profile");
-        return new SaveRecordsAsExcelStep(
-            step.Element("NoInteract")?.Attribute("state")?.Value != "True",
-            step.Element("CreateDirectories")?.Attribute("state")?.Value == "True",
-            step.Element("Restore")?.Attribute("state")?.Value == "True",
-            step.Element("AutoOpen")?.Attribute("state")?.Value == "True",
-            step.Element("CreateEmail")?.Attribute("state")?.Value == "True",
-            profile?.Attribute("FieldDelimiter")?.Value ?? "\t",
-            profile?.Attribute("IsPredefined")?.Value ?? "-1",
-            profile?.Attribute("FieldNameRow")?.Value ?? "-1",
-            profile?.Attribute("DataType")?.Value ?? "XLXE",
-            step.Element("UniversalPathList")?.Value ?? "",
-            ReadCalc(step.Element("WorkSheet")),
-            ReadCalc(step.Element("Title")),
-            ReadCalc(step.Element("Subject")),
-            ReadCalc(step.Element("Author")),
-            step.Element("SaveType")?.Attribute("value")?.Value ?? "BrowsedRecords",
-            step.Element("UseFieldNames")?.Attribute("state")?.Value == "True",
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SaveRecordsAsExcelStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
         new SaveRecordsAsExcelStep(enabled: enabled);
@@ -128,6 +119,25 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/save-records-as-excel.html",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("CreateDirectories"),
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOptions" },
+            new BoolStateChild("AutoOpen"),
+            new BoolStateChild("CreateEmail"),
+            // <Profile> is a multi-attribute element no primitive models; the
+            // ProfileWire view emits it only when configured and parses it
+            // back through this passthrough slot.
+            new Passthrough { PocoProperty = "ProfileWire" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new NamedCalcChild("WorkSheet") { Optional = true },
+            new NamedCalcChild("Title") { Optional = true },
+            new NamedCalcChild("Subject") { Optional = true },
+            new NamedCalcChild("Author") { Optional = true },
+            new EnumValueChild("SaveType") { ValidValues = ["BrowsedRecords", "CurrentRecord"], DefaultValue = "BrowsedRecords" },
+            new BoolStateChild("UseFieldNames"),
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },

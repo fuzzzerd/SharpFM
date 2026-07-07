@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -28,6 +30,56 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
     public IReadOnlyList<ExportEntry> ExportEntries { get; set; }
     public IReadOnlyList<SummaryFieldEntry> SummaryFields { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>
+    /// Shape-facing view of the complex children no primitive models. The
+    /// getter emits only <c>&lt;Profile&gt;</c> (this passthrough slot sits
+    /// before <c>&lt;UniversalPathList&gt;</c>); the setter receives every
+    /// unmodeled child — the parser populates only the first passthrough slot —
+    /// and demultiplexes Profile, ExportOptions, ExportEntries and
+    /// SummaryFields. <see cref="TrailingWire"/> re-emits the latter three
+    /// after the path.
+    /// </summary>
+    public List<XElement> ProfileWire
+    {
+        get => Profile is null ? [] : [AttrElement("Profile", Profile)];
+        set
+        {
+            static Dictionary<string, string>? AttrsOf(XElement? el) =>
+                el?.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
+            Profile = AttrsOf(value.FirstOrDefault(e => e.Name.LocalName == "Profile"));
+            ExportOptions = AttrsOf(value.FirstOrDefault(e => e.Name.LocalName == "ExportOptions"));
+            ExportEntries = value.FirstOrDefault(e => e.Name.LocalName == "ExportEntries")
+                ?.Elements("ExportEntry").Select(ExportEntry.FromXml).ToList() ?? new List<ExportEntry>();
+            SummaryFields = value.FirstOrDefault(e => e.Name.LocalName == "SummaryFields")
+                ?.Elements("Field").Select(SummaryFieldEntry.FromXml).ToList() ?? new List<SummaryFieldEntry>();
+        }
+    }
+
+    /// <summary>Emit-only wire view of the post-path complex children. Get-only, so the shape parser skips it.</summary>
+    public List<XElement> TrailingWire
+    {
+        get
+        {
+            var list = new List<XElement>();
+            if (ExportOptions is not null) list.Add(AttrElement("ExportOptions", ExportOptions));
+            if (ExportEntries.Count > 0) list.Add(new XElement("ExportEntries", ExportEntries.Select(e => e.ToXml())));
+            if (SummaryFields.Count > 0) list.Add(new XElement("SummaryFields", SummaryFields.Select(s => s.ToXml())));
+            return list;
+        }
+    }
+
+    private static XElement AttrElement(string name, IReadOnlyDictionary<string, string> attrs)
+    {
+        var el = new XElement(name);
+        foreach (var kv in attrs) el.Add(new XAttribute(kv.Key, kv.Value));
+        return el;
+    }
+
+    private ExportRecordsStep() : this(enabled: true) { }
+
     public ExportRecordsStep(
         bool withDialog = false, bool createDirectories = true, bool restoreStoredOrder = true,
         bool autoOpen = true, bool createEmail = true,
@@ -51,67 +103,13 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
         SummaryFields = summaryFields ?? new List<SummaryFieldEntry>();
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredOrder ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")));
-        if (Profile is not null)
-        {
-            var prof = new XElement("Profile");
-            foreach (var kv in Profile) prof.Add(new XAttribute(kv.Key, kv.Value));
-            step.Add(prof);
-        }
-        if (!string.IsNullOrEmpty(Path)) step.Add(new XElement("UniversalPathList", Path));
-        if (ExportOptions is not null)
-        {
-            var opts = new XElement("ExportOptions");
-            foreach (var kv in ExportOptions) opts.Add(new XAttribute(kv.Key, kv.Value));
-            step.Add(opts);
-        }
-        if (ExportEntries.Count > 0)
-        {
-            var entries = new XElement("ExportEntries");
-            foreach (var e in ExportEntries) entries.Add(e.ToXml());
-            step.Add(entries);
-        }
-        if (SummaryFields.Count > 0)
-        {
-            var summaries = new XElement("SummaryFields");
-            foreach (var s in SummaryFields) summaries.Add(s.ToXml());
-            step.Add(summaries);
-        }
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     public override string ToDisplayLine() =>
         $"Export Records [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        static Dictionary<string, string>? AttrsOf(XElement? el) =>
-            el is null ? null : el.Attributes().ToDictionary(a => a.Name.LocalName, a => a.Value);
-
-        return new ExportRecordsStep(
-            step.Element("NoInteract")?.Attribute("state")?.Value != "True",
-            step.Element("CreateDirectories")?.Attribute("state")?.Value == "True",
-            step.Element("Restore")?.Attribute("state")?.Value == "True",
-            step.Element("AutoOpen")?.Attribute("state")?.Value == "True",
-            step.Element("CreateEmail")?.Attribute("state")?.Value == "True",
-            AttrsOf(step.Element("Profile")),
-            step.Element("UniversalPathList")?.Value ?? "",
-            AttrsOf(step.Element("ExportOptions")),
-            step.Element("ExportEntries")?.Elements("ExportEntry").Select(ExportEntry.FromXml).ToList(),
-            step.Element("SummaryFields")?.Elements("Field").Select(SummaryFieldEntry.FromXml).ToList(),
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ExportRecordsStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
         new ExportRecordsStep(enabled: enabled);
@@ -122,6 +120,19 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/export-records.html",
+        Shape =
+        [
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("CreateDirectories"),
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder" },
+            new BoolStateChild("AutoOpen"),
+            new BoolStateChild("CreateEmail"),
+            // <Profile> precedes the path; the parse side of this slot also
+            // absorbs the trailing complex children (see ProfileWire).
+            new Passthrough { PocoProperty = "ProfileWire" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new Passthrough { PocoProperty = "TrailingWire" },
+        ],
         Params =
         [
             new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
