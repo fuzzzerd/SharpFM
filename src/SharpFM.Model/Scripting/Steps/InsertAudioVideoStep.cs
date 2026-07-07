@@ -35,6 +35,8 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the single wire element splits into two display tokens
+    // (path text + type attribute), which the shape renderer cannot produce.
     public override string ToDisplayLine() =>
         $"Insert Audio/Video [ {Path} ; Reference: {Reference} ]";
 

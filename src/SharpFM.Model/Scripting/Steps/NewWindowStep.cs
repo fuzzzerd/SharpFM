@@ -36,13 +36,7 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine()
-    {
-        var parts = new List<string>();
-        if (!string.IsNullOrEmpty(Name?.Text)) parts.Add(Name!.Text);
-        if (Layout is not null) parts.Add(Layout.Name);
-        return parts.Count > 0 ? $"New Window [ {string.Join(" ; ", parts)} ]" : "New Window";
-    }
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<NewWindowStep>(step, Metadata);
@@ -62,8 +56,9 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // The unconfigured canonical form carries LayoutDestination
-        // "CurrentLayout"; anything beyond a window name is sealed state.
+        // Hand-written: reconstructs the unconfigured LayoutDestination
+        // "CurrentLayout" wire form, which the shape parser cannot synthesize
+        // for a display-hidden slot; anything beyond a window name is sealed state.
         var step = new NewWindowStep(enabled) { LayoutDestination = "CurrentLayout" };
         var name = hrParams.Select(h => h.Trim()).FirstOrDefault(t => t.Length > 0);
         if (!string.IsNullOrEmpty(name)) step.Name = new Calculation(name);
@@ -79,11 +74,13 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
         Shape =
         [
             new EnumValueChild("LayoutDestination") { PocoProperty = "LayoutDestination", DefaultValue = "SelectedLayout", Display = DisplayMode.Hidden },
-            new NamedCalcChild("Name") { PocoProperty = "Name", HrLabel = "Name", Optional = true, Display = DisplayMode.Native },
-            new NamedCalcChild("Height") { PocoProperty = "Height", HrLabel = "Height", Optional = true, Display = DisplayMode.Augmented },
-            new NamedCalcChild("Width") { PocoProperty = "Width", HrLabel = "Width", Optional = true, Display = DisplayMode.Augmented },
-            new NamedCalcChild("DistanceFromTop") { PocoProperty = "DistanceFromTop", HrLabel = "Top", Optional = true, Display = DisplayMode.Augmented },
-            new NamedCalcChild("DistanceFromLeft") { PocoProperty = "DistanceFromLeft", HrLabel = "Left", Optional = true, Display = DisplayMode.Augmented },
+            // Name renders as a bare token; the geometry is sealed state the
+            // display line never carries (see IsFullyEditable).
+            new NamedCalcChild("Name") { PocoProperty = "Name", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("Height") { PocoProperty = "Height", HrLabel = "Height", Optional = true, Display = DisplayMode.Hidden },
+            new NamedCalcChild("Width") { PocoProperty = "Width", HrLabel = "Width", Optional = true, Display = DisplayMode.Hidden },
+            new NamedCalcChild("DistanceFromTop") { PocoProperty = "DistanceFromTop", HrLabel = "Top", Optional = true, Display = DisplayMode.Hidden },
+            new NamedCalcChild("DistanceFromLeft") { PocoProperty = "DistanceFromLeft", HrLabel = "Left", Optional = true, Display = DisplayMode.Hidden },
             new ValueTypeChild("NewWndStyles") { PocoProperty = "Styles", Display = DisplayMode.Hidden },
             new NamedRefChild("Layout") { PocoProperty = "Layout", Optional = true, Display = DisplayMode.Native },
         ],

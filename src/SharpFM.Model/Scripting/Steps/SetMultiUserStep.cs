@@ -32,44 +32,15 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
         NetworkAccess = networkAccess;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["True"] = "On",
-        ["OnHidden"] = "On (Hidden)",
-        ["False"] = "Off",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["On"] = "True",
-        ["On (Hidden)"] = "OnHidden",
-        ["Off"] = "False",
-    };
-
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
-
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Set Multi-User [ Network access: {ToHr(NetworkAccess)} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetMultiUserStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "Network access:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        return new SetMultiUserStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetMultiUserStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

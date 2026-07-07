@@ -40,8 +40,7 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        string.IsNullOrEmpty(Path) ? "Open PDF" : $"Open PDF [ {Path} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<OpenPdfStep>(step, Metadata);
@@ -53,6 +52,8 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
     /// </summary>
     public override bool IsFullyEditable => OpenPassword is null && SaveType == "File";
 
+    // Hand-written: derives the SpecifyFile toggle from the path's presence,
+    // a coupling the shape parser cannot express for a display-hidden slot.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         string path = "";
@@ -75,7 +76,9 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
         // optional open-password calc.
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Native },
+            // The specify-file toggle never shows: the display line carries the
+            // bare path alone (its presence implies the toggle).
+            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Hidden },
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, Display = DisplayMode.Native },
             new WrapperChild("OpenPDFFile",
             [

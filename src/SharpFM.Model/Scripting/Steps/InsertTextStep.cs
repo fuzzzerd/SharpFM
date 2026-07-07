@@ -34,6 +34,8 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: bare "Select" presence token and quoted text literal the
+    // shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var selectPart = SelectAll ? "Select ; " : "";

@@ -38,6 +38,9 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: Field renders before Path (reverse of canonical XML order)
+    // and AutoOpen/CreateEmail are conditional bare tokens a BoolStateChild
+    // cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();

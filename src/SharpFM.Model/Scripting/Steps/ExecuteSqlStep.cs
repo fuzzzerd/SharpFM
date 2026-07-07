@@ -36,6 +36,8 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the SQL Text / Calculated SQL Text token comes from the
+    // hidden Profile value type, which the shape-driven renderer cannot surface.
     public override string ToDisplayLine()
     {
         var dialog = $"With dialog: {(WithDialog ? "On" : "Off")}";
@@ -93,7 +95,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         // Profile which owns its own attribute/child shape.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented, DisplayInverted = true },
             new ValueTypeChild("Profile") { PocoProperty = "Profile", Optional = true, Display = DisplayMode.Hidden },
             new HrOnly("Profile"),
         ],

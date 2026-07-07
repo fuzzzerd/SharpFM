@@ -32,44 +32,15 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
         Action = action;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Undo"] = "Undo",
-        ["Redo"] = "Redo",
-        ["Toggle"] = "Toggle",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Undo"] = "Undo",
-        ["Redo"] = "Redo",
-        ["Toggle"] = "Toggle",
-    };
-
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
-
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Undo/Redo [ Action: {ToHr(Action)} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<UndoRedoStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "Action:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        return new UndoRedoStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<UndoRedoStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

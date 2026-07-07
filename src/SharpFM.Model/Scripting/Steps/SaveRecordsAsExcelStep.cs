@@ -104,6 +104,7 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the display line hides the option flags and shows only the dialog toggle and conditional file token — sealed state the shape renderer would surface.
     public override string ToDisplayLine() =>
         $"Save Records as Excel [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
 

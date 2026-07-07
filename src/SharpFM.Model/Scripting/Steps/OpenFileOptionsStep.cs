@@ -20,13 +20,13 @@ public sealed class OpenFileOptionsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<OpenFileOptionsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new OpenFileOptionsStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<OpenFileOptionsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

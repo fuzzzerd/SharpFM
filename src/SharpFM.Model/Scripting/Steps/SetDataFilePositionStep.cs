@@ -31,21 +31,13 @@ public sealed class SetDataFilePositionStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Data File Position [ " + "File ID: " + (FileID?.Text ?? "") + " ; " + "New position: " + (NewPosition?.Text ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetDataFilePositionStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? fileID_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("File ID:", StringComparison.OrdinalIgnoreCase)) { fileID_v = new Calculation(tok.Substring(8).Trim()); break; } }
-        Calculation? newPosition_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("New position:", StringComparison.OrdinalIgnoreCase)) { newPosition_v = new Calculation(tok.Substring(13).Trim()); break; } }
-        return new SetDataFilePositionStep(fileID_v, newPosition_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetDataFilePositionStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,8 +49,8 @@ public sealed class SetDataFilePositionStep : ScriptStep, IStepFactory
         // calculation; the unconfigured form is an empty step.
         Shape =
         [
-            new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native },
-            new NamedCalcChild("position") { PocoProperty = "NewPosition", HrLabel = "New position", Optional = true, Display = DisplayMode.Augmented },
+            new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new NamedCalcChild("position") { PocoProperty = "NewPosition", HrLabel = "New position", Optional = true, Display = DisplayMode.Augmented, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

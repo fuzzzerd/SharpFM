@@ -38,21 +38,13 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Relookup Field Contents [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (Target?.ToDisplayString() ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<RelookupFieldContentsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool withDialog_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef? target = null;
-        foreach (var tok in tokens) { if (!tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
-        return new RelookupFieldContentsStep(withDialog_v, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<RelookupFieldContentsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -65,8 +57,8 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
         // (Optional).
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
-            new FieldChild("Field") { PocoProperty = "Target", Optional = true },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

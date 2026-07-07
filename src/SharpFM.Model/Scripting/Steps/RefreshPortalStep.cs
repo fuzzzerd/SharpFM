@@ -28,19 +28,13 @@ public sealed class RefreshPortalStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Refresh Portal [ " + "Object Name: " + (ObjectName?.Text ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<RefreshPortalStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? objectName_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Object Name:", StringComparison.OrdinalIgnoreCase)) { objectName_v = new Calculation(tok.Substring(12).Trim()); break; } }
-        return new RefreshPortalStep(objectName_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<RefreshPortalStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -51,7 +45,7 @@ public sealed class RefreshPortalStep : ScriptStep, IStepFactory
         // Canonical unconfigured form is empty: ObjectName is omitted when blank.
         Shape =
         [
-            new NamedCalcChild("ObjectName") { PocoProperty = "ObjectName", HrLabel = "Object Name", Optional = true },
+            new NamedCalcChild("ObjectName") { PocoProperty = "ObjectName", HrLabel = "Object Name", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

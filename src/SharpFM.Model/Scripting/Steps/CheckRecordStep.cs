@@ -20,13 +20,13 @@ public sealed class CheckRecordStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<CheckRecordStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new CheckRecordStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<CheckRecordStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

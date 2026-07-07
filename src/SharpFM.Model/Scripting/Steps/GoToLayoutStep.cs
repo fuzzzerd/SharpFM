@@ -88,6 +88,8 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
 
     // --- Display text render ---
 
+    // Hand-written: quoted "layout name" / original-layout variant grammar
+    // the shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new List<string>();

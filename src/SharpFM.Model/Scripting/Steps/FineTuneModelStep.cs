@@ -26,7 +26,7 @@ public sealed class FineTuneModelStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when a configured child subtree is
@@ -38,7 +38,7 @@ public sealed class FineTuneModelStep : ScriptStep, IStepFactory
         StepXmlParser.Parse<FineTuneModelStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new FineTuneModelStep(enabled: enabled);
+        StepDisplayParser.Parse<FineTuneModelStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

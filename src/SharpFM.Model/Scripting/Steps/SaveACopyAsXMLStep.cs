@@ -54,22 +54,13 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Save a Copy as XML [ Include details for analysis tools: "
-        + (IncludeDetailsForAnalysisTools ? "On" : "Off") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SaveACopyAsXMLStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var include = hrParams
-            .Select(h => h.Trim())
-            .Where(t => t.StartsWith("Include details for analysis tools:", StringComparison.OrdinalIgnoreCase))
-            .Select(t => t.Substring(35).Trim().Equals("On", StringComparison.OrdinalIgnoreCase))
-            .FirstOrDefault();
-        return new SaveACopyAsXMLStep(include, enabled: enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SaveACopyAsXMLStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

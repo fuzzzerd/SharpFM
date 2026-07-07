@@ -64,6 +64,9 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: FileMaker's token order (Account Name before Model
+    // Provider, SSL flag fourth) diverges from the canonical XML order, and
+    // the nullable SSL flag renders absent and explicit-False identically.
     public override string ToDisplayLine() =>
         "Configure AI Account [ " + "Account Name: " + AccountName.Text + " ; " + "Model Provider: " + ModelProviderHr(ModelProvider) + " ; " + "Endpoint: " + Endpoint.Text + " ; " + "Verify SSL Certificates: " + (VerifySSLCertificates == true ? "On" : "Off") + " ; " + "API key: " + APIKey.Text + " ]";
 

@@ -41,6 +41,8 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: FileMaker shows the Target last, but the shape must keep
+    // the canonical XML order (Field before the LLMEmbedding wrapper).
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
@@ -56,24 +58,8 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InsertEmbeddingStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        Calculation account = new(""), model = new(""), input = new("");
-        FieldRef? target = null;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Account Name:", StringComparison.OrdinalIgnoreCase))
-                account = new Calculation(t.Substring(13).Trim());
-            else if (t.StartsWith("Embedding Model:", StringComparison.OrdinalIgnoreCase))
-                model = new Calculation(t.Substring(16).Trim());
-            else if (t.StartsWith("Input:", StringComparison.OrdinalIgnoreCase))
-                input = new Calculation(t.Substring(6).Trim());
-            else if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
-                target = FieldRef.FromDisplayToken(t.Substring(7).Trim());
-        }
-        return new InsertEmbeddingStep(account, model, input, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<InsertEmbeddingStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

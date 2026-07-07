@@ -39,6 +39,9 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the unconfigured form renders empty brackets and the
+    // parameter list joins as one comma-separated token — forms the shape
+    // display engine cannot express.
     public override string ToDisplayLine()
     {
         var parts = new List<string>();

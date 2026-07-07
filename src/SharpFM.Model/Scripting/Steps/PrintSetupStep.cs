@@ -34,25 +34,13 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Print Setup [ With dialog: {(WithDialog ? "On" : "Off")} ; Restore: {(RestoreStoredSettings ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<PrintSetupStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        bool withDialog = false, restore = true;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
-                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-            else if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
-                restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-        }
-        return new PrintSetupStep(withDialog, restore, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<PrintSetupStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -64,7 +52,7 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
         // PageFormat which owns its own attribute/PlatformData shape.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented, DisplayInverted = true },
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredSettings", HrLabel = "Restore", Display = DisplayMode.Augmented },
             new ValueTypeChild("PageFormat") { PocoProperty = "Format", Optional = true, Display = DisplayMode.Hidden },
             new HrOnly("Restore") { Boolean = true },

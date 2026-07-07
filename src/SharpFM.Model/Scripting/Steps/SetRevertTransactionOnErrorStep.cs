@@ -29,21 +29,13 @@ public sealed class SetRevertTransactionOnErrorStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Set Revert Transaction on Error [ Revert on error: {(RevertOnError ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetRevertTransactionOnErrorStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "Revert on error:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        var isOn = token.Equals("On", StringComparison.OrdinalIgnoreCase);
-        return new SetRevertTransactionOnErrorStep(isOn, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetRevertTransactionOnErrorStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

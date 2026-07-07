@@ -39,6 +39,8 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: shows RowList/Layout in the reverse of canonical XML order
+    // and "New window" as a conditional bare token a BoolStateChild cannot render.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
@@ -53,9 +55,10 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<GoToListOfRecordsStep>(step, Metadata);
 
+    // Hand-written: display is lossy (RowList is the only parseable field) and
+    // an unlabeled shape parse would mis-bind the labeled Records/Layout tokens.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Lossy display — RowList calc is the only field meaningful to parse.
         Calculation rowList = new("");
         foreach (var tok in hrParams)
         {

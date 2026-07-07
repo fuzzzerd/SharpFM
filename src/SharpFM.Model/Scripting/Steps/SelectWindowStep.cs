@@ -32,38 +32,15 @@ public sealed class SelectWindowStep : ScriptStep, IStepFactory
         Name = name ?? new Calculation("");
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _WindowToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal) {
-        ["ByName"] = "Name: <calc>",
-        ["Current"] = "Current Window",
-    };
-    private static readonly IReadOnlyDictionary<string, string> _WindowFromHr =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-        ["Name: <calc>"] = "ByName",
-        ["Current Window"] = "Current",
-    };
-    private static string WindowHr(string x) => _WindowToHr.TryGetValue(x, out var h) ? h : x;
-    private static string WindowXml(string h) => _WindowFromHr.TryGetValue(h, out var x) ? x : h;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Select Window [ " + "Current file: " + (CurrentFile ? "On" : "Off") + " ; " + "Window: " + WindowHr(Window) + " ; " + "Name: " + Name.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SelectWindowStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool currentFile_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("Current file:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); currentFile_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        string window_v = "ByName";
-        foreach (var tok in tokens) { if (tok.StartsWith("Window:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); window_v = WindowXml(v); break; } }
-        Calculation? name_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Name:", StringComparison.OrdinalIgnoreCase)) { name_v = new Calculation(tok.Substring(5).Trim()); break; } }
-        return new SelectWindowStep(currentFile_v, window_v, name_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SelectWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -76,8 +53,8 @@ public sealed class SelectWindowStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "CurrentFile", HrLabel = "Current file", Display = DisplayMode.Native },
-            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", DisplayValues = ["Name: <calc>", "Current Window"], Display = DisplayMode.Native },
-            new NamedCalcChild("Name") { PocoProperty = "Name", HrLabel = "Name", Optional = true, Display = DisplayMode.Native },
+            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", ValidValues = ["ByName", "Current"], DisplayValues = ["Name: <calc>", "Current Window"], Display = DisplayMode.Native },
+            new NamedCalcChild("Name") { PocoProperty = "Name", HrLabel = "Name", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -29,12 +29,13 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Delete File [ Target file: {TargetFile} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<DeleteFileStep>(step, Metadata);
 
+    // Hand-written: also accepts a bare unlabeled path token, which the
+    // shape parser would ignore (labeled slots never bind positionally).
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tok = hrParams.Length > 0 ? hrParams[0].Trim() : "";
@@ -51,7 +52,7 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
         // Canonical unconfigured form is empty: the path text is omitted when blank.
         Shape =
         [
-            new NamedTextChild("UniversalPathList") { PocoProperty = "TargetFile", HrLabel = "Target file", Required = true, Optional = true },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "TargetFile", HrLabel = "Target file", Required = true, Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

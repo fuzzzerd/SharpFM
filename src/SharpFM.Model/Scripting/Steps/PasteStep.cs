@@ -36,25 +36,13 @@ public sealed class PasteStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Paste [ " + "Select: " + (Select ? "On" : "Off") + " ; " + "No style: " + (NoStyle ? "On" : "Off") + " ; " + "Link if available: " + (LinkIfAvailable ? "On" : "Off") + " ; " + "Table::Field: " + (Target?.ToDisplayString() ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<PasteStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool select_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); select_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool noStyle_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("No style:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(9).Trim(); noStyle_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool linkIfAvailable_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Link if available:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(18).Trim(); linkIfAvailable_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef? target = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Table::Field:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); if (v.Length > 0) target = FieldRef.FromDisplayToken(v); break; } }
-        return new PasteStep(select_v, noStyle_v, linkIfAvailable_v, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<PasteStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -66,10 +54,12 @@ public sealed class PasteStep : ScriptStep, IStepFactory
         // <Field> follows and is omitted until a target is bound (Optional).
         Shape =
         [
-            new BoolStateChild("NoStyle") { PocoProperty = "NoStyle", HrLabel = "No style", ValidValues = ["On", "Off"], DefaultValue = "False" },
-            new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "False" },
-            new BoolStateChild("LinkAvail") { PocoProperty = "LinkIfAvailable", HrLabel = "Link if available", ValidValues = ["On", "Off"], DefaultValue = "False" },
-            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Table::Field", Optional = true },
+            // Select leads the display line (Native renders before Augmented)
+            // while shape order stays the canonical NoStyle, SelectAll, LinkAvail.
+            new BoolStateChild("NoStyle") { PocoProperty = "NoStyle", HrLabel = "No style", ValidValues = ["On", "Off"], DefaultValue = "False", Display = DisplayMode.Augmented },
+            new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "False", Display = DisplayMode.Native },
+            new BoolStateChild("LinkAvail") { PocoProperty = "LinkIfAvailable", HrLabel = "Link if available", ValidValues = ["On", "Off"], DefaultValue = "False", Display = DisplayMode.Augmented },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Table::Field", Optional = true, Display = DisplayMode.Augmented, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

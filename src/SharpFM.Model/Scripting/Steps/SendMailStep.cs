@@ -64,6 +64,8 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the To/Subject annotations are conditional tokens read
+    // from the passthrough child bag, which the shape renderer cannot surface.
     public override string ToDisplayLine()
     {
         var parts = new List<string>();
@@ -76,18 +78,8 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SendMailStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        // Display is inherently lossy — 30 params can't survive a short form.
-        bool withDialog = true;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))
-                withDialog = t.Substring(12).Trim().Equals("On", StringComparison.OrdinalIgnoreCase);
-        }
-        return new SendMailStep(withDialog, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SendMailStep>(enabled, hrParams, Metadata);
 
     // --- Hot-field accessors (read through the bag) ---
 
@@ -114,7 +106,7 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         // preserved verbatim — the hybrid StepChildBag round-trip.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
             new Passthrough { PocoProperty = "ExtraChildren" },
             new HrOnly("To") { HrLabel = "To" },
             new HrOnly("Cc") { HrLabel = "Cc" },

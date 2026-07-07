@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -28,21 +26,13 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Install Plug-In File [ " + (Target is null ? "" : Target.ToDisplayString()) + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InstallPlugInFileStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        // The unconfigured form has no target field; only a non-empty token
-        // carries one.
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        FieldRef? target = null;
-        foreach (var tok in tokens) { if (!string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
-        return new InstallPlugInFileStep(target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<InstallPlugInFileStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -53,7 +43,7 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
         // The target Field is omitted by the unconfigured form (Optional).
         Shape =
         [
-            new FieldChild("Field") { PocoProperty = "Target", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

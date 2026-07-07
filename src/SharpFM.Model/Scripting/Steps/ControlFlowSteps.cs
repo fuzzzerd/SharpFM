@@ -45,10 +45,10 @@ public sealed class IfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => $"If [ {Condition.Text} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new IfStep(enabled, ParseCondition(hrParams));
+        StepDisplayParser.Parse<IfStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -66,15 +66,12 @@ public sealed class IfStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
-            new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         Notes = new StepNotes { Constraints = "Requires a matching End If step." },
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };
-
-    internal static Calculation ParseCondition(string[] hrParams) =>
-        hrParams.Length >= 1 ? new Calculation(hrParams[0].Trim()) : new Calculation("");
 }
 
 public sealed class ElseIfStep : ScriptStep, IStepFactory
@@ -100,10 +97,10 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => $"Else If [ {Condition.Text} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new ElseIfStep(enabled, IfStep.ParseCondition(hrParams));
+        StepDisplayParser.Parse<ElseIfStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -121,7 +118,7 @@ public sealed class ElseIfStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("Restore") { PocoProperty = "Restore", Display = DisplayMode.Hidden },
-            new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
@@ -146,10 +143,10 @@ public sealed class ElseStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new ElseStep(enabled);
+        StepDisplayParser.Parse<ElseStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -185,10 +182,10 @@ public sealed class EndIfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new EndIfStep(enabled);
+        StepDisplayParser.Parse<EndIfStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -228,10 +225,10 @@ public sealed class LoopStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new LoopStep(enabled);
+        StepDisplayParser.Parse<LoopStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -271,10 +268,10 @@ public sealed class EndLoopStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new EndLoopStep(enabled);
+        StepDisplayParser.Parse<EndLoopStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -313,10 +310,10 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => $"Exit Loop If [ {Condition.Text} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new ExitLoopIfStep(enabled, IfStep.ParseCondition(hrParams));
+        StepDisplayParser.Parse<ExitLoopIfStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -331,7 +328,7 @@ public sealed class ExitLoopIfStep : ScriptStep, IStepFactory
             Partners = ["Loop", "End Loop"],
         },
         // Canonical §8.1: bare <Calculation> only — no <Restore> on Exit Loop If.
-        Shape = [new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native }],
+        Shape = [new BareCalcChild { PocoProperty = "Condition", Required = true, Display = DisplayMode.Native, DisplayEmptyAs = "" }],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

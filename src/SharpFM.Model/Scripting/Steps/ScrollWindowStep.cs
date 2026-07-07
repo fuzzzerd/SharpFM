@@ -29,48 +29,15 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
         Direction = direction;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Home"] = "Home",
-        ["End"] = "End",
-        ["PageUp"] = "Page Up",
-        ["PageDown"] = "Page Down",
-        ["ToSelection"] = "To Selection",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Home"] = "Home",
-        ["End"] = "End",
-        ["Page Up"] = "PageUp",
-        ["Page Down"] = "PageDown",
-        ["To Selection"] = "ToSelection",
-    };
-
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
-
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Scroll Window [ Direction: {ToHr(Direction)} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ScrollWindowStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "Direction:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        return new ScrollWindowStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ScrollWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

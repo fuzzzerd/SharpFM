@@ -31,6 +31,8 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: quoted "script name" and <no script> placeholder grammar
+    // the shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var script = Script is null ? "<no script>" : $"\"{Script.Name}\"";

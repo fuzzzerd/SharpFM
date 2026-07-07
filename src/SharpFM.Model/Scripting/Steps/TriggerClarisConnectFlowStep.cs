@@ -66,16 +66,7 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine()
-    {
-        var parts = new System.Collections.Generic.List<string>
-        {
-            $"With dialog: {(WithDialog ? "On" : "Off")}",
-            $"Flow URL: {FlowUrl}",
-        };
-        if (CurlOptions is not null) parts.Add($"cURL options: {CurlOptions.Text}");
-        return $"Trigger Claris Connect Flow [ {string.Join(" ; ", parts)} ]";
-    }
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<TriggerClarisConnectFlowStep>(step, Metadata);
@@ -89,6 +80,8 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
     public override bool IsFullyEditable =>
         TargetVariable.Length == 0 && !DontEncodeUrl && SelectAll && !VerifySslCertificates;
 
+    // Hand-written: reconstructs the unconfigured SelectAll=true wire default,
+    // which the shape parser cannot synthesize for a display-hidden slot.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool withDialog = true;
@@ -114,13 +107,15 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
         Category = "control",
         Shape =
         [
-            new BoolStateChild("NoInteract") { HrLabel = "With dialog" },
-            new BoolStateChild("DontEncodeURL") { PocoProperty = "DontEncodeUrl", HrLabel = "Don't encode URL" },
-            new BoolStateChild("SelectAll") { HrLabel = "Select entire contents" },
-            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates", HrLabel = "Verify SSL certificates" },
-            new NamedTextChild("Flow") { PocoProperty = "FlowUrl", HrLabel = "Flow URL" },
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog", DisplayInverted = true },
+            // The display line carries only the dialog toggle, flow URL, and
+            // cURL options; the remaining state seals the step (IsFullyEditable).
+            new BoolStateChild("DontEncodeURL") { PocoProperty = "DontEncodeUrl", HrLabel = "Don't encode URL", Display = DisplayMode.Hidden },
+            new BoolStateChild("SelectAll") { HrLabel = "Select entire contents", Display = DisplayMode.Hidden },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates", HrLabel = "Verify SSL certificates", Display = DisplayMode.Hidden },
+            new NamedTextChild("Flow") { PocoProperty = "FlowUrl", HrLabel = "Flow URL", DisplayEmptyAs = "" },
             new NamedCalcChild("CURLOptions") { PocoProperty = "CurlOptions", Optional = true, HrLabel = "cURL options" },
-            new NamedTextChild("Text") { PocoProperty = "TargetVariable", HrLabel = "Target variable" },
+            new NamedTextChild("Text") { PocoProperty = "TargetVariable", HrLabel = "Target variable", Display = DisplayMode.Hidden },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

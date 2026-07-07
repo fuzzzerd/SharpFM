@@ -32,7 +32,7 @@ public sealed class ConfigureLocalNotificationStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when a configured child subtree is
@@ -44,7 +44,7 @@ public sealed class ConfigureLocalNotificationStep : ScriptStep, IStepFactory
         StepXmlParser.Parse<ConfigureLocalNotificationStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new ConfigureLocalNotificationStep(enabled: enabled);
+        StepDisplayParser.Parse<ConfigureLocalNotificationStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

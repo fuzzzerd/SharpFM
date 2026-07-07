@@ -31,21 +31,13 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Field By Name [ " + "Target field name: " + TargetFieldName.Text + " ; " + "Calculated result: " + CalculatedResult.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetFieldByNameStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? targetFieldName_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Target field name:", StringComparison.OrdinalIgnoreCase)) { targetFieldName_v = new Calculation(tok.Substring(18).Trim()); break; } }
-        Calculation? calculatedResult_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Calculated result:", StringComparison.OrdinalIgnoreCase)) { calculatedResult_v = new Calculation(tok.Substring(18).Trim()); break; } }
-        return new SetFieldByNameStep(targetFieldName_v, calculatedResult_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetFieldByNameStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -56,8 +48,8 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
         // TargetName and Result wrappers are omitted by the unconfigured form (Optional).
         Shape =
         [
-            new NamedCalcChild("TargetName") { PocoProperty = "TargetFieldName", HrLabel = "Target field name", Optional = true, Display = DisplayMode.Native },
-            new NamedCalcChild("Result") { PocoProperty = "CalculatedResult", HrLabel = "Calculated result", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("TargetName") { PocoProperty = "TargetFieldName", HrLabel = "Target field name", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new NamedCalcChild("Result") { PocoProperty = "CalculatedResult", HrLabel = "Calculated result", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

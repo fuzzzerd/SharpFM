@@ -31,12 +31,14 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Enter Find Mode [ Pause: {(Pause ? "On" : "Off")} ; Restore: {(RestoreStoredRequests ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<EnterFindModeStep>(step, Metadata);
 
+    // Hand-written: bare display text defaults Pause/Restore to On (FileMaker's
+    // new-step defaults), which the shape parser's false-initialized POCO
+    // cannot reproduce.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool pause = true, restore = true;

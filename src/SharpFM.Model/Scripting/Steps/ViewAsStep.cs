@@ -32,46 +32,15 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
         View = view;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Cycle"] = "Cycle",
-        ["Form"] = "View as Form",
-        ["List"] = "View as List",
-        ["Table"] = "View as Table",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Cycle"] = "Cycle",
-        ["View as Form"] = "Form",
-        ["View as List"] = "List",
-        ["View as Table"] = "Table",
-    };
-
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
-
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"View As [ View: {ToHr(View)} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ViewAsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "View:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        return new ViewAsStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ViewAsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

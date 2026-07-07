@@ -35,6 +35,7 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: Append line feed is a wire boolean displayed as a bare presence token, and the token order differs from shape order.
     public override string ToDisplayLine()
     {
         var writeAs = DataSourceType switch

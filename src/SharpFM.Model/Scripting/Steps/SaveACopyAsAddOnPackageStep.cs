@@ -31,21 +31,13 @@ public sealed class SaveACopyAsAddOnPackageStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Save a Copy as Add-on Package [ " + "Replace UUIDs: " + (ReplaceUUIDs ? "On" : "Off") + " ; " + "Window name: " + WindowName.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SaveACopyAsAddOnPackageStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool replaceUUIDs_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Replace UUIDs:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); replaceUUIDs_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        Calculation? windowName_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Window name:", StringComparison.OrdinalIgnoreCase)) { windowName_v = new Calculation(tok.Substring(12).Trim()); break; } }
-        return new SaveACopyAsAddOnPackageStep(replaceUUIDs_v, windowName_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SaveACopyAsAddOnPackageStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,8 +49,8 @@ public sealed class SaveACopyAsAddOnPackageStep : ScriptStep, IStepFactory
         // unconfigured form omits (Optional).
         Shape =
         [
-            new BoolStateChild("LinkAvail") { PocoProperty = "ReplaceUUIDs", HrLabel = "Replace UUIDs", Display = DisplayMode.Augmented },
-            new BareCalcChild { PocoProperty = "WindowName", HrLabel = "Window name", Optional = true, Display = DisplayMode.Native },
+            new BoolStateChild("LinkAvail") { PocoProperty = "ReplaceUUIDs", HrLabel = "Replace UUIDs", Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "WindowName", HrLabel = "Window name", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

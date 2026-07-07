@@ -1,6 +1,7 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -48,8 +49,7 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             baseTable);
     }
 
-    public override string ToDisplayLine() =>
-        $"Truncate Table [ With dialog: {(WithDialog ? "On" : "Off")} ; Table: {Table.Name} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step)
     {
@@ -61,6 +61,8 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         return new TruncateTableStep(withDialog, table, comment, enabled);
     }
 
+    // Hand-written: the current-table placeholder must keep its fixed id -1,
+    // which the shape parser's uniform NamedRef(0, name) binding cannot express.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool withDialog = true;
@@ -94,7 +96,7 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         // attribute is preserved, and the shape renderer/parser never runs.
         Shape =
         [
-            new BoolStateChild("NoInteract") { HrLabel = "With dialog" },
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog", DisplayInverted = true },
             new NamedRefChild("BaseTable") { PocoProperty = "Table", HrLabel = "Table" },
         ],
         Notes = new StepNotes

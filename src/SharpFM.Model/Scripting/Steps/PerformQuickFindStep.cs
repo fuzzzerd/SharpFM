@@ -28,19 +28,13 @@ public sealed class PerformQuickFindStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Perform Quick Find [ " + Calculation.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<PerformQuickFindStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(false)) { calculation_v = new Calculation(tok); break; } }
-        return new PerformQuickFindStep(calculation_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<PerformQuickFindStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -51,7 +45,7 @@ public sealed class PerformQuickFindStep : ScriptStep, IStepFactory
         // The bare search Calculation is omitted by the unconfigured form (Optional).
         Shape =
         [
-            new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

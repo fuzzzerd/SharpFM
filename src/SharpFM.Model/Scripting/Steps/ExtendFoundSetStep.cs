@@ -14,7 +14,7 @@ public sealed class ExtendFoundSetStep : ScriptStep, IStepFactory
     public bool RestoreStoredRequests { get; set; }
     public FindRequestList? Query { get; set; }
 
-    private ExtendFoundSetStep() : base(false) { }
+    private ExtendFoundSetStep() : base(false) { RestoreStoredRequests = true; }
 
     public ExtendFoundSetStep(bool restoreStoredRequests = true, FindRequestList? query = null, bool enabled = true)
         : base(enabled)
@@ -25,23 +25,13 @@ public sealed class ExtendFoundSetStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Extend Found Set [ Restore: {(RestoreStoredRequests ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ExtendFoundSetStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        bool restore = true;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
-                restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-        }
-        return new ExtendFoundSetStep(restore, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ExtendFoundSetStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -52,7 +42,7 @@ public sealed class ExtendFoundSetStep : ScriptStep, IStepFactory
         // Restore is always emitted; Query only when stored requests exist.
         Shape =
         [
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests" },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
             new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true },
         ],
         FromXml = FromXml,

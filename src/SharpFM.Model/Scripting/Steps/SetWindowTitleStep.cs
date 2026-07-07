@@ -35,40 +35,15 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
         NewTitle = newTitle ?? new Calculation("");
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _WindowToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal) {
-        ["Current"] = "Current Window",
-        ["ByName"] = "Of Window",
-    };
-    private static readonly IReadOnlyDictionary<string, string> _WindowFromHr =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-        ["Current Window"] = "Current",
-        ["Of Window"] = "ByName",
-    };
-    private static string WindowHr(string x) => _WindowToHr.TryGetValue(x, out var h) ? h : x;
-    private static string WindowXml(string h) => _WindowFromHr.TryGetValue(h, out var x) ? x : h;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Window Title [ " + "Window: " + WindowHr(Window) + " ; " + "Of Window: " + OfWindow.Text + " ; " + "Current file: " + (CurrentFile ? "On" : "Off") + " ; " + "New Title: " + NewTitle.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetWindowTitleStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string window_v = "ByName";
-        foreach (var tok in tokens) { if (tok.StartsWith("Window:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); window_v = WindowXml(v); break; } }
-        Calculation? ofWindow_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Of Window:", StringComparison.OrdinalIgnoreCase)) { ofWindow_v = new Calculation(tok.Substring(10).Trim()); break; } }
-        bool currentFile_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("Current file:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); currentFile_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        Calculation? newTitle_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("New Title:", StringComparison.OrdinalIgnoreCase)) { newTitle_v = new Calculation(tok.Substring(10).Trim()); break; } }
-        return new SetWindowTitleStep(window_v, ofWindow_v, currentFile_v, newTitle_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetWindowTitleStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -80,10 +55,12 @@ public sealed class SetWindowTitleStep : ScriptStep, IStepFactory
         // optional <Name> (of-window) and <NewName> (new-title) calculations.
         Shape =
         [
+            // Native slots (Window, Of Window) lead the display line in shape
+            // order; Augmented (Current file, New Title) follow — XML order unchanged.
             new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "CurrentFile", HrLabel = "Current file", Display = DisplayMode.Augmented },
-            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", DisplayValues = ["Current Window", "Of Window"], Display = DisplayMode.Native },
-            new NamedCalcChild("Name") { PocoProperty = "OfWindow", HrLabel = "Of Window", Optional = true, Display = DisplayMode.Augmented },
-            new NamedCalcChild("NewName") { PocoProperty = "NewTitle", HrLabel = "New Title", Optional = true, Display = DisplayMode.Augmented },
+            new EnumValueChild("Window") { PocoProperty = "Window", HrLabel = "Window", DefaultValue = "ByName", ValidValues = ["Current", "ByName"], DisplayValues = ["Current Window", "Of Window"], Display = DisplayMode.Native },
+            new NamedCalcChild("Name") { PocoProperty = "OfWindow", HrLabel = "Of Window", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new NamedCalcChild("NewName") { PocoProperty = "NewTitle", HrLabel = "New Title", Optional = true, Display = DisplayMode.Augmented, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

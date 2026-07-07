@@ -37,45 +37,15 @@ public sealed class ShowHideMenubarStep : ScriptStep, IStepFactory
         Action = action;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _ActionXmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Show"] = "Show",
-        ["Hide"] = "Hide",
-        ["Toggle"] = "Toggle",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _ActionHrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Show"] = "Show",
-        ["Hide"] = "Hide",
-        ["Toggle"] = "Toggle",
-    };
-
-    private static string ActionToHr(string x) =>
-        _ActionXmlToHr.TryGetValue(x, out var h) ? h : x;
-
-    private static string ActionFromHr(string h) =>
-        _ActionHrToXml.TryGetValue(h, out var x) ? x : h;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Show/Hide Menubar [ " + "Lock: " + (Lock ? "On" : "Off") + " ; " + "Action: " + ActionToHr(Action) + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ShowHideMenubarStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool @lock_val = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Lock:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(5).Trim(); @lock_val = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        string action_val = "Hide";
-        foreach (var tok in tokens) { if (tok.StartsWith("Action:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); action_val = ActionFromHr(v); break; } }
-        return new ShowHideMenubarStep(@lock_val, action_val, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ShowHideMenubarStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

@@ -32,36 +32,15 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
         Text = text;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _ContentTypeToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal) {
-        ["Calculation"] = "Calculation",
-        ["Text"] = "Text",
-    };
-    private static readonly IReadOnlyDictionary<string, string> _ContentTypeFromHr =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-        ["Calculation"] = "Calculation",
-        ["Text"] = "Text",
-    };
-    private static string ContentTypeHr(string x) => _ContentTypeToHr.TryGetValue(x, out var h) ? h : x;
-    private static string ContentTypeXml(string h) => _ContentTypeFromHr.TryGetValue(h, out var x) ? x : h;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Perform AppleScript [ " + ContentTypeHr(ContentType) + " ; " + (Calculation?.Text ?? "") + " ; " + Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<PerformAppleScriptStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        // Display shape is positional: [ content type ; calculation ; literal text ].
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string contentType_v = tokens.Length >= 1 && tokens[0].Length > 0 ? ContentTypeXml(tokens[0]) : "Calculation";
-        Calculation? calculation_v = tokens.Length >= 2 && tokens[1].Length > 0 ? new Calculation(tokens[1]) : null;
-        string text_v = tokens.Length >= 3 ? tokens[2] : "";
-        return new PerformAppleScriptStep(contentType_v, calculation_v, text_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<PerformAppleScriptStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -74,9 +53,9 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
         // so both are Optional.
         Shape =
         [
-            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Calculation", DisplayValues = ["Calculation", "Text"] },
-            new BareCalcChild { PocoProperty = "Calculation", Optional = true },
-            new NamedTextChild("Text") { PocoProperty = "Text", Optional = true },
+            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Calculation", ValidValues = ["Calculation", "Text"], DisplayValues = ["Calculation", "Text"] },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true, DisplayEmptyAs = "" },
+            new NamedTextChild("Text") { PocoProperty = "Text", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

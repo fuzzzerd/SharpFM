@@ -20,13 +20,13 @@ public sealed class FreezeWindowStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<FreezeWindowStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new FreezeWindowStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<FreezeWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

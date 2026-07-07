@@ -26,34 +26,13 @@ public sealed class OpenDataFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        Target is null
-            ? $"Open Data File [ {Path} ]"
-            : $"Open Data File [ {Path} ; Target: {Target.ToDisplayString()} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<OpenDataFileStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        string path = "";
-        FieldRef? target = null;
-        bool pathSeen = false;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
-            {
-                target = FieldRef.FromDisplayToken(t.Substring(7).Trim());
-            }
-            else if (!pathSeen && !string.IsNullOrWhiteSpace(t))
-            {
-                path = t;
-                pathSeen = true;
-            }
-        }
-        return new OpenDataFileStep(path, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<OpenDataFileStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -64,7 +43,7 @@ public sealed class OpenDataFileStep : ScriptStep, IStepFactory
         // Canonical unconfigured form is empty: path and target are omitted when absent.
         Shape =
         [
-            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Required = true, Optional = true },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Required = true, Optional = true, DisplayEmptyAs = "" },
             new FieldChild() { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
         FromXml = FromXml,

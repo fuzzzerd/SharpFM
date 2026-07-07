@@ -59,6 +59,7 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the display line shows only the conditional file and format tokens, hiding the option flags the shape renderer would surface.
     public override string ToDisplayLine() =>
         $"Save Records as JSONL [ {Path} ; Format: {(FineTuneFormat ? "Fine-Tune" : "Completion")} ]";
 

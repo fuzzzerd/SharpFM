@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -42,23 +39,13 @@ public sealed class ChangePasswordStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Change Password [ " + "Old Password: " + (OldPassword?.Text ?? "") + " ; " + "Password: " + (Password?.Text ?? "") + " ; " + "With dialog: " + (WithDialog ? "On" : "Off") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ChangePasswordStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? oldPassword_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Old Password:", StringComparison.OrdinalIgnoreCase)) { oldPassword_v = new Calculation(tok.Substring(13).Trim()); break; } }
-        Calculation? password_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Password:", StringComparison.OrdinalIgnoreCase)) { password_v = new Calculation(tok.Substring(9).Trim()); break; } }
-        bool withDialog_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        return new ChangePasswordStep(oldPassword_v, password_v, withDialog_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ChangePasswordStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -71,9 +58,9 @@ public sealed class ChangePasswordStep : ScriptStep, IStepFactory
         // wrappers are omitted until configured, so both are Optional.
         Shape =
         [
-            new NamedCalcChild("OldPassword") { PocoProperty = "OldPassword", HrLabel = "Old Password", Optional = true },
-            new NamedCalcChild("NewPassword") { PocoProperty = "Password", HrLabel = "Password", Optional = true },
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
+            new NamedCalcChild("OldPassword") { PocoProperty = "OldPassword", HrLabel = "Old Password", Optional = true, DisplayEmptyAs = "" },
+            new NamedCalcChild("NewPassword") { PocoProperty = "Password", HrLabel = "Password", Optional = true, DisplayEmptyAs = "" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

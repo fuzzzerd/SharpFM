@@ -50,6 +50,8 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: With dialog renders mid-line between same-mode groups, an
+    // order the Native-then-Augmented display projection cannot produce.
     public override string ToDisplayLine() =>
         "Convert File [ "
         + "Open File: " + (OpenFile ? "On" : "Off")

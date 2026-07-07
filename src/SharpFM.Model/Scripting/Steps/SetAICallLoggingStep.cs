@@ -41,6 +41,9 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: Verbose/Truncate are wire flag elements (presence = On)
+    // but display as always-present "Label: On/Off" tokens — a form the shape
+    // renderer's bare-label FlagChild convention cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string> { Logging ? "On" : "Off" };

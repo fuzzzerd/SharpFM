@@ -33,21 +33,13 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Recover File [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + UniversalPathList + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<RecoverFileStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool withDialog_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        var universalPathList_v = tokens.FirstOrDefault(t =>
-            !t.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) ?? "";
-        return new RecoverFileStep(withDialog_v, universalPathList_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<RecoverFileStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -59,8 +51,8 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
         // when empty (Optional), and <NoInteract state> is the inverse of WithDialog.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented },
-            new NamedTextChild("UniversalPathList") { PocoProperty = "UniversalPathList", Optional = true, Display = DisplayMode.Native },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented, DisplayInverted = true },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "UniversalPathList", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

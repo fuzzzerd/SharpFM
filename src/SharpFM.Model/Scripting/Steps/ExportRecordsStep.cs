@@ -89,7 +89,10 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
         return el;
     }
 
-    private ExportRecordsStep() : this(enabled: true) { }
+    // Display-parse defaults: a bare display line means the canonical
+    // unconfigured form (Restore/AutoOpen/CreateEmail all False). XML parse
+    // always overwrites these, so this is display-only.
+    private ExportRecordsStep() : this(enabled: true) { RestoreStoredOrder = false; AutoOpen = false; CreateEmail = false; }
 
     public ExportRecordsStep(
         bool withDialog = false, bool createDirectories = true, bool restoreStoredOrder = true,
@@ -116,29 +119,13 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Export Records [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ExportRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        // Display shape: [ With dialog: On/Off ; path ]. Everything else is
-        // only reachable while unconfigured, where it is at its canonical
-        // default (see IsFullyEditable).
-        bool withDialog = false;
-        string path = "";
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
-                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-            else if (t.Length > 0)
-                path = t;
-        }
-        return new ExportRecordsStep(withDialog, restoreStoredOrder: false, autoOpen: false, createEmail: false, path: path, enabled: enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ExportRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -148,16 +135,16 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/export-records.html",
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
-            new BoolStateChild("CreateDirectories"),
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder" },
-            new BoolStateChild("AutoOpen"),
-            new BoolStateChild("CreateEmail"),
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", DisplayInverted = true },
+            new BoolStateChild("CreateDirectories") { Display = DisplayMode.Hidden },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder", Display = DisplayMode.Hidden },
+            new BoolStateChild("AutoOpen") { Display = DisplayMode.Hidden },
+            new BoolStateChild("CreateEmail") { Display = DisplayMode.Hidden },
             // <Profile> precedes the path; the parse side of this slot also
             // absorbs the trailing complex children (see ProfileWire).
             new Passthrough { PocoProperty = "ProfileWire" },
             new HrOnly("Profile"),
-            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, DisplayEmptyAs = "" },
             new Passthrough { PocoProperty = "TrailingWire" },
             new HrOnly("ExportOptions"),
             new HrOnly("ExportEntries"),

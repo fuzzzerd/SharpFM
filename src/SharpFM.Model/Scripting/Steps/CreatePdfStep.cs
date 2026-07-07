@@ -43,8 +43,7 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Create PDF [ Restore: {(RestoreStoredOptions ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<CreatePdfStep>(step, Metadata);
@@ -69,6 +68,8 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
         && Security == PdfSecurity.Default()
         && View == PdfView.Default();
 
+    // Hand-written: must materialize the canonical Document block
+    // (DefaultDocument) that the shape parser's plain ctor cannot supply.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var restore = false;
@@ -92,8 +93,8 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
         // Document / Security / View blocks.
         Shape =
         [
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOptions" },
-            new BareCalcChild { PocoProperty = "StoredLabel", Optional = true },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOptions", HrLabel = "Restore" },
+            new BareCalcChild { PocoProperty = "StoredLabel", Optional = true, Display = DisplayMode.Hidden },
             new WrapperChild("CreatePDFFile",
             [
                 new ValueTypeChild("Document") { PocoProperty = "Document", Display = DisplayMode.Hidden },

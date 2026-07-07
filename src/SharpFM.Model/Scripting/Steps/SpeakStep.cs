@@ -46,11 +46,13 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => $"Speak [ {Text?.Text ?? ""} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SpeakStep>(step, Metadata);
 
+    // Hand-written: reconstructs the DefaultOptions SpeechOptions block the
+    // wire form always carries, which the shape parser cannot synthesize.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         Calculation? text = null;
@@ -67,7 +69,7 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
         // Canonical: optional text <Calculation>, then <SpeechOptions>.
         Shape =
         [
-            new BareCalcChild { PocoProperty = "Text", HrLabel = "Text to speak", Optional = true, Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "Text", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
             new ValueTypeChild("SpeechOptions") { PocoProperty = "Options", Display = DisplayMode.Hidden },
             new HrOnly("SpeechOptions") { HrLabel = "Speech options" },
         ],

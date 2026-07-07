@@ -20,13 +20,13 @@ public sealed class FlushCacheToDiskStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<FlushCacheToDiskStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new FlushCacheToDiskStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<FlushCacheToDiskStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

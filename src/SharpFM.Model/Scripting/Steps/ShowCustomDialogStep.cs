@@ -101,6 +101,7 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the buttons render as a nested quoted list with commit markers — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new List<string>

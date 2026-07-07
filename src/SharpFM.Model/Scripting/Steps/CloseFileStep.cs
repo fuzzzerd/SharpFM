@@ -23,6 +23,9 @@ public sealed class CloseFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the token comes from the FileReference value type
+    // (absence means "Current File"), which the shape-driven renderer
+    // cannot surface.
     public override string ToDisplayLine() =>
         File is null
             ? "Close File [ Current File ]"

@@ -116,6 +116,8 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: option toggles map the wire's "True"/absent values to
+    // On/Off, a translation display metadata cannot express.
     public override string ToDisplayLine() =>
         "AVPlayer Set Options [ " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Disable Interaction: " + (DisableInteraction == "True" ? "On" : "Off") + " ; " + "Hide Controls: " + (HideControls == "True" ? "On" : "Off") + " ; " + "Disable External Controls: " + (DisableExternalControls == "True" ? "On" : "Off") + " ; " + "Pause in Background: " + (PauseInBackground == "True" ? "On" : "Off") + " ; " + "Position: " + (Position?.Text ?? "") + " ; " + "Start Offset: " + (StartOffset?.Text ?? "") + " ; " + "End Offset: " + (EndOffset?.Text ?? "") + " ; " + "Volume: " + (Volume?.Text ?? "") + " ; " + "Zoom: " + ZoomHr(Zoom) + " ; " + "Sequence: " + SequenceHr(Sequence) + " ]";
 

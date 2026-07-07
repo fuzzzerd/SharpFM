@@ -31,21 +31,13 @@ public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Error Logging [ " + "Logging: " + (Logging ? "On" : "Off") + " ; " + "Custom debug info: " + CustomDebugInfo.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetErrorLoggingStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool logging_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Logging:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(8).Trim(); logging_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        Calculation? customDebugInfo_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Custom debug info:", StringComparison.OrdinalIgnoreCase)) { customDebugInfo_v = new Calculation(tok.Substring(18).Trim()); break; } }
-        return new SetErrorLoggingStep(logging_v, customDebugInfo_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetErrorLoggingStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -58,7 +50,7 @@ public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("Option") { PocoProperty = "Logging", HrLabel = "Logging", Display = DisplayMode.Native },
-            new BareCalcChild { PocoProperty = "CustomDebugInfo", HrLabel = "Custom debug info", Optional = true, Display = DisplayMode.Native },
+            new BareCalcChild { PocoProperty = "CustomDebugInfo", HrLabel = "Custom debug info", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

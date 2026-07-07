@@ -54,6 +54,8 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: FileMaker's token order (account/model first, target
+    // mid-line) diverges from the canonical XML order the shape must keep.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
@@ -73,34 +75,8 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InsertEmbeddingInFoundSetStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        Calculation account = new(""), model = new("");
-        FieldRef? source = null, target = null;
-        bool overwrite = false, continueErr = false, summary = false;
-        Calculation? parameters = null;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Account Name:", StringComparison.OrdinalIgnoreCase))
-                account = new Calculation(t.Substring(13).Trim());
-            else if (t.StartsWith("Embedding Model:", StringComparison.OrdinalIgnoreCase))
-                model = new Calculation(t.Substring(16).Trim());
-            else if (t.StartsWith("Source Field:", StringComparison.OrdinalIgnoreCase))
-                source = FieldRef.FromDisplayToken(t.Substring(13).Trim());
-            else if (t.StartsWith("Target Field:", StringComparison.OrdinalIgnoreCase))
-                target = FieldRef.FromDisplayToken(t.Substring(13).Trim());
-            else if (t.Equals("Replace target contents", StringComparison.OrdinalIgnoreCase))
-                overwrite = true;
-            else if (t.Equals("Continue on error", StringComparison.OrdinalIgnoreCase))
-                continueErr = true;
-            else if (t.Equals("Show summary", StringComparison.OrdinalIgnoreCase))
-                summary = true;
-            else if (t.StartsWith("Parameters:", StringComparison.OrdinalIgnoreCase))
-                parameters = new Calculation(t.Substring(11).Trim());
-        }
-        return new InsertEmbeddingInFoundSetStep(account, model, source, target, overwrite, continueErr, summary, parameters, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<InsertEmbeddingInFoundSetStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

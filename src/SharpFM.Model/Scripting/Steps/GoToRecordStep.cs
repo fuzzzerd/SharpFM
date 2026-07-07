@@ -75,6 +75,8 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: per-mode conditional token grammar (First/Last/Previous/
+    // Next/ByCalculation) the shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new List<string>();

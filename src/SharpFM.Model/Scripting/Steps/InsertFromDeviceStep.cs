@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -43,8 +42,7 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Insert from Device [ {InsertFrom}{(Target is not null ? $" ; {Target.ToDisplayString()}" : "")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InsertFromDeviceStep>(step, Metadata);
@@ -56,14 +54,8 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
     /// </summary>
     public override bool IsFullyEditable => DeviceOptions.Children.Count == 0;
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        // Display grammar: [ InsertFrom ; target? ]. DeviceOptions is sealed state.
-        var tokens = hrParams.Select(h => h.Trim()).Where(t => t.Length > 0).ToArray();
-        var insertFrom = tokens.Length > 0 ? tokens[0] : "Camera";
-        var target = tokens.Length > 1 ? FieldRef.FromDisplayToken(tokens[1]) : null;
-        return new InsertFromDeviceStep(insertFrom, target, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<InsertFromDeviceStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

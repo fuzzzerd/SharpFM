@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -28,19 +25,13 @@ public sealed class CloseDataFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Close Data File [ " + "File ID: " + (FileID?.Text ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<CloseDataFileStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? fileID_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("File ID:", StringComparison.OrdinalIgnoreCase)) { fileID_v = new Calculation(tok.Substring(8).Trim()); break; } }
-        return new CloseDataFileStep(fileID_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<CloseDataFileStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -51,7 +42,7 @@ public sealed class CloseDataFileStep : ScriptStep, IStepFactory
         // Canonical unconfigured form is empty: the bare File ID calc is omitted when blank.
         Shape =
         [
-            new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true },
+            new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

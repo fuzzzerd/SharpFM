@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -44,38 +42,13 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Commit Records/Requests [ "
-        + "With dialog: " + (WithDialog ? "On" : "Off")
-        + " ; Skip data entry validation: " + (SkipDataEntryValidation ? "On" : "Off")
-        + " ; Force commit: " + (ForceCommit ? "On" : "Off")
-        + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<CommitRecordsRequestsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        return new CommitRecordsRequestsStep(
-            withDialog: ParseOn(tokens, "With dialog:", defaultValue: true),
-            skipDataEntryValidation: ParseOn(tokens, "Skip data entry validation:", defaultValue: false),
-            forceCommit: ParseOn(tokens, "Force commit:", defaultValue: false),
-            enabled: enabled);
-    }
-
-    private static bool ParseOn(string[] tokens, string prefix, bool defaultValue)
-    {
-        foreach (var tok in tokens)
-        {
-            if (tok.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                var v = tok.Substring(prefix.Length).Trim();
-                return v.Equals("On", StringComparison.OrdinalIgnoreCase);
-            }
-        }
-        return defaultValue;
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<CommitRecordsRequestsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -85,7 +58,7 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/commit-records-requests.html",
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", DisplayInverted = true },
             new BoolStateChild("Option") { PocoProperty = "SkipDataEntryValidation", HrLabel = "Skip data entry validation" },
             new BoolStateChild("ESSForceCommit") { PocoProperty = "ForceCommit", HrLabel = "Force commit" },
         ],

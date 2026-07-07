@@ -31,6 +31,8 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: quoted "object name" token form the shape renderer
+    // cannot produce.
     public override string ToDisplayLine() =>
         "Go to Object [ " + Calculation.Text + " ; " + Calculation2.Text + " ]";
 

@@ -34,6 +34,7 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the display shows bare field-then-calculation tokens, the reverse of the canonical XML order; bare tokens cannot be reordered via Native/Augmented.
     public override string ToDisplayLine() =>
         $"Set Field [ {Target?.ToDisplayString() ?? ""} ; {Expression?.Text ?? ""} ]";
 

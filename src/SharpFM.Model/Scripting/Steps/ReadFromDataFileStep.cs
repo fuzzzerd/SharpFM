@@ -35,6 +35,9 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the amount label is per-mode conditional ("Amount" for
+    // UTF-16, "Amount (bytes)" otherwise) — a form the shape renderer's static
+    // HrLabel cannot express.
     public override string ToDisplayLine()
     {
         var readAs = DataSourceType switch

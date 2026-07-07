@@ -56,6 +56,8 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: bare "Select" presence token and conditional per-flag
+    // grammar the shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();

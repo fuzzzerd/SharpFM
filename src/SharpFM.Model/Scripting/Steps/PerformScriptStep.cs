@@ -73,6 +73,7 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the script target is a variant (by-name renders the quoted name, by-calculation the expression) the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new List<string>();

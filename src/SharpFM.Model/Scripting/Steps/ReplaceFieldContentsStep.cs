@@ -57,6 +57,9 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the mode token is per-mode conditional (Calculation mode
+    // shows the calc text, not the enum value) and the skip-auto-enter marker
+    // reads SerialOptions content — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>

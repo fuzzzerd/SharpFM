@@ -53,6 +53,9 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the bare On/Off token maps the wire's "True"/absent
+    // UseDialPreferences value, a translation the display metadata cannot
+    // express without widening the node's wire ValidValues.
     public override string ToDisplayLine() =>
         "Dial Phone [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (UseDialPreferences ? "On" : "Off") + " ; " + (Calculation?.Text ?? "") + " ]";
 

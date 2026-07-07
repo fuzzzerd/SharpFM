@@ -54,6 +54,7 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the script target renders as a bare quoted-name variant token the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string> { $"State: {State}" };

@@ -30,21 +30,13 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Dictionary [ " + "Spelling Language: " + SpellingLanguage + " ; " + "User Dictionary: " + UserDictionary + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetDictionaryStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string spellingLanguage_v = "US English";
-        foreach (var tok in tokens) { if (tok.StartsWith("Spelling Language:", StringComparison.OrdinalIgnoreCase)) { spellingLanguage_v = tok.Substring(18).Trim(); break; } }
-        string userDictionary_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("User Dictionary:", StringComparison.OrdinalIgnoreCase)) { userDictionary_v = tok.Substring(16).Trim(); break; } }
-        return new SetDictionaryStep(spellingLanguage_v, userDictionary_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetDictionaryStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -56,7 +48,7 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
         Shape =
         [
             new EnumValueChild("MainDictionary") { PocoProperty = "SpellingLanguage", HrLabel = "Spelling Language", DefaultValue = "US English" },
-            new NamedTextChild("UniversalPathList") { PocoProperty = "UserDictionary", HrLabel = "User Dictionary", Optional = true },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "UserDictionary", HrLabel = "User Dictionary", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

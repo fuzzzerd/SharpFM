@@ -16,7 +16,7 @@ public sealed class CutStep : ScriptStep, IStepFactory
     public bool Select { get; set; }
     public FieldRef? Target { get; set; }
 
-    private CutStep() : base(false) { }
+    private CutStep() : base(false) { Select = true; }
 
     public CutStep(
         bool select = true,
@@ -30,21 +30,13 @@ public sealed class CutStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Cut [ " + "Select: " + (Select ? "On" : "Off") + " ; " + (Target?.ToDisplayString() ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<CutStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool select_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); select_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef? target = null;
-        foreach (var tok in tokens) { if (!tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
-        return new CutStep(select_v, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<CutStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,7 +49,7 @@ public sealed class CutStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
-            new FieldChild("Field") { PocoProperty = "Target", Optional = true },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

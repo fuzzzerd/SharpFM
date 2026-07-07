@@ -39,6 +39,7 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the name and repetition merge into one [rep] token the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var nameToken = Repetition.Text == "1"

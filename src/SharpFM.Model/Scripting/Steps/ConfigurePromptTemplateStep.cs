@@ -81,6 +81,8 @@ public sealed class ConfigurePromptTemplateStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: trailing bare On/Off token and token order diverging from
+    // the canonical XML order.
     public override string ToDisplayLine() =>
         "Configure Prompt Template [ " + "Template Name: " + TemplateName.Text + " ; " + "Model Provider: " + ModelProviderHr(ModelProvider) + " ; " + "Template Type: " + TemplateTypeHr(TemplateType) + " ; " + "SQL Prompt: " + SQLPrompt.Text + " ; " + "Natural Language Prompt: " + NaturalLanguagePrompt.Text + " ; " + "Find Request Prompt: " + FindRequestPrompt.Text + " ; " + "RAG Prompt: " + RAGPrompt.Text + " ; " + (Option ? "On" : "Off") + " ]";
 

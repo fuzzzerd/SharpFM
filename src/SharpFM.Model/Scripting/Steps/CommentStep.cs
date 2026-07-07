@@ -47,6 +47,8 @@ public sealed class CommentStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the comment grammar (# prefix, no brackets) is outside
+    // the shared "Name [ tokens ]" display form.
     public override string ToDisplayLine() =>
         // FM Pro convention: an empty-text comment renders as a blank
         // line in the script editor, not "# ". Blank display lines are

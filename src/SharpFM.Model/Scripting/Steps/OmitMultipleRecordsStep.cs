@@ -39,21 +39,13 @@ public sealed class OmitMultipleRecordsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Omit Multiple Records [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (Calculation?.Text ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<OmitMultipleRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool withDialog_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))) { calculation_v = new Calculation(tok); break; } }
-        return new OmitMultipleRecordsStep(withDialog_v, calculation_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<OmitMultipleRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -66,8 +58,8 @@ public sealed class OmitMultipleRecordsStep : ScriptStep, IStepFactory
         // blank (Optional).
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
-            new BareCalcChild { PocoProperty = "Calculation", Optional = true },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

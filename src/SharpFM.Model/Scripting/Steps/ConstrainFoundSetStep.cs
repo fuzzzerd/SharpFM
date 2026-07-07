@@ -15,7 +15,7 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
     public bool RestoreStoredRequests { get; set; }
     public FindRequestList? Query { get; set; }
 
-    private ConstrainFoundSetStep() : base(false) { }
+    private ConstrainFoundSetStep() : base(false) { RestoreStoredRequests = true; }
 
     public ConstrainFoundSetStep(
         bool withoutIndexes = true,
@@ -31,8 +31,7 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Constrain Found Set [ Restore: {(RestoreStoredRequests ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ConstrainFoundSetStep>(step, Metadata);
@@ -45,18 +44,8 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
     /// </summary>
     public override bool IsFullyEditable => !WithoutIndexes && Query is null;
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        bool restore = true;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
-                restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-        }
-        // Canonical unconfigured Option state is False; True is sealed state.
-        return new ConstrainFoundSetStep(false, restore, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ConstrainFoundSetStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -68,8 +57,8 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
         // request list is present.
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "WithoutIndexes" },
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests" },
+            new BoolStateChild("Option") { PocoProperty = "WithoutIndexes", Display = DisplayMode.Hidden },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
             new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true },
         ],
         FromXml = FromXml,

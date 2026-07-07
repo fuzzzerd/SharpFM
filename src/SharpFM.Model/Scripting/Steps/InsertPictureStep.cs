@@ -29,6 +29,8 @@ public sealed class InsertPictureStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the single wire element splits into two display tokens
+    // (path text + type attribute) via HrOnly slots the renderer cannot drive.
     public override string ToDisplayLine() =>
         string.IsNullOrEmpty(Path) ? XmlName : $"Insert Picture [ {Path} ; {StorageType} ]";
 

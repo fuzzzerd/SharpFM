@@ -44,6 +44,9 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the operation type lives inside a ValueTypeChild and the
+    // replace calc is a conditional positional token — variant grammar the
+    // shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var opDisplay = Operation.Type switch

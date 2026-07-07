@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -16,7 +14,7 @@ public sealed class GoToFieldStep : ScriptStep, IStepFactory
     public bool SelectPerform { get; set; }
     public FieldRef? Target { get; set; }
 
-    private GoToFieldStep() : base(false) { }
+    private GoToFieldStep() : base(false) { SelectPerform = true; }
 
     public GoToFieldStep(
         bool selectPerform = true,
@@ -30,21 +28,13 @@ public sealed class GoToFieldStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Go to Field [ " + "Select/perform: " + (SelectPerform ? "On" : "Off") + " ; " + (Target?.ToDisplayString() ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<GoToFieldStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool selectPerform_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("Select/perform:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(15).Trim(); selectPerform_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef? target = null;
-        foreach (var tok in tokens) { if (!tok.StartsWith("Select/perform:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
-        return new GoToFieldStep(selectPerform_v, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<GoToFieldStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,7 +47,7 @@ public sealed class GoToFieldStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("SelectAll") { PocoProperty = "SelectPerform", HrLabel = "Select/perform", ValidValues = ["On", "Off"], DefaultValue = "True" },
-            new FieldChild("Field") { PocoProperty = "Target", Optional = true },
+            new FieldChild("Field") { PocoProperty = "Target", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

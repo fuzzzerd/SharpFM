@@ -27,20 +27,13 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Set Next Serial Value [ {(Field is null ? "" : Field.ToDisplayString())} ; {NextValue.Text} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetNextSerialValueStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        FieldRef? field = null;
-        Calculation? calc = null;
-        if (hrParams.Length >= 1 && hrParams[0].Trim().Length > 0) field = FieldRef.FromDisplayToken(hrParams[0].Trim());
-        if (hrParams.Length >= 2 && hrParams[1].Trim().Length > 0) calc = new Calculation(hrParams[1].Trim());
-        return new SetNextSerialValueStep(field, calc, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetNextSerialValueStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -52,8 +45,8 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
         // unconfigured form (Optional).
         Shape =
         [
-            new FieldChild("Field") { PocoProperty = "Field", HrLabel = "Field", Optional = true, Display = DisplayMode.Native },
-            new BareCalcChild { PocoProperty = "NextValue", HrLabel = "Next value", Optional = true, Display = DisplayMode.Native },
+            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new BareCalcChild { PocoProperty = "NextValue", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

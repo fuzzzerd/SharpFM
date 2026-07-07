@@ -26,7 +26,7 @@ public sealed class PerformRagActionStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when a configured child subtree is
@@ -38,7 +38,7 @@ public sealed class PerformRagActionStep : ScriptStep, IStepFactory
         StepXmlParser.Parse<PerformRagActionStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new PerformRagActionStep(enabled: enabled);
+        StepDisplayParser.Parse<PerformRagActionStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

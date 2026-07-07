@@ -63,6 +63,8 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: quoted "From table:"/"Using layout:" grammar the shape
+    // renderer cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();

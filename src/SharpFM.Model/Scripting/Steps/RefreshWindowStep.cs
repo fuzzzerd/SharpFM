@@ -36,21 +36,13 @@ public sealed class RefreshWindowStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Refresh Window [ " + "Flush cached join results: " + (FlushCachedJoinResults ? "On" : "Off") + " ; " + "Flush cached external data: " + (FlushCachedExternalData ? "On" : "Off") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<RefreshWindowStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool flushCachedJoinResults_val = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Flush cached join results:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(26).Trim(); flushCachedJoinResults_val = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool flushCachedExternalData_val = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Flush cached external data:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(27).Trim(); flushCachedExternalData_val = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        return new RefreshWindowStep(flushCachedJoinResults_val, flushCachedExternalData_val, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<RefreshWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

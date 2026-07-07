@@ -43,6 +43,8 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: AutoOpen/CreateEmail render as conditional bare tokens,
+    // a form a BoolStateChild cannot produce (it always renders On/Off).
     public override string ToDisplayLine()
     {
         var parts = new List<string>();

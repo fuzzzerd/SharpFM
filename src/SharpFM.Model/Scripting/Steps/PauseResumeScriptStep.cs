@@ -29,36 +29,15 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         DurationSeconds = durationSeconds;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _PauseTimeToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal) {
-        ["Indefinitely"] = "Indefinitely",
-        ["ForDuration"] = "Duration (seconds)",
-    };
-    private static readonly IReadOnlyDictionary<string, string> _PauseTimeFromHr =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-        ["Indefinitely"] = "Indefinitely",
-        ["Duration (seconds)"] = "ForDuration",
-    };
-    private static string PauseTimeHr(string x) => _PauseTimeToHr.TryGetValue(x, out var h) ? h : x;
-    private static string PauseTimeXml(string h) => _PauseTimeFromHr.TryGetValue(h, out var x) ? x : h;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Pause/Resume Script [ " + PauseTimeHr(PauseTime) + " ; " + "Duration (seconds): " + (DurationSeconds?.Text ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<PauseResumeScriptStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string pauseTime_v = "ForDuration";
-        Calculation? durationSeconds_v = null;
-        foreach (var tok in tokens) { if (!tok.StartsWith("Duration (seconds):", StringComparison.OrdinalIgnoreCase) && tok.Length > 0) { pauseTime_v = PauseTimeXml(tok); break; } }
-        foreach (var tok in tokens) { if (tok.StartsWith("Duration (seconds):", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(19).Trim(); if (v.Length > 0) durationSeconds_v = new Calculation(v); break; } }
-        return new PauseResumeScriptStep(pauseTime_v, durationSeconds_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<PauseResumeScriptStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -70,8 +49,8 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         // <Calculation> duration is omitted when blank (Optional).
         Shape =
         [
-            new EnumValueChild("PauseTime") { PocoProperty = "PauseTime", DefaultValue = "ForDuration", DisplayValues = ["Indefinitely", "Duration (seconds)"] },
-            new BareCalcChild { PocoProperty = "DurationSeconds", HrLabel = "Duration (seconds)", Optional = true },
+            new EnumValueChild("PauseTime") { PocoProperty = "PauseTime", DefaultValue = "ForDuration", ValidValues = ["Indefinitely", "ForDuration"], DisplayValues = ["Indefinitely", "Duration (seconds)"] },
+            new BareCalcChild { PocoProperty = "DurationSeconds", HrLabel = "Duration (seconds)", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

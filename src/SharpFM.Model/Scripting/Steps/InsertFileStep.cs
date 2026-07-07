@@ -35,6 +35,9 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the storage/compression/display-content tokens live inside
+    // the DialogOptions value type, which the shape-driven renderer cannot
+    // surface; token order also differs from shape order (Path renders last).
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();

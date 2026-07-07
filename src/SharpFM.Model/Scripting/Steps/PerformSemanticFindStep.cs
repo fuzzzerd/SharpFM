@@ -26,7 +26,7 @@ public sealed class PerformSemanticFindStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when a configured child subtree is
@@ -38,7 +38,7 @@ public sealed class PerformSemanticFindStep : ScriptStep, IStepFactory
         StepXmlParser.Parse<PerformSemanticFindStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new PerformSemanticFindStep(enabled: enabled);
+        StepDisplayParser.Parse<PerformSemanticFindStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

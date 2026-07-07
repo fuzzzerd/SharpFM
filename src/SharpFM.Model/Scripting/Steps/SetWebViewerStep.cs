@@ -72,6 +72,9 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written (render and parse): the URL token's wire form lives inside
+    // the UrlWire passthrough slot, which the shape display engine cannot read
+    // or bind.
     public override string ToDisplayLine() =>
         "Set Web Viewer [ " + "Object Name: " + ObjectName.Text + " ; " + "Action: " + ActionHr(Action) + " ; " + "URL: " + URL.Text + " ]";
 

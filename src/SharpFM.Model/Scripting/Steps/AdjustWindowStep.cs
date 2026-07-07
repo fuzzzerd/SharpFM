@@ -29,45 +29,15 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
         WindowState = windowState;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Resize to Fit"] = "Resize to Fit",
-        ["Maximize"] = "Maximize",
-        ["Minimize"] = "Minimize",
-        ["Restore"] = "Restore",
-        ["Hide"] = "Hide",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Resize to Fit"] = "Resize to Fit",
-        ["Maximize"] = "Maximize",
-        ["Minimize"] = "Minimize",
-        ["Restore"] = "Restore",
-        ["Hide"] = "Hide",
-    };
-
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
-
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Adjust Window [ {ToHr(WindowState)} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<AdjustWindowStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        return new AdjustWindowStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<AdjustWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

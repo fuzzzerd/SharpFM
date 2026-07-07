@@ -32,6 +32,8 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: FileMaker shows Target before the query calculation, the
+    // reverse of the canonical XML order the shape must keep.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();

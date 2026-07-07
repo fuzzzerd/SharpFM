@@ -53,6 +53,7 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: fixed empty-slot tokens plus the synthetic <file> placeholder — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var content = ContentType switch

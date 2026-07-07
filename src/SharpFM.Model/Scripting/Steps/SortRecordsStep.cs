@@ -41,25 +41,13 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Sort Records [ With dialog: {(WithDialog ? "On" : "Off")} ; Restore: {(RestoreStoredOrder ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SortRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        bool withDialog = false, restore = true;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
-                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-            else if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
-                restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-        }
-        return new SortRecordsStep(withDialog, restore, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SortRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -71,7 +59,7 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
         // when a sort order is stored.
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder", HrLabel = "Restore" },
             new HrOnly("Restore") { Boolean = true },
             new ValueTypeChild("SortList") { PocoProperty = "Sort" },

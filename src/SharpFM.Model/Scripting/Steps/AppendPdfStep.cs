@@ -40,8 +40,7 @@ public sealed class AppendPdfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        string.IsNullOrEmpty(Path) ? "Append PDF" : $"Append PDF [ {Path} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<AppendPdfStep>(step, Metadata);
@@ -53,6 +52,8 @@ public sealed class AppendPdfStep : ScriptStep, IStepFactory
     /// </summary>
     public override bool IsFullyEditable => OpenPassword is null && SaveType == "File";
 
+    // Hand-written: couples the hidden Option wire flag to path presence,
+    // which the shape parser cannot express.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         string path = "";
@@ -75,7 +76,7 @@ public sealed class AppendPdfStep : ScriptStep, IStepFactory
         // optional open-password calculation.
         Shape =
         [
-            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Native },
+            new BoolStateChild("Option") { PocoProperty = "SpecifyFile", Display = DisplayMode.Hidden },
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
             new WrapperChild("AppendPDFFile",
             [

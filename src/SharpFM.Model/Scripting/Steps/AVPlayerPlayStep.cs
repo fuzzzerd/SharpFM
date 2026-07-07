@@ -86,6 +86,9 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: Hide Controls / Disable Interaction map the wire's
+    // "True"/absent values to On/Off, a translation display metadata cannot
+    // express without widening the nodes' wire ValidValues.
     public override string ToDisplayLine() =>
         "AVPlayer Play [ " + SourceHr(Source) + " ; " + "Repetition: " + (Repetition?.Text ?? "") + " ; " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Position: " + (Position?.Text ?? "") + " ; " + "Start Offset: " + (StartOffset?.Text ?? "") + " ; " + "End Offset: " + (EndOffset?.Text ?? "") + " ; " + "Hide Controls: " + (HideControls == "True" ? "On" : "Off") + " ; " + "Disable Interaction: " + (DisableInteraction == "True" ? "On" : "Off") + " ]";
 

@@ -43,6 +43,7 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the script target is a variant with a bare quoted-name token order the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>

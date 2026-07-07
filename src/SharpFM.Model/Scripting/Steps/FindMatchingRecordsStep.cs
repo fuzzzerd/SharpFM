@@ -25,49 +25,13 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine()
-    {
-        var mode = Mode switch
-        {
-            "FindMatchingReplace" or "Replace" => "Replace",
-            "FindMatchingConstrain" or "Constrain" => "Constrain",
-            "FindMatchingExtend" or "Extend" => "Extend",
-            _ => Mode,
-        };
-        return Field is null
-            ? $"Find Matching Records [ {mode} ]"
-            : $"Find Matching Records [ {mode} ; {Field.ToDisplayString()} ]";
-    }
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<FindMatchingRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        string mode = "FindMatchingReplace";
-        FieldRef? field = null;
-        bool modeSeen = false;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (!modeSeen)
-            {
-                mode = t switch
-                {
-                    "Replace" => "FindMatchingReplace",
-                    "Constrain" => "FindMatchingConstrain",
-                    "Extend" => "FindMatchingExtend",
-                    _ => t,
-                };
-                modeSeen = true;
-            }
-            else if (!string.IsNullOrWhiteSpace(t))
-            {
-                field = FieldRef.FromDisplayToken(t);
-            }
-        }
-        return new FindMatchingRecordsStep(mode, field, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<FindMatchingRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

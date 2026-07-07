@@ -29,43 +29,15 @@ public sealed class ArrangeAllWindowsStep : ScriptStep, IStepFactory
         WindowArrangement = windowArrangement;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Tile Horizontally"] = "Tile Horizontally",
-        ["Tile Vertically"] = "Tile Vertically",
-        ["Cascade Window"] = "Cascade Window",
-        ["Bring All To Front"] = "Bring All To Front",
-    };
-
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Tile Horizontally"] = "Tile Horizontally",
-        ["Tile Vertically"] = "Tile Vertically",
-        ["Cascade Window"] = "Cascade Window",
-        ["Bring All To Front"] = "Bring All To Front",
-    };
-
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
-
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Arrange All Windows [ {ToHr(WindowArrangement)} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ArrangeAllWindowsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        return new ArrangeAllWindowsStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ArrangeAllWindowsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

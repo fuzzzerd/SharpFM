@@ -26,6 +26,7 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: quoted menu-set name token the shape renderer cannot produce.
     public override string ToDisplayLine() =>
         $"Install Menu Set [ \"{MenuSet.Name}\" ; Use as file default: {(UseAsFileDefault ? "On" : "Off")} ]";
 

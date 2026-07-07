@@ -47,6 +47,8 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: variant window-target grammar (Current/ByName) the shape
+    // renderer cannot produce.
     public override string ToDisplayLine() =>
         "Close Window [ " + (LimitToWindowsOfCurrentFile ? "On" : "Off") + " ; " + WindowHr(Window) + " ; " + Calculation.Text + " ]";
 

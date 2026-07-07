@@ -28,19 +28,13 @@ public sealed class SetSessionIdentifierStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Session Identifier [ " + "Session identifier: " + (SessionIdentifier?.Text ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SetSessionIdentifierStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? sessionIdentifier_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Session identifier:", StringComparison.OrdinalIgnoreCase)) { sessionIdentifier_v = new Calculation(tok.Substring(19).Trim()); break; } }
-        return new SetSessionIdentifierStep(sessionIdentifier_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetSessionIdentifierStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -51,7 +45,7 @@ public sealed class SetSessionIdentifierStep : ScriptStep, IStepFactory
         // Canonical unconfigured form is empty: the bare identifier calc is omitted when blank.
         Shape =
         [
-            new BareCalcChild { PocoProperty = "SessionIdentifier", HrLabel = "Session identifier", Optional = true },
+            new BareCalcChild { PocoProperty = "SessionIdentifier", HrLabel = "Session identifier", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

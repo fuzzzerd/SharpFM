@@ -84,7 +84,10 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
         }
     }
 
-    private ImportRecordsStep() : this(enabled: true) { }
+    // Display-parse defaults: a bare display line means the canonical
+    // unconfigured form, whose Restore state is False. XML parse always
+    // overwrites these, so this is display-only.
+    private ImportRecordsStep() : this(enabled: true) { RestoreStoredOrder = false; }
 
     public ImportRecordsStep(
         bool withDialog = false, bool restoreStoredOrder = true, bool verifySslCertificates = false,
@@ -107,29 +110,13 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Import Records [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ImportRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        // Display shape: [ With dialog: On/Off ; path ]. Everything else is
-        // only reachable while unconfigured, where it is at its canonical
-        // default (see IsFullyEditable).
-        bool withDialog = false;
-        string path = "";
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
-                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-            else if (t.Length > 0)
-                path = t;
-        }
-        return new ImportRecordsStep(withDialog, restoreStoredOrder: false, path: path, enabled: enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ImportRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -139,13 +126,13 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
         HelpUrl = "https://help.claris.com/en/pro-help/content/import-records.html",
         Shape =
         [
-            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
-            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder" },
-            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", DisplayInverted = true },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder", Display = DisplayMode.Hidden },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySslCertificates", Display = DisplayMode.Hidden },
             // The data-source descriptor and path are emitted only when a
             // source is configured; the canonical unconfigured form omits them.
-            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceTypeWire", Optional = true, ValidValues = ["File", "Folder", "XMLSource"], DefaultValue = "File" },
-            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceTypeWire", Optional = true, ValidValues = ["File", "Folder", "XMLSource"], DefaultValue = "File", Display = DisplayMode.Hidden },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, DisplayEmptyAs = "" },
             new Passthrough { PocoProperty = "ComplexWire" },
             new HrOnly("ImportOptions"),
             new HrOnly("Table"),

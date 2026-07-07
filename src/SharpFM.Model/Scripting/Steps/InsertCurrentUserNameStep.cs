@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -16,7 +14,7 @@ public sealed class InsertCurrentUserNameStep : ScriptStep, IStepFactory
     public bool Select { get; set; }
     public FieldRef? Target { get; set; }
 
-    private InsertCurrentUserNameStep() : base(false) { }
+    private InsertCurrentUserNameStep() : base(false) { Select = true; }
 
     public InsertCurrentUserNameStep(
         bool select = true,
@@ -30,21 +28,13 @@ public sealed class InsertCurrentUserNameStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Insert Current User Name [ " + "Select: " + (Select ? "On" : "Off") + " ; " + "Target: " + (Target?.ToDisplayString() ?? "") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InsertCurrentUserNameStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool select_v = true;
-        foreach (var tok in tokens) { if (tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); select_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef? target = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Target:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); if (v.Length > 0) target = FieldRef.FromDisplayToken(v); break; } }
-        return new InsertCurrentUserNameStep(select_v, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<InsertCurrentUserNameStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,7 +47,7 @@ public sealed class InsertCurrentUserNameStep : ScriptStep, IStepFactory
         Shape =
         [
             new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
-            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

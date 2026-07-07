@@ -52,6 +52,7 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: conditional file and Append tokens plus hidden option flags are grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>

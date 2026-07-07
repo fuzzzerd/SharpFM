@@ -40,6 +40,8 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
 
     public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: bare "Select" presence token from a BoolStateChild, which
+    // always renders labeled On/Off.
     public override string ToDisplayLine()
     {
         var selectPart = SelectAll ? "Select ; " : "";
