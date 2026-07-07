@@ -32,18 +32,30 @@ public static class StepXmlParser
         foreach (var node in meta.Shape)
             Populate(instance, step, node);
 
-        // A trailing Passthrough slot captures every child element the shape did
-        // not model, so partially-known steps round-trip unknown children verbatim.
-        if (meta.Shape.OfType<Passthrough>().FirstOrDefault() is { } pt)
-        {
-            var modeled = meta.Shape.SelectMany(StepXmlValidator.ElementNamesOf).ToHashSet();
-            var extras = step.Elements()
-                .Where(e => !modeled.Contains(e.Name.LocalName))
-                .Select(e => new XElement(e))
-                .ToList();
-            Set(instance, pt.PocoProperty ?? "Passthrough", extras);
-        }
+        CapturePassthrough(instance, step, meta.Shape);
         return instance;
+    }
+
+    /// <summary>
+    /// A Passthrough slot captures every child element its sibling nodes did
+    /// not model, so partially-known steps round-trip unknown children
+    /// verbatim. The bound property may be a <c>List&lt;XElement&gt;</c> or a
+    /// <see cref="StepChildBag"/>.
+    /// </summary>
+    private static void CapturePassthrough(object target, XElement parent, IReadOnlyList<ShapeNode> shape)
+    {
+        if (shape.OfType<Passthrough>().FirstOrDefault() is not { } pt) return;
+
+        var modeled = shape.SelectMany(StepXmlValidator.ElementNamesOf).ToHashSet();
+        var extras = parent.Elements()
+            .Where(e => !modeled.Contains(e.Name.LocalName))
+            .Select(e => new XElement(e))
+            .ToList();
+        var prop = pt.PocoProperty ?? "Passthrough";
+        Set(target, prop,
+            typeof(StepChildBag).IsAssignableFrom(ShapeReflection.PropertyType(target, prop))
+                ? new StepChildBag(extras)
+                : extras);
     }
 
     private static void Populate(object target, XElement step, ShapeNode node)
@@ -93,8 +105,14 @@ public static class StepXmlParser
             }
 
             case NamedTextChild nt:
-                Set(target, nt.PocoProperty ?? nt.Element, step.Element(nt.Element)?.Value ?? "");
+            {
+                var el = step.Element(nt.Element);
+                Set(target, nt.PocoProperty ?? nt.Element, el?.Value ?? "");
+                if (nt.Attr is not null)
+                    Set(target, nt.AttrProperty ?? nt.Attr,
+                        el?.Attribute(nt.Attr)?.Value ?? nt.AttrDefault ?? "");
                 return;
+            }
 
             case FieldChild f:
             {
@@ -129,9 +147,27 @@ public static class StepXmlParser
 
             case ParametersList pl:
             {
+                var prop = pl.PocoProperty ?? pl.Wrapper;
                 var wrapper = step.Element(pl.Wrapper);
-                var items = wrapper?.Elements(pl.Child).Select(p => p.Value).ToList() ?? new List<string>();
-                Set(target, pl.PocoProperty ?? pl.Wrapper, items);
+                // Item typing follows the bound property: List<Calculation>
+                // round-trips the renderer's <P><Calculation> form; anything
+                // else parses as plain strings.
+                var itemType = ShapeReflection.PropertyType(target, prop)
+                    .GetGenericArguments().FirstOrDefault();
+                if (itemType == typeof(Calculation))
+                {
+                    var calcs = wrapper?.Elements(pl.Child)
+                        .Select(p => p.Element("Calculation") is { } c
+                            ? Calculation.FromXml(c)
+                            : new Calculation(p.Value))
+                        .ToList() ?? new List<Calculation>();
+                    Set(target, prop, calcs);
+                }
+                else
+                {
+                    var items = wrapper?.Elements(pl.Child).Select(p => p.Value).ToList() ?? new List<string>();
+                    Set(target, prop, items);
+                }
                 return;
             }
 
@@ -139,23 +175,53 @@ public static class StepXmlParser
             {
                 var wrapper = step.Element(w.Element);
                 if (wrapper is not null)
+                {
                     foreach (var child in w.Children)
                         Populate(target, wrapper, child);
+                    CapturePassthrough(target, wrapper, w.Children);
+                }
                 return;
             }
 
             case Passthrough:
                 return; // handled after the loop in Parse, with full-shape context
 
-            case VariantBlock:
-                throw new NotSupportedException(
-                    $"Shape node {node.GetType().Name} parsing is not yet implemented; " +
-                    "it will be added when the first step that needs it is migrated.");
+            case VariantBlock vb:
+            {
+                var prop = node.PocoProperty
+                    ?? throw new InvalidOperationException("VariantBlock requires PocoProperty.");
+                var match = vb.Cases.FirstOrDefault(c => CaseMatches(c, step));
+                if (match is null) return; // leave the POCO's constructor default
+
+                // Union cases are records with positional parameters, so there
+                // is no parameterless constructor to call — create the blank
+                // instance uninitialized and let the case's children populate
+                // its init-only positional properties.
+                var value = CreateBlank(match.WhenType);
+                foreach (var child in match.Children)
+                    Populate(value, step, child);
+                Set(target, prop, value);
+                return;
+            }
 
             default:
                 throw new NotSupportedException($"Unhandled shape node: {node.GetType().Name}");
         }
     }
+
+    private static bool CaseMatches(VariantCase c, XElement step)
+    {
+        if (c.MatchElement is null) return true; // unconditional fallback
+        var el = step.Element(c.MatchElement);
+        if (el is null) return false;
+        return c.MatchValues is null
+            || c.MatchValues.Contains(el.Attribute("value")?.Value ?? "", StringComparer.Ordinal);
+    }
+
+    private static object CreateBlank(Type type) =>
+        type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes)
+            ?.Invoke(null)
+        ?? System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(type);
 
     private static readonly Dictionary<(Type, string), MethodInfo> _fromXmlCache = new();
 

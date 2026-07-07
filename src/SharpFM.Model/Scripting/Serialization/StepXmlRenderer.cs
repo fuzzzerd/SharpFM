@@ -93,7 +93,10 @@ public static class StepXmlRenderer
             {
                 var s = Str(ShapeReflection.Get(src, nt.PocoProperty ?? nt.Element));
                 if (nt.Optional && s.Length == 0) return;
-                parent.Add(new XElement(nt.Element, s));
+                var el = new XElement(nt.Element, s);
+                if (nt.Attr is not null)
+                    el.Add(new XAttribute(nt.Attr, Str(ShapeReflection.Get(src, nt.AttrProperty ?? nt.Attr))));
+                parent.Add(el);
                 return;
             }
 
@@ -148,6 +151,8 @@ public static class StepXmlRenderer
 
             case WrapperChild w:
             {
+                if (w.Optional && w.PocoProperty is not null
+                    && ShapeReflection.Get(src, w.PocoProperty) is null) return;
                 var wrapper = new XElement(w.Element);
                 foreach (var child in w.Children)
                     Emit(wrapper, src, child);
@@ -170,7 +175,9 @@ public static class StepXmlRenderer
 
             case Passthrough:
             {
-                if (ShapeReflection.Get(src, node.PocoProperty ?? "Passthrough") is IEnumerable<XElement> extra)
+                var v = ShapeReflection.Get(src, node.PocoProperty ?? "Passthrough");
+                if (v is StepChildBag bag) bag.AppendTo(parent);
+                else if (v is IEnumerable<XElement> extra)
                     foreach (var x in extra)
                         parent.Add(new XElement(x));
                 return;

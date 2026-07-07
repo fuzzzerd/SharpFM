@@ -118,9 +118,22 @@ public sealed record NamedCalcChild(string Element) : ShapeNode;
 /// <summary>
 /// <c>&lt;El&gt;text&lt;/El&gt;</c> bound to a <see cref="string"/> property —
 /// the Set Variable <c>&lt;Name&gt;$var&lt;/Name&gt;</c> §7.1/7.4 trap, plus
-/// Configure Persistent Data <c>&lt;Name&gt;</c>, Flow, Text, etc.
+/// Configure Persistent Data <c>&lt;Name&gt;</c>, Flow, Text, etc. When
+/// <see cref="Attr"/> is set the element also carries one attribute bound to
+/// its own property (e.g. Insert PDF's
+/// <c>&lt;UniversalPathList type="Embedded"&gt;path&lt;/UniversalPathList&gt;</c>).
 /// </summary>
-public sealed record NamedTextChild(string Element) : ShapeNode;
+public sealed record NamedTextChild(string Element) : ShapeNode
+{
+    /// <summary>Attribute carried on the same element, always emitted when set.</summary>
+    public string? Attr { get; init; }
+
+    /// <summary>POCO property the attribute binds to. Defaults to <see cref="Attr"/>.</summary>
+    public string? AttrProperty { get; init; }
+
+    /// <summary>Attribute value assumed when the element or attribute is absent.</summary>
+    public string? AttrDefault { get; init; }
+}
 
 /// <summary>
 /// <c>&lt;Field table=… id=… name=…/&gt;</c> or <c>&lt;Field&gt;$var&lt;/Field&gt;</c>
@@ -157,11 +170,31 @@ public sealed record ParametersList(string Wrapper = "Parameters", string Child 
 /// RAG Account's <c>&lt;ConfigureRAGAccount&gt;</c> grouping. The wrapper is
 /// always emitted (empty when every child is omitted); children bind to the
 /// owning step's properties and their XML lookups are relative to the wrapper.
+/// With <see cref="ShapeNode.Optional"/> set, the wrapper is emitted only when
+/// the gate property named by <see cref="ShapeNode.PocoProperty"/> is non-null
+/// (e.g. Save a Copy as XML's <c>&lt;SaXML&gt;</c> block).
 /// </summary>
 public sealed record WrapperChild(string Element, IReadOnlyList<ShapeNode> Children) : ShapeNode;
 
-/// <summary>One case of a <see cref="VariantBlock"/>: when the bound property's runtime type is <see cref="WhenType"/>, emit <see cref="Children"/>.</summary>
-public sealed record VariantCase(Type WhenType, IReadOnlyList<ShapeNode> Children);
+/// <summary>
+/// One case of a <see cref="VariantBlock"/>. Emission selects the case whose
+/// <see cref="WhenType"/> matches the bound property's runtime type. Parsing
+/// selects the first case (in declaration order) whose
+/// <see cref="MatchElement"/> is present in the step XML and — when
+/// <see cref="MatchValues"/> is set — whose <c>value</c> attribute is in that
+/// set. <see cref="MatchValues"/> may list legacy wire-value aliases alongside
+/// the canonical value; a case with no <see cref="MatchValues"/> matches on
+/// element presence alone, and a case with no <see cref="MatchElement"/> is the
+/// unconditional fallback.
+/// </summary>
+public sealed record VariantCase(Type WhenType, IReadOnlyList<ShapeNode> Children)
+{
+    /// <summary>Element whose presence selects this case during parsing.</summary>
+    public string? MatchElement { get; init; }
+
+    /// <summary>Accepted <c>value</c> attribute values on <see cref="MatchElement"/> (canonical + legacy aliases).</summary>
+    public IReadOnlyList<string>? MatchValues { get; init; }
+}
 
 /// <summary>
 /// Discriminated-union selection. Picks the <see cref="VariantCase"/> whose

@@ -22,6 +22,20 @@ internal static class ShapeReflection
     public static object? Get(object source, string name) =>
         Prop(source.GetType(), name).GetValue(source);
 
-    public static void Set(object target, string name, object? value) =>
-        Prop(target.GetType(), name).SetValue(target, value);
+    /// <summary>
+    /// Writes a shape-bound property, including init-only setters on record
+    /// positional parameters. A bound property with no setter marks an
+    /// emit-only node (e.g. a variant discriminator bound to a computed
+    /// <c>WireValue</c>), so parsing skips it rather than throwing.
+    /// </summary>
+    public static void Set(object target, string name, object? value)
+    {
+        var prop = Prop(target.GetType(), name);
+        if (prop.CanWrite)
+            prop.SetValue(target, value);
+    }
+
+    /// <summary>Declared type of a shape-bound property (for typed list parsing).</summary>
+    public static Type PropertyType(object source, string name) =>
+        Prop(source.GetType(), name).PropertyType;
 }
