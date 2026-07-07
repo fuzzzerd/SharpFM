@@ -91,4 +91,81 @@ public class StepDisplayRendererTests
         var step = new VarStep { Name = "", Value = new Calculation(""), Repetition = new Calculation("1") };
         Assert.Equal("Set Variable", StepDisplayRenderer.Render(step, VarMeta()));
     }
+
+    [Fact]
+    public void DisplayParser_InvertsTheRenderer()
+    {
+        var step = new VarStep { Name = "$arr", Value = new Calculation("0"), Repetition = new Calculation("2") };
+        var line = StepDisplayRenderer.Render(step, VarMeta());
+        var parsed = ScriptLineParser.ParseLine(line);
+        var rebuilt = StepDisplayParser.Parse<VarStep>(true, parsed.Params, VarMeta());
+
+        Assert.Equal("$arr", rebuilt.Name);
+        Assert.Equal("0", rebuilt.Value.Text);
+        Assert.Equal("2", rebuilt.Repetition.Text);
+    }
+
+    [Fact]
+    public void DisplayParser_InvertedBoolean_MapsBackToWire()
+    {
+        var meta = new StepMetadata
+        {
+            Name = "Delete All Records",
+            Id = 10,
+            Category = "records",
+            Shape =
+            [
+                new BoolStateChild("NoInteract") { PocoProperty = "Flag", HrLabel = "With dialog", DisplayInverted = true },
+            ],
+        };
+        var rebuilt = StepDisplayParser.Parse<FlagStep>(true, ["With dialog: On"], meta);
+        Assert.False(rebuilt.Flag); // display On = wire NoInteract False
+
+        var shown = StepDisplayRenderer.Render(rebuilt, meta);
+        Assert.Equal("Delete All Records [ With dialog: On ]", shown);
+    }
+
+    [Fact]
+    public void DisplayParser_EnumDisplayForm_MapsToWireValue()
+    {
+        var meta = new StepMetadata
+        {
+            Name = "Sort Records by Field",
+            Id = 154,
+            Category = "found-sets",
+            Shape =
+            [
+                new EnumValueChild("SortOrder")
+                {
+                    PocoProperty = "Name",
+                    ValidValues = ["SortAscending", "SortDescending"],
+                    DisplayValues = ["Ascending", "Descending"],
+                },
+            ],
+        };
+        var rebuilt = StepDisplayParser.Parse<VarStep>(true, ["Descending"], meta);
+        Assert.Equal("SortDescending", rebuilt.Name);
+    }
+
+    [Fact]
+    public void DisplayParser_BareFlagToken_SetsPresence()
+    {
+        var meta = new StepMetadata
+        {
+            Name = "Insert Text",
+            Id = 61,
+            Category = "fields",
+            Shape = [new FlagChild("SelectAll") { PocoProperty = "Flag", HrLabel = "Select" }],
+        };
+        var rebuilt = StepDisplayParser.Parse<FlagStep>(true, ["Select"], meta);
+        Assert.True(rebuilt.Flag);
+    }
+
+    private sealed class FlagStep : ScriptStep
+    {
+        public bool Flag { get; set; }
+        public FlagStep() : base(true) { }
+        public override XElement ToXml() => throw new System.NotImplementedException();
+        public override string ToDisplayLine() => "";
+    }
 }
