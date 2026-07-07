@@ -28,6 +28,15 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
     public NamedRef Table { get; set; } = new(0, "");
     public NamedRef? Layout { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when the step carries state the
+    /// display line cannot express: a Restore-off flag, a non-default layout
+    /// destination, or customized new-window styles.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        RestoreWindowGeometry && LayoutDestination == "SelectedLayout"
+        && WindowStyles == NewWindowStyles.Default();
+
     private GoToRelatedRecordStep() : base(false) { }
 
     public GoToRelatedRecordStep(

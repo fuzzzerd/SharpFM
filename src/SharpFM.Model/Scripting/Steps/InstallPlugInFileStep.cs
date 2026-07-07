@@ -36,9 +36,11 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
+        // The unconfigured form has no target field; only a non-empty token
+        // carries one.
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        FieldRef target = FieldRef.ForField("", 0, "");
-        foreach (var tok in tokens) { if (true && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
+        FieldRef? target = null;
+        foreach (var tok in tokens) { if (!string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
         return new InstallPlugInFileStep(target, enabled);
     }
 

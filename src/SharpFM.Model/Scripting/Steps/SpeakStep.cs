@@ -20,6 +20,21 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
     public Calculation? Text { get; set; }
     public SpeechOptions? Options { get; set; }
 
+    /// <summary>
+    /// The options FM writes for a Speak step with no voice configured:
+    /// wait-for-completion on, the default (id 0) voice. This is what the
+    /// display parser reconstructs, since the display line carries only the
+    /// spoken text.
+    /// </summary>
+    internal static readonly SpeechOptions DefaultOptions = new(true, "", "0", "");
+
+    /// <summary>
+    /// Display edits are anchor-preserved when a non-default voice or
+    /// wait-for-completion setting is stored — the display line cannot carry
+    /// the speech options.
+    /// </summary>
+    public override bool IsFullyEditable => Options is null || Options == DefaultOptions;
+
     private SpeakStep() : base(false) { }
 
     public SpeakStep(Calculation? text = null, SpeechOptions? options = null, bool enabled = true)
@@ -38,9 +53,9 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        Calculation text = new("");
-        if (hrParams.Length >= 1) text = new Calculation(hrParams[0].Trim());
-        return new SpeakStep(text, null, enabled);
+        Calculation? text = null;
+        if (hrParams.Length >= 1 && hrParams[0].Trim().Length > 0) text = new Calculation(hrParams[0].Trim());
+        return new SpeakStep(text, DefaultOptions, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

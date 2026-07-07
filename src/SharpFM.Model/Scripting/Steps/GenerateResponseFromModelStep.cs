@@ -28,6 +28,12 @@ public sealed class GenerateResponseFromModelStep : ScriptStep, IStepFactory
 
     public override string ToDisplayLine() => XmlName;
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a configured child subtree is
+    /// present — the display line carries only the step name.
+    /// </summary>
+    public override bool IsFullyEditable => Children.Children.Count == 0;
+
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<GenerateResponseFromModelStep>(step, Metadata);
 

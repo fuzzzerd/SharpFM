@@ -49,7 +49,9 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
                 var name = t;
                 if (name.StartsWith("\"") && name.EndsWith("\"") && name.Length >= 2)
                     name = name.Substring(1, name.Length - 2);
-                menu = new NamedRef(0, name);
+                // The built-in menu set has the fixed id 1; custom menu sets
+                // carry file-specific ids the canonical form wildcards.
+                menu = new NamedRef(name == "[Standard FileMaker Menus]" ? 1 : 0, name);
                 menuSeen = true;
             }
         }

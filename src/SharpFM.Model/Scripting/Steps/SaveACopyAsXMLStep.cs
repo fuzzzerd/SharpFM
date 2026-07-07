@@ -28,6 +28,14 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
     public bool? SpecifyJSONOptions { get; set; }
     public Calculation? JsonOptions { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when any FM 26 option is present —
+    /// the display line carries only the analysis-tools flag, never the
+    /// binary-data/JSON-options state.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        OutputEntireBinaryData is null && SpecifyJSONOptions is null && JsonOptions is null;
+
     private SaveACopyAsXMLStep() : base(false) { }
 
     public SaveACopyAsXMLStep(

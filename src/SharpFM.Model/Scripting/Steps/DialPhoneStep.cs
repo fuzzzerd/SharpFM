@@ -64,9 +64,9 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool withDialog_v = true;
         foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool useDialPreferences_v = false;
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))) { calculation_v = new Calculation(tok); break; } }
+        // Display shape is positional after the dialog flag: [ With dialog ; use-dial-prefs On/Off ; phone calc ].
+        bool useDialPreferences_v = tokens.Length >= 2 && tokens[1].Equals("On", StringComparison.OrdinalIgnoreCase);
+        Calculation? calculation_v = tokens.Length >= 3 && tokens[2].Length > 0 ? new Calculation(tokens[2]) : null;
         return new DialPhoneStep(withDialog_v, useDialPreferences_v, calculation_v, enabled);
     }
 

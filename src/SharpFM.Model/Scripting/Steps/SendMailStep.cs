@@ -36,6 +36,13 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
     /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
     public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when the child bag is populated:
+    /// the display line carries only the dialog flag (plus To/Subject
+    /// annotations), never the bag's SMTP/OAuth/recipient elements.
+    /// </summary>
+    public override bool IsFullyEditable => Children.Children.Count == 0;
+
     /// <summary>Shape-facing view of <see cref="Children"/> for the trailing passthrough slot.</summary>
     public List<XElement> ExtraChildren
     {

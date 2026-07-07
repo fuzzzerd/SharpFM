@@ -80,6 +80,15 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<TriggerClarisConnectFlowStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: a target variable, or the encode/select/SSL flags
+    /// off their unconfigured values (the display shows only the dialog
+    /// toggle, flow URL, and cURL options).
+    /// </summary>
+    public override bool IsFullyEditable =>
+        TargetVariable.Length == 0 && !DontEncodeUrl && SelectAll && !VerifySslCertificates;
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool withDialog = true;

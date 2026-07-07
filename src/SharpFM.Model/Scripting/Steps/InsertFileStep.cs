@@ -65,21 +65,39 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InsertFileStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when dialog state the display line
+    /// cannot carry is present: a missing DialogOptions block, a custom
+    /// dialog title (or the enable flag for one), or a compression filter
+    /// list. Storage, compression, and display-content choices are carried
+    /// by the display grammar.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        DialogOptions is { Enable: false, Title: null, FilterListXml: null };
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Display is lossy for Insert File — DialogOptions attributes don't
-        // all round-trip. Best-effort: capture path and target.
         string path = "";
         FieldRef? target = null;
+        var asFile = true;
+        var storage = "UserChoice";
+        var compress = "UserChoice";
         foreach (var tok in hrParams)
         {
             var t = tok.Trim();
             if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
                 target = FieldRef.FromDisplayToken(t.Substring(7).Trim());
-            else if (!string.IsNullOrWhiteSpace(t) && !t.Contains(':') && t != "Insert" && t != "Reference" && t != "Display content" && !t.Contains("ompress"))
+            else if (t == "Insert") storage = "InsertOnly";
+            else if (t == "Reference") storage = "ReferenceOnly";
+            else if (t == "Insert and Reference") storage = "InsertAndReference";
+            else if (t == "Display content") asFile = false;
+            else if (t == "Compress when possible") compress = "WhenPossible";
+            else if (t == "Never compress") compress = "Never";
+            else if (!string.IsNullOrWhiteSpace(t))
                 path = t;
         }
-        return new InsertFileStep(path, "Embedded", target, null, enabled);
+        var dialogOptions = new InsertFileDialogOptions(asFile, false, null, storage, compress, null);
+        return new InsertFileStep(path, "Embedded", target, dialogOptions, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

@@ -47,9 +47,24 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<NewWindowStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: a target layout, window dimensions, a non-default
+    /// styles block, or a layout destination other than the unconfigured
+    /// <c>CurrentLayout</c> form the display parser reconstructs.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        LayoutDestination == "CurrentLayout"
+        && Layout is null
+        && Height is null && Width is null
+        && DistanceFromTop is null && DistanceFromLeft is null
+        && Styles == NewWindowStyles.Default();
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        var step = new NewWindowStep(enabled);
+        // The unconfigured canonical form carries LayoutDestination
+        // "CurrentLayout"; anything beyond a window name is sealed state.
+        var step = new NewWindowStep(enabled) { LayoutDestination = "CurrentLayout" };
         var name = hrParams.Select(h => h.Trim()).FirstOrDefault(t => t.Length > 0);
         if (!string.IsNullOrEmpty(name)) step.Name = new Calculation(name);
         return step;

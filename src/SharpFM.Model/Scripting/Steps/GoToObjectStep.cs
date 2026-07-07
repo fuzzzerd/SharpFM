@@ -39,11 +39,15 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
+        // Positional display grammar: [ object-name ; repetition ]. Trailing
+        // empty tokens are dropped by the param splitter.
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(false)) { calculation_v = new Calculation(tok); break; } }
-        Calculation? calculation2_v = null;
-        foreach (var tok in tokens) { if (!(false)) { calculation2_v = new Calculation(tok); break; } }
+        Calculation? calculation_v = tokens.Length > 0 && tokens[0].Length > 0
+            ? new Calculation(tokens[0])
+            : null;
+        Calculation? calculation2_v = tokens.Length > 1 && tokens[1].Length > 0
+            ? new Calculation(tokens[1])
+            : null;
         return new GoToObjectStep(calculation_v, calculation2_v, enabled);
     }
 

@@ -29,6 +29,14 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
     /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
     public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a serial-number options block
+    /// or a Restore flag is stored — the display line shows at most the
+    /// skip-auto-enter marker, never the block's increment/initial-value
+    /// settings, and never Restore.
+    /// </summary>
+    public override bool IsFullyEditable => SerialOptions is null && !RestoreState;
+
     private ReplaceFieldContentsStep() : this(enabled: true) { }
 
     public ReplaceFieldContentsStep(
@@ -74,7 +82,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool withDialog = true;
-        FieldRef field = FieldRef.ForField("", 0, "");
+        FieldRef? field = null;
         string mode = "Calculation";
         Calculation? calc = null;
         bool fieldSeen = false;
@@ -83,15 +91,22 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
             var t = tok.Trim();
             if (t.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))
                 withDialog = t.Substring(12).Trim().Equals("On", StringComparison.OrdinalIgnoreCase);
+            else if (t.Equals("Current contents", StringComparison.OrdinalIgnoreCase))
+                mode = "CurrentContents";
+            else if (t.Equals("Serial numbers", StringComparison.OrdinalIgnoreCase))
+                mode = "SerialNumbers";
+            else if (t.Equals("None", StringComparison.OrdinalIgnoreCase))
+                mode = "None";
+            else if (t.Equals("Skip auto-enter options", StringComparison.OrdinalIgnoreCase))
+            {
+                // Marker for a stored SerialNumbers block; such steps are
+                // sealed (see IsFullyEditable), so nothing to reconstruct.
+            }
             else if (!fieldSeen && !string.IsNullOrWhiteSpace(t))
             {
                 field = FieldRef.FromDisplayToken(t);
                 fieldSeen = true;
             }
-            else if (t.Equals("Current contents", StringComparison.OrdinalIgnoreCase))
-                mode = "CurrentContents";
-            else if (t.Equals("Serial numbers", StringComparison.OrdinalIgnoreCase))
-                mode = "SerialNumbers";
             else if (!string.IsNullOrWhiteSpace(t))
             {
                 mode = "Calculation";

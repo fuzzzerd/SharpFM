@@ -18,6 +18,13 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
     /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
     public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when an ODBC profile is stored: the
+    /// display line carries only the dialog flag and the SQL text, not the
+    /// profile's connection settings.
+    /// </summary>
+    public override bool IsFullyEditable => Profile is null;
+
     private ExecuteSqlStep() : base(false) { }
 
     public ExecuteSqlStep(bool withDialog = true, SqlProfile? profile = null, bool enabled = true)
@@ -48,6 +55,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         bool withDialog = true;
         string sql = "";
         bool isCalc = false;
+        bool sawSql = false;
         foreach (var tok in hrParams)
         {
             var t = tok.Trim();
@@ -57,15 +65,21 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
             {
                 sql = t.Substring(20).Trim();
                 isCalc = true;
+                sawSql = true;
             }
             else if (t.StartsWith("SQL Text:", StringComparison.OrdinalIgnoreCase))
+            {
                 sql = t.Substring(9).Trim();
+                sawSql = true;
+            }
         }
-        var profile = new SqlProfile(
-            isCalc ? "Calculation" : "Query",
-            "0", "", "", "", "\t", "-1", "0", "ODBC",
-            isCalc ? null : sql,
-            isCalc ? new Calculation(sql) : null);
+        var profile = sawSql
+            ? new SqlProfile(
+                isCalc ? "Calculation" : "Query",
+                "0", "", "", "", "\t", "-1", "0", "ODBC",
+                isCalc ? null : sql,
+                isCalc ? new Calculation(sql) : null)
+            : null;
         return new ExecuteSqlStep(withDialog, profile, enabled);
     }
 

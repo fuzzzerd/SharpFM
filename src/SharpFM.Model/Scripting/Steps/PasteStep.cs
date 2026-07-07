@@ -51,8 +51,8 @@ public sealed class PasteStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("No style:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(9).Trim(); noStyle_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
         bool linkIfAvailable_v = false;
         foreach (var tok in tokens) { if (tok.StartsWith("Link if available:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(18).Trim(); linkIfAvailable_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef target = FieldRef.ForField("", 0, "");
-        foreach (var tok in tokens) { if (tok.StartsWith("Table::Field:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); target = FieldRef.FromDisplayToken(v); break; } }
+        FieldRef? target = null;
+        foreach (var tok in tokens) { if (tok.StartsWith("Table::Field:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); if (v.Length > 0) target = FieldRef.FromDisplayToken(v); break; } }
         return new PasteStep(select_v, noStyle_v, linkIfAvailable_v, target, enabled);
     }
 

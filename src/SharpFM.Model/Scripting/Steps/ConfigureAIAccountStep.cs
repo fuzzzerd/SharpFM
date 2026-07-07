@@ -70,6 +70,13 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ConfigureAIAccountStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when the SSL flag is explicitly
+    /// stored as False: the display renders both the absent and the
+    /// explicit-False forms as "Off", so a parsed "Off" maps to absent.
+    /// </summary>
+    public override bool IsFullyEditable => VerifySSLCertificates != false;
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
@@ -79,8 +86,10 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Model Provider:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(15).Trim(); modelProvider_v = ModelProviderXml(v); break; } }
         Calculation? endpoint_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("Endpoint:", StringComparison.OrdinalIgnoreCase)) { endpoint_v = new Calculation(tok.Substring(9).Trim()); break; } }
-        bool verifySSLCertificates_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Verify SSL Certificates:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(24).Trim(); verifySSLCertificates_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
+        // "Off" is ambiguous between absent and explicit False; it maps to
+        // absent (explicit-False instances are sealed).
+        bool? verifySSLCertificates_v = null;
+        foreach (var tok in tokens) { if (tok.StartsWith("Verify SSL Certificates:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(24).Trim(); verifySSLCertificates_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? true : null; break; } }
         Calculation? aPIKey_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("API key:", StringComparison.OrdinalIgnoreCase)) { aPIKey_v = new Calculation(tok.Substring(8).Trim()); break; } }
         return new ConfigureAIAccountStep(accountName_v, modelProvider_v, endpoint_v, verifySSLCertificates_v, aPIKey_v, enabled);

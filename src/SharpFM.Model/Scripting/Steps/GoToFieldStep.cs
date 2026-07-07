@@ -41,7 +41,7 @@ public sealed class GoToFieldStep : ScriptStep, IStepFactory
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool selectPerform_v = true;
         foreach (var tok in tokens) { if (tok.StartsWith("Select/perform:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(15).Trim(); selectPerform_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef target = FieldRef.ForField("", 0, "");
+        FieldRef? target = null;
         foreach (var tok in tokens) { if (!tok.StartsWith("Select/perform:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
         return new GoToFieldStep(selectPerform_v, target, enabled);
     }

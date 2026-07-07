@@ -55,11 +55,15 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
+        // Positional display grammar: [ On/Off ; Window ; name-calc ]. A
+        // trailing empty calc token is dropped by the param splitter.
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool limitToWindowsOfCurrentFile_v = true;
-        string window_v = "ByName";
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(false)) { calculation_v = new Calculation(tok); break; } }
+        bool limitToWindowsOfCurrentFile_v = tokens.Length == 0
+            || tokens[0].Equals("On", StringComparison.OrdinalIgnoreCase);
+        string window_v = tokens.Length > 1 ? WindowXml(tokens[1]) : "ByName";
+        Calculation? calculation_v = tokens.Length > 2 && tokens[2].Length > 0
+            ? new Calculation(tokens[2])
+            : null;
         return new CloseWindowStep(limitToWindowsOfCurrentFile_v, window_v, calculation_v, enabled);
     }
 

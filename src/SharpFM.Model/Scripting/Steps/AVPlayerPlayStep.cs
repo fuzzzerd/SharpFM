@@ -92,10 +92,21 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<AVPlayerPlayStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a toggle is explicitly stored
+    /// as False: the display renders both the absent and the explicit-False
+    /// forms as "Off", so a parsed "Off" maps to absent.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        HideControls != "False" && DisableInteraction != "False";
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string source_v = "Object Name";
+        // The leading unlabeled token is the source enum.
+        string source_v = tokens.Length > 0 && !tokens[0].Contains(':')
+            ? SourceXml(tokens[0])
+            : "Object Name";
         Calculation? repetition_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("Repetition:", StringComparison.OrdinalIgnoreCase)) { repetition_v = new Calculation(tok.Substring(11).Trim()); break; } }
         string presentation_v = "Start Full Screen";
@@ -106,10 +117,12 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Start Offset:", StringComparison.OrdinalIgnoreCase)) { startOffset_v = new Calculation(tok.Substring(13).Trim()); break; } }
         Calculation? endOffset_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("End Offset:", StringComparison.OrdinalIgnoreCase)) { endOffset_v = new Calculation(tok.Substring(11).Trim()); break; } }
+        // "Off" is ambiguous between absent and explicit False; it maps to
+        // absent (explicit-False instances are sealed).
         string hideControls_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         string disableInteraction_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         return new AVPlayerPlayStep(source_v, repetition_v, presentation_v, position_v, startOffset_v, endOffset_v, hideControls_v, disableInteraction_v, enabled);
     }
 

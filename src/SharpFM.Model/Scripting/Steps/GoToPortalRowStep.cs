@@ -18,6 +18,13 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
     public bool ExitAfterLast { get; set; }
     public Calculation? Calculation { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when the dialog is suppressed —
+    /// the display line never shows a "With dialog" segment, so only the
+    /// default (dialog on) state survives a display round-trip.
+    /// </summary>
+    public override bool IsFullyEditable => WithDialog;
+
     // Wire bridges for the shape engine. NoInteract inverts WithDialog;
     // <Exit> is emitted (always state="True") only for Previous/Next, and the
     // bare <Calculation> only for ByCalculation — the getters return null

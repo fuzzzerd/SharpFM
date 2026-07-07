@@ -35,10 +35,10 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        FieldRef field = FieldRef.ForField("", 0, "");
-        Calculation calc = new("");
-        if (hrParams.Length >= 1) field = FieldRef.FromDisplayToken(hrParams[0].Trim());
-        if (hrParams.Length >= 2) calc = new Calculation(hrParams[1].Trim());
+        FieldRef? field = null;
+        Calculation? calc = null;
+        if (hrParams.Length >= 1 && hrParams[0].Trim().Length > 0) field = FieldRef.FromDisplayToken(hrParams[0].Trim());
+        if (hrParams.Length >= 2 && hrParams[1].Trim().Length > 0) calc = new Calculation(hrParams[1].Trim());
         return new SetNextSerialValueStep(field, calc, enabled);
     }
 

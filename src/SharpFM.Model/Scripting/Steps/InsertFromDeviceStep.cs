@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Serialization;
@@ -48,8 +49,21 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<InsertFromDeviceStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new InsertFromDeviceStep(enabled: enabled);
+    /// <summary>
+    /// Display edits are anchor-preserved when a device-specific options
+    /// subtree is present — the display line shows only the source and
+    /// target, never the DeviceOptions children.
+    /// </summary>
+    public override bool IsFullyEditable => DeviceOptions.Children.Count == 0;
+
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    {
+        // Display grammar: [ InsertFrom ; target? ]. DeviceOptions is sealed state.
+        var tokens = hrParams.Select(h => h.Trim()).Where(t => t.Length > 0).ToArray();
+        var insertFrom = tokens.Length > 0 ? tokens[0] : "Camera";
+        var target = tokens.Length > 1 ? FieldRef.FromDisplayToken(tokens[1]) : null;
+        return new InsertFromDeviceStep(insertFrom, target, null, enabled);
+    }
 
     public static StepMetadata Metadata { get; } = new()
     {

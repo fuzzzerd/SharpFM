@@ -46,6 +46,13 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<OpenPdfStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: an open-password calculation or a non-default save
+    /// type (the display shows only the path).
+    /// </summary>
+    public override bool IsFullyEditable => OpenPassword is null && SaveType == "File";
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         string path = "";

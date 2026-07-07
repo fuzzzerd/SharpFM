@@ -24,6 +24,13 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
     public string ZoomLevel { get; set; }
     public Calculation? ZoomCalculation { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a zoom-by-calculation
+    /// expression is stored — the display line shows only the ByCalculation
+    /// marker, never the calculation itself.
+    /// </summary>
+    public override bool IsFullyEditable => ZoomCalculation is null;
+
     private SetZoomLevelStep() : base(false) { ZoomLevel = "100"; }
 
     public SetZoomLevelStep(

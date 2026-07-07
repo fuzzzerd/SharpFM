@@ -68,9 +68,31 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SaveRecordsAsPdfStep>(step, Metadata);
 
+    /// <summary>
+    /// The canonical PDFOptions block FileMaker writes for an unconfigured
+    /// step: all-pages document numbered from 1 with a 1–1 page range, and
+    /// default security/view settings.
+    /// </summary>
+    internal static PdfOptions DefaultOptions() => new(
+        "RecordsBeingBrowsed",
+        null,
+        new PdfDocument(null, null, null, null, true,
+            new Calculation("1"), new Calculation("1"), new Calculation("1")),
+        PdfSecurity.Default(),
+        PdfView.Default());
+
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: restored stored options (and their label), a
+    /// disabled create-directories flag, or a PDFOptions block configured
+    /// beyond the canonical unconfigured form.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        !RestoreStoredOptions && StoredLabel is null && CreateDirectories
+        && DefaultOptions().Equals(Options);
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Lossy — full PDFOptions can't round-trip through display.
         bool withDialog = false, append = false, autoOpen = false, createEmail = false;
         string path = "";
         bool pathSeen = false;
@@ -84,7 +106,7 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
             else if (t.Equals("Create email", System.StringComparison.OrdinalIgnoreCase)) createEmail = true;
             else if (!pathSeen && !string.IsNullOrWhiteSpace(t)) { path = t; pathSeen = true; }
         }
-        return new SaveRecordsAsPdfStep(withDialog, append, true, true, autoOpen, createEmail, path, null, null, enabled);
+        return new SaveRecordsAsPdfStep(withDialog, append, true, false, autoOpen, createEmail, path, null, DefaultOptions(), enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

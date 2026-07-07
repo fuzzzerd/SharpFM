@@ -55,11 +55,11 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
+        // Display shape is positional: [ content type ; calculation ; literal text ].
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string contentType_v = "Calculation";
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(false)) { calculation_v = new Calculation(tok); break; } }
-        string text_v = "";
+        string contentType_v = tokens.Length >= 1 && tokens[0].Length > 0 ? ContentTypeXml(tokens[0]) : "Calculation";
+        Calculation? calculation_v = tokens.Length >= 2 && tokens[1].Length > 0 ? new Calculation(tokens[1]) : null;
+        string text_v = tokens.Length >= 3 ? tokens[2] : "";
         return new PerformAppleScriptStep(contentType_v, calculation_v, text_v, enabled);
     }
 

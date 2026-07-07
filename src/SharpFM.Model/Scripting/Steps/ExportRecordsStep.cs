@@ -34,6 +34,17 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
     public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
 
     /// <summary>
+    /// Display edits are anchor-preserved once the export is configured: the
+    /// display line carries only the dialog flag and output path, so any
+    /// non-canonical-default flag, a stored format profile, export options or
+    /// field list seals the step.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        CreateDirectories && !RestoreStoredOrder && !AutoOpen && !CreateEmail
+        && Profile is null && ExportOptions is null
+        && ExportEntries.Count == 0 && SummaryFields.Count == 0;
+
+    /// <summary>
     /// Shape-facing view of the complex children no primitive models. The
     /// getter emits only <c>&lt;Profile&gt;</c> (this passthrough slot sits
     /// before <c>&lt;UniversalPathList&gt;</c>); the setter receives every
@@ -111,8 +122,23 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ExportRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new ExportRecordsStep(enabled: enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    {
+        // Display shape: [ With dialog: On/Off ; path ]. Everything else is
+        // only reachable while unconfigured, where it is at its canonical
+        // default (see IsFullyEditable).
+        bool withDialog = false;
+        string path = "";
+        foreach (var tok in hrParams)
+        {
+            var t = tok.Trim();
+            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
+                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
+            else if (t.Length > 0)
+                path = t;
+        }
+        return new ExportRecordsStep(withDialog, restoreStoredOrder: false, autoOpen: false, createEmail: false, path: path, enabled: enabled);
+    }
 
     public static StepMetadata Metadata { get; } = new()
     {

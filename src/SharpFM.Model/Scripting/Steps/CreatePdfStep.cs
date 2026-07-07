@@ -49,6 +49,26 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<CreatePdfStep>(step, Metadata);
 
+    /// <summary>
+    /// The canonical Document block FileMaker writes for an unconfigured
+    /// step: all pages numbered from 1 with a 1–1 page range.
+    /// </summary>
+    internal static PdfDocument DefaultDocument() =>
+        new(null, null, null, null, true,
+            new Calculation("1"), new Calculation("1"), new Calculation("1"));
+
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: a stored-label calculation, or Document/Security/View
+    /// blocks configured beyond the canonical unconfigured form (the display
+    /// shows only the Restore toggle).
+    /// </summary>
+    public override bool IsFullyEditable =>
+        StoredLabel is null
+        && Document == DefaultDocument()
+        && Security == PdfSecurity.Default()
+        && View == PdfView.Default();
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var restore = false;
@@ -58,7 +78,7 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
             if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
                 restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
         }
-        return new CreatePdfStep(restore, null, null, null, null, enabled);
+        return new CreatePdfStep(restore, null, DefaultDocument(), null, null, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

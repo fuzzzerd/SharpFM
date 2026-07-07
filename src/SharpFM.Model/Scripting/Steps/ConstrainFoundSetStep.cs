@@ -37,6 +37,14 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ConstrainFoundSetStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: a stored <c>&lt;Query&gt;</c> request list, or an
+    /// <c>&lt;Option&gt;</c> flag set to True (the display shows only the
+    /// Restore toggle).
+    /// </summary>
+    public override bool IsFullyEditable => !WithoutIndexes && Query is null;
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool restore = true;
@@ -46,7 +54,8 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
             if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
                 restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
         }
-        return new ConstrainFoundSetStep(true, restore, null, enabled);
+        // Canonical unconfigured Option state is False; True is sealed state.
+        return new ConstrainFoundSetStep(false, restore, null, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

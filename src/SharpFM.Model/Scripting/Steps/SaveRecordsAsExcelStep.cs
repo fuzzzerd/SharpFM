@@ -110,8 +110,35 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SaveRecordsAsExcelStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new SaveRecordsAsExcelStep(enabled: enabled);
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: restore/auto-open/email/directory flags off their
+    /// unconfigured values, a configured export Profile, the doc-metadata
+    /// calcs, a non-default save type, or the use-field-names flag (the
+    /// display shows only the dialog toggle and path).
+    /// </summary>
+    public override bool IsFullyEditable =>
+        CreateDirectories && !RestoreStoredOptions && !AutoOpen && !CreateEmail
+        && FieldDelimiter == "\t" && IsPredefined == "-1" && FieldNameRow == "-1" && DataType == "XLXE"
+        && WorkSheet is null && Title is null && Subject is null && Author is null
+        && SaveType == "BrowsedRecords" && !UseFieldNames;
+
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    {
+        // Display grammar: [ With dialog: On/Off ; path ]. Everything else
+        // takes its canonical unconfigured value.
+        bool withDialog = false;
+        string path = "";
+        foreach (var tok in hrParams)
+        {
+            var t = tok.Trim();
+            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
+                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
+            else if (!string.IsNullOrWhiteSpace(t))
+                path = t;
+        }
+        return new SaveRecordsAsExcelStep(withDialog, restoreStoredOptions: false, path: path, enabled: enabled);
+    }
 
     public static StepMetadata Metadata { get; } = new()
     {

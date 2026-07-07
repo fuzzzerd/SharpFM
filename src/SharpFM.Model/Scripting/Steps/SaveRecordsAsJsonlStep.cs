@@ -65,8 +65,32 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<SaveRecordsAsJsonlStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new SaveRecordsAsJsonlStep(enabled: enabled);
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: prompt calcs, completion/source fields, a table
+    /// reference, or the flags the display grammar does not show (it carries
+    /// only the path and format).
+    /// </summary>
+    public override bool IsFullyEditable =>
+        !OptionEnableTable && !CreateDirectories && !AutoOpen && !CreateEmail
+        && SystemPrompt is null && UserPrompt is null && AssistantPrompt is null
+        && CompletionField is null && SourceField is null && Table is null;
+
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    {
+        // Display grammar: [ path ; Format: Fine-Tune/Completion ].
+        string path = "";
+        bool fineTuneFormat = false;
+        foreach (var tok in hrParams)
+        {
+            var t = tok.Trim();
+            if (t.StartsWith("Format:", System.StringComparison.OrdinalIgnoreCase))
+                fineTuneFormat = t.Substring(7).Trim().Equals("Fine-Tune", System.StringComparison.OrdinalIgnoreCase);
+            else if (!string.IsNullOrWhiteSpace(t))
+                path = t;
+        }
+        return new SaveRecordsAsJsonlStep(fineTuneFormat: fineTuneFormat, path: path, enabled: enabled);
+    }
 
     public static StepMetadata Metadata { get; } = new()
     {

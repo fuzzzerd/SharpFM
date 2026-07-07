@@ -41,7 +41,7 @@ public sealed class InsertFromLastVisitedStep : ScriptStep, IStepFactory
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool select_v = true;
         foreach (var tok in tokens) { if (tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); select_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef target = FieldRef.ForField("", 0, "");
+        FieldRef? target = null;
         foreach (var tok in tokens) { if (!tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
         return new InsertFromLastVisitedStep(select_v, target, enabled);
     }

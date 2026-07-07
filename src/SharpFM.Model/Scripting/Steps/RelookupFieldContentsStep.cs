@@ -49,7 +49,7 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool withDialog_v = true;
         foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef target = FieldRef.ForField("", 0, "");
+        FieldRef? target = null;
         foreach (var tok in tokens) { if (!tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(tok)) { target = FieldRef.FromDisplayToken(tok); break; } }
         return new RelookupFieldContentsStep(withDialog_v, target, enabled);
     }

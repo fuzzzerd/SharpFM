@@ -26,6 +26,15 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
     public string Text { get; set; } = "";
     public SendEventTarget Event { get; set; } = SendEventTarget.Default();
 
+    /// <summary>
+    /// Display edits are anchor-preserved when the event carries behaviour
+    /// state the display line cannot express: the copy/wait/foreground flags
+    /// and the target type never appear in display text, so any non-baseline
+    /// value seals the step.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        Event is { CopyResultToClipboard: false, WaitForCompletion: false, BringTargetToForeground: false, TargetType: "" };
+
     private SendEventStep() : base(false) { }
 
     public SendEventStep(
@@ -61,10 +70,35 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Display form is lossy for Send Event (event attrs can't all be
-        // round-tripped through display). Best-effort parse; full fidelity
-        // is only via XML round-trip.
-        return new SendEventStep(enabled: enabled);
+        // Display shape is positional: [ targetName ; class ; id ; content ].
+        // The event's behaviour flags and target type are not displayable —
+        // instances carrying them are sealed (see IsFullyEditable).
+        var tokens = Array.ConvertAll(hrParams, h => h.Trim());
+        var targetName = tokens.Length >= 1 ? tokens[0] : "";
+        var cls = tokens.Length >= 2 ? tokens[1] : "";
+        var id = tokens.Length >= 3 ? tokens[2] : "";
+        var content = tokens.Length >= 4 ? tokens[3] : "";
+
+        string contentType;
+        Calculation? calculation = null;
+        string text = "";
+        if (content == "<file>")
+            contentType = "File";
+        else if (content.Length >= 2 && content.StartsWith("\"", StringComparison.Ordinal) && content.EndsWith("\"", StringComparison.Ordinal))
+        {
+            contentType = "Text";
+            text = content.Substring(1, content.Length - 2);
+        }
+        else if (content.Length > 0)
+        {
+            contentType = "Calculation";
+            calculation = new Calculation(content);
+        }
+        else
+            contentType = "Text";
+
+        var evt = new SendEventTarget(false, false, false, "", targetName, id, cls);
+        return new SendEventStep(contentType, calculation, text, evt, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

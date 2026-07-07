@@ -122,19 +122,30 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<AVPlayerSetOptionsStep>(step, Metadata);
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a toggle is explicitly stored
+    /// as False: the display renders both the absent and the explicit-False
+    /// forms as "Off", so a parsed "Off" maps to absent.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        DisableInteraction != "False" && HideControls != "False"
+        && DisableExternalControls != "False" && PauseInBackground != "False";
+
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         string presentation_v = "Start Full Screen";
         foreach (var tok in tokens) { if (tok.StartsWith("Presentation:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); presentation_v = PresentationXml(v); break; } }
+        // "Off" is ambiguous between absent and explicit False; it maps to
+        // absent (explicit-False instances are sealed).
         string disableInteraction_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         string hideControls_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         string disableExternalControls_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("Disable External Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(26).Trim(); disableExternalControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Disable External Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(26).Trim(); disableExternalControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         string pauseInBackground_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("Pause in Background:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); pauseInBackground_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : "False"; break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Pause in Background:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); pauseInBackground_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         Calculation? position_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("Position:", StringComparison.OrdinalIgnoreCase)) { position_v = new Calculation(tok.Substring(9).Trim()); break; } }
         Calculation? startOffset_v = null;

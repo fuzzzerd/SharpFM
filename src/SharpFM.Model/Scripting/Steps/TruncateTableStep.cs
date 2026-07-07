@@ -75,7 +75,9 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             else if (t.StartsWith("Table:", StringComparison.OrdinalIgnoreCase))
             {
                 var name = t.Substring(6).Trim();
-                table = new NamedRef(0, name);
+                // The current-table placeholder carries the fixed id -1;
+                // real tables carry file-specific ids the canonical form wildcards.
+                table = new NamedRef(name == "<Current Table>" ? -1 : 0, name);
             }
         }
         return new TruncateTableStep(withDialog, table, null, enabled);

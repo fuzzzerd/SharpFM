@@ -68,7 +68,15 @@ public sealed class MoveResizeWindowStep : ScriptStep, IStepFactory
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
+        static bool IsLabeled(string tok) =>
+            tok.StartsWith("Name:", StringComparison.OrdinalIgnoreCase)
+            || tok.StartsWith("Current file:", StringComparison.OrdinalIgnoreCase)
+            || tok.StartsWith("Height:", StringComparison.OrdinalIgnoreCase)
+            || tok.StartsWith("Width:", StringComparison.OrdinalIgnoreCase)
+            || tok.StartsWith("Top:", StringComparison.OrdinalIgnoreCase)
+            || tok.StartsWith("Left:", StringComparison.OrdinalIgnoreCase);
         string window_v = "ByName";
+        foreach (var tok in tokens) { if (!IsLabeled(tok) && tok.Length > 0) { window_v = WindowXml(tok); break; } }
         Calculation? name_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("Name:", StringComparison.OrdinalIgnoreCase)) { name_v = new Calculation(tok.Substring(5).Trim()); break; } }
         bool currentFile_v = true;

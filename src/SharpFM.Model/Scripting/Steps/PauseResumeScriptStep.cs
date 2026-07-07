@@ -55,7 +55,8 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         string pauseTime_v = "ForDuration";
         Calculation? durationSeconds_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Duration (seconds):", StringComparison.OrdinalIgnoreCase)) { durationSeconds_v = new Calculation(tok.Substring(19).Trim()); break; } }
+        foreach (var tok in tokens) { if (!tok.StartsWith("Duration (seconds):", StringComparison.OrdinalIgnoreCase) && tok.Length > 0) { pauseTime_v = PauseTimeXml(tok); break; } }
+        foreach (var tok in tokens) { if (tok.StartsWith("Duration (seconds):", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(19).Trim(); if (v.Length > 0) durationSeconds_v = new Calculation(v); break; } }
         return new PauseResumeScriptStep(pauseTime_v, durationSeconds_v, enabled);
     }
 

@@ -50,7 +50,7 @@ public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
         if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
             token = token.Substring(Prefix.Length).Trim();
         var isOn = token.Equals("On", StringComparison.OrdinalIgnoreCase);
-        return new DeletePortalRowStep(!isOn, enabled);
+        return new DeletePortalRowStep(isOn, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

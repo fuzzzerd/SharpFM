@@ -15,6 +15,13 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
     public bool RestoreStoredOrder { get; set; }
     public SortList? Sort { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a stored sort order is
+    /// present — the display line carries only the dialog and Restore flags,
+    /// never the <c>&lt;SortList&gt;</c>.
+    /// </summary>
+    public override bool IsFullyEditable => Sort is null;
+
     /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
     public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
 

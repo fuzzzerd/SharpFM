@@ -32,6 +32,16 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
     public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
 
     /// <summary>
+    /// Display edits are anchor-preserved once the import is configured: the
+    /// display line carries only the dialog flag and source path, so a stored
+    /// restore/SSL flag, non-File data source, import options, target table or
+    /// field map seals the step.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        !RestoreStoredOrder && !VerifySslCertificates && DataSourceType == "File"
+        && ImportOptions is null && Table is null && TargetFields.Count == 0;
+
+    /// <summary>
     /// <c>&lt;DataSourceType&gt;</c> wire projection: the descriptor is emitted
     /// only when a source path is configured (null suppresses the element).
     /// </summary>
@@ -103,8 +113,23 @@ public sealed class ImportRecordsStep : ScriptStep, IStepFactory
     public static new ScriptStep FromXml(XElement step) =>
         StepXmlParser.Parse<ImportRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new ImportRecordsStep(enabled: enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    {
+        // Display shape: [ With dialog: On/Off ; path ]. Everything else is
+        // only reachable while unconfigured, where it is at its canonical
+        // default (see IsFullyEditable).
+        bool withDialog = false;
+        string path = "";
+        foreach (var tok in hrParams)
+        {
+            var t = tok.Trim();
+            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
+                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
+            else if (t.Length > 0)
+                path = t;
+        }
+        return new ImportRecordsStep(withDialog, restoreStoredOrder: false, path: path, enabled: enabled);
+    }
 
     public static StepMetadata Metadata { get; } = new()
     {

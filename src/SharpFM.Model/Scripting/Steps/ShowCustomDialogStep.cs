@@ -42,6 +42,13 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
     public IReadOnlyList<ShowCustomDialogInputField>? InputFields { get; set; }
 
     /// <summary>
+    /// Display edits are anchor-preserved when dialog geometry is stored —
+    /// the height/width/position calcs never appear in display text.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        Height is null && Width is null && DistanceFromTop is null && DistanceFromLeft is null;
+
+    /// <summary>
     /// Shape-facing view of the trailing <c>&lt;Buttons&gt;</c> /
     /// <c>&lt;InputFields&gt;</c> wrappers (typed child lists no shape
     /// primitive models), emitted and parsed back through the shape's
@@ -164,6 +171,7 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         var message = new Calculation("");
         List<ShowCustomDialogButton> buttons = new();
         List<ShowCustomDialogInputField>? inputs = null;
+        bool buttonsSeen = false;
 
         foreach (var raw in hrParams)
         {
@@ -174,7 +182,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
             else if (token.StartsWith("Message:", StringComparison.OrdinalIgnoreCase))
                 message = new Calculation(token.Substring("Message:".Length).Trim());
             else if (token.StartsWith("Buttons:", StringComparison.OrdinalIgnoreCase))
+            {
                 buttons = ParseButtonBlock(token.Substring("Buttons:".Length).Trim());
+                buttonsSeen = true;
+            }
             else if (token.StartsWith("Inputs:", StringComparison.OrdinalIgnoreCase))
                 inputs = ParseInputBlock(token.Substring("Inputs:".Length).Trim());
         }
@@ -182,8 +193,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         // No Buttons block in the display ⇒ FM Pro default 3-slot shape.
         // This is the round-trip pair to IsDefaultButtonShape in
         // ToDisplayLine; together they make the default shape invisible
-        // in display text while fully round-tripping through XML.
-        if (buttons.Count == 0)
+        // in display text while fully round-tripping through XML. An
+        // explicitly empty block ("Buttons: [ ]") instead means the source
+        // had no button slots, and stays empty.
+        if (!buttonsSeen)
             buttons = DefaultButtons();
 
         return new ShowCustomDialogStep(enabled, title, message, buttons, inputs);

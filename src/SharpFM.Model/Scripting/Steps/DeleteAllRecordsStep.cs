@@ -50,7 +50,7 @@ public sealed class DeleteAllRecordsStep : ScriptStep, IStepFactory
         if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
             token = token.Substring(Prefix.Length).Trim();
         var isOn = token.Equals("On", StringComparison.OrdinalIgnoreCase);
-        return new DeleteAllRecordsStep(!isOn, enabled);
+        return new DeleteAllRecordsStep(isOn, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()

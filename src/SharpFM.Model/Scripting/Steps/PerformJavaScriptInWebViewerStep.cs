@@ -55,7 +55,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         Calculation? obj = null;
-        Calculation fn = new("\"\"");
+        Calculation? fn = null;
         List<Calculation> parameters = new();
         foreach (var tok in hrParams)
         {

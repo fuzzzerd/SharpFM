@@ -39,13 +39,13 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        var target = FieldRef.ForField(null, 0, "");
-        var expression = new Calculation("");
+        FieldRef? target = null;
+        Calculation? expression = null;
 
-        if (hrParams.Length >= 1)
+        if (hrParams.Length >= 1 && hrParams[0].Trim().Length > 0)
             target = FieldRef.FromDisplayToken(hrParams[0]);
 
-        if (hrParams.Length >= 2)
+        if (hrParams.Length >= 2 && hrParams[1].Trim().Length > 0)
             expression = new Calculation(hrParams[1].Trim());
 
         return new SetFieldStep(enabled, target, expression);

@@ -41,8 +41,8 @@ public sealed class InsertCurrentUserNameStep : ScriptStep, IStepFactory
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool select_v = true;
         foreach (var tok in tokens) { if (tok.StartsWith("Select:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); select_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        FieldRef target = FieldRef.ForField("", 0, "");
-        foreach (var tok in tokens) { if (tok.StartsWith("Target:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); target = FieldRef.FromDisplayToken(v); break; } }
+        FieldRef? target = null;
+        foreach (var tok in tokens) { if (tok.StartsWith("Target:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); if (v.Length > 0) target = FieldRef.FromDisplayToken(v); break; } }
         return new InsertCurrentUserNameStep(select_v, target, enabled);
     }
 

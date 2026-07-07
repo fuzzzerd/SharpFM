@@ -14,6 +14,13 @@ public sealed class PerformFindStep : ScriptStep, IStepFactory
     public bool RestoreStoredRequests { get; set; }
     public FindRequestList? Query { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when stored find requests are
+    /// present — the display line carries only the Restore flag, never the
+    /// <c>&lt;Query&gt;</c> request list.
+    /// </summary>
+    public override bool IsFullyEditable => Query is null;
+
     private PerformFindStep() : base(false) { }
 
     public PerformFindStep(bool restoreStoredRequests = true, FindRequestList? query = null, bool enabled = true)
