@@ -14,10 +14,11 @@ namespace SharpFM.Model.Scripting.Registry;
 /// <para>
 /// The factory delegates (<see cref="FromXml"/>,
 /// <see cref="FromDisplay"/>) live on the metadata so the registry can
-/// bridge them into the legacy <c>StepXmlFactory</c> and
+/// bridge them into the <c>StepXmlFactory</c> and
 /// <c>StepDisplayFactory</c> surfaces without touching the POCO's
-/// declaration site. Once the legacy surfaces are retired the delegates
-/// become the sole construction path.
+/// declaration site. Leaving a delegate <c>null</c> tells the registry to
+/// synthesize shape-driven parsing from <see cref="Shape"/> instead; a
+/// step assigns one explicitly only to opt out with a hand-written parser.
 /// </para>
 /// </summary>
 public sealed record StepMetadata
@@ -60,15 +61,17 @@ public sealed record StepMetadata
 
     /// <summary>
     /// Delegate that constructs a POCO instance from a source
-    /// <c>&lt;Step&gt;</c> element. Usually assigned via method-group
-    /// reference to the POCO's static <c>FromXml</c> method.
+    /// <c>&lt;Step&gt;</c> element. <c>null</c> (the default) means
+    /// <see cref="StepRegistry"/> synthesizes shape-driven parsing from
+    /// <see cref="Shape"/>; assign explicitly only for a hand-written parser.
     /// </summary>
     public Func<XElement, ScriptStep>? FromXml { get; init; }
 
     /// <summary>
     /// Delegate that constructs a POCO instance from parsed display-text
-    /// tokens. Usually assigned via method-group reference to the POCO's
-    /// static <c>FromDisplayParams</c> method.
+    /// tokens. <c>null</c> (the default) means <see cref="StepRegistry"/>
+    /// synthesizes shape-driven parsing from <see cref="Shape"/>; assign
+    /// explicitly only for a hand-written parser.
     /// </summary>
     public Func<bool, string[], ScriptStep>? FromDisplay { get; init; }
 }
