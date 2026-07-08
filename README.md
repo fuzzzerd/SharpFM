@@ -61,8 +61,10 @@ Logs are stored in `${specialfolder:folder=CommonApplicationData}\SharpFM` and r
 - [FmClipTools](https://github.com/DanShockley/FmClipTools) — AppleScript-based clipboard utilities (macOS only).
 - [Generator](https://github.com/proofgeist/generator) — FileMaker-based code generator.
 
-## App Icon
+## Attribution
 
 ![Sharp FM](src/SharpFM/Assets/noun-sharp-teeth-monster-4226695.small.png)
 
-sharp teeth monster by Kanyanee Watanajitkasem from [Noun Project](https://thenounproject.com/browse/icons/term/sharp-teeth-monster/) (CC BY 3.0)
+App icon: sharp teeth monster by Kanyanee Watanajitkasem from [Noun Project](https://thenounproject.com/browse/icons/term/sharp-teeth-monster/) (CC BY 3.0)
+
+The FileMaker XML canonical reference material vendored under [`docs/filemaker-xml-canonical/`](docs/filemaker-xml-canonical) is from Andrew Kear / Clockwork Creative Technology's [FileMaker XML Snippet Claude Skill](https://github.com/andykear/FileMaker-XMLsnippet-Claude-Skill/blob/main/README.md) and [Clockwork Inspector](https://github.com/andykear/FileMaker-XML-inspector-open-source/blob/main/README.md), both licensed under the authors' repos' CC BY 4.0 terms. Full attribution details are in [`docs/filemaker-xml-canonical/LICENSE.md`](docs/filemaker-xml-canonical/LICENSE.md).
