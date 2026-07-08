@@ -1,0 +1,4 @@
+<Step enable="True" id="192" name="Write to Data File">
+  <AppendLineFeed state="True" />
+  <DataSourceType value="1" />
+</Step>

@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -32,8 +34,53 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
 
     public Calculation Title { get; set; }
     public Calculation Message { get; set; }
+    public Calculation? Height { get; set; }
+    public Calculation? Width { get; set; }
+    public Calculation? DistanceFromTop { get; set; }
+    public Calculation? DistanceFromLeft { get; set; }
     public IReadOnlyList<ShowCustomDialogButton> Buttons { get; set; }
     public IReadOnlyList<ShowCustomDialogInputField>? InputFields { get; set; }
+
+    /// <summary>
+    /// Display edits are anchor-preserved when dialog geometry is stored —
+    /// the height/width/position calcs never appear in display text.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        Height is null && Width is null && DistanceFromTop is null && DistanceFromLeft is null;
+
+    /// <summary>
+    /// Shape-facing view of the trailing <c>&lt;Buttons&gt;</c> /
+    /// <c>&lt;InputFields&gt;</c> wrappers (typed child lists no shape
+    /// primitive models), emitted and parsed back through the shape's
+    /// passthrough slot. Buttons are emitted only when populated; InputFields
+    /// whenever configured (an empty configured list still writes the wrapper,
+    /// preserving the source's slot count).
+    /// </summary>
+    public List<XElement> ButtonsAndInputsWire
+    {
+        get
+        {
+            var list = new List<XElement>();
+            if (Buttons.Count > 0)
+                list.Add(new XElement("Buttons", Buttons.Select(b => b.ToXml())));
+            if (InputFields is not null)
+                list.Add(new XElement("InputFields", InputFields.Select(i => i.ToXml())));
+            return list;
+        }
+        set
+        {
+            Buttons = value.FirstOrDefault(e => e.Name.LocalName == "Buttons")
+                ?.Elements("Button").Select(ShowCustomDialogButton.FromXml).ToList()
+                ?? new List<ShowCustomDialogButton>();
+            var inputsEl = value.FirstOrDefault(e => e.Name.LocalName == "InputFields");
+            InputFields = inputsEl?.Elements("InputField").Select(ShowCustomDialogInputField.FromXml).ToList();
+        }
+    }
+
+    private ShowCustomDialogStep()
+        : this(true, new Calculation(""), new Calculation(""), new List<ShowCustomDialogButton>())
+    {
+    }
 
     public ShowCustomDialogStep(
         bool enabled,
@@ -49,54 +96,12 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         InputFields = inputFields;
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ShowCustomDialogStep>(step, Metadata);
 
-        var titleCalc = step.Element("Title")?.Element("Calculation");
-        var title = titleCalc is not null ? Calculation.FromXml(titleCalc) : new Calculation("");
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-        var messageCalc = step.Element("Message")?.Element("Calculation");
-        var message = messageCalc is not null ? Calculation.FromXml(messageCalc) : new Calculation("");
-
-        var buttons = step.Element("Buttons")?.Elements("Button")
-            .Select(ShowCustomDialogButton.FromXml).ToList()
-            ?? new List<ShowCustomDialogButton>();
-
-        var inputsEl = step.Element("InputFields");
-        List<ShowCustomDialogInputField>? inputs = inputsEl is not null
-            ? inputsEl.Elements("InputField").Select(ShowCustomDialogInputField.FromXml).ToList()
-            : null;
-
-        return new ShowCustomDialogStep(enabled, title, message, buttons, inputs);
-    }
-
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        step.Add(new XElement("Title", Title.ToXml()));
-        step.Add(new XElement("Message", Message.ToXml()));
-
-        var buttonsEl = new XElement("Buttons");
-        foreach (var button in Buttons)
-            buttonsEl.Add(button.ToXml());
-        step.Add(buttonsEl);
-
-        if (InputFields is not null)
-        {
-            var inputsEl = new XElement("InputFields");
-            foreach (var input in InputFields)
-                inputsEl.Add(input.ToXml());
-            step.Add(inputsEl);
-        }
-
-        return step;
-    }
-
+    // Hand-written: the buttons render as a nested quoted list with commit markers — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new List<string>
@@ -167,6 +172,7 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         var message = new Calculation("");
         List<ShowCustomDialogButton> buttons = new();
         List<ShowCustomDialogInputField>? inputs = null;
+        bool buttonsSeen = false;
 
         foreach (var raw in hrParams)
         {
@@ -177,7 +183,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
             else if (token.StartsWith("Message:", StringComparison.OrdinalIgnoreCase))
                 message = new Calculation(token.Substring("Message:".Length).Trim());
             else if (token.StartsWith("Buttons:", StringComparison.OrdinalIgnoreCase))
+            {
                 buttons = ParseButtonBlock(token.Substring("Buttons:".Length).Trim());
+                buttonsSeen = true;
+            }
             else if (token.StartsWith("Inputs:", StringComparison.OrdinalIgnoreCase))
                 inputs = ParseInputBlock(token.Substring("Inputs:".Length).Trim());
         }
@@ -185,8 +194,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         // No Buttons block in the display ⇒ FM Pro default 3-slot shape.
         // This is the round-trip pair to IsDefaultButtonShape in
         // ToDisplayLine; together they make the default shape invisible
-        // in display text while fully round-tripping through XML.
-        if (buttons.Count == 0)
+        // in display text while fully round-tripping through XML. An
+        // explicitly empty block ("Buttons: [ ]") instead means the source
+        // had no button slots, and stays empty.
+        if (!buttonsSeen)
             buttons = DefaultButtons();
 
         return new ShowCustomDialogStep(enabled, title, message, buttons, inputs);
@@ -367,12 +378,20 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/show-custom-dialog.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata { Name = "Title", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Title" },
-            new ParamMetadata { Name = "Message", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Message" },
-            new ParamMetadata { Name = "Buttons", XmlElement = "Buttons", Type = "complex" },
-            new ParamMetadata { Name = "InputFields", XmlElement = "InputFields", Type = "complex" },
+            // Canonical: optional Title and Message, the optional
+            // dialog-geometry calcs, then the (optional) Buttons list and
+            // InputFields. An unconfigured dialog omits every child.
+            new NamedCalcChild("Title") { Optional = true, HrLabel = "Title" },
+            new NamedCalcChild("Message") { Optional = true, HrLabel = "Message" },
+            new NamedCalcChild("Height") { Optional = true, Display = DisplayMode.Hidden },
+            new NamedCalcChild("Width") { Optional = true, Display = DisplayMode.Hidden },
+            new NamedCalcChild("DistanceFromTop") { Optional = true, Display = DisplayMode.Hidden },
+            new NamedCalcChild("DistanceFromLeft") { Optional = true, Display = DisplayMode.Hidden },
+            new Passthrough { PocoProperty = "ButtonsAndInputsWire" },
+            new HrOnly("Buttons"),
+            new HrOnly("InputFields"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

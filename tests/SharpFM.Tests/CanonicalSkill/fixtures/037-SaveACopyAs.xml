@@ -1,0 +1,6 @@
+<Step enable="True" id="37" name="Save a Copy as">
+  <CreateDirectories state="True" />
+  <AutoOpen state="False" />
+  <CreateEmail state="False" />
+  <SaveAsType value="Copy" />
+</Step>

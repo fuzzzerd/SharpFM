@@ -7,8 +7,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class GoToRelatedRecordStepTests
 {
+    // Canonical (skill): no trailing <Animation> element for this step.
     private const string CanonicalXml = """
-        <Step enable="True" id="74" name="Go to Related Record"><Option state="False" /><MatchAllRecords state="False" /><ShowInNewWindow state="False" /><Restore state="True" /><LayoutDestination value="SelectedLayout" /><NewWndStyles Style="Document" Close="Yes" Minimize="Yes" Maximize="Yes" Resize="Yes" Styles="3606018" /><Table id="5" name="Customers" /><Layout id="10" name="Customer Detail" /><Animation value="None" /></Step>
+        <Step enable="True" id="74" name="Go to Related Record"><Option state="False" /><MatchAllRecords state="False" /><ShowInNewWindow state="False" /><Restore state="True" /><LayoutDestination value="SelectedLayout" /><NewWndStyles Style="Document" Close="Yes" Minimize="Yes" Maximize="Yes" Resize="Yes" Styles="3606018" /><Table id="5" name="Customers" /><Layout id="10" name="Customer Detail" /></Step>
         """;
 
     [Fact]

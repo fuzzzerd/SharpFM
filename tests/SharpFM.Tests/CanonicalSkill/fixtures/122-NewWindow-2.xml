@@ -1,0 +1,8 @@
+<Step enable="True" id="122" name="New Window">
+  <LayoutDestination value="SelectedLayout" />
+  <Name>
+    <Calculation><![CDATA["window name"]]></Calculation>
+  </Name>
+  <NewWndStyles DimParentWindow="No" Toolbars="Yes" MenuBar="Yes" Style="Document" Close="Yes" Minimize="Yes" Maximize="Yes" Resize="Yes" Styles="1076299266" />
+  <Layout id="N" name="layout name" />
+</Step>

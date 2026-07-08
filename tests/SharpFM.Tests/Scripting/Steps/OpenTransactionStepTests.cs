@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -8,11 +9,10 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class OpenTransactionStepTests
 {
-    // Restore is intentionally dropped per the zero-loss audit — it's
-    // semantically fixed and carries no information. Test fixture omits
-    // it so round-trip is byte-identical against what our POCO emits.
+    // Canonical order is Option, ESSForceCommit, SkipAutoEntry, Restore;
+    // the Restore flag is part of the canonical form and round-trips.
     private const string CanonicalXml = """
-        <Step enable="True" id="205" name="Open Transaction"><SkipAutoEntry state="True"/><Option state="True"/><ESSForceCommit state="True"/></Step>
+        <Step enable="True" id="205" name="Open Transaction"><Option state="True"/><ESSForceCommit state="True"/><SkipAutoEntry state="True"/><Restore state="False"/></Step>
         """;
 
     [Fact]
@@ -39,15 +39,16 @@ public class OpenTransactionStepTests
     }
 
     [Fact]
-    public void RestoreElement_InSource_IsIntentionallyDropped()
+    public void RestoreElement_IsPartOfCanonicalForm_AndRoundTrips()
     {
-        // Upstream agentic-fm snippets include <Restore state="False"/>,
-        // which we drop on both read and write.
+        // The canonical form emits <Restore> in the trailing position; it
+        // round-trips on both read and write.
         var withRestore = XElement.Parse("""
-            <Step enable="True" id="205" name="Open Transaction"><SkipAutoEntry state="False"/><Option state="False"/><ESSForceCommit state="False"/><Restore state="False"/></Step>
+            <Step enable="True" id="205" name="Open Transaction"><Option state="False"/><ESSForceCommit state="False"/><SkipAutoEntry state="False"/><Restore state="False"/></Step>
             """);
         var step = OpenTransactionStep.Metadata.FromXml!(withRestore);
-        Assert.Null(step.ToXml().Element("Restore"));
+        Assert.NotNull(step.ToXml().Element("Restore"));
+        Assert.True(XNode.DeepEquals(withRestore, step.ToXml()));
     }
 
     [Fact]
@@ -55,6 +56,6 @@ public class OpenTransactionStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Open Transaction", out var metadata));
         Assert.Equal(205, metadata!.Id);
-        Assert.Equal(3, metadata.Params.Count);
+        Assert.Equal(3, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

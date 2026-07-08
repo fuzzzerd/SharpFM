@@ -1,0 +1,5 @@
+<Step enable="True" id="99" name="Go to Portal Row">
+  <NoInteract state="False" />
+  <SelectAll state="False" />
+  <RowPageLocation value="First" />
+</Step>

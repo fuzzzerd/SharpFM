@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -9,7 +10,7 @@ namespace SharpFM.Tests.Scripting.Steps;
 public class ConvertFileStepTests
 {
     private const string CanonicalXml = """
-        <Step enable="True" id="139" name="Convert File"><Option state="False"/><SkipIndexes state="False"/><NoInteract state="False"/><DataSourceType value="File"/><VerifySSLCertificates state="True"/></Step>
+        <Step enable="True" id="139" name="Convert File"><NoInteract state="False"/><Option state="False"/><SkipIndexes state="False"/><VerifySSLCertificates state="True"/></Step>
         """;
 
     [Fact]
@@ -38,7 +39,7 @@ public class ConvertFileStepTests
     public void DataSourceType_Unlabeled_RoundTripsByPosition()
     {
         var xml = XElement.Parse("""
-            <Step enable="True" id="139" name="Convert File"><Option state="False"/><SkipIndexes state="False"/><NoInteract state="False"/><DataSourceType value="XMLSource"/><VerifySSLCertificates state="False"/></Step>
+            <Step enable="True" id="139" name="Convert File"><NoInteract state="False"/><Option state="False"/><SkipIndexes state="False"/><VerifySSLCertificates state="False"/><DataSourceType value="XMLSource"/></Step>
             """);
         var step = (ConvertFileStep)ConvertFileStep.Metadata.FromXml!(xml);
         Assert.Equal("XMLSource", step.DataSourceType);
@@ -50,6 +51,6 @@ public class ConvertFileStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Convert File", out var metadata));
         Assert.Equal(139, metadata!.Id);
-        Assert.Equal(5, metadata.Params.Count);
+        Assert.Equal(5, ShapeHrView.HrNodes(metadata.Shape).Count);
     }
 }

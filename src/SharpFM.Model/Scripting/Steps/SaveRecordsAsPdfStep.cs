@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -18,6 +20,11 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
     public string Path { get; set; }
     public Calculation? StoredLabel { get; set; }
     public PdfOptions? Options { get; set; }
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private SaveRecordsAsPdfStep() : this(enabled: true) { }
 
     public SaveRecordsAsPdfStep(
         bool withDialog = false,
@@ -43,24 +50,9 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         Options = options;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("Option", new XAttribute("state", Append ? "True" : "False")),
-            new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredOptions ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("UniversalPathList", Path));
-        if (StoredLabel is not null) step.Add(StoredLabel.ToXml("Calculation"));
-        if (Options is not null) step.Add(Options.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: conditional file and Append tokens plus hidden option flags are grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
@@ -74,26 +66,34 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         return $"Save Records as PDF [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var append = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var createDirs = step.Element("CreateDirectories")?.Attribute("state")?.Value == "True";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var autoOpen = step.Element("AutoOpen")?.Attribute("state")?.Value == "True";
-        var createEmail = step.Element("CreateEmail")?.Attribute("state")?.Value == "True";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var labelEl = step.Element("Calculation");
-        var label = labelEl is not null ? Calculation.FromXml(labelEl) : null;
-        var optsEl = step.Element("PDFOptions");
-        var opts = optsEl is not null ? PdfOptions.FromXml(optsEl) : null;
-        return new SaveRecordsAsPdfStep(withDialog, append, createDirs, restore, autoOpen, createEmail, path, label, opts, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SaveRecordsAsPdfStep>(step, Metadata);
+
+    /// <summary>
+    /// The canonical PDFOptions block FileMaker writes for an unconfigured
+    /// step: all-pages document numbered from 1 with a 1–1 page range, and
+    /// default security/view settings.
+    /// </summary>
+    internal static PdfOptions DefaultOptions() => new(
+        "RecordsBeingBrowsed",
+        null,
+        new PdfDocument(null, null, null, null, true,
+            new Calculation("1"), new Calculation("1"), new Calculation("1")),
+        PdfSecurity.Default(),
+        PdfView.Default());
+
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: restored stored options (and their label), a
+    /// disabled create-directories flag, or a PDFOptions block configured
+    /// beyond the canonical unconfigured form.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        !RestoreStoredOptions && StoredLabel is null && CreateDirectories
+        && DefaultOptions().Equals(Options);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Lossy — full PDFOptions can't round-trip through display.
         bool withDialog = false, append = false, autoOpen = false, createEmail = false;
         string path = "";
         bool pathSeen = false;
@@ -107,7 +107,7 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
             else if (t.Equals("Create email", System.StringComparison.OrdinalIgnoreCase)) createEmail = true;
             else if (!pathSeen && !string.IsNullOrWhiteSpace(t)) { path = t; pathSeen = true; }
         }
-        return new SaveRecordsAsPdfStep(withDialog, append, true, true, autoOpen, createEmail, path, null, null, enabled);
+        return new SaveRecordsAsPdfStep(withDialog, append, true, false, autoOpen, createEmail, path, null, DefaultOptions(), enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -116,16 +116,19 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/save-records-as-pdf.html",
-        Params =
+        // Canonical: six state flags, then the optional path, the optional
+        // stored-label calc, and the PDFOptions block which owns its own shape.
+        Shape =
         [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean", HrLabel = "Append" },
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text", Required = true },
-            new ParamMetadata { Name = "PDFOptions", XmlElement = "PDFOptions", Type = "complex" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog" },
+            new BoolStateChild("Option") { PocoProperty = "Append", HrLabel = "Append" },
+            new BoolStateChild("CreateDirectories"),
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOptions" },
+            new BoolStateChild("AutoOpen"),
+            new BoolStateChild("CreateEmail"),
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new BareCalcChild { PocoProperty = "StoredLabel", Optional = true },
+            new ValueTypeChild("PDFOptions") { PocoProperty = "Options", Optional = true, Display = DisplayMode.Hidden },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,18 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
     public SqlProfile? Profile { get; set; }
 
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>
+    /// Display edits are anchor-preserved when an ODBC profile is stored: the
+    /// display line carries only the dialog flag and the SQL text, not the
+    /// profile's connection settings.
+    /// </summary>
+    public override bool IsFullyEditable => Profile is null;
+
+    private ExecuteSqlStep() : base(false) { }
+
     public ExecuteSqlStep(bool withDialog = true, SqlProfile? profile = null, bool enabled = true)
         : base(enabled)
     {
@@ -20,17 +34,10 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         Profile = profile;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")));
-        if (Profile is not null) step.Add(Profile.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the SQL Text / Calculated SQL Text token comes from the
+    // hidden Profile value type, which the shape-driven renderer cannot surface.
     public override string ToDisplayLine()
     {
         var dialog = $"With dialog: {(WithDialog ? "On" : "Off")}";
@@ -40,14 +47,8 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         return $"Execute SQL [ {dialog} ; SQL Text: {Profile.Query ?? ""} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var profileEl = step.Element("Profile");
-        var profile = profileEl is not null ? SqlProfile.FromXml(profileEl) : null;
-        return new ExecuteSqlStep(withDialog, profile, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ExecuteSqlStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -56,6 +57,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         bool withDialog = true;
         string sql = "";
         bool isCalc = false;
+        bool sawSql = false;
         foreach (var tok in hrParams)
         {
             var t = tok.Trim();
@@ -65,15 +67,21 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
             {
                 sql = t.Substring(20).Trim();
                 isCalc = true;
+                sawSql = true;
             }
             else if (t.StartsWith("SQL Text:", StringComparison.OrdinalIgnoreCase))
+            {
                 sql = t.Substring(9).Trim();
+                sawSql = true;
+            }
         }
-        var profile = new SqlProfile(
-            isCalc ? "Calculation" : "Query",
-            "0", "", "", "", "\t", "-1", "0", "ODBC",
-            isCalc ? null : sql,
-            isCalc ? new Calculation(sql) : null);
+        var profile = sawSql
+            ? new SqlProfile(
+                isCalc ? "Calculation" : "Query",
+                "0", "", "", "", "\t", "-1", "0", "ODBC",
+                isCalc ? null : sql,
+                isCalc ? new Calculation(sql) : null)
+            : null;
         return new ExecuteSqlStep(withDialog, profile, enabled);
     }
 
@@ -83,10 +91,13 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/execute-sql.html",
-        Params =
+        // Canonical: NoInteract (inverts WithDialog), then the optional ODBC
+        // Profile which owns its own attribute/child shape.
+        Shape =
         [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog", ValidValues = ["On", "Off"] },
-            new ParamMetadata { Name = "Profile", XmlElement = "Profile", Type = "complex" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented, DisplayInverted = true },
+            new ValueTypeChild("Profile") { PocoProperty = "Profile", Optional = true, Display = DisplayMode.Hidden },
+            new HrOnly("Profile"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

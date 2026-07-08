@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -44,6 +45,6 @@ public class SetUseSystemFormatsStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Set Use System Formats", out var metadata));
         Assert.Equal(94, metadata!.Id);
-        Assert.Single(metadata.Params);
+        Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

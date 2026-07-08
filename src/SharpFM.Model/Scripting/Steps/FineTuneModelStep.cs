@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,35 +13,42 @@ public sealed class FineTuneModelStep : ScriptStep, IStepFactory
 
     public StepChildBag Children { get; set; }
 
+    private FineTuneModelStep() : base(false)
+    {
+        Children = new StepChildBag();
+    }
+
     public FineTuneModelStep(StepChildBag? children = null, bool enabled = true)
         : base(enabled)
     {
         Children = children ?? new StepChildBag();
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        Children.AppendTo(step);
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
+
+    /// <summary>
+    /// Display edits are anchor-preserved when a configured child subtree is
+    /// present — the display line carries only the step name.
+    /// </summary>
+    public override bool IsFullyEditable => Children.Children.Count == 0;
 
     public static new ScriptStep FromXml(XElement step) =>
-        new FineTuneModelStep(StepChildBag.FromParent(step), step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<FineTuneModelStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new FineTuneModelStep(enabled: enabled);
+        StepDisplayParser.Parse<FineTuneModelStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
         Id = XmlId,
         Category = "artificial intelligence",
+        Shape =
+        [
+            new Passthrough { PocoProperty = "Children" },
+        ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
     };

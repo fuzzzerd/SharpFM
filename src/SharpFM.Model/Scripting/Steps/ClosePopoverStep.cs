@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -13,21 +14,19 @@ public sealed class ClosePopoverStep : ScriptStep, IStepFactory
     public const int XmlId = 169;
     public const string XmlName = "Close Popover";
 
+    private ClosePopoverStep() : base(false) { }
+
     public ClosePopoverStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
-        new ClosePopoverStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<ClosePopoverStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new ClosePopoverStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ClosePopoverStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

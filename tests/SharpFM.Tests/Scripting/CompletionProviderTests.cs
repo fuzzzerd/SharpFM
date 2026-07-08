@@ -98,10 +98,10 @@ public class CompletionProviderTests
     }
 
     [Fact]
-    public void ParamValueCompletion_UsesValidValuesFromParamMetadata()
+    public void ParamValueCompletion_UsesDisplayValuesFromShape()
     {
-        // Confirms the completion provider reads ValidValues off
-        // ParamMetadata rather than the legacy StepParam shape.
+        // Confirms the completion provider reads display values off the
+        // step's shape slots.
         var (_, items) = FmScriptCompletionProvider.GetCompletions(
             "Set Error Capture [ ", 20);
         Assert.Contains(items, i => i.Text == "On");

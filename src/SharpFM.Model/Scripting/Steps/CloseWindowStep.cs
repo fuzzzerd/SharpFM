@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,8 +15,10 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
     public const string XmlName = "Close Window";
 
     public bool LimitToWindowsOfCurrentFile { get; set; }
-    public string Window { get; set; }
-    public Calculation Calculation { get; set; }
+    public string Window { get; set; } = "ByName";
+    public Calculation Calculation { get; set; } = new("");
+
+    private CloseWindowStep() : base(false) { }
 
     public CloseWindowStep(
         bool limitToWindowsOfCurrentFile = true,
@@ -41,36 +45,27 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
     private static string WindowHr(string x) => _WindowToHr.TryGetValue(x, out var h) ? h : x;
     private static string WindowXml(string h) => _WindowFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("LimitToWindowsOfCurrentFile", new XAttribute("state", LimitToWindowsOfCurrentFile ? "True" : "False")),
-            new XElement("Window", new XAttribute("value", Window)),
-            new XElement("Name", Calculation.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: variant window-target grammar (Current/ByName) the shape
+    // renderer cannot produce.
     public override string ToDisplayLine() =>
         "Close Window [ " + (LimitToWindowsOfCurrentFile ? "On" : "Off") + " ; " + WindowHr(Window) + " ; " + Calculation.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var limitToWindowsOfCurrentFile_v = step.Element("LimitToWindowsOfCurrentFile")?.Attribute("state")?.Value == "True";
-        var window_v = step.Element("Window")?.Attribute("value")?.Value ?? "ByName";
-        var calculation_vWrapEl = step.Element("Name");
-        var calculation_vCalcEl = calculation_vWrapEl?.Element("Calculation");
-        var calculation_v = calculation_vCalcEl is not null ? Calculation.FromXml(calculation_vCalcEl) : new Calculation("");
-        return new CloseWindowStep(limitToWindowsOfCurrentFile_v, window_v, calculation_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<CloseWindowStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
+        // Positional display grammar: [ On/Off ; Window ; name-calc ]. A
+        // trailing empty calc token is dropped by the param splitter.
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool limitToWindowsOfCurrentFile_v = true;
-        string window_v = "ByName";
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(false)) { calculation_v = new Calculation(tok); break; } }
+        bool limitToWindowsOfCurrentFile_v = tokens.Length == 0
+            || tokens[0].Equals("On", StringComparison.OrdinalIgnoreCase);
+        string window_v = tokens.Length > 1 ? WindowXml(tokens[1]) : "ByName";
+        Calculation? calculation_v = tokens.Length > 2 && tokens[2].Length > 0
+            ? new Calculation(tokens[2])
+            : null;
         return new CloseWindowStep(limitToWindowsOfCurrentFile_v, window_v, calculation_v, enabled);
     }
 
@@ -80,32 +75,13 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/close-window.html",
-        Params =
+        // Canonical: LimitToWindowsOfCurrentFile, Window, then the optional
+        // <Name> calculation (present only in the ByName form).
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "LimitToWindowsOfCurrentFile",
-                XmlElement = "LimitToWindowsOfCurrentFile",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "Window",
-                XmlElement = "Window",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["ByName", "Current"],
-                DefaultValue = "ByName",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-            },
+            new BoolStateChild("LimitToWindowsOfCurrentFile") { PocoProperty = "LimitToWindowsOfCurrentFile", Display = DisplayMode.Native },
+            new EnumValueChild("Window") { PocoProperty = "Window", DefaultValue = "ByName", DisplayValues = ["ByName", "Current"], Display = DisplayMode.Native },
+            new NamedCalcChild("Name") { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

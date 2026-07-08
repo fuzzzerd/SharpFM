@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -25,36 +27,23 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
     /// </summary>
     public bool CaptureErrors { get; set; }
 
+    private SetErrorCaptureStep() : base(false) { }
+
     public SetErrorCaptureStep(bool captureErrors = false, bool enabled = true)
         : base(enabled)
     {
         CaptureErrors = captureErrors;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Set",
-                new XAttribute("state", CaptureErrors ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Set Error Capture [ {(CaptureErrors ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("Set")?.Attribute("state")?.Value == "True";
-        return new SetErrorCaptureStep(state, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetErrorCaptureStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var captureErrors = hrParams.Length > 0
-            && hrParams[0].Trim().Equals("On", StringComparison.OrdinalIgnoreCase);
-        return new SetErrorCaptureStep(captureErrors, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetErrorCaptureStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -63,18 +52,14 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-error-capture.html",
         HrSignature = "[ On|Off ]",
-        Params =
+        Shape =
         [
-            new ParamMetadata
+            new BoolStateChild("Set")
             {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
+                PocoProperty = "CaptureErrors",
+                DefaultValue = "True",
                 Description = "\"True\" (On) suppresses FileMaker Pro alert messages and some "
                     + "dialog boxes. \"False\" (Off) reenables the alert messages.",
-                DefaultValue = "True",
             },
         ],
         FromXml = FromXml,

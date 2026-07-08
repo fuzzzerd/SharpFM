@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using SharpFM.Model.Scripting.Values;
 using Xunit;
@@ -8,15 +9,15 @@ using Xunit;
 namespace SharpFM.Tests.Scripting.Steps;
 
 /// <summary>
-/// IfStep pilot: calc + block-pair POCO with an intentional
-/// drop of the <c>Restore</c> param per the zero-loss audit
-/// in docs/advanced-filemaker-scripting-syntax.md.
+/// IfStep pilot: calc + block-pair POCO. Per the vendored FileMaker XML skill
+/// (§8.1), the canonical If emits <c>&lt;Restore state="False"/&gt;</c> before
+/// the <c>&lt;Calculation&gt;</c>; SharpFM emits it and canonicalizes inputs
+/// that omit it.
 /// </summary>
 public class IfStepTests
 {
-    // Canonical shape from agentic-fm's snippet — note the
-    // <Restore state="False"/> element that FM Pro itself never emits.
-    private const string AgenticFmSnippet = """
+    // Canonical §8.1 shape — <Restore state="False"/> then <Calculation>.
+    private const string CanonicalSnippet = """
         <?xml version="1.0"?>
         <fmxmlsnippet type="FMObjectList">
           <Step enable="True" id="68" name="If">
@@ -26,8 +27,8 @@ public class IfStepTests
         </fmxmlsnippet>
         """;
 
-    // FM Pro clipboard form — no <Restore> element at all.
-    private const string FmProStyleStep = """
+    // Legacy input form that omitted <Restore>; emission canonicalizes it back in.
+    private const string NoRestoreStep = """
         <Step enable="True" id="68" name="If"><Calculation><![CDATA[$error <> 0]]></Calculation></Step>
         """;
 
@@ -35,25 +36,28 @@ public class IfStepTests
         XDocument.Parse(snippet).Root!.Element("Step")!;
 
     [Fact]
-    public void RoundTrip_WithRestoreInSource_DropsRestore()
+    public void RoundTrip_WithRestoreInSource_PreservesRestore()
     {
-        // Input has <Restore/>; output must not. This codifies the
-        // intentional drop described in the zero-loss audit.
-        var source = StepFromSnippet(AgenticFmSnippet);
+        var source = StepFromSnippet(CanonicalSnippet);
         var step = IfStep.Metadata.FromXml!(source);
         var output = step.ToXml();
 
-        Assert.Null(output.Element("Restore"));
+        Assert.Equal("False", output.Element("Restore")!.Attribute("state")!.Value);
         Assert.Equal("$error <> 0", output.Element("Calculation")!.Value);
+        // Restore precedes Calculation per canonical order.
+        Assert.Equal(new[] { "Restore", "Calculation" },
+            output.Elements().Select(e => e.Name.LocalName).ToArray());
     }
 
     [Fact]
-    public void RoundTrip_FmProStyle_IsByteIdentical()
+    public void RoundTrip_NoRestoreInput_CanonicalizesByAddingRestore()
     {
-        var source = XElement.Parse(FmProStyleStep);
+        var source = XElement.Parse(NoRestoreStep);
         var step = IfStep.Metadata.FromXml!(source);
+        var output = step.ToXml();
 
-        Assert.True(XNode.DeepEquals(source, step.ToXml()));
+        Assert.Equal("False", output.Element("Restore")!.Attribute("state")!.Value);
+        Assert.Equal("$error <> 0", output.Element("Calculation")!.Value);
     }
 
     [Fact]
@@ -77,11 +81,11 @@ public class IfStepTests
     }
 
     [Fact]
-    public void Metadata_Params_DescribeCalculation()
+    public void Metadata_Shape_DescribesCalculation()
     {
         var metadata = StepRegistry.ByName["If"];
-        var param = Assert.Single(metadata.Params);
-        Assert.Equal("Calculation", param.XmlElement);
-        Assert.Equal("calculation", param.Type);
+        var param = Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
+        Assert.IsType<BareCalcChild>(param);
+        Assert.Equal("calculation", ShapeHrView.KindOf(param));
     }
 }

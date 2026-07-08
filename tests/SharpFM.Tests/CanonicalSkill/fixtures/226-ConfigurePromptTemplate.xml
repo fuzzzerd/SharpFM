@@ -1,0 +1,7 @@
+<Step enable="True" id="226" name="Configure Prompt Template">
+  <Option state="False" />
+  <ConfigurePromptTemplate>
+    <ModelProvider>ChatGPT</ModelProvider>
+    <RequestType>SQLQuery</RequestType>
+  </ConfigurePromptTemplate>
+</Step>

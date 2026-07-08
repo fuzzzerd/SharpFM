@@ -7,13 +7,14 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class ReplaceFieldContentsStepTests
 {
+    // Canonical (skill): NoInteract, Restore, With, then the optional payload and
+    // target Field; <SerialNumbers> carries increment/InitialValue.
     private const string CanonicalXml = """
-        <Step enable="True" id="91" name="Replace Field Contents"><NoInteract state="True" /><With value="Calculation" /><Calculation><![CDATA["value"]]></Calculation><SerialNumbers PerformAutoEnter="True" UpdateEntryOptions="False" UseEntryOptions="True" /><Field table="Customer" id="3" name="id" /></Step>
+        <Step enable="True" id="91" name="Replace Field Contents"><NoInteract state="True" /><Restore state="False" /><With value="Calculation" /><Calculation><![CDATA["value"]]></Calculation><SerialNumbers PerformAutoEnter="True" UpdateEntryOptions="False" increment="0" InitialValue="" UseEntryOptions="True" /><Field table="Customer" id="3" name="id" /></Step>
         """;
 
-    // Source with Restore element (as from agentic-fm snippets) — our POCO drops it.
     private const string WithRestoreXml = """
-        <Step enable="True" id="91" name="Replace Field Contents"><NoInteract state="True" /><Restore state="True" /><With value="Calculation" /><Calculation><![CDATA["value"]]></Calculation><SerialNumbers PerformAutoEnter="True" UpdateEntryOptions="False" UseEntryOptions="True" /><Field table="Customer" id="3" name="id" /></Step>
+        <Step enable="True" id="91" name="Replace Field Contents"><NoInteract state="True" /><Restore state="True" /><With value="Calculation" /><Calculation><![CDATA["value"]]></Calculation><Field table="Customer" id="3" name="id" /></Step>
         """;
 
     [Fact]
@@ -25,12 +26,13 @@ public class ReplaceFieldContentsStepTests
     }
 
     [Fact]
-    public void RestoreElement_IsDropped()
+    public void RestoreElement_IsPreserved()
     {
+        // Canonical form emits <Restore> (skill); earlier revisions dropped it.
         var source = XElement.Parse(WithRestoreXml);
         var step = ReplaceFieldContentsStep.Metadata.FromXml!(source);
         var output = step.ToXml();
-        Assert.Null(output.Element("Restore"));
+        Assert.Equal("True", output.Element("Restore")!.Attribute("state")!.Value);
     }
 
     [Fact]

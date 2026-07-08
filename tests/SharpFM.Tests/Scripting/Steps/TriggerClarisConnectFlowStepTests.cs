@@ -7,10 +7,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class TriggerClarisConnectFlowStepTests
 {
-    // The catalog records this step with id: null (unconfirmed). We default
-    // to 0 but preserve whatever id appears in the source XML.
+    // Canonical step id is 211 (skill, control reference); was defaulted to 0.
     private const string CanonicalXml = """
-        <Step enable="True" id="0" name="Trigger Claris Connect Flow"><NoInteract state="True" /><DontEncodeURL state="False" /><SelectAll state="True" /><VerifySSLCertificates state="False" /><Flow>https://flow.example.com</Flow><CURLOptions><Calculation><![CDATA["--request POST"]]></Calculation></CURLOptions><Text>$response</Text></Step>
+        <Step enable="True" id="211" name="Trigger Claris Connect Flow"><NoInteract state="True" /><DontEncodeURL state="False" /><SelectAll state="True" /><VerifySSLCertificates state="False" /><Flow>https://flow.example.com</Flow><CURLOptions><Calculation><![CDATA["--request POST"]]></Calculation></CURLOptions><Text>$response</Text></Step>
         """;
 
     [Fact]

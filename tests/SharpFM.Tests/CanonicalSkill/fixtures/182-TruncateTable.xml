@@ -1,0 +1,4 @@
+<Step enable="True" id="182" name="Truncate Table">
+  <NoInteract state="False" />
+  <BaseTable id="-1" name="&lt;Current Table&gt;" />
+</Step>

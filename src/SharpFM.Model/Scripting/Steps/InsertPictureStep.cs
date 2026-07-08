@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -16,6 +18,8 @@ public sealed class InsertPictureStep : ScriptStep, IStepFactory
     public string Path { get; set; }
     public string StorageType { get; set; }
 
+    private InsertPictureStep() : this("") { }
+
     public InsertPictureStep(string path = "", string storageType = "Embedded", bool enabled = true)
         : base(enabled)
     {
@@ -23,25 +27,15 @@ public sealed class InsertPictureStep : ScriptStep, IStepFactory
         StorageType = storageType;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", new XAttribute("type", StorageType), Path));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the single wire element splits into two display tokens
+    // (path text + type attribute) via HrOnly slots the renderer cannot drive.
     public override string ToDisplayLine() =>
         string.IsNullOrEmpty(Path) ? XmlName : $"Insert Picture [ {Path} ; {StorageType} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var pathEl = step.Element("UniversalPathList");
-        return new InsertPictureStep(
-            pathEl?.Value ?? "",
-            pathEl?.Attribute("type")?.Value ?? "Embedded",
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertPictureStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -57,10 +51,19 @@ public sealed class InsertPictureStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-picture.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "StorageType", XmlElement = "UniversalPathList", XmlAttr = "type", Type = "enum", ValidValues = ["Embedded", "Reference"], DefaultValue = "Embedded" },
+            new NamedTextChild("UniversalPathList")
+            {
+                PocoProperty = "Path",
+                Attr = "type",
+                AttrProperty = "StorageType",
+                AttrDefault = "Embedded",
+                ValidValues = ["Embedded", "Reference"],
+                Display = DisplayMode.Hidden,
+            },
+            new HrOnly("UniversalPathList"),
+            new HrOnly("StorageType") { DisplayValues = ["Embedded", "Reference"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

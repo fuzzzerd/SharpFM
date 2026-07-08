@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,24 +14,29 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
     public const int XmlId = 179;
     public const string XmlName = "AVPlayer Set Options";
 
-    public string Presentation { get; set; }
-    public bool DisableInteraction { get; set; }
-    public bool HideControls { get; set; }
-    public bool DisableExternalControls { get; set; }
-    public bool PauseInBackground { get; set; }
-    public Calculation Position { get; set; }
-    public Calculation StartOffset { get; set; }
-    public Calculation EndOffset { get; set; }
-    public Calculation Volume { get; set; }
-    public string Zoom { get; set; }
-    public string Sequence { get; set; }
+    public string Presentation { get; set; } = "Start Full Screen";
+    // The four toggle options emit <El value="True|False"/>. They are
+    // string-backed (not bool) so the unconfigured canonical form, which omits
+    // them entirely, round-trips: a blank value is dropped by Optional EnumValueChild.
+    public string DisableInteraction { get; set; } = "";
+    public string HideControls { get; set; } = "";
+    public string DisableExternalControls { get; set; } = "";
+    public string PauseInBackground { get; set; } = "";
+    public Calculation? Position { get; set; }
+    public Calculation? StartOffset { get; set; }
+    public Calculation? EndOffset { get; set; }
+    public Calculation? Volume { get; set; }
+    public string Zoom { get; set; } = "Fit";
+    public string Sequence { get; set; } = "None";
+
+    private AVPlayerSetOptionsStep() : base(false) { }
 
     public AVPlayerSetOptionsStep(
         string presentation = "Start Full Screen",
-        bool disableInteraction = false,
-        bool hideControls = false,
-        bool disableExternalControls = false,
-        bool pauseInBackground = false,
+        string disableInteraction = "",
+        string hideControls = "",
+        string disableExternalControls = "",
+        string pauseInBackground = "",
         Calculation? position = null,
         Calculation? startOffset = null,
         Calculation? endOffset = null,
@@ -44,10 +51,10 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
         HideControls = hideControls;
         DisableExternalControls = disableExternalControls;
         PauseInBackground = pauseInBackground;
-        Position = position ?? new Calculation("");
-        StartOffset = startOffset ?? new Calculation("");
-        EndOffset = endOffset ?? new Calculation("");
-        Volume = volume ?? new Calculation("");
+        Position = position;
+        StartOffset = startOffset;
+        EndOffset = endOffset;
+        Volume = volume;
         Zoom = zoom;
         Sequence = sequence;
     }
@@ -107,64 +114,40 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
     private static string SequenceHr(string x) => _SequenceToHr.TryGetValue(x, out var h) ? h : x;
     private static string SequenceXml(string h) => _SequenceFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Presentation", new XAttribute("value", Presentation)),
-            new XElement("DisableInteraction", new XAttribute("value", DisableInteraction ? "True" : "False")),
-            new XElement("HideControls", new XAttribute("value", HideControls ? "True" : "False")),
-            new XElement("DisableExternalControls", new XAttribute("value", DisableExternalControls ? "True" : "False")),
-            new XElement("PauseInBackground", new XAttribute("value", PauseInBackground ? "True" : "False")),
-            new XElement("PlaybackPosition", Position.ToXml("Calculation")),
-            new XElement("StartOffset", StartOffset.ToXml("Calculation")),
-            new XElement("EndOffset", EndOffset.ToXml("Calculation")),
-            new XElement("Volume", Volume.ToXml("Calculation")),
-            new XElement("Zoom", new XAttribute("value", Zoom)),
-            new XElement("Sequence", new XAttribute("value", Sequence)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: option toggles map the wire's "True"/absent values to
+    // On/Off, a translation display metadata cannot express.
     public override string ToDisplayLine() =>
-        "AVPlayer Set Options [ " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Disable Interaction: " + (DisableInteraction ? "On" : "Off") + " ; " + "Hide Controls: " + (HideControls ? "On" : "Off") + " ; " + "Disable External Controls: " + (DisableExternalControls ? "On" : "Off") + " ; " + "Pause in Background: " + (PauseInBackground ? "On" : "Off") + " ; " + "Position: " + Position.Text + " ; " + "Start Offset: " + StartOffset.Text + " ; " + "End Offset: " + EndOffset.Text + " ; " + "Volume: " + Volume.Text + " ; " + "Zoom: " + ZoomHr(Zoom) + " ; " + "Sequence: " + SequenceHr(Sequence) + " ]";
+        "AVPlayer Set Options [ " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Disable Interaction: " + (DisableInteraction == "True" ? "On" : "Off") + " ; " + "Hide Controls: " + (HideControls == "True" ? "On" : "Off") + " ; " + "Disable External Controls: " + (DisableExternalControls == "True" ? "On" : "Off") + " ; " + "Pause in Background: " + (PauseInBackground == "True" ? "On" : "Off") + " ; " + "Position: " + (Position?.Text ?? "") + " ; " + "Start Offset: " + (StartOffset?.Text ?? "") + " ; " + "End Offset: " + (EndOffset?.Text ?? "") + " ; " + "Volume: " + (Volume?.Text ?? "") + " ; " + "Zoom: " + ZoomHr(Zoom) + " ; " + "Sequence: " + SequenceHr(Sequence) + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var presentation_v = step.Element("Presentation")?.Attribute("value")?.Value ?? "Start Full Screen";
-        var disableInteraction_v = step.Element("DisableInteraction")?.Attribute("value")?.Value == "True";
-        var hideControls_v = step.Element("HideControls")?.Attribute("value")?.Value == "True";
-        var disableExternalControls_v = step.Element("DisableExternalControls")?.Attribute("value")?.Value == "True";
-        var pauseInBackground_v = step.Element("PauseInBackground")?.Attribute("value")?.Value == "True";
-        var position_vWrapEl = step.Element("PlaybackPosition");
-        var position_vCalcEl = position_vWrapEl?.Element("Calculation");
-        var position_v = position_vCalcEl is not null ? Calculation.FromXml(position_vCalcEl) : new Calculation("");
-        var startOffset_vWrapEl = step.Element("StartOffset");
-        var startOffset_vCalcEl = startOffset_vWrapEl?.Element("Calculation");
-        var startOffset_v = startOffset_vCalcEl is not null ? Calculation.FromXml(startOffset_vCalcEl) : new Calculation("");
-        var endOffset_vWrapEl = step.Element("EndOffset");
-        var endOffset_vCalcEl = endOffset_vWrapEl?.Element("Calculation");
-        var endOffset_v = endOffset_vCalcEl is not null ? Calculation.FromXml(endOffset_vCalcEl) : new Calculation("");
-        var volume_vWrapEl = step.Element("Volume");
-        var volume_vCalcEl = volume_vWrapEl?.Element("Calculation");
-        var volume_v = volume_vCalcEl is not null ? Calculation.FromXml(volume_vCalcEl) : new Calculation("");
-        var zoom_v = step.Element("Zoom")?.Attribute("value")?.Value ?? "Fit";
-        var sequence_v = step.Element("Sequence")?.Attribute("value")?.Value ?? "None";
-        return new AVPlayerSetOptionsStep(presentation_v, disableInteraction_v, hideControls_v, disableExternalControls_v, pauseInBackground_v, position_v, startOffset_v, endOffset_v, volume_v, zoom_v, sequence_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<AVPlayerSetOptionsStep>(step, Metadata);
+
+    /// <summary>
+    /// Display edits are anchor-preserved when a toggle is explicitly stored
+    /// as False: the display renders both the absent and the explicit-False
+    /// forms as "Off", so a parsed "Off" maps to absent.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        DisableInteraction != "False" && HideControls != "False"
+        && DisableExternalControls != "False" && PauseInBackground != "False";
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         string presentation_v = "Start Full Screen";
         foreach (var tok in tokens) { if (tok.StartsWith("Presentation:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(13).Trim(); presentation_v = PresentationXml(v); break; } }
-        bool disableInteraction_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool hideControls_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool disableExternalControls_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Disable External Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(26).Trim(); disableExternalControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool pauseInBackground_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Pause in Background:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); pauseInBackground_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
+        // "Off" is ambiguous between absent and explicit False; it maps to
+        // absent (explicit-False instances are sealed).
+        string disableInteraction_v = "";
+        foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
+        string hideControls_v = "";
+        foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
+        string disableExternalControls_v = "";
+        foreach (var tok in tokens) { if (tok.StartsWith("Disable External Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(26).Trim(); disableExternalControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
+        string pauseInBackground_v = "";
+        foreach (var tok in tokens) { if (tok.StartsWith("Pause in Background:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); pauseInBackground_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         Calculation? position_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("Position:", StringComparison.OrdinalIgnoreCase)) { position_v = new Calculation(tok.Substring(9).Trim()); break; } }
         Calculation? startOffset_v = null;
@@ -186,106 +169,22 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/avplayer-set-options.html",
-        Params =
+        // Canonical unconfigured form is empty: every option is Optional. The four
+        // toggle options use a value="True|False" attribute and are modeled as
+        // EnumValueChild over a string so a blank (unconfigured) value is dropped.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Presentation",
-                XmlElement = "Presentation",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Presentation",
-                ValidValues = ["Start Full Screen", "Full Screen Only", "Start Embedded", "Embedded Only", "Audio Only"],
-                DefaultValue = "Start Full Screen",
-            },
-            new ParamMetadata
-            {
-                Name = "DisableInteraction",
-                XmlElement = "DisableInteraction",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Disable Interaction",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "HideControls",
-                XmlElement = "HideControls",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Hide Controls",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "DisableExternalControls",
-                XmlElement = "DisableExternalControls",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Disable External Controls",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "PauseInBackground",
-                XmlElement = "PauseInBackground",
-                Type = "boolean",
-                XmlAttr = "value",
-                HrLabel = "Pause in Background",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Position",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Start Offset",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "End Offset",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Volume",
-            },
-            new ParamMetadata
-            {
-                Name = "Zoom",
-                XmlElement = "Zoom",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Zoom",
-                ValidValues = ["Fit", "Fill", "Stretch", "Fit Only", "Fill Only", "Stretch Only"],
-                DefaultValue = "Fit",
-            },
-            new ParamMetadata
-            {
-                Name = "Sequence",
-                XmlElement = "Sequence",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Sequence",
-                ValidValues = ["None", "Next", "Previous"],
-                DefaultValue = "None",
-            },
+            new EnumValueChild("Presentation") { PocoProperty = "Presentation", HrLabel = "Presentation", Optional = true, DisplayValues = ["Start Full Screen", "Full Screen Only", "Start Embedded", "Embedded Only", "Audio Only"] },
+            new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("DisableExternalControls") { PocoProperty = "DisableExternalControls", HrLabel = "Disable External Controls", Optional = true, DisplayValues = ["On", "Off"] },
+            new EnumValueChild("PauseInBackground") { PocoProperty = "PauseInBackground", HrLabel = "Pause in Background", Optional = true, DisplayValues = ["On", "Off"] },
+            new NamedCalcChild("PlaybackPosition") { PocoProperty = "Position", HrLabel = "Position", Optional = true },
+            new NamedCalcChild("StartOffset") { PocoProperty = "StartOffset", HrLabel = "Start Offset", Optional = true },
+            new NamedCalcChild("EndOffset") { PocoProperty = "EndOffset", HrLabel = "End Offset", Optional = true },
+            new NamedCalcChild("Volume") { PocoProperty = "Volume", HrLabel = "Volume", Optional = true },
+            new EnumValueChild("Zoom") { PocoProperty = "Zoom", HrLabel = "Zoom", Optional = true, DisplayValues = ["Fit", "Fill", "Stretch", "Fit Only", "Fill Only", "Stretch Only"] },
+            new EnumValueChild("Sequence") { PocoProperty = "Sequence", HrLabel = "Sequence", Optional = true, DisplayValues = ["None", "Next", "Previous"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

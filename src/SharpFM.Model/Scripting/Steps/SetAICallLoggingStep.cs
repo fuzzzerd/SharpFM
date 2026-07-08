@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -21,6 +23,8 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
     public bool Verbose { get; set; }
     public bool TruncateMessages { get; set; }
 
+    private SetAICallLoggingStep() : base(false) { }
+
     public SetAICallLoggingStep(
         bool logging = false,
         Calculation? fileName = null,
@@ -35,24 +39,11 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
         TruncateMessages = truncateMessages;
     }
 
-    public override XElement ToXml()
-    {
-        var debugLog = new XElement("LLMDebugLog");
-        if (FileName is not null)
-            debugLog.Add(new XElement("FileName", FileName.ToXml("Calculation")));
-        if (Verbose)
-            debugLog.Add(new XElement("VerboseMode"));
-        if (TruncateMessages)
-            debugLog.Add(new XElement("TruncateEmbeddingVectorsMode"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-        return new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Set", new XAttribute("state", Logging ? "True" : "False")),
-            debugLog);
-    }
-
+    // Hand-written: Verbose/Truncate are wire flag elements (presence = On)
+    // but display as always-present "Label: On/Off" tokens — a form the shape
+    // renderer's bare-label FlagChild convention cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string> { Logging ? "On" : "Off" };
@@ -62,23 +53,8 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
         return $"Set AI Call Logging [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var logging = step.Element("Set")?.Attribute("state")?.Value == "True";
-        var debugLog = step.Element("LLMDebugLog");
-        Calculation? fileName = null;
-        bool verbose = false;
-        bool truncate = false;
-        if (debugLog is not null)
-        {
-            var fileEl = debugLog.Element("FileName")?.Element("Calculation");
-            if (fileEl is not null) fileName = Calculation.FromXml(fileEl);
-            verbose = debugLog.Element("VerboseMode") is not null;
-            truncate = debugLog.Element("TruncateEmbeddingVectorsMode") is not null;
-        }
-        return new SetAICallLoggingStep(logging, fileName, verbose, truncate, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetAICallLoggingStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -110,22 +86,17 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
         Name = XmlName,
         Id = XmlId,
         Category = "artificial intelligence",
-        Params =
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "Logging",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-                Required = true,
-            },
-            new ParamMetadata { Name = "FileName", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Filename" },
-            new ParamMetadata { Name = "VerboseMode", XmlElement = "VerboseMode", Type = "flagElement", HrLabel = "Verbose" },
-            new ParamMetadata { Name = "TruncateEmbeddingVectorsMode", XmlElement = "TruncateEmbeddingVectorsMode", Type = "flagElement", HrLabel = "Truncate Messages" },
+            new BoolStateChild("Set") { PocoProperty = "Logging", HrLabel = "Logging", Required = true },
+            // The <LLMDebugLog> wrapper is always emitted, empty when no
+            // option inside it is configured.
+            new WrapperChild("LLMDebugLog",
+            [
+                new NamedCalcChild("FileName") { Optional = true, HrLabel = "Filename" },
+                new FlagChild("VerboseMode") { PocoProperty = "Verbose", HrLabel = "Verbose" },
+                new FlagChild("TruncateEmbeddingVectorsMode") { PocoProperty = "TruncateMessages", HrLabel = "Truncate Messages" },
+            ]),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -18,28 +20,22 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
 
     public string TargetFile { get; set; }
 
+    private DeleteFileStep() : base(false) { TargetFile = ""; }
+
     public DeleteFileStep(string targetFile = "", bool enabled = true) : base(enabled)
     {
         TargetFile = targetFile;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", TargetFile));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Delete File [ Target file: {TargetFile} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        return new DeleteFileStep(path, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<DeleteFileStep>(step, Metadata);
 
+    // Hand-written: also accepts a bare unlabeled path token, which the
+    // shape parser would ignore (labeled slots never bind positionally).
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tok = hrParams.Length > 0 ? hrParams[0].Trim() : "";
@@ -53,13 +49,10 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
     {
         Name = XmlName, Id = XmlId, Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/delete-file.html",
-        Params =
+        // Canonical unconfigured form is empty: the path text is omitted when blank.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "UniversalPathList", XmlElement = "UniversalPathList",
-                Type = "text", HrLabel = "Target file", Required = true,
-            },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "TargetFile", HrLabel = "Target file", Required = true, Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

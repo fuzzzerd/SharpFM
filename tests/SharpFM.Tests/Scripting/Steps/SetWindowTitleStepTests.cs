@@ -8,7 +8,7 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class SetWindowTitleStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="124" name="Set Window Title"><Window value="Current"/><Name><Calculation><![CDATA[$x]]></Calculation></Name><LimitToWindowsOfCurrentFile state="True"/><NewName><Calculation><![CDATA[$x]]></Calculation></NewName></Step>""";
+    private const string CanonicalXml = """<Step enable="True" id="124" name="Set Window Title"><LimitToWindowsOfCurrentFile state="True"/><Window value="Current"/><Name><Calculation><![CDATA[$x]]></Calculation></Name><NewName><Calculation><![CDATA[$x]]></Calculation></NewName></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

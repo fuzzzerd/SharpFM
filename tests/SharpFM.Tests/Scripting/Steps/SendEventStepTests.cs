@@ -7,8 +7,10 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class SendEventStepTests
 {
+    // Canonical (skill): no empty <Text/> element; <Event> carries only its
+    // populated attributes.
     private const string CanonicalXml = """
-        <Step enable="True" id="57" name="Send Event"><ContentType value="Text" /><Text /><Event CopyResultToClipboard="False" WaitForCompletion="True" BringTargetToForeground="False" TargetType="NUTD" TargetName="&lt;unknown&gt;" id="dosc" class="misc" /></Step>
+        <Step enable="True" id="57" name="Send Event"><ContentType value="Text" /><Event CopyResultToClipboard="False" WaitForCompletion="True" BringTargetToForeground="False" TargetType="NUTD" TargetName="&lt;unknown&gt;" id="dosc" class="misc" /></Step>
         """;
 
     [Fact]

@@ -1,0 +1,4 @@
+<Step enable="True" id="128" name="Perform Find/Replace">
+  <NoInteract state="False" />
+  <FindReplaceOperation MatchWholeWords="False" MatchCase="False" WithinOptions="All" AcrossOptions="All" direction="Forward" type="FindNext" />
+</Step>

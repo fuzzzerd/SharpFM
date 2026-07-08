@@ -8,7 +8,7 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class ConfigurePromptTemplateStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="226" name="Configure Prompt Template"><TemplateName><Calculation><![CDATA[$x]]></Calculation></TemplateName><ModelProvider value="OpenAI"/><RequestType value="SQL Query"/><SQLPrompt><Calculation><![CDATA[$x]]></Calculation></SQLPrompt><NaturalLanguagePrompt><Calculation><![CDATA[$x]]></Calculation></NaturalLanguagePrompt><FindRequestPrompt><Calculation><![CDATA[$x]]></Calculation></FindRequestPrompt><RAGPPrompt><Calculation><![CDATA[$x]]></Calculation></RAGPPrompt><Option state="True"/></Step>""";
+    private const string CanonicalXml = """<Step enable="True" id="226" name="Configure Prompt Template"><Option state="False"/><ConfigurePromptTemplate><ModelProvider>ChatGPT</ModelProvider><RequestType>SQLQuery</RequestType></ConfigurePromptTemplate></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

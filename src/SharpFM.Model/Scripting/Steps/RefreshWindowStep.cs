@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -20,6 +22,8 @@ public sealed class RefreshWindowStep : ScriptStep, IStepFactory
     public bool FlushCachedJoinResults { get; set; }
     public bool FlushCachedExternalData { get; set; }
 
+    private RefreshWindowStep() : base(false) { }
+
     public RefreshWindowStep(
         bool flushCachedJoinResults = false,
         bool flushCachedExternalData = false,
@@ -30,34 +34,15 @@ public sealed class RefreshWindowStep : ScriptStep, IStepFactory
         FlushCachedExternalData = flushCachedExternalData;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", FlushCachedJoinResults ? "True" : "False")),
-            new XElement("FlushSQLData", new XAttribute("state", FlushCachedExternalData ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Refresh Window [ " + "Flush cached join results: " + (FlushCachedJoinResults ? "On" : "Off") + " ; " + "Flush cached external data: " + (FlushCachedExternalData ? "On" : "Off") + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var flushCachedJoinResults_val = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var flushCachedExternalData_val = step.Element("FlushSQLData")?.Attribute("state")?.Value == "True";
-        return new RefreshWindowStep(flushCachedJoinResults_val, flushCachedExternalData_val, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<RefreshWindowStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        bool flushCachedJoinResults_val = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Flush cached join results:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(26).Trim(); flushCachedJoinResults_val = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool flushCachedExternalData_val = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Flush cached external data:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(27).Trim(); flushCachedExternalData_val = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        return new RefreshWindowStep(flushCachedJoinResults_val, flushCachedExternalData_val, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<RefreshWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -65,28 +50,11 @@ public sealed class RefreshWindowStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/refresh-window.html",
-        Params =
+        // Canonical: Option (flush cached join results), then FlushSQLData.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Flush cached join results",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "FlushSQLData",
-                XmlElement = "FlushSQLData",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Flush cached external data",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
+            new BoolStateChild("Option") { PocoProperty = "FlushCachedJoinResults", HrLabel = "Flush cached join results", Display = DisplayMode.Augmented },
+            new BoolStateChild("FlushSQLData") { PocoProperty = "FlushCachedExternalData", HrLabel = "Flush cached external data", Display = DisplayMode.Augmented },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

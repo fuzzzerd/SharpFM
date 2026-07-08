@@ -112,11 +112,12 @@ public class ControlFlowStepsTests
     }
 
     [Fact]
-    public void Else_RoundTrip_NoChildElements()
+    public void Else_RoundTrip_EmitsCanonicalRestore()
     {
+        // Canonical §8.1: Else carries <Restore state="False"/>.
         var step = ScriptStep.FromXml(MakeStep(ElseXml));
         var xml = step.ToXml();
-        Assert.Empty(xml.Elements());
+        Assert.Equal("False", xml.Element("Restore")!.Attribute("state")!.Value);
         Assert.Equal("69", xml.Attribute("id")!.Value);
     }
 
@@ -162,11 +163,15 @@ public class ControlFlowStepsTests
     }
 
     [Fact]
-    public void Loop_RoundTrip_NoChildElements()
+    public void Loop_RoundTrip_EmitsCanonicalRestoreAndFlushType()
     {
+        // Canonical §8.1: Loop carries <Restore state="False"/> then <FlushType value="Always"/>.
         var step = ScriptStep.FromXml(MakeStep(LoopXml));
         var xml = step.ToXml();
-        Assert.Empty(xml.Elements());
+        Assert.Equal("False", xml.Element("Restore")!.Attribute("state")!.Value);
+        Assert.Equal("Always", xml.Element("FlushType")!.Attribute("value")!.Value);
+        Assert.Equal(new[] { "Restore", "FlushType" },
+            xml.Elements().Select(e => e.Name.LocalName).ToArray());
         Assert.Equal("71", xml.Attribute("id")!.Value);
     }
 

@@ -1,0 +1,4 @@
+<Step enable="True" id="119" name="Move/Resize Window">
+  <LimitToWindowsOfCurrentFile state="True" />
+  <Window value="Current" />
+</Step>

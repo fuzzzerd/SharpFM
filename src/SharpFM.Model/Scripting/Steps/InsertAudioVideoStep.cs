@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -19,6 +21,8 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
     public string Path { get; set; }
     public string Reference { get; set; }
 
+    private InsertAudioVideoStep() : this("") { }
+
     public InsertAudioVideoStep(
         string path = "",
         string reference = "Embedded",
@@ -29,23 +33,15 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
         Reference = reference;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", new XAttribute("type", Reference), Path));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the single wire element splits into two display tokens
+    // (path text + type attribute), which the shape renderer cannot produce.
     public override string ToDisplayLine() =>
         $"Insert Audio/Video [ {Path} ; Reference: {Reference} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var type = step.Element("UniversalPathList")?.Attribute("type")?.Value ?? "Embedded";
-        return new InsertAudioVideoStep(path, type, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertAudioVideoStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -68,18 +64,19 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
     {
         Name = XmlName, Id = XmlId, Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-audio-video.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata
+            // The wire element surfaces as the labeled Reference slot; the path
+            // text it also carries gets its own HR-only positional slot.
+            new HrOnly("UniversalPathList"),
+            new NamedTextChild("UniversalPathList")
             {
-                Name = "UniversalPathList", XmlElement = "UniversalPathList",
-                Type = "text",
-            },
-            new ParamMetadata
-            {
-                Name = "Reference", XmlElement = "UniversalPathList", Type = "enum",
-                XmlAttr = "type", HrLabel = "Reference",
-                ValidValues = ["Embedded", "Reference"], DefaultValue = "Embedded",
+                PocoProperty = "Path",
+                Attr = "type",
+                AttrProperty = "Reference",
+                AttrDefault = "Embedded",
+                HrLabel = "Reference",
+                ValidValues = ["Embedded", "Reference"],
             },
         ],
         FromXml = FromXml,

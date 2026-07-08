@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -46,6 +47,6 @@ public class OpenManageDataSourcesStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Open Manage Data Sources", out var metadata));
         Assert.Equal(140, metadata!.Id);
-        Assert.Empty(metadata.Params);
+        Assert.Empty(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

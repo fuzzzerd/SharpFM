@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -19,10 +21,21 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
     public const int XmlId = 57;
     public const string XmlName = "Send Event";
 
-    public string ContentType { get; set; }
+    public string ContentType { get; set; } = "Text";
     public Calculation? Calculation { get; set; }
-    public string Text { get; set; }
-    public SendEventTarget Event { get; set; }
+    public string Text { get; set; } = "";
+    public SendEventTarget Event { get; set; } = SendEventTarget.Default();
+
+    /// <summary>
+    /// Display edits are anchor-preserved when the event carries behaviour
+    /// state the display line cannot express: the copy/wait/foreground flags
+    /// and the target type never appear in display text, so any non-baseline
+    /// value seals the step.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        Event is { CopyResultToClipboard: false, WaitForCompletion: false, BringTargetToForeground: false, TargetType: "" };
+
+    private SendEventStep() : base(false) { }
 
     public SendEventStep(
         string contentType = "Text",
@@ -38,19 +51,9 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         Event = evt ?? SendEventTarget.Default();
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ContentType", new XAttribute("value", ContentType)));
-        if (Calculation is not null) step.Add(Calculation.ToXml("Calculation"));
-        step.Add(string.IsNullOrEmpty(Text) ? new XElement("Text") : new XElement("Text", Text));
-        step.Add(Event.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: fixed empty-slot tokens plus the synthetic <file> placeholder — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var content = ContentType switch
@@ -63,24 +66,40 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         return $"Send Event [ {Event.TargetName} ; {Event.Class} ; {Event.Id} ; {content} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var contentType = step.Element("ContentType")?.Attribute("value")?.Value ?? "Text";
-        var calcEl = step.Element("Calculation");
-        var calc = calcEl is not null ? Values.Calculation.FromXml(calcEl) : null;
-        var text = step.Element("Text")?.Value ?? "";
-        var eventEl = step.Element("Event");
-        var evt = eventEl is not null ? SendEventTarget.FromXml(eventEl) : SendEventTarget.Default();
-        return new SendEventStep(contentType, calc, text, evt, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SendEventStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Display form is lossy for Send Event (event attrs can't all be
-        // round-tripped through display). Best-effort parse; full fidelity
-        // is only via XML round-trip.
-        return new SendEventStep(enabled: enabled);
+        // Display shape is positional: [ targetName ; class ; id ; content ].
+        // The event's behaviour flags and target type are not displayable —
+        // instances carrying them are sealed (see IsFullyEditable).
+        var tokens = Array.ConvertAll(hrParams, h => h.Trim());
+        var targetName = tokens.Length >= 1 ? tokens[0] : "";
+        var cls = tokens.Length >= 2 ? tokens[1] : "";
+        var id = tokens.Length >= 3 ? tokens[2] : "";
+        var content = tokens.Length >= 4 ? tokens[3] : "";
+
+        string contentType;
+        Calculation? calculation = null;
+        string text = "";
+        if (content == "<file>")
+            contentType = "File";
+        else if (content.Length >= 2 && content.StartsWith("\"", StringComparison.Ordinal) && content.EndsWith("\"", StringComparison.Ordinal))
+        {
+            contentType = "Text";
+            text = content.Substring(1, content.Length - 2);
+        }
+        else if (content.Length > 0)
+        {
+            contentType = "Calculation";
+            calculation = new Calculation(content);
+        }
+        else
+            contentType = "Text";
+
+        var evt = new SendEventTarget(false, false, false, "", targetName, id, cls);
+        return new SendEventStep(contentType, calculation, text, evt, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -89,12 +108,15 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/send-event.html",
-        Params =
+        // Canonical: ContentType, optional Calculation, optional Text, then Event.
+        Shape =
         [
-            new ParamMetadata { Name = "ContentType", XmlElement = "ContentType", XmlAttr = "value", Type = "enum", ValidValues = ["Text", "File", "Calculation"], DefaultValue = "Text", Required = true },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation" },
-            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text" },
-            new ParamMetadata { Name = "Event", XmlElement = "Event", Type = "complex", Required = true },
+            new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "Text", Display = DisplayMode.Hidden },
+            new HrOnly("ContentType") { DisplayValues = ["Text", "File", "Calculation"] },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
+            new NamedTextChild("Text") { PocoProperty = "Text", Optional = true, Display = DisplayMode.Native },
+            new ValueTypeChild("Event") { PocoProperty = "Event", Display = DisplayMode.Hidden },
+            new HrOnly("Event"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

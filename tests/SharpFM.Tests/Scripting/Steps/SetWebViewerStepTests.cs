@@ -8,7 +8,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class SetWebViewerStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="146" name="Set Web Viewer"><ObjectName><Calculation><![CDATA[$x]]></Calculation></ObjectName><Action value="GoToURL"/><URL><Calculation><![CDATA[$x]]></Calculation></URL></Step>""";
+    // Canonical (skill): Action first, then optional ObjectName and URL; <URL>
+    // carries a custom flag attribute.
+    private const string CanonicalXml = """<Step enable="True" id="146" name="Set Web Viewer"><Action value="GoToURL"/><ObjectName><Calculation><![CDATA[$x]]></Calculation></ObjectName><URL custom="False"><Calculation><![CDATA[$x]]></Calculation></URL></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

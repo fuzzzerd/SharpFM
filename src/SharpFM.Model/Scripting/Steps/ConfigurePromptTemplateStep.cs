@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,14 +14,16 @@ public sealed class ConfigurePromptTemplateStep : ScriptStep, IStepFactory
     public const int XmlId = 226;
     public const string XmlName = "Configure Prompt Template";
 
-    public Calculation TemplateName { get; set; }
-    public string ModelProvider { get; set; }
-    public string TemplateType { get; set; }
-    public Calculation SQLPrompt { get; set; }
-    public Calculation NaturalLanguagePrompt { get; set; }
-    public Calculation FindRequestPrompt { get; set; }
-    public Calculation RAGPrompt { get; set; }
+    public Calculation TemplateName { get; set; } = new("");
+    public string ModelProvider { get; set; } = "OpenAI";
+    public string TemplateType { get; set; } = "SQL Query";
+    public Calculation SQLPrompt { get; set; } = new("");
+    public Calculation NaturalLanguagePrompt { get; set; } = new("");
+    public Calculation FindRequestPrompt { get; set; } = new("");
+    public Calculation RAGPrompt { get; set; } = new("");
     public bool Option { get; set; }
+
+    private ConfigurePromptTemplateStep() : base(false) { }
 
     public ConfigurePromptTemplateStep(
         Calculation? templateName = null,
@@ -75,46 +79,15 @@ public sealed class ConfigurePromptTemplateStep : ScriptStep, IStepFactory
     private static string TemplateTypeHr(string x) => _TemplateTypeToHr.TryGetValue(x, out var h) ? h : x;
     private static string TemplateTypeXml(string h) => _TemplateTypeFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("TemplateName", TemplateName.ToXml("Calculation")),
-            new XElement("ModelProvider", new XAttribute("value", ModelProvider)),
-            new XElement("RequestType", new XAttribute("value", TemplateType)),
-            new XElement("SQLPrompt", SQLPrompt.ToXml("Calculation")),
-            new XElement("NaturalLanguagePrompt", NaturalLanguagePrompt.ToXml("Calculation")),
-            new XElement("FindRequestPrompt", FindRequestPrompt.ToXml("Calculation")),
-            new XElement("RAGPPrompt", RAGPrompt.ToXml("Calculation")),
-            new XElement("Option", new XAttribute("state", Option ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: trailing bare On/Off token and token order diverging from
+    // the canonical XML order.
     public override string ToDisplayLine() =>
         "Configure Prompt Template [ " + "Template Name: " + TemplateName.Text + " ; " + "Model Provider: " + ModelProviderHr(ModelProvider) + " ; " + "Template Type: " + TemplateTypeHr(TemplateType) + " ; " + "SQL Prompt: " + SQLPrompt.Text + " ; " + "Natural Language Prompt: " + NaturalLanguagePrompt.Text + " ; " + "Find Request Prompt: " + FindRequestPrompt.Text + " ; " + "RAG Prompt: " + RAGPrompt.Text + " ; " + (Option ? "On" : "Off") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var templateName_vWrapEl = step.Element("TemplateName");
-        var templateName_vCalcEl = templateName_vWrapEl?.Element("Calculation");
-        var templateName_v = templateName_vCalcEl is not null ? Calculation.FromXml(templateName_vCalcEl) : new Calculation("");
-        var modelProvider_v = step.Element("ModelProvider")?.Attribute("value")?.Value ?? "OpenAI";
-        var templateType_v = step.Element("RequestType")?.Attribute("value")?.Value ?? "SQL Query";
-        var sQLPrompt_vWrapEl = step.Element("SQLPrompt");
-        var sQLPrompt_vCalcEl = sQLPrompt_vWrapEl?.Element("Calculation");
-        var sQLPrompt_v = sQLPrompt_vCalcEl is not null ? Calculation.FromXml(sQLPrompt_vCalcEl) : new Calculation("");
-        var naturalLanguagePrompt_vWrapEl = step.Element("NaturalLanguagePrompt");
-        var naturalLanguagePrompt_vCalcEl = naturalLanguagePrompt_vWrapEl?.Element("Calculation");
-        var naturalLanguagePrompt_v = naturalLanguagePrompt_vCalcEl is not null ? Calculation.FromXml(naturalLanguagePrompt_vCalcEl) : new Calculation("");
-        var findRequestPrompt_vWrapEl = step.Element("FindRequestPrompt");
-        var findRequestPrompt_vCalcEl = findRequestPrompt_vWrapEl?.Element("Calculation");
-        var findRequestPrompt_v = findRequestPrompt_vCalcEl is not null ? Calculation.FromXml(findRequestPrompt_vCalcEl) : new Calculation("");
-        var rAGPrompt_vWrapEl = step.Element("RAGPPrompt");
-        var rAGPrompt_vCalcEl = rAGPrompt_vWrapEl?.Element("Calculation");
-        var rAGPrompt_v = rAGPrompt_vCalcEl is not null ? Calculation.FromXml(rAGPrompt_vCalcEl) : new Calculation("");
-        var option_v = step.Element("Option")?.Attribute("state")?.Value == "True";
-        return new ConfigurePromptTemplateStep(templateName_v, modelProvider_v, templateType_v, sQLPrompt_v, naturalLanguagePrompt_v, findRequestPrompt_v, rAGPrompt_v, option_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ConfigurePromptTemplateStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -142,70 +115,23 @@ public sealed class ConfigurePromptTemplateStep : ScriptStep, IStepFactory
         Name = XmlName,
         Id = XmlId,
         Category = "artificial intelligence",
-        Params =
+        // Canonical: Option, then a <ConfigurePromptTemplate> wrapper carrying
+        // the text <ModelProvider> and <RequestType> children.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Template Name",
-            },
-            new ParamMetadata
-            {
-                Name = "ModelProvider",
-                XmlElement = "ModelProvider",
-                Type = "enum",
-                HrLabel = "Model Provider",
-                ValidValues = ["OpenAI", "Anthropic", "Cohere", "Custom"],
-                DefaultValue = "OpenAI",
-            },
-            new ParamMetadata
-            {
-                Name = "RequestType",
-                XmlElement = "RequestType",
-                Type = "enum",
-                HrLabel = "Template Type",
-                ValidValues = ["SQL Query", "Find Request", "RAG Prompt"],
-                DefaultValue = "SQL Query",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "SQL Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Natural Language Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Find Request Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "RAG Prompt",
-            },
-            new ParamMetadata
-            {
-                Name = "Option",
-                XmlElement = "Option",
-                Type = "boolean",
-                XmlAttr = "state",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
+            new BoolStateChild("Option") { PocoProperty = "Option", Display = DisplayMode.Native },
+            new WrapperChild("ConfigurePromptTemplate",
+            [
+                new NamedTextChild("ModelProvider") { PocoProperty = "ModelProvider", HrLabel = "Model Provider", DisplayValues = ["OpenAI", "Anthropic", "Cohere", "Custom"], Display = DisplayMode.Augmented },
+                new NamedTextChild("RequestType") { PocoProperty = "TemplateType", HrLabel = "Template Type", DisplayValues = ["SQL Query", "Find Request", "RAG Prompt"], Display = DisplayMode.Augmented },
+            ]),
+            // The name and per-mode prompt calcs have no wire children in the
+            // canonical form; HR-only slots keep their display tokens addressable.
+            new HrOnly("TemplateName") { HrLabel = "Template Name" },
+            new HrOnly("SQLPrompt") { HrLabel = "SQL Prompt" },
+            new HrOnly("NaturalLanguagePrompt") { HrLabel = "Natural Language Prompt" },
+            new HrOnly("FindRequestPrompt") { HrLabel = "Find Request Prompt" },
+            new HrOnly("RAGPrompt") { HrLabel = "RAG Prompt" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -1,0 +1,15 @@
+<Step enable="True" id="87" name="Show Custom Dialog">
+  <Title>
+    <Calculation><![CDATA["Error"]]></Calculation>
+  </Title>
+  <Message>
+    <Calculation><![CDATA["Unable to mount fileserver"]]></Calculation>
+  </Message>
+  <Buttons>
+    <Button CommitState="False">
+      <Calculation><![CDATA["OK"]]></Calculation>
+    </Button>
+    <Button CommitState="False" />
+    <Button CommitState="False" />
+  </Buttons>
+</Step>

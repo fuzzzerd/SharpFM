@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -19,60 +21,26 @@ public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
     /// <summary>The enum XML value emitted on the <c>&lt;ShowHide&gt;</c> element.</summary>
     public string Action { get; set; }
 
+    private ShowHideTextRulerStep() : base(false)
+    {
+        Action = "Show";
+    }
+
     public ShowHideTextRulerStep(string action = "Show", bool enabled = true)
         : base(enabled)
     {
         Action = action;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Show"] = "Show",
-        ["Hide"] = "Hide",
-        ["Toggle"] = "Toggle",
-    };
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Show"] = "Show",
-        ["Hide"] = "Hide",
-        ["Toggle"] = "Toggle",
-    };
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ShowHideTextRulerStep>(step, Metadata);
 
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ShowHide",
-                new XAttribute("value", Action)));
-
-    public override string ToDisplayLine() =>
-        $"Show/Hide Text Ruler [ Action: {ToHr(Action)} ]";
-
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("ShowHide")?.Attribute("value")?.Value ?? "Show";
-        return new ShowHideTextRulerStep(value, enabled);
-    }
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "Action:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        return new ShowHideTextRulerStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ShowHideTextRulerStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -80,18 +48,9 @@ public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/show-hide-text-ruler.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "ShowHide",
-                XmlElement = "ShowHide",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Action",
-                DefaultValue = "Show",
-                ValidValues = ["Show", "Hide", "Toggle"],
-            },
+            new EnumValueChild("ShowHide") { PocoProperty = "Action", HrLabel = "Action", DefaultValue = "Show", ValidValues = ["Show", "Hide", "Toggle"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

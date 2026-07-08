@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -19,6 +21,14 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
     public PerformScriptTarget Target { get; set; }
     public Calculation? Parameter { get; set; }
 
+    // Emit-only wire projections: FM Pro emits <Calculated> before
+    // <WaitForCompletion> for ByCalculation but <Script> after the parameter
+    // for ByReference. Get-only, so the shape parser skips them.
+    public Calculation? CalculatedWire =>
+        Target is PerformScriptTarget.ByCalculation byCalc ? byCalc.NameCalc : null;
+    public NamedRef? ScriptWire =>
+        Target is PerformScriptTarget.ByReference byRef ? byRef.Script : null;
+
     public PerformScriptOnServerStep(
         bool waitForCompletion = true,
         PerformScriptTarget? target = null,
@@ -31,31 +41,9 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         Parameter = parameter;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-        switch (Target)
-        {
-            case PerformScriptTarget.ByReference byRef:
-                step.Add(new XElement("WaitForCompletion", new XAttribute("state", WaitForCompletion ? "True" : "False")));
-                if (Parameter is not null) step.Add(Parameter.ToXml());
-                step.Add(byRef.Script.ToXml("Script"));
-                break;
-
-            case PerformScriptTarget.ByCalculation byCalc:
-                step.Add(new XElement("Calculated", byCalc.NameCalc.ToXml()));
-                step.Add(new XElement("WaitForCompletion", new XAttribute("state", WaitForCompletion ? "True" : "False")));
-                if (Parameter is not null) step.Add(Parameter.ToXml());
-                break;
-        }
-
-        return step;
-    }
-
+    // Hand-written: the script target is a variant with a bare quoted-name token order the shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
@@ -77,6 +65,9 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         return $"Perform Script on Server [ {string.Join(" ; ", parts)} ]";
     }
 
+    // Hand-written rather than StepXmlParser: the Target union is spread
+    // across two emit-only projection slots, and the degenerate no-reference
+    // form defaults to an empty by-ref.
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
@@ -126,11 +117,16 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/perform-script-on-server.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata { Name = "WaitForCompletion", XmlElement = "WaitForCompletion", XmlAttr = "state", Type = "boolean", HrLabel = "Wait for completion" },
-            new ParamMetadata { Name = "Script", XmlElement = "Script", Type = "script" },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Parameter" },
+            // Per-variant ordering via the emit-only projections above:
+            // <Calculated> leads for ByCalculation, <Script> trails the
+            // parameter for ByReference; WaitForCompletion and the parameter
+            // sit between in both variants.
+            new NamedCalcChild("Calculated") { PocoProperty = "CalculatedWire", Optional = true },
+            new BoolStateChild("WaitForCompletion") { HrLabel = "Wait for completion" },
+            new BareCalcChild { PocoProperty = "Parameter", Optional = true, HrLabel = "Parameter" },
+            new NamedRefChild("Script") { PocoProperty = "ScriptWire", Optional = true, HrLabel = "Script" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

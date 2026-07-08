@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +15,9 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
     public const string XmlName = "Pause/Resume Script";
 
     public string PauseTime { get; set; }
-    public Calculation DurationSeconds { get; set; }
+    public Calculation? DurationSeconds { get; set; }
+
+    private PauseResumeScriptStep() : base(false) { PauseTime = "ForDuration"; }
 
     public PauseResumeScriptStep(
         string pauseTime = "ForDuration",
@@ -22,50 +26,18 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         : base(enabled)
     {
         PauseTime = pauseTime;
-        DurationSeconds = durationSeconds ?? new Calculation("");
+        DurationSeconds = durationSeconds;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _PauseTimeToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal) {
-        ["Indefinitely"] = "Indefinitely",
-        ["ForDuration"] = "Duration (seconds)",
-    };
-    private static readonly IReadOnlyDictionary<string, string> _PauseTimeFromHr =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
-        ["Indefinitely"] = "Indefinitely",
-        ["Duration (seconds)"] = "ForDuration",
-    };
-    private static string PauseTimeHr(string x) => _PauseTimeToHr.TryGetValue(x, out var h) ? h : x;
-    private static string PauseTimeXml(string h) => _PauseTimeFromHr.TryGetValue(h, out var x) ? x : h;
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("PauseTime", new XAttribute("value", PauseTime)),
-            DurationSeconds.ToXml("Calculation"));
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Pause/Resume Script [ " + PauseTimeHr(PauseTime) + " ; " + "Duration (seconds): " + DurationSeconds.Text + " ]";
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<PauseResumeScriptStep>(step, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var pauseTime_v = step.Element("PauseTime")?.Attribute("value")?.Value ?? "ForDuration";
-        var durationSeconds_vEl = step.Element("Calculation");
-        var durationSeconds_v = durationSeconds_vEl is not null ? Calculation.FromXml(durationSeconds_vEl) : new Calculation("");
-        return new PauseResumeScriptStep(pauseTime_v, durationSeconds_v, enabled);
-    }
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string pauseTime_v = "ForDuration";
-        Calculation? durationSeconds_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Duration (seconds):", StringComparison.OrdinalIgnoreCase)) { durationSeconds_v = new Calculation(tok.Substring(19).Trim()); break; } }
-        return new PauseResumeScriptStep(pauseTime_v, durationSeconds_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<PauseResumeScriptStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -73,24 +45,12 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/pause-resume-script.html",
-        Params =
+        // Canonical 062-PauseResumeScript: only <PauseTime>; the bare
+        // <Calculation> duration is omitted when blank (Optional).
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "PauseTime",
-                XmlElement = "PauseTime",
-                Type = "enum",
-                XmlAttr = "value",
-                ValidValues = ["Indefinitely", "Duration (seconds)"],
-                DefaultValue = "ForDuration",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-                HrLabel = "Duration (seconds)",
-            },
+            new EnumValueChild("PauseTime") { PocoProperty = "PauseTime", DefaultValue = "ForDuration", ValidValues = ["Indefinitely", "ForDuration"], DisplayValues = ["Indefinitely", "Duration (seconds)"] },
+            new BareCalcChild { PocoProperty = "DurationSeconds", HrLabel = "Duration (seconds)", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

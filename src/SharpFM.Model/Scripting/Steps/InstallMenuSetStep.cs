@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -10,8 +12,10 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
     public const int XmlId = 142;
     public const string XmlName = "Install Menu Set";
 
-    public NamedRef MenuSet { get; set; }
+    public NamedRef MenuSet { get; set; } = new(0, "");
     public bool UseAsFileDefault { get; set; }
+
+    private InstallMenuSetStep() : base(false) { }
 
     public InstallMenuSetStep(NamedRef? menuSet = null, bool useAsFileDefault = false, bool enabled = true)
         : base(enabled)
@@ -20,25 +24,14 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
         UseAsFileDefault = useAsFileDefault;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UseAsFileDefault", new XAttribute("state", UseAsFileDefault ? "True" : "False")),
-            MenuSet.ToXml("CustomMenuSet"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: quoted menu-set name token the shape renderer cannot produce.
     public override string ToDisplayLine() =>
         $"Install Menu Set [ \"{MenuSet.Name}\" ; Use as file default: {(UseAsFileDefault ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var useDefault = step.Element("UseAsFileDefault")?.Attribute("state")?.Value == "True";
-        var menuEl = step.Element("CustomMenuSet");
-        var menu = menuEl is not null ? NamedRef.FromXml(menuEl) : new NamedRef(0, "");
-        return new InstallMenuSetStep(menu, useDefault, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InstallMenuSetStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -57,7 +50,9 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
                 var name = t;
                 if (name.StartsWith("\"") && name.EndsWith("\"") && name.Length >= 2)
                     name = name.Substring(1, name.Length - 2);
-                menu = new NamedRef(0, name);
+                // The built-in menu set has the fixed id 1; custom menu sets
+                // carry file-specific ids the canonical form wildcards.
+                menu = new NamedRef(name == "[Standard FileMaker Menus]" ? 1 : 0, name);
                 menuSeen = true;
             }
         }
@@ -70,19 +65,11 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/install-menu-set.html",
-        Params =
+        // Canonical: UseAsFileDefault, then the always-present CustomMenuSet ref.
+        Shape =
         [
-            new ParamMetadata { Name = "CustomMenuSet", XmlElement = "CustomMenuSet", Type = "menuSet", Required = true },
-            new ParamMetadata
-            {
-                Name = "UseAsFileDefault",
-                XmlElement = "UseAsFileDefault",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "Use as file default",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
+            new BoolStateChild("UseAsFileDefault") { PocoProperty = "UseAsFileDefault", HrLabel = "Use as file default", Display = DisplayMode.Augmented },
+            new NamedRefChild("CustomMenuSet") { PocoProperty = "MenuSet", Required = true, Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

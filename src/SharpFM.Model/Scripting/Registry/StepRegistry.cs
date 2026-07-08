@@ -86,19 +86,6 @@ public static class StepRegistry
     [ModuleInitializer]
     internal static void ModuleInitialize() => EnsureInitialized();
 
-    /// <summary>
-    /// Surface valid values for a parameter in completion / validation
-    /// contexts. Returns the explicit <see cref="ParamMetadata.ValidValues"/>
-    /// when present; otherwise defaults boolean-like params to
-    /// <c>["On", "Off"]</c>.
-    /// </summary>
-    public static IReadOnlyList<string> GetValidValues(ParamMetadata param)
-    {
-        if (param.ValidValues is { Count: > 0 }) return param.ValidValues;
-        if (param.Type is "boolean" or "flagBoolean" or "flagElement")
-            return new[] { "On", "Off" };
-        return [];
-    }
 
     private static void EnsureInitialized()
     {

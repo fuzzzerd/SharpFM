@@ -26,4 +26,11 @@
     <ProjectReference Include="..\..\src\SharpFM\SharpFM.csproj" />
   </ItemGroup>
 
+  <!-- Canonical-skill round-trip fixtures: generated from the vendored skill
+       markdown (see docs/filemaker-xml-canonical). Copied next to the test
+       assembly so the round-trip suite can read them at run time. -->
+  <ItemGroup>
+    <None Include="CanonicalSkill\fixtures\**\*.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,3 @@
+<Step enable="True" id="103" name="Exit Script">
+  <Calculation><![CDATA[return value]]></Calculation>
+</Step>

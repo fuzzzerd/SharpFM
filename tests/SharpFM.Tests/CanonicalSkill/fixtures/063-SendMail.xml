@@ -1,0 +1,9 @@
+<Step enable="True" id="63" name="Send Mail">
+  <NoInteract state="True" />
+  <MultipleEmails state="False" />
+  <SendViaSMTP state="False" />
+  <SendViaOAuthAuthentication state="False" />
+  <SMTPEncryptionType type="SMTPEncryptionNone" />
+  <SMTPAuthenticationType type="SMTPAuthenticationNone" />
+  <OAuthProvider type="OAuthProviderGoogle" />
+</Step>

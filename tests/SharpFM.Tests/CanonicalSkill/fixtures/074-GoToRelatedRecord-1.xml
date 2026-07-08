@@ -1,0 +1,10 @@
+<Step enable="True" id="74" name="Go to Related Record">
+  <Option state="False" />
+  <MatchAllRecords state="False" />
+  <ShowInNewWindow state="False" />
+  <Restore state="True" />
+  <LayoutDestination value="SelectedLayout" />
+  <NewWndStyles Style="Document" Close="Yes" Minimize="Yes" Maximize="Yes" Resize="Yes" Styles="983554" />
+  <Table id="N" name="table occurrence name" />
+  <Layout id="N" name="layout name" />
+</Step>

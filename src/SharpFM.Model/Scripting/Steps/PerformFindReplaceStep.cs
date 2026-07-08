@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -16,9 +19,14 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
     public const string XmlName = "Perform Find/Replace";
 
     public bool WithDialog { get; set; }
-    public FindReplaceOperation Operation { get; set; }
-    public Calculation FindText { get; set; }
+    public FindReplaceOperation Operation { get; set; } = FindReplaceOperation.Default();
+    public Calculation FindText { get; set; } = new("");
     public Calculation? ReplaceText { get; set; }
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteractState { get => !WithDialog; set => WithDialog = !value; }
+
+    private PerformFindReplaceStep() : base(false) { }
 
     public PerformFindReplaceStep(
         bool withDialog = true,
@@ -34,20 +42,11 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         ReplaceText = replaceText;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            Operation.ToXml(),
-            new XElement("FindCalc", FindText.ToXml("Calculation")));
-        if (ReplaceText is not null)
-            step.Add(new XElement("ReplaceCalc", ReplaceText.ToXml("Calculation")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the operation type lives inside a ValueTypeChild and the
+    // replace calc is a conditional positional token — variant grammar the
+    // shape renderer cannot express.
     public override string ToDisplayLine()
     {
         var opDisplay = Operation.Type switch
@@ -68,40 +67,53 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         return $"Perform Find/Replace [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        // NoInteract inverted: state="True" = With dialog: Off
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var opEl = step.Element("FindReplaceOperation");
-        var op = opEl is not null ? FindReplaceOperation.FromXml(opEl) : FindReplaceOperation.Default();
-        var findEl = step.Element("FindCalc")?.Element("Calculation");
-        var find = findEl is not null ? Calculation.FromXml(findEl) : new Calculation("");
-        var replaceEl = step.Element("ReplaceCalc")?.Element("Calculation");
-        var replace = replaceEl is not null ? Calculation.FromXml(replaceEl) : null;
-        return new PerformFindReplaceStep(withDialog, op, find, replace, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<PerformFindReplaceStep>(step, Metadata);
+
+    /// <summary>
+    /// Display edits are anchor-preserved when operation state the display
+    /// line cannot carry is present: match flags, a non-forward direction,
+    /// or non-default within/across scopes (the display shows only the
+    /// operation type).
+    /// </summary>
+    public override bool IsFullyEditable =>
+        Operation is { MatchWholeWords: false, MatchCase: false, Direction: "Forward", WithinOptions: "All", AcrossOptions: "All" };
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Display is lossy — operation flags like MatchCase can't be
-        // expressed in this short form.
+        // Display grammar: [ With dialog: On/Off ; find ; replace? ; operation ].
+        // The last positional token is the operation type; earlier positional
+        // tokens are the find and optional replace calcs.
         bool withDialog = true;
-        Calculation find = new("");
-        Calculation? replace = null;
-        int positional = 0;
+        var positional = new List<string>();
         foreach (var tok in hrParams)
         {
             var t = tok.Trim();
             if (t.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))
                 withDialog = t.Substring(12).Trim().Equals("On", StringComparison.OrdinalIgnoreCase);
-            else if (!string.IsNullOrWhiteSpace(t))
-            {
-                if (positional == 0) { find = new Calculation(t); positional++; }
-                else if (positional == 1) { replace = new Calculation(t); positional++; }
-            }
+            else
+                positional.Add(t);
         }
-        return new PerformFindReplaceStep(withDialog, FindReplaceOperation.Default(), find, replace, enabled);
+
+        var opType = "FindNext";
+        if (positional.Count > 0)
+        {
+            opType = positional[^1] switch
+            {
+                "Find Next" => "FindNext",
+                "Replace and Find" => "ReplaceAndFind",
+                "Replace" => "Replace",
+                "Replace All" => "ReplaceAll",
+                var other => other,
+            };
+            positional.RemoveAt(positional.Count - 1);
+        }
+
+        Calculation find = positional.Count > 0 ? new(positional[0]) : new("");
+        Calculation? replace = positional.Count > 1 ? new(positional[1]) : null;
+        // Canonical unconfigured operation flags; configured flags are sealed state.
+        var operation = new FindReplaceOperation(opType, "Forward", false, false, "All", "All");
+        return new PerformFindReplaceStep(withDialog, operation, find, replace, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -110,12 +122,14 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "editing",
         HelpUrl = "https://help.claris.com/en/pro-help/content/perform-find-replace.html",
-        Params =
+        // Canonical: NoInteract (inverts WithDialog) then FindReplaceOperation;
+        // the FindCalc/ReplaceCalc wrappers are omitted when empty (Optional).
+        Shape =
         [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "FindReplaceOperation", XmlElement = "FindReplaceOperation", Type = "complex", Required = true },
-            new ParamMetadata { Name = "FindCalc", XmlElement = "Calculation", Type = "namedCalc", Required = true },
-            new ParamMetadata { Name = "ReplaceCalc", XmlElement = "Calculation", Type = "namedCalc" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Native },
+            new ValueTypeChild("FindReplaceOperation") { PocoProperty = "Operation", Display = DisplayMode.Native },
+            new NamedCalcChild("FindCalc") { PocoProperty = "FindText", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("ReplaceCalc") { PocoProperty = "ReplaceText", Optional = true, Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

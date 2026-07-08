@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Registry;
 
@@ -45,8 +46,14 @@ public sealed record StepMetadata
     /// </summary>
     public StepBlockPair? BlockPair { get; init; }
 
-    /// <summary>Typed descriptions of the step's parameters.</summary>
-    public IReadOnlyList<ParamMetadata> Params { get; init; } = [];
+    /// <summary>
+    /// Ordered declarative description of the step's wire shape — the single
+    /// source of truth that drives XML emission, parsing, validation, and the
+    /// display consumers (param synthesis, script validation, completion via
+    /// <see cref="Shapes.ShapeHrView"/>). Element order in emitted XML matches
+    /// this list, satisfying FileMaker's canonical element-order requirements.
+    /// </summary>
+    public IReadOnlyList<ShapeNode> Shape { get; init; } = [];
 
     /// <summary>Behavioural intelligence — tooltip / lint source.</summary>
     public StepNotes? Notes { get; init; }

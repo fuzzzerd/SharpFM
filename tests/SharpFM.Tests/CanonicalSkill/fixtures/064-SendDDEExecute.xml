@@ -1,0 +1,3 @@
+<Step enable="True" id="64" name="Send DDE Execute">
+  <ContentType value="File" />
+</Step>

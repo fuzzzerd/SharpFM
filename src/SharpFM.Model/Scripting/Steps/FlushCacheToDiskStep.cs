@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -13,21 +14,19 @@ public sealed class FlushCacheToDiskStep : ScriptStep, IStepFactory
     public const int XmlId = 102;
     public const string XmlName = "Flush Cache to Disk";
 
+    private FlushCacheToDiskStep() : base(false) { }
+
     public FlushCacheToDiskStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
-        new FlushCacheToDiskStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<FlushCacheToDiskStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new FlushCacheToDiskStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<FlushCacheToDiskStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

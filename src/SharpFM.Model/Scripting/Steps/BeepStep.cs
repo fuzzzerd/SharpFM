@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -19,21 +20,19 @@ public sealed class BeepStep : ScriptStep, IStepFactory
     public const int XmlId = 93;
     public const string XmlName = "Beep";
 
+    private BeepStep() : base(false) { }
+
     public BeepStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
-        new BeepStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<BeepStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new BeepStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<BeepStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

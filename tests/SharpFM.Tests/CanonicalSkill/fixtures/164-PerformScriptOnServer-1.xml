@@ -1,0 +1,4 @@
+<Step enable="True" id="164" name="Perform Script on Server">
+  <WaitForCompletion state="True" />
+  <Script id="N" name="script name" />
+</Step>

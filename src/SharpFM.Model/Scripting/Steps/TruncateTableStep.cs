@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -19,6 +21,9 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
     public bool WithDialog { get; set; }
     public NamedRef Table { get; set; }
     public string? TableComment { get; set; }
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
 
     public TruncateTableStep(bool withDialog = true, NamedRef? table = null, string? tableComment = null, bool enabled = true)
         : base(enabled)
@@ -44,8 +49,7 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             baseTable);
     }
 
-    public override string ToDisplayLine() =>
-        $"Truncate Table [ With dialog: {(WithDialog ? "On" : "Off")} ; Table: {Table.Name} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step)
     {
@@ -57,6 +61,8 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         return new TruncateTableStep(withDialog, table, comment, enabled);
     }
 
+    // Hand-written: the current-table placeholder must keep its fixed id -1,
+    // which the shape parser's uniform NamedRef(0, name) binding cannot express.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         bool withDialog = true;
@@ -71,7 +77,9 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             else if (t.StartsWith("Table:", StringComparison.OrdinalIgnoreCase))
             {
                 var name = t.Substring(6).Trim();
-                table = new NamedRef(0, name);
+                // The current-table placeholder carries the fixed id -1;
+                // real tables carry file-specific ids the canonical form wildcards.
+                table = new NamedRef(name == "<Current Table>" ? -1 : 0, name);
             }
         }
         return new TruncateTableStep(withDialog, table, null, enabled);
@@ -83,26 +91,13 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/truncate-table.html",
-        Params =
+        // Shape backs the HR/display metadata and canonical-order lint only;
+        // ToXml/FromXml stay hand-written so the optional BaseTable comment
+        // attribute is preserved, and the shape renderer/parser never runs.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                XmlAttr = "state",
-                Type = "boolean",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "BaseTable",
-                XmlElement = "BaseTable",
-                Type = "tableReference",
-                HrLabel = "Table",
-                Required = true,
-            },
+            new BoolStateChild("NoInteract") { HrLabel = "With dialog", DisplayInverted = true },
+            new NamedRefChild("BaseTable") { PocoProperty = "Table", HrLabel = "Table" },
         ],
         Notes = new StepNotes
         {

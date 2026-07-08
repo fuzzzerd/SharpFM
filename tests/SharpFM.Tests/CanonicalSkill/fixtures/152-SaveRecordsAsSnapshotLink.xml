@@ -1,0 +1,5 @@
+<Step enable="True" id="152" name="Save Records as Snapshot Link">
+  <CreateDirectories state="True" />
+  <CreateEmail state="False" />
+  <SaveType value="BrowsedRecords" />
+</Step>

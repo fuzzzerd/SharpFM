@@ -1,15 +1,18 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
-/// Go to Related Record. Required Table reference (source relationship).
-/// Optional Layout, ShowInNewWindow (mutually exclusive with Animation),
-/// plus MatchAllRecords and Option flags. When ShowInNewWindow is True,
-/// window geometry is carried by NewWndStyles.
+/// Go to Related Record (74). Canonical form (skill, navigation reference):
+/// Option, MatchAllRecords, ShowInNewWindow and Restore flags, then
+/// LayoutDestination, the NewWndStyles attribute element, the always-present
+/// Table reference, and an optional Layout. The skill documents no
+/// <c>&lt;Animation&gt;</c> element for this step, so SharpFM no longer emits one.
 /// </summary>
 public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
 {
@@ -20,11 +23,21 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
     public bool MatchAllRecords { get; set; }
     public bool ShowInNewWindow { get; set; }
     public bool RestoreWindowGeometry { get; set; }
-    public string LayoutDestination { get; set; }
-    public NewWindowStyles WindowStyles { get; set; }
-    public NamedRef Table { get; set; }
-    public NamedRef Layout { get; set; }
-    public string Animation { get; set; }
+    public string LayoutDestination { get; set; } = "SelectedLayout";
+    public NewWindowStyles WindowStyles { get; set; } = NewWindowStyles.Default();
+    public NamedRef Table { get; set; } = new(0, "");
+    public NamedRef? Layout { get; set; }
+
+    /// <summary>
+    /// Display edits are anchor-preserved when the step carries state the
+    /// display line cannot express: a Restore-off flag, a non-default layout
+    /// destination, or customized new-window styles.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        RestoreWindowGeometry && LayoutDestination == "SelectedLayout"
+        && WindowStyles == NewWindowStyles.Default();
+
+    private GoToRelatedRecordStep() : base(false) { }
 
     public GoToRelatedRecordStep(
         bool showOnlyRelated = false,
@@ -35,7 +48,6 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         NewWindowStyles? windowStyles = null,
         NamedRef? table = null,
         NamedRef? layout = null,
-        string animation = "None",
         bool enabled = true)
         : base(enabled)
     {
@@ -46,30 +58,18 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         LayoutDestination = layoutDestination;
         WindowStyles = windowStyles ?? NewWindowStyles.Default();
         Table = table ?? new NamedRef(0, "");
-        Layout = layout ?? new NamedRef(0, "");
-        Animation = animation;
+        Layout = layout;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", ShowOnlyRelated ? "True" : "False")),
-            new XElement("MatchAllRecords", new XAttribute("state", MatchAllRecords ? "True" : "False")),
-            new XElement("ShowInNewWindow", new XAttribute("state", ShowInNewWindow ? "True" : "False")),
-            new XElement("Restore", new XAttribute("state", RestoreWindowGeometry ? "True" : "False")),
-            new XElement("LayoutDestination", new XAttribute("value", LayoutDestination)),
-            WindowStyles.ToXml(),
-            Table.ToXml("Table"),
-            Layout.ToXml("Layout"),
-            new XElement("Animation", new XAttribute("value", Animation)));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: quoted "From table:"/"Using layout:" grammar the shape
+    // renderer cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();
         parts.Add($"From table: \"{Table.Name}\"");
-        if (Layout.Id != 0 || !string.IsNullOrEmpty(Layout.Name))
+        if (Layout is not null && (Layout.Id != 0 || !string.IsNullOrEmpty(Layout.Name)))
             parts.Add($"Using layout: \"{Layout.Name}\"");
         if (ShowOnlyRelated) parts.Add("Show only related records");
         if (MatchAllRecords) parts.Add("Match found set");
@@ -77,30 +77,15 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         return $"Go to Related Record [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var option = step.Element("Option")?.Attribute("state")?.Value == "True";
-        var matchAll = step.Element("MatchAllRecords")?.Attribute("state")?.Value == "True";
-        var newWin = step.Element("ShowInNewWindow")?.Attribute("state")?.Value == "True";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var dest = step.Element("LayoutDestination")?.Attribute("value")?.Value ?? "SelectedLayout";
-        var stylesEl = step.Element("NewWndStyles");
-        var styles = stylesEl is not null ? NewWindowStyles.FromXml(stylesEl) : NewWindowStyles.Default();
-        var tableEl = step.Element("Table");
-        var table = tableEl is not null ? NamedRef.FromXml(tableEl) : new NamedRef(0, "");
-        var layoutEl = step.Element("Layout");
-        var layout = layoutEl is not null ? NamedRef.FromXml(layoutEl) : new NamedRef(0, "");
-        var animation = step.Element("Animation")?.Attribute("value")?.Value ?? "None";
-        return new GoToRelatedRecordStep(option, matchAll, newWin, restore, dest, styles, table, layout, animation, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<GoToRelatedRecordStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Display form is lossy — NewWndStyles attrs, animation, and
-        // LayoutDestination calc variants can't all round-trip.
+        // Display form is lossy — NewWndStyles attrs and LayoutDestination calc
+        // variants can't all round-trip.
         NamedRef table = new(0, "");
-        NamedRef layout = new(0, "");
+        NamedRef? layout = null;
         bool showOnly = false, matchAll = false, newWindow = false;
         foreach (var tok in hrParams)
         {
@@ -116,7 +101,7 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
             else if (t.Equals("New window", StringComparison.OrdinalIgnoreCase))
                 newWindow = true;
         }
-        return new GoToRelatedRecordStep(showOnly, matchAll, newWindow, true, "SelectedLayout", null, table, layout, "None", enabled);
+        return new GoToRelatedRecordStep(showOnly, matchAll, newWindow, true, "SelectedLayout", null, table, layout, enabled);
     }
 
     private static string Unquote(string s)
@@ -131,17 +116,22 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-related-record.html",
-        Params =
+        // Canonical order: Option, MatchAllRecords, ShowInNewWindow, Restore,
+        // LayoutDestination, NewWndStyles, Table (always), optional Layout.
+        // No <Animation> for this step (skill).
+        Shape =
         [
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean", HrLabel = "Show only related records" },
-            new ParamMetadata { Name = "MatchAllRecords", XmlElement = "MatchAllRecords", XmlAttr = "state", Type = "boolean", HrLabel = "Match found set" },
-            new ParamMetadata { Name = "ShowInNewWindow", XmlElement = "ShowInNewWindow", XmlAttr = "state", Type = "boolean", HrLabel = "New window" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum", ValidValues = ["CurrentLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc", "UseExternalTableLayouts"] },
-            new ParamMetadata { Name = "Table", XmlElement = "Table", Type = "tableOccurrence", Required = true },
-            new ParamMetadata { Name = "Layout", XmlElement = "Layout", Type = "layoutRef" },
-            new ParamMetadata { Name = "NewWndStyles", XmlElement = "NewWndStyles", Type = "complex" },
-            new ParamMetadata { Name = "Animation", XmlElement = "Animation", XmlAttr = "value", Type = "enum" },
+            new BoolStateChild("Option") { PocoProperty = "ShowOnlyRelated", HrLabel = "Show only related records", Display = DisplayMode.Augmented },
+            new BoolStateChild("MatchAllRecords") { PocoProperty = "MatchAllRecords", HrLabel = "Match found set", Display = DisplayMode.Augmented },
+            new BoolStateChild("ShowInNewWindow") { PocoProperty = "ShowInNewWindow", HrLabel = "New window", Display = DisplayMode.Augmented },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreWindowGeometry", Display = DisplayMode.Hidden },
+            new EnumValueChild("LayoutDestination") { PocoProperty = "LayoutDestination", DefaultValue = "SelectedLayout", Display = DisplayMode.Hidden },
+            new ValueTypeChild("NewWndStyles") { PocoProperty = "WindowStyles", Display = DisplayMode.Hidden },
+            new HrOnly("Restore") { Boolean = true },
+            new HrOnly("LayoutDestination") { DisplayValues = ["CurrentLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc", "UseExternalTableLayouts"] },
+            new NamedRefChild("Table") { PocoProperty = "Table", Required = true, Display = DisplayMode.Native },
+            new NamedRefChild("Layout") { PocoProperty = "Layout", Optional = true, Display = DisplayMode.Native },
+            new HrOnly("NewWndStyles"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

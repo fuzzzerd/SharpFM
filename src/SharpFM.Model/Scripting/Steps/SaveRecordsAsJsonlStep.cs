@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -30,6 +32,8 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
     public FieldRef? SourceField { get; set; }
     public NamedRef? Table { get; set; }
 
+    private SaveRecordsAsJsonlStep() : base(false) { Path = ""; }
+
     public SaveRecordsAsJsonlStep(
         bool optionEnableTable = false, bool createDirectories = false, bool fineTuneFormat = true,
         bool autoOpen = false, bool createEmail = false,
@@ -53,78 +57,72 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
         Table = table;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Option", new XAttribute("state", OptionEnableTable ? "True" : "False")),
-            new XElement("CreateDirectories", new XAttribute("state", CreateDirectories ? "True" : "False")),
-            new XElement("FineTuneFormat", new XAttribute("state", FineTuneFormat ? "True" : "False")),
-            new XElement("AutoOpen", new XAttribute("state", AutoOpen ? "True" : "False")),
-            new XElement("CreateEmail", new XAttribute("state", CreateEmail ? "True" : "False")),
-            new XElement("UniversalPathList", Path));
-        if (CompletionField is not null) step.Add(CompletionField.ToXml("Field"));
-        var bulk = new XElement("SaveAsJSONL");
-        if (FineTuneFormat)
-        {
-            if (SystemPrompt is not null) bulk.Add(new XElement("SystemPrompt", SystemPrompt.ToXml("Calculation")));
-            if (UserPrompt is not null) bulk.Add(new XElement("UserPrompt", UserPrompt.ToXml("Calculation")));
-            if (AssistantPrompt is not null) bulk.Add(new XElement("AssistantPrompt", AssistantPrompt.ToXml("Calculation")));
-        }
-        else
-        {
-            if (SourceField is not null) bulk.Add(SourceField.ToXml("Field"));
-        }
-        step.Add(bulk);
-        if (Table is not null) step.Add(Table.ToXml("Table"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the display line shows only the conditional file and format tokens, hiding the option flags the shape renderer would surface.
     public override string ToDisplayLine() =>
         $"Save Records as JSONL [ {Path} ; Format: {(FineTuneFormat ? "Fine-Tune" : "Completion")} ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        static Calculation? ReadCalc(XElement? parent) => parent?.Element("Calculation") is { } c ? Calculation.FromXml(c) : null;
-        var bulk = step.Element("SaveAsJSONL");
-        var topField = step.Element("Field");
-        var tableEl = step.Element("Table");
-        return new SaveRecordsAsJsonlStep(
-            step.Element("Option")?.Attribute("state")?.Value == "True",
-            step.Element("CreateDirectories")?.Attribute("state")?.Value == "True",
-            step.Element("FineTuneFormat")?.Attribute("state")?.Value == "True",
-            step.Element("AutoOpen")?.Attribute("state")?.Value == "True",
-            step.Element("CreateEmail")?.Attribute("state")?.Value == "True",
-            step.Element("UniversalPathList")?.Value ?? "",
-            ReadCalc(bulk?.Element("SystemPrompt")),
-            ReadCalc(bulk?.Element("UserPrompt")),
-            ReadCalc(bulk?.Element("AssistantPrompt")),
-            topField is not null ? FieldRef.FromXml(topField) : null,
-            bulk?.Element("Field") is { } sf ? FieldRef.FromXml(sf) : null,
-            tableEl is not null ? NamedRef.FromXml(tableEl) : null,
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SaveRecordsAsJsonlStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        new SaveRecordsAsJsonlStep(enabled: enabled);
+    /// <summary>
+    /// Display edits are anchor-preserved when state the display line cannot
+    /// carry is present: prompt calcs, completion/source fields, a table
+    /// reference, or the flags the display grammar does not show (it carries
+    /// only the path and format).
+    /// </summary>
+    public override bool IsFullyEditable =>
+        !OptionEnableTable && !CreateDirectories && !AutoOpen && !CreateEmail
+        && SystemPrompt is null && UserPrompt is null && AssistantPrompt is null
+        && CompletionField is null && SourceField is null && Table is null;
+
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    {
+        // Display grammar: [ path ; Format: Fine-Tune/Completion ].
+        string path = "";
+        bool fineTuneFormat = false;
+        foreach (var tok in hrParams)
+        {
+            var t = tok.Trim();
+            if (t.StartsWith("Format:", System.StringComparison.OrdinalIgnoreCase))
+                fineTuneFormat = t.Substring(7).Trim().Equals("Fine-Tune", System.StringComparison.OrdinalIgnoreCase);
+            else if (!string.IsNullOrWhiteSpace(t))
+                path = t;
+        }
+        return new SaveRecordsAsJsonlStep(fineTuneFormat: fineTuneFormat, path: path, enabled: enabled);
+    }
 
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
         Id = XmlId,
         Category = "files",
-        Params =
+        // Canonical order: five always-emitted flags, the optional path, an
+        // optional top-level completion Field, the always-emitted SaveAsJSONL
+        // wrapper (empty when unconfigured) holding the optional prompt calcs and
+        // the inner source Field, then an optional Table. Each non-flag child is
+        // Optional so the unconfigured form emits only the flags and empty wrapper.
+        Shape =
         [
-            new ParamMetadata { Name = "Option", XmlElement = "Option", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateDirectories", XmlElement = "CreateDirectories", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "FineTuneFormat", XmlElement = "FineTuneFormat", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "AutoOpen", XmlElement = "AutoOpen", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "CreateEmail", XmlElement = "CreateEmail", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "SaveAsJSONL", XmlElement = "SaveAsJSONL", Type = "complex" },
+            new BoolStateChild("Option") { PocoProperty = "OptionEnableTable" },
+            new BoolStateChild("CreateDirectories") { PocoProperty = "CreateDirectories" },
+            new BoolStateChild("FineTuneFormat") { PocoProperty = "FineTuneFormat" },
+            new BoolStateChild("AutoOpen") { PocoProperty = "AutoOpen" },
+            new BoolStateChild("CreateEmail") { PocoProperty = "CreateEmail" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true },
+            new FieldChild() { PocoProperty = "CompletionField", Optional = true, Display = DisplayMode.Hidden },
+            new WrapperChild("SaveAsJSONL",
+            [
+                new NamedCalcChild("SystemPrompt") { PocoProperty = "SystemPrompt", Optional = true, Display = DisplayMode.Hidden },
+                new NamedCalcChild("UserPrompt") { PocoProperty = "UserPrompt", Optional = true, Display = DisplayMode.Hidden },
+                new NamedCalcChild("AssistantPrompt") { PocoProperty = "AssistantPrompt", Optional = true, Display = DisplayMode.Hidden },
+                new FieldChild() { PocoProperty = "SourceField", Optional = true, Display = DisplayMode.Hidden },
+            ]),
+            // The wrapper's mode-specific contents surface as one opaque
+            // display slot, mirroring the legacy SaveAsJSONL param.
+            new HrOnly("SaveAsJSONL"),
+            new NamedRefChild("Table") { PocoProperty = "Table", Optional = true, Display = DisplayMode.Hidden },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

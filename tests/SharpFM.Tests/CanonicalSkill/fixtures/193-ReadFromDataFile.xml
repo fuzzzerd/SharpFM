@@ -1,0 +1,3 @@
+<Step enable="True" id="193" name="Read from Data File">
+  <DataSourceType value="3" />
+</Step>

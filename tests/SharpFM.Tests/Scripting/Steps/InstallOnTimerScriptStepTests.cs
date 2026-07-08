@@ -7,8 +7,9 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class InstallOnTimerScriptStepTests
 {
+    // Canonical §8.1 element order: Interval -> Script (was Script -> Interval).
     private const string CanonicalXml = """
-        <Step enable="True" id="148" name="Install OnTimer Script"><Script id="5" name="Refresh" /><Interval><Calculation><![CDATA[30]]></Calculation></Interval></Step>
+        <Step enable="True" id="148" name="Install OnTimer Script"><Interval><Calculation><![CDATA[30]]></Calculation></Interval><Script id="5" name="Refresh" /></Step>
         """;
 
     [Fact]

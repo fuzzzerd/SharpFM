@@ -1,0 +1,15 @@
+<Step enable="True" id="28" name="Perform Find">
+  <Restore state="True" />
+  <Query>
+    <RequestRow operation="Include">
+      <Criteria>
+        <Field table="TableOccurrence" id="N" name="field_a" />
+        <Text>==$variable</Text>
+      </Criteria>
+      <Criteria>
+        <Field table="TableOccurrence" id="N" name="field_b" />
+        <Text>*</Text>
+      </Criteria>
+    </RequestRow>
+  </Query>
+</Step>

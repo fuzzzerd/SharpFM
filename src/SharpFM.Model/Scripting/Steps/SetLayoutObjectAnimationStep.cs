@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,39 +19,23 @@ public sealed class SetLayoutObjectAnimationStep : ScriptStep, IStepFactory
     /// <summary>The <c>Animation</c> flag on the step.</summary>
     public bool Animation { get; set; }
 
+    private SetLayoutObjectAnimationStep() : base(false) { }
+
     public SetLayoutObjectAnimationStep(bool animation = true, bool enabled = true)
         : base(enabled)
     {
         Animation = animation;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("Set",
-                new XAttribute("state", Animation ? "True" : "False")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Set Layout Object Animation [ Animation: {(Animation ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("Set")?.Attribute("state")?.Value == "True";
-        return new SetLayoutObjectAnimationStep(state, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetLayoutObjectAnimationStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "Animation:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        var isOn = token.Equals("On", StringComparison.OrdinalIgnoreCase);
-        return new SetLayoutObjectAnimationStep(isOn, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetLayoutObjectAnimationStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,17 +43,9 @@ public sealed class SetLayoutObjectAnimationStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "control",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-layout-object-animation.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Set",
-                XmlElement = "Set",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Animation",
-                ValidValues = ["On", "Off"],
-            },
+            new BoolStateChild("Set") { PocoProperty = "Animation", HrLabel = "Animation" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

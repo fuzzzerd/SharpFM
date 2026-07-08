@@ -1,0 +1,3 @@
+<Step enable="True" id="240" name="Insert Image Captions in Found Set">
+  <LLMBulkEmbedding />
+</Step>

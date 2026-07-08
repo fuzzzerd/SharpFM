@@ -1,0 +1,7 @@
+<Step enable="True" id="121" name="Close Window">
+  <LimitToWindowsOfCurrentFile state="True" />
+  <Window value="ByName" />
+  <Name>
+    <Calculation><![CDATA["window name"]]></Calculation>
+  </Name>
+</Step>

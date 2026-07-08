@@ -75,26 +75,23 @@ public class ScriptValidatorTests
     }
 
     [Fact]
-    public void GetValidValues_BooleanParam_ReturnsOnOff()
+    public void DisplayValues_BooleanSlot_ReturnsOnOff()
     {
-        var param = new SharpFM.Model.Scripting.Registry.ParamMetadata
-        {
-            Name = "x", XmlElement = "X", Type = "boolean",
-        };
-        var valid = SharpFM.Model.Scripting.Registry.StepRegistry.GetValidValues(param);
+        var slot = new SharpFM.Model.Scripting.Shapes.BoolStateChild("X");
+        var valid = SharpFM.Model.Scripting.Shapes.ShapeHrView.DisplayValuesOf(slot);
         Assert.Contains("On", valid);
         Assert.Contains("Off", valid);
     }
 
     [Fact]
-    public void GetValidValues_ExplicitValidValues_ReturnsThose()
+    public void DisplayValues_ExplicitDisplayValues_WinOverWire()
     {
-        var param = new SharpFM.Model.Scripting.Registry.ParamMetadata
+        var slot = new SharpFM.Model.Scripting.Shapes.EnumValueChild("X")
         {
-            Name = "x", XmlElement = "X", Type = "enum",
-            ValidValues = ["Alpha", "Beta"],
+            ValidValues = ["WireAlpha", "WireBeta"],
+            DisplayValues = ["Alpha", "Beta"],
         };
-        var valid = SharpFM.Model.Scripting.Registry.StepRegistry.GetValidValues(param);
+        var valid = SharpFM.Model.Scripting.Shapes.ShapeHrView.DisplayValuesOf(slot);
         Assert.Equal(new[] { "Alpha", "Beta" }, valid);
     }
 

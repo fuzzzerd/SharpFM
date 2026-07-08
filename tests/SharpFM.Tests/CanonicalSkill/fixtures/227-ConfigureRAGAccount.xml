@@ -1,0 +1,4 @@
+<Step enable="True" id="227" name="Configure RAG Account ">
+  <VerifySSLCertificates state="False" />
+  <ConfigureRAGAccount />
+</Step>

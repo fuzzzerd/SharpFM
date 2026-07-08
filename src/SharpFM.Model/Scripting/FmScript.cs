@@ -234,14 +234,16 @@ public class FmScript
 
     /// <summary>
     /// Convert a caller's param map into the ordered HR-token form each step's
-    /// FromDisplay factory expects. Iterates the step's metadata in declared
-    /// order, formatting each match as <c>"HrLabel: value"</c> when the param
-    /// has a label and as a raw positional value when it doesn't (e.g.
+    /// FromDisplay factory expects. Iterates the shape's display slots in
+    /// display order, formatting each match as <c>"HrLabel: value"</c> when the
+    /// slot has a label and as a raw positional value when it doesn't (e.g.
     /// <c>SetVariableStep.Name</c>, <c>IfStep.Condition</c> — these go straight
     /// into <c>&lt;Name&gt;</c> / <c>&lt;Calculation&gt;</c> without prefix).
+    /// Keys may address a slot by its bound property, its XML element, or its
+    /// display label, so pre-cutover param names keep working.
     /// </summary>
     /// <remarks>
-    /// The previous implementation labeled every non-empty key, which caused
+    /// An earlier implementation labeled every non-empty key, which caused
     /// positional params to receive a <c>"Name: $foo"</c> string verbatim into
     /// XML — structurally valid but semantically broken under FileMaker.
     /// </remarks>
@@ -254,15 +256,16 @@ public class FmScript
         var consumedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<string>(map.Count);
 
-        foreach (var paramMeta in metadata.Params)
+        foreach (var node in Shapes.ShapeHrView.HrNodes(metadata.Shape))
         {
-            var matchedKey = FindMatchingKey(map, paramMeta.Name);
+            var matchedKey = map.Keys.FirstOrDefault(k =>
+                !consumedKeys.Contains(k) && Shapes.ShapeHrView.MatchesName(node, k));
             if (matchedKey is null) continue;
 
             consumedKeys.Add(matchedKey);
             var value = map[matchedKey];
-            result.Add(paramMeta.HrLabel is not null
-                ? $"{paramMeta.HrLabel}: {value}"
+            result.Add(node.HrLabel is not null
+                ? $"{node.HrLabel}: {value}"
                 : value);
         }
 
@@ -276,16 +279,6 @@ public class FmScript
         }
 
         return result.ToArray();
-    }
-
-    private static string? FindMatchingKey(IReadOnlyDictionary<string, string> map, string paramName)
-    {
-        foreach (var (k, _) in map)
-        {
-            if (string.Equals(k, paramName, StringComparison.OrdinalIgnoreCase))
-                return k;
-        }
-        return null;
     }
 
     private List<string> ApplyRemove(ScriptStepOperation op)

@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -15,9 +17,11 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
     public const string XmlName = "Go to List of Records";
 
     public bool ShowInNewWindow { get; set; }
-    public string LayoutDestination { get; set; }
-    public Calculation RowList { get; set; }
-    public NewWindowStyles WindowStyles { get; set; }
+    public string LayoutDestination { get; set; } = "CurrentLayout";
+    public Calculation? RowList { get; set; }
+    public NewWindowStyles WindowStyles { get; set; } = NewWindowStyles.Default();
+
+    private GoToListOfRecordsStep() : base(false) { }
 
     public GoToListOfRecordsStep(
         bool showInNewWindow = false,
@@ -29,46 +33,32 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
     {
         ShowInNewWindow = showInNewWindow;
         LayoutDestination = layoutDestination;
-        RowList = rowList ?? new Calculation("");
+        RowList = rowList;
         WindowStyles = windowStyles ?? NewWindowStyles.Default();
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("ShowInNewWindow", new XAttribute("state", ShowInNewWindow ? "True" : "False")),
-            new XElement("LayoutDestination", new XAttribute("value", LayoutDestination)),
-            new XElement("RowList", RowList.ToXml("Calculation")),
-            WindowStyles.ToXml());
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: shows RowList/Layout in the reverse of canonical XML order
+    // and "New window" as a conditional bare token a BoolStateChild cannot render.
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
         {
-            $"Records: {RowList.Text}",
+            $"Records: {RowList?.Text ?? ""}",
             $"Layout: {LayoutDestination}",
         };
         if (ShowInNewWindow) parts.Add("New window");
         return $"Go to List of Records [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var newWin = step.Element("ShowInNewWindow")?.Attribute("state")?.Value == "True";
-        var dest = step.Element("LayoutDestination")?.Attribute("value")?.Value ?? "CurrentLayout";
-        var listEl = step.Element("RowList")?.Element("Calculation");
-        var rowList = listEl is not null ? Calculation.FromXml(listEl) : new Calculation("");
-        var stylesEl = step.Element("NewWndStyles");
-        var styles = stylesEl is not null ? NewWindowStyles.FromXml(stylesEl) : NewWindowStyles.Default();
-        return new GoToListOfRecordsStep(newWin, dest, rowList, styles, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<GoToListOfRecordsStep>(step, Metadata);
 
+    // Hand-written: display is lossy (RowList is the only parseable field) and
+    // an unlabeled shape parse would mis-bind the labeled Records/Layout tokens.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Lossy display — RowList calc is the only field meaningful to parse.
         Calculation rowList = new("");
         foreach (var tok in hrParams)
         {
@@ -85,12 +75,14 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-list-of-records.html",
-        Params =
+        // Canonical: ShowInNewWindow, LayoutDestination, the optional <RowList>
+        // calculation, then the NewWndStyles value type.
+        Shape =
         [
-            new ParamMetadata { Name = "ShowInNewWindow", XmlElement = "ShowInNewWindow", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum" },
-            new ParamMetadata { Name = "RowList", XmlElement = "RowList", Type = "namedCalc", Required = true },
-            new ParamMetadata { Name = "NewWndStyles", XmlElement = "NewWndStyles", Type = "complex" },
+            new BoolStateChild("ShowInNewWindow") { PocoProperty = "ShowInNewWindow", Display = DisplayMode.Native },
+            new EnumValueChild("LayoutDestination") { PocoProperty = "LayoutDestination", DefaultValue = "CurrentLayout", Display = DisplayMode.Native },
+            new NamedCalcChild("RowList") { PocoProperty = "RowList", Optional = true, Display = DisplayMode.Native },
+            new ValueTypeChild("NewWndStyles") { PocoProperty = "WindowStyles", Display = DisplayMode.Native },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

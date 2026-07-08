@@ -8,7 +8,10 @@ namespace SharpFM.Tests.Scripting.Steps;
 
 public class SaveACopyAsXMLStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="3" name="Save a Copy as XML"><Option state="True"/><UniversalPathList>$example</UniversalPathList><Calculation><![CDATA[$x]]></Calculation></Step>""";
+    // Canonical (skill): the pre-FM 26 form is just <Option>; the FM 26 export
+    // options (OutputEntireBinaryData / SpecifyJSONOptions / SaXML) are covered
+    // by the canonical-skill fixture suite (003-SaveACopyAsXML-2).
+    private const string CanonicalXml = """<Step enable="True" id="3" name="Save a Copy as XML"><Option state="True"/></Step>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()

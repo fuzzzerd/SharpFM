@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace SharpFM.Tests.Scripting.Steps;
 /// </summary>
 public class GoToNextFieldStepTests
 {
-    private const string CanonicalXml = """<Step enable="True" id="5" name="Go to Next Field"/>""";
+    private const string CanonicalXml = """<Step enable="True" id="4" name="Go to Next Field"/>""";
 
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()
@@ -34,7 +35,7 @@ public class GoToNextFieldStepTests
     [Fact]
     public void Disabled_RoundTrips()
     {
-        var source = XElement.Parse("""<Step enable="False" id="5" name="Go to Next Field"/>""");
+        var source = XElement.Parse("""<Step enable="False" id="4" name="Go to Next Field"/>""");
         var step = GoToNextFieldStep.Metadata.FromXml!(source);
 
         Assert.False(step.Enabled);
@@ -45,7 +46,7 @@ public class GoToNextFieldStepTests
     public void Registry_HasStep()
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Go to Next Field", out var metadata));
-        Assert.Equal(5, metadata!.Id);
-        Assert.Empty(metadata.Params);
+        Assert.Equal(4, metadata!.Id);
+        Assert.Empty(ShapeHrView.HrNodes(metadata.Shape));
     }
 }

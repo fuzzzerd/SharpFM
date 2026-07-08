@@ -1,0 +1,22 @@
+<Step enable="True" id="242" name="Print PDF">
+  <NoInteract state="True" />
+  <Option state="True" />
+  <UsePrintOptionsFromEnabled state="False" />
+  <SavePrintOptionsToEnabled state="True" />
+  <Restore state="True" />
+  <Text />
+  <Field table="TableOccurrence" id="N" name="field_name" />
+  <PrintSettings PageNumberingOffset="0" PrintToFile="False" ToPage="1" FromPage="1" AllPages="False" collated="True" NumCopies="1" PrintType="BrowsedRecords">
+    <PlatformData PlatformType="PrNm"><![CDATA[...hex...]]></PlatformData>
+    <PlatformData PlatformType="M_PM"><![CDATA[...hex...]]></PlatformData>
+    <PlatformData PlatformType="M_PD"><![CDATA[...hex...]]></PlatformData>
+    <PlatformData PlatformType="MMod"><![CDATA[...hex...]]></PlatformData>
+    <SavePrintOptionsTo>
+      <Field>$variable</Field>
+    </SavePrintOptionsTo>
+    <Password>
+      <Calculation><![CDATA[password expression]]></Calculation>
+    </Password>
+    <SaveType>File</SaveType>
+  </PrintSettings>
+</Step>

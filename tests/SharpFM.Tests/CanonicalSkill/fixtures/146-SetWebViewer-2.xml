@@ -1,0 +1,6 @@
+<Step enable="True" id="146" name="Set Web Viewer">
+  <Action value="Reload" />
+  <ObjectName>
+    <Calculation><![CDATA["myWebViewer"]]></Calculation>
+  </ObjectName>
+</Step>

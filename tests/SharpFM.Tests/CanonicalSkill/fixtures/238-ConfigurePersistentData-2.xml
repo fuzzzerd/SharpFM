@@ -1,0 +1,10 @@
+<Step enable="True" id="238" name="Configure Persistent Data">
+  <Option state="False" />
+  <Value>
+    <Calculation><![CDATA[value expression]]></Calculation>
+  </Value>
+  <InstanceId>
+    <Calculation><![CDATA["instance id"]]></Calculation>
+  </InstanceId>
+  <Name>"entry name"</Name>
+</Step>

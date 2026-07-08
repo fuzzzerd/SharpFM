@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -19,62 +21,26 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
     /// <summary>The enum XML value emitted on the <c>&lt;View&gt;</c> element.</summary>
     public string View { get; set; }
 
+    private ViewAsStep() : base(false)
+    {
+        View = "Cycle";
+    }
+
     public ViewAsStep(string view = "Cycle", bool enabled = true)
         : base(enabled)
     {
         View = view;
     }
 
-    private static readonly IReadOnlyDictionary<string, string> _xmlToHr =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["Cycle"] = "Cycle",
-        ["Form"] = "View as Form",
-        ["List"] = "View as List",
-        ["Table"] = "View as Table",
-    };
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    private static readonly IReadOnlyDictionary<string, string> _hrToXml =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Cycle"] = "Cycle",
-        ["View as Form"] = "Form",
-        ["View as List"] = "List",
-        ["View as Table"] = "Table",
-    };
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    private static string ToHr(string xmlValue) =>
-        _xmlToHr.TryGetValue(xmlValue, out var hr) ? hr : xmlValue;
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ViewAsStep>(step, Metadata);
 
-    private static string FromHr(string hrValue) =>
-        _hrToXml.TryGetValue(hrValue, out var xml) ? xml : hrValue;
-
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("View",
-                new XAttribute("value", View)));
-
-    public override string ToDisplayLine() =>
-        $"View As [ View: {ToHr(View)} ]";
-
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var value = step.Element("View")?.Attribute("value")?.Value ?? "Cycle";
-        return new ViewAsStep(value, enabled);
-    }
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "View:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        return new ViewAsStep(FromHr(token), enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ViewAsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -82,18 +48,9 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "windows",
         HelpUrl = "https://help.claris.com/en/pro-help/content/view-as.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "View",
-                XmlElement = "View",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "View",
-                DefaultValue = "Cycle",
-                ValidValues = ["Cycle", "View as Form", "View as List", "View as Table"],
-            },
+            new EnumValueChild("View") { HrLabel = "View", DefaultValue = "Cycle", ValidValues = ["Cycle", "Form", "List", "Table"], DisplayValues = ["Cycle", "View as Form", "View as List", "View as Table"] },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

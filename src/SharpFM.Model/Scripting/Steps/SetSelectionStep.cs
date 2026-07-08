@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -16,8 +18,10 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
     public const string XmlName = "Set Selection";
 
     public FieldRef? Field { get; set; }
-    public Calculation StartPosition { get; set; }
-    public Calculation EndPosition { get; set; }
+    public Calculation StartPosition { get; set; } = new("");
+    public Calculation EndPosition { get; set; } = new("");
+
+    private SetSelectionStep() : base(false) { }
 
     public SetSelectionStep(FieldRef? field = null, Calculation? startPosition = null, Calculation? endPosition = null, bool enabled = true)
         : base(enabled)
@@ -27,53 +31,15 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
         EndPosition = endPosition ?? new Calculation("");
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        if (Field is not null) step.Add(Field.ToXml("Field"));
-        step.Add(new XElement("StartPosition", StartPosition.ToXml("Calculation")));
-        step.Add(new XElement("EndPosition", EndPosition.ToXml("Calculation")));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine()
-    {
-        var field = Field is null ? "" : $"{Field.ToDisplayString()} ; ";
-        return $"Set Selection [ {field}Start Position: {StartPosition.Text} ; End Position: {EndPosition.Text} ]";
-    }
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var fieldEl = step.Element("Field");
-        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        var startEl = step.Element("StartPosition")?.Element("Calculation");
-        var start = startEl is not null ? Calculation.FromXml(startEl) : new Calculation("");
-        var endEl = step.Element("EndPosition")?.Element("Calculation");
-        var end = endEl is not null ? Calculation.FromXml(endEl) : new Calculation("");
-        return new SetSelectionStep(field, start, end, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetSelectionStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        FieldRef? field = null;
-        Calculation start = new("");
-        Calculation end = new("");
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Start Position:", StringComparison.OrdinalIgnoreCase))
-                start = new Calculation(t.Substring(15).Trim());
-            else if (t.StartsWith("End Position:", StringComparison.OrdinalIgnoreCase))
-                end = new Calculation(t.Substring(13).Trim());
-            else if (!string.IsNullOrWhiteSpace(t) && field is null)
-                field = FieldRef.FromDisplayToken(t);
-        }
-        return new SetSelectionStep(field, start, end, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetSelectionStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -81,11 +47,13 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "editing",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-selection.html",
-        Params =
+        // Field, StartPosition and EndPosition are all omitted by the
+        // unconfigured form (Optional).
+        Shape =
         [
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Field" },
-            new ParamMetadata { Name = "StartPosition", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Start Position", Required = true },
-            new ParamMetadata { Name = "EndPosition", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "End Position", Required = true },
+            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
+            new NamedCalcChild("StartPosition") { PocoProperty = "StartPosition", HrLabel = "Start Position", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new NamedCalcChild("EndPosition") { PocoProperty = "EndPosition", HrLabel = "End Position", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

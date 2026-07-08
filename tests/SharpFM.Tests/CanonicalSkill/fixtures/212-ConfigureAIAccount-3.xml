@@ -1,0 +1,15 @@
+<Step enable="True" id="212" name="Configure AI Account">
+  <VerifySSLCertificates state="False" />
+  <LLMType value="Other" />
+  <SetLLMAccount>
+    <AccountName>
+      <Calculation><![CDATA["account name"]]></Calculation>
+    </AccountName>
+    <Endpoint>
+      <Calculation><![CDATA["https://server.example.com/llm/v1/"]]></Calculation>
+    </Endpoint>
+    <AccessAPIKey>
+      <Calculation><![CDATA["api key"]]></Calculation>
+    </AccessAPIKey>
+  </SetLLMAccount>
+</Step>

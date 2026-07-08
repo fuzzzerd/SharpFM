@@ -3,26 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
+/// <summary>
+/// Configure AI Account (212). Canonical form (skill, AI reference): an optional
+/// <c>&lt;VerifySSLCertificates&gt;</c>, then <c>&lt;LLMType value="…"/&gt;</c>,
+/// then a <c>&lt;SetLLMAccount&gt;</c> wrapper holding the optional account name,
+/// endpoint and API key. <see cref="VerifySSLCertificates"/> is nullable so an
+/// absent flag stays distinct from a present "False".
+/// </summary>
 public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
 {
     public const int XmlId = 212;
     public const string XmlName = "Configure AI Account";
 
-    public Calculation AccountName { get; set; }
-    public string ModelProvider { get; set; }
-    public Calculation Endpoint { get; set; }
-    public bool VerifySSLCertificates { get; set; }
-    public Calculation APIKey { get; set; }
+    public Calculation AccountName { get; set; } = new("");
+    public string ModelProvider { get; set; } = "OpenAI";
+    public Calculation Endpoint { get; set; } = new("");
+    public bool? VerifySSLCertificates { get; set; }
+    public Calculation APIKey { get; set; } = new("");
+
+    private ConfigureAIAccountStep() : base(false) { }
 
     public ConfigureAIAccountStep(
         Calculation? accountName = null,
         string modelProvider = "OpenAI",
         Calculation? endpoint = null,
-        bool verifySSLCertificates = false,
+        bool? verifySSLCertificates = null,
         Calculation? aPIKey = null,
         bool enabled = true)
         : base(enabled)
@@ -51,36 +62,23 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
     private static string ModelProviderHr(string x) => _ModelProviderToHr.TryGetValue(x, out var h) ? h : x;
     private static string ModelProviderXml(string h) => _ModelProviderFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("AccoutName", AccountName.ToXml("Calculation")),
-            new XElement("LLMType", new XAttribute("value", ModelProvider)),
-            new XElement("Endpoint", Endpoint.ToXml("Calculation")),
-            new XElement("VerifySSLCertificates", new XAttribute("state", VerifySSLCertificates ? "True" : "False")),
-            new XElement("AccessAPIKey", APIKey.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: FileMaker's token order (Account Name before Model
+    // Provider, SSL flag fourth) diverges from the canonical XML order, and
+    // the nullable SSL flag renders absent and explicit-False identically.
     public override string ToDisplayLine() =>
-        "Configure AI Account [ " + "Account Name: " + AccountName.Text + " ; " + "Model Provider: " + ModelProviderHr(ModelProvider) + " ; " + "Endpoint: " + Endpoint.Text + " ; " + "Verify SSL Certificates: " + (VerifySSLCertificates ? "On" : "Off") + " ; " + "API key: " + APIKey.Text + " ]";
+        "Configure AI Account [ " + "Account Name: " + AccountName.Text + " ; " + "Model Provider: " + ModelProviderHr(ModelProvider) + " ; " + "Endpoint: " + Endpoint.Text + " ; " + "Verify SSL Certificates: " + (VerifySSLCertificates == true ? "On" : "Off") + " ; " + "API key: " + APIKey.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var accountName_vWrapEl = step.Element("AccoutName");
-        var accountName_vCalcEl = accountName_vWrapEl?.Element("Calculation");
-        var accountName_v = accountName_vCalcEl is not null ? Calculation.FromXml(accountName_vCalcEl) : new Calculation("");
-        var modelProvider_v = step.Element("LLMType")?.Attribute("value")?.Value ?? "OpenAI";
-        var endpoint_vWrapEl = step.Element("Endpoint");
-        var endpoint_vCalcEl = endpoint_vWrapEl?.Element("Calculation");
-        var endpoint_v = endpoint_vCalcEl is not null ? Calculation.FromXml(endpoint_vCalcEl) : new Calculation("");
-        var verifySSLCertificates_v = step.Element("VerifySSLCertificates")?.Attribute("state")?.Value == "True";
-        var aPIKey_vWrapEl = step.Element("AccessAPIKey");
-        var aPIKey_vCalcEl = aPIKey_vWrapEl?.Element("Calculation");
-        var aPIKey_v = aPIKey_vCalcEl is not null ? Calculation.FromXml(aPIKey_vCalcEl) : new Calculation("");
-        return new ConfigureAIAccountStep(accountName_v, modelProvider_v, endpoint_v, verifySSLCertificates_v, aPIKey_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<ConfigureAIAccountStep>(step, Metadata);
+
+    /// <summary>
+    /// Display edits are anchor-preserved when the SSL flag is explicitly
+    /// stored as False: the display renders both the absent and the
+    /// explicit-False forms as "Off", so a parsed "Off" maps to absent.
+    /// </summary>
+    public override bool IsFullyEditable => VerifySSLCertificates != false;
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -91,8 +89,10 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Model Provider:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(15).Trim(); modelProvider_v = ModelProviderXml(v); break; } }
         Calculation? endpoint_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("Endpoint:", StringComparison.OrdinalIgnoreCase)) { endpoint_v = new Calculation(tok.Substring(9).Trim()); break; } }
-        bool verifySSLCertificates_v = false;
-        foreach (var tok in tokens) { if (tok.StartsWith("Verify SSL Certificates:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(24).Trim(); verifySSLCertificates_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
+        // "Off" is ambiguous between absent and explicit False; it maps to
+        // absent (explicit-False instances are sealed).
+        bool? verifySSLCertificates_v = null;
+        foreach (var tok in tokens) { if (tok.StartsWith("Verify SSL Certificates:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(24).Trim(); verifySSLCertificates_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? true : null; break; } }
         Calculation? aPIKey_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("API key:", StringComparison.OrdinalIgnoreCase)) { aPIKey_v = new Calculation(tok.Substring(8).Trim()); break; } }
         return new ConfigureAIAccountStep(accountName_v, modelProvider_v, endpoint_v, verifySSLCertificates_v, aPIKey_v, enabled);
@@ -103,49 +103,18 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
         Name = XmlName,
         Id = XmlId,
         Category = "artificial intelligence",
-        Params =
+        // Canonical: optional VerifySSLCertificates, then LLMType (value attr),
+        // then the <SetLLMAccount> wrapper with the optional account fields.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
-            new ParamMetadata
-            {
-                Name = "LLMType",
-                XmlElement = "LLMType",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Model Provider",
-                ValidValues = ["OpenAI", "Anthropic", "Cohere", "Custom"],
-                DefaultValue = "OpenAI",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Endpoint",
-            },
-            new ParamMetadata
-            {
-                Name = "VerifySSLCertificates",
-                XmlElement = "VerifySSLCertificates",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "Verify SSL Certificates",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "API key",
-            },
+            new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySSLCertificates", HrLabel = "Verify SSL Certificates", Optional = true, Display = DisplayMode.Augmented },
+            new EnumValueChild("LLMType") { PocoProperty = "ModelProvider", HrLabel = "Model Provider", DefaultValue = "OpenAI", DisplayValues = ["OpenAI", "Anthropic", "Cohere", "Custom"], Display = DisplayMode.Augmented },
+            new WrapperChild("SetLLMAccount",
+            [
+                new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
+                new NamedCalcChild("Endpoint") { PocoProperty = "Endpoint", HrLabel = "Endpoint", Optional = true, Display = DisplayMode.Augmented },
+                new NamedCalcChild("AccessAPIKey") { PocoProperty = "APIKey", HrLabel = "API key", Optional = true, Display = DisplayMode.Augmented },
+            ]),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

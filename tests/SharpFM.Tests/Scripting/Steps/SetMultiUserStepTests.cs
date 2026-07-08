@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
 
@@ -37,7 +38,7 @@ public class SetMultiUserStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Set Multi-User", out var metadata));
         Assert.Equal(84, metadata!.Id);
-        Assert.Single(metadata.Params);
-        Assert.Equal("enum", metadata.Params[0].Type);
+        Assert.Single(ShapeHrView.HrNodes(metadata.Shape));
+        Assert.Equal("enum", ShapeHrView.KindOf(ShapeHrView.HrNodes(metadata.Shape)[0]));
     }
 }

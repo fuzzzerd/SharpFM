@@ -1,0 +1,6 @@
+<Step enable="True" id="99" name="Go to Portal Row">
+  <NoInteract state="True" />
+  <SelectAll state="True" />
+  <RowPageLocation value="ByCalculation" />
+  <Calculation><![CDATA[$loop_counter]]></Calculation>
+</Step>

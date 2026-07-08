@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -14,7 +16,28 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
 
     public bool WithDialog { get; set; }
     public bool UseDialPreferences { get; set; }
-    public Calculation Calculation { get; set; }
+    public Calculation? Calculation { get; set; }
+
+    /// <summary>
+    /// XML-facing inverse of <see cref="WithDialog"/>: canonical
+    /// <c>&lt;NoInteract state="…"/&gt;</c> suppresses the dialog, so it is the
+    /// negation of the display-facing flag. The shape binds this so the raw
+    /// state round-trips without re-applying the inversion.
+    /// </summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+
+    /// <summary>
+    /// XML-facing view of <see cref="UseDialPreferences"/>: the canonical form
+    /// omits <c>&lt;UseDialPreferences&gt;</c> until it is enabled, so this is
+    /// null (omitted by the Optional node) when the flag is off.
+    /// </summary>
+    public string? UseDialPreferencesValue
+    {
+        get => UseDialPreferences ? "True" : null;
+        set => UseDialPreferences = value == "True";
+    }
+
+    private DialPhoneStep() : base(false) { }
 
     public DialPhoneStep(
         bool withDialog = true,
@@ -25,39 +48,28 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
     {
         WithDialog = withDialog;
         UseDialPreferences = useDialPreferences;
-        Calculation = calculation ?? new Calculation("");
+        Calculation = calculation;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("UseDialPreferences", new XAttribute("value", UseDialPreferences ? "True" : "False")),
-            Calculation.ToXml("Calculation"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the bare On/Off token maps the wire's "True"/absent
+    // UseDialPreferences value, a translation the display metadata cannot
+    // express without widening the node's wire ValidValues.
     public override string ToDisplayLine() =>
-        "Dial Phone [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (UseDialPreferences ? "On" : "Off") + " ; " + Calculation.Text + " ]";
+        "Dial Phone [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (UseDialPreferences ? "On" : "Off") + " ; " + (Calculation?.Text ?? "") + " ]";
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog_v = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var useDialPreferences_v = step.Element("UseDialPreferences")?.Attribute("value")?.Value == "True";
-        var calculation_vEl = step.Element("Calculation");
-        var calculation_v = calculation_vEl is not null ? Calculation.FromXml(calculation_vEl) : new Calculation("");
-        return new DialPhoneStep(withDialog_v, useDialPreferences_v, calculation_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<DialPhoneStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool withDialog_v = true;
         foreach (var tok in tokens) { if (tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(12).Trim(); withDialog_v = v.Equals("On", StringComparison.OrdinalIgnoreCase); break; } }
-        bool useDialPreferences_v = false;
-        Calculation? calculation_v = null;
-        foreach (var tok in tokens) { if (!(tok.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase))) { calculation_v = new Calculation(tok); break; } }
+        // Display shape is positional after the dialog flag: [ With dialog ; use-dial-prefs On/Off ; phone calc ].
+        bool useDialPreferences_v = tokens.Length >= 2 && tokens[1].Equals("On", StringComparison.OrdinalIgnoreCase);
+        Calculation? calculation_v = tokens.Length >= 3 && tokens[2].Length > 0 ? new Calculation(tokens[2]) : null;
         return new DialPhoneStep(withDialog_v, useDialPreferences_v, calculation_v, enabled);
     }
 
@@ -67,33 +79,14 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/dial-phone.html",
-        Params =
+        // Canonical 065-DialPhone: only NoInteract (always present, the inverse
+        // of WithDialog). <UseDialPreferences> and the bare <Calculation> are
+        // omitted until configured, so both are Optional.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "True",
-            },
-            new ParamMetadata
-            {
-                Name = "UseDialPreferences",
-                XmlElement = "UseDialPreferences",
-                Type = "boolean",
-                XmlAttr = "value",
-                ValidValues = ["On", "Off"],
-                DefaultValue = "False",
-            },
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "calculation",
-            },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog" },
+            new EnumValueChild("UseDialPreferences") { PocoProperty = "UseDialPreferencesValue", Optional = true, DisplayValues = ["On", "Off"] },
+            new BareCalcChild { PocoProperty = "Calculation", Optional = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

@@ -1,0 +1,34 @@
+<Step enable="True" id="243" name="Create PDF">
+  <Restore state="True" />
+  <Calculation><![CDATA[1]]></Calculation>
+  <CreatePDFFile>
+    <Document>
+      <Title>
+        <Calculation><![CDATA[title expression]]></Calculation>
+      </Title>
+      <Subject>
+        <Calculation><![CDATA[subject expression]]></Calculation>
+      </Subject>
+      <Author>
+        <Calculation><![CDATA[author expression]]></Calculation>
+      </Author>
+      <Keywords>
+        <Calculation><![CDATA[keywords expression]]></Calculation>
+      </Keywords>
+      <Pages AllPages="True">
+        <NumberFrom>
+          <Calculation><![CDATA[1]]></Calculation>
+        </NumberFrom>
+      </Pages>
+    </Document>
+    <Security allowScreenReader="True" enableCopying="True" controlEditing="InsertingDeletingRotatingPages" controlPrinting="LowResolution" requireControlEditPassword="True" requireOpenPassword="True">
+      <OpenPassword>
+        <Calculation><![CDATA[password expression]]></Calculation>
+      </OpenPassword>
+      <ControlPassword>
+        <Calculation><![CDATA[password expression]]></Calculation>
+      </ControlPassword>
+    </Security>
+    <View magnification="100" pageLayout="SinglePage" show="PagesPanelAndPage" />
+  </CreatePDFFile>
+</Step>

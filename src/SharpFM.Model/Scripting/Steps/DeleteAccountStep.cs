@@ -1,8 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,7 +11,9 @@ public sealed class DeleteAccountStep : ScriptStep, IStepFactory
     public const int XmlId = 135;
     public const string XmlName = "Delete Account";
 
-    public Calculation AccountName { get; set; }
+    public Calculation AccountName { get; set; } = new("");
+
+    private DeleteAccountStep() : base(false) { }
 
     public DeleteAccountStep(
         Calculation? accountName = null,
@@ -22,32 +23,15 @@ public sealed class DeleteAccountStep : ScriptStep, IStepFactory
         AccountName = accountName ?? new Calculation("");
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("AccountName", AccountName.ToXml("Calculation")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Delete Account [ " + "Account Name: " + AccountName.Text + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var accountName_vWrapEl = step.Element("AccountName");
-        var accountName_vCalcEl = accountName_vWrapEl?.Element("Calculation");
-        var accountName_v = accountName_vCalcEl is not null ? Calculation.FromXml(accountName_vCalcEl) : new Calculation("");
-        return new DeleteAccountStep(accountName_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<DeleteAccountStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        Calculation? accountName_v = null;
-        foreach (var tok in tokens) { if (tok.StartsWith("Account Name:", StringComparison.OrdinalIgnoreCase)) { accountName_v = new Calculation(tok.Substring(13).Trim()); break; } }
-        return new DeleteAccountStep(accountName_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<DeleteAccountStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -55,15 +39,10 @@ public sealed class DeleteAccountStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "accounts",
         HelpUrl = "https://help.claris.com/en/pro-help/content/delete-account.html",
-        Params =
+        // The AccountName wrapper is omitted by the unconfigured form (Optional).
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "Calculation",
-                XmlElement = "Calculation",
-                Type = "namedCalc",
-                HrLabel = "Account Name",
-            },
+            new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

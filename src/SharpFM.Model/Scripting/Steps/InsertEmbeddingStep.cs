@@ -1,19 +1,29 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
+/// <summary>
+/// Insert Embedding (215). Canonical form (skill, AI reference): an optional
+/// target <c>Field</c> then an <c>&lt;LLMEmbedding&gt;</c> wrapper holding the
+/// account/model/input calculations; the wrapper is emitted empty when the step
+/// is unconfigured.
+/// </summary>
 public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
 {
     public const int XmlId = 215;
     public const string XmlName = "Insert Embedding";
 
-    public Calculation AccountName { get; set; }
-    public Calculation Model { get; set; }
-    public Calculation InputText { get; set; }
+    public Calculation AccountName { get; set; } = new("");
+    public Calculation Model { get; set; } = new("");
+    public Calculation InputText { get; set; } = new("");
     public FieldRef? Target { get; set; }
+
+    private InsertEmbeddingStep() : base(false) { }
 
     public InsertEmbeddingStep(
         Calculation? accountName = null,
@@ -29,24 +39,10 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        step.Add(new XElement("LLMEmbedding",
-            new XElement("AccountName", AccountName.ToXml("Calculation")),
-            new XElement("Model", Model.ToXml("Calculation")),
-            new XElement("InputText", InputText.ToXml("Calculation"))));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: FileMaker shows the Target last, but the shape must keep
+    // the canonical XML order (Field before the LLMEmbedding wrapper).
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>
@@ -59,53 +55,28 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
         return $"Insert Embedding [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var llm = step.Element("LLMEmbedding");
-        var account = llm?.Element("AccountName")?.Element("Calculation");
-        var model = llm?.Element("Model")?.Element("Calculation");
-        var input = llm?.Element("InputText")?.Element("Calculation");
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new InsertEmbeddingStep(
-            account is not null ? Calculation.FromXml(account) : new Calculation(""),
-            model is not null ? Calculation.FromXml(model) : new Calculation(""),
-            input is not null ? Calculation.FromXml(input) : new Calculation(""),
-            target,
-            enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertEmbeddingStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        Calculation account = new(""), model = new(""), input = new("");
-        FieldRef? target = null;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Account Name:", StringComparison.OrdinalIgnoreCase))
-                account = new Calculation(t.Substring(13).Trim());
-            else if (t.StartsWith("Embedding Model:", StringComparison.OrdinalIgnoreCase))
-                model = new Calculation(t.Substring(16).Trim());
-            else if (t.StartsWith("Input:", StringComparison.OrdinalIgnoreCase))
-                input = new Calculation(t.Substring(6).Trim());
-            else if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
-                target = FieldRef.FromDisplayToken(t.Substring(7).Trim());
-        }
-        return new InsertEmbeddingStep(account, model, input, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<InsertEmbeddingStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
         Id = XmlId,
         Category = "artificial intelligence",
-        Params =
+        // Canonical: optional Field target, then the <LLMEmbedding> wrapper whose
+        // account/model/input children are emitted only when set.
+        Shape =
         [
-            new ParamMetadata { Name = "AccountName", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Account Name", Required = true },
-            new ParamMetadata { Name = "Model", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Embedding Model", Required = true },
-            new ParamMetadata { Name = "InputText", XmlElement = "Calculation", Type = "namedCalc", HrLabel = "Input", Required = true },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, Display = DisplayMode.Native },
+            new WrapperChild("LLMEmbedding",
+            [
+                new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Augmented },
+                new NamedCalcChild("Model") { PocoProperty = "Model", HrLabel = "Embedding Model", Optional = true, Display = DisplayMode.Augmented },
+                new NamedCalcChild("InputText") { PocoProperty = "InputText", HrLabel = "Input", Optional = true, Display = DisplayMode.Augmented },
+            ]),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

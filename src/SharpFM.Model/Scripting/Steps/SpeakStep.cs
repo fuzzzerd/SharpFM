@@ -1,53 +1,63 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
+/// <summary>
+/// Speak (66, macOS). Canonical form (skill): an optional text
+/// <c>&lt;Calculation&gt;</c> followed by the <c>&lt;SpeechOptions&gt;</c>
+/// element; the text calc is omitted when the step is unconfigured.
+/// </summary>
 public sealed class SpeakStep : ScriptStep, IStepFactory
 {
     public const int XmlId = 66;
     public const string XmlName = "Speak";
 
-    public Calculation Text { get; set; }
+    public Calculation? Text { get; set; }
     public SpeechOptions? Options { get; set; }
+
+    /// <summary>
+    /// The options FM writes for a Speak step with no voice configured:
+    /// wait-for-completion on, the default (id 0) voice. This is what the
+    /// display parser reconstructs, since the display line carries only the
+    /// spoken text.
+    /// </summary>
+    internal static readonly SpeechOptions DefaultOptions = new(true, "", "0", "");
+
+    /// <summary>
+    /// Display edits are anchor-preserved when a non-default voice or
+    /// wait-for-completion setting is stored — the display line cannot carry
+    /// the speech options.
+    /// </summary>
+    public override bool IsFullyEditable => Options is null || Options == DefaultOptions;
+
+    private SpeakStep() : base(false) { }
 
     public SpeakStep(Calculation? text = null, SpeechOptions? options = null, bool enabled = true)
         : base(enabled)
     {
-        Text = text ?? new Calculation("");
+        Text = text;
         Options = options;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            Text.ToXml("Calculation"));
-        if (Options is not null) step.Add(Options.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => $"Speak [ {Text.Text} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var calcEl = step.Element("Calculation");
-        var text = calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
-        var optEl = step.Element("SpeechOptions");
-        var options = optEl is not null ? SpeechOptions.FromXml(optEl) : null;
-        return new SpeakStep(text, options, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SpeakStep>(step, Metadata);
 
+    // Hand-written: reconstructs the DefaultOptions SpeechOptions block the
+    // wire form always carries, which the shape parser cannot synthesize.
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        Calculation text = new("");
-        if (hrParams.Length >= 1) text = new Calculation(hrParams[0].Trim());
-        return new SpeakStep(text, null, enabled);
+        Calculation? text = null;
+        if (hrParams.Length >= 1 && hrParams[0].Trim().Length > 0) text = new Calculation(hrParams[0].Trim());
+        return new SpeakStep(text, DefaultOptions, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -56,10 +66,12 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/speak-os-x.html",
-        Params =
+        // Canonical: optional text <Calculation>, then <SpeechOptions>.
+        Shape =
         [
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Text to speak", Required = true },
-            new ParamMetadata { Name = "SpeechOptions", XmlElement = "SpeechOptions", Type = "complex", HrLabel = "Speech options" },
+            new BareCalcChild { PocoProperty = "Text", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new ValueTypeChild("SpeechOptions") { PocoProperty = "Options", Display = DisplayMode.Hidden },
+            new HrOnly("SpeechOptions") { HrLabel = "Speech options" },
         ],
         Notes = new StepNotes
         {

@@ -1,0 +1,5 @@
+<Step enable="True" id="164" name="Perform Script on Server">
+  <WaitForCompletion state="True" />
+  <Calculation><![CDATA[parameter expression]]></Calculation>
+  <Script id="N" name="script name" />
+</Step>

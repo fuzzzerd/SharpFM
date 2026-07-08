@@ -1,0 +1,8 @@
+<Step enable="True" id="225" name="Save Records as JSONL">
+  <Option state="False" />
+  <CreateDirectories state="False" />
+  <FineTuneFormat state="False" />
+  <AutoOpen state="False" />
+  <CreateEmail state="False" />
+  <SaveAsJSONL />
+</Step>

@@ -1,0 +1,4 @@
+<Step enable="True" id="123" name="Select Window">
+  <LimitToWindowsOfCurrentFile state="True" />
+  <Window value="Current" />
+</Step>

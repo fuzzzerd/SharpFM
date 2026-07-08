@@ -1,14 +1,17 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
 /// <summary>
 /// Insert Text carries a literal <c>&lt;Text&gt;...&lt;/Text&gt;</c>
-/// (not a Calculation/CDATA block) and a dual-format Field target. The
-/// Text element is required.
+/// (not a Calculation/CDATA block) and a dual-format Field target. Both the
+/// Text content and the Field target are omitted from the unconfigured
+/// canonical form, so each is Optional.
 /// </summary>
 public sealed class InsertTextStep : ScriptStep, IStepFactory
 {
@@ -19,6 +22,8 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
     public FieldRef? Target { get; set; }
     public string Text { get; set; }
 
+    private InsertTextStep() : base(false) { Text = ""; }
+
     public InsertTextStep(bool selectAll = true, FieldRef? target = null, string text = "", bool enabled = true)
         : base(enabled)
     {
@@ -27,18 +32,10 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
         Text = text;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("SelectAll", new XAttribute("state", SelectAll ? "True" : "False")),
-            new XElement("Text", Text));
-        if (Target is not null) step.Add(Target.ToXml("Field"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: bare "Select" presence token and quoted text literal the
+    // shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var selectPart = SelectAll ? "Select ; " : "";
@@ -46,15 +43,8 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
         return $"Insert Text [ {selectPart}{targetPart}\"{Text}\" ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var selectAll = step.Element("SelectAll")?.Attribute("state")?.Value == "True";
-        var text = step.Element("Text")?.Value ?? "";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new InsertTextStep(selectAll, target, text, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertTextStep>(step, Metadata);
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
@@ -86,11 +76,13 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-text.html",
-        Params =
+        // Canonical 061-InsertText: only <SelectAll>; both <Text> and <Field>
+        // are omitted until configured, so both are Optional.
+        Shape =
         [
-            new ParamMetadata { Name = "SelectAll", XmlElement = "SelectAll", XmlAttr = "state", Type = "boolean", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
-            new ParamMetadata { Name = "Text", XmlElement = "Text", Type = "text", Required = true },
+            new BoolStateChild("SelectAll") { PocoProperty = "SelectAll", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
+            new NamedTextChild("Text") { PocoProperty = "Text", Optional = true },
+            new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

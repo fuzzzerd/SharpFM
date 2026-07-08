@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -10,45 +12,28 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
     public const int XmlId = 116;
     public const string XmlName = "Set Next Serial Value";
 
-    public FieldRef Field { get; set; }
-    public Calculation NextValue { get; set; }
+    // Nullable so the unconfigured form (no Field) omits the optional <Field> node.
+    public FieldRef? Field { get; set; }
+    public Calculation NextValue { get; set; } = new("");
+
+    private SetNextSerialValueStep() : base(false) { }
 
     public SetNextSerialValueStep(FieldRef? field = null, Calculation? nextValue = null, bool enabled = true)
         : base(enabled)
     {
-        Field = field ?? FieldRef.ForField("", 0, "");
+        Field = field;
         NextValue = nextValue ?? new Calculation("");
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            Field.ToXml("Field"),
-            NextValue.ToXml("Calculation"));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Set Next Serial Value [ {Field.ToDisplayString()} ; {NextValue.Text} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var fieldEl = step.Element("Field");
-        var field = fieldEl is not null ? FieldRef.FromXml(fieldEl) : FieldRef.ForField("", 0, "");
-        var calcEl = step.Element("Calculation");
-        var calc = calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
-        return new SetNextSerialValueStep(field, calc, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetNextSerialValueStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        FieldRef field = FieldRef.ForField("", 0, "");
-        Calculation calc = new("");
-        if (hrParams.Length >= 1) field = FieldRef.FromDisplayToken(hrParams[0].Trim());
-        if (hrParams.Length >= 2) calc = new Calculation(hrParams[1].Trim());
-        return new SetNextSerialValueStep(field, calc, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetNextSerialValueStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -56,10 +41,12 @@ public sealed class SetNextSerialValueStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-next-serial-value.html",
-        Params =
+        // Both Field and the bare next-value Calculation are omitted by the
+        // unconfigured form (Optional).
+        Shape =
         [
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Field", Required = true },
-            new ParamMetadata { Name = "Calculation", XmlElement = "Calculation", Type = "calculation", HrLabel = "Next value", Required = true },
+            new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
+            new BareCalcChild { PocoProperty = "NextValue", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

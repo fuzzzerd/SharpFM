@@ -1,0 +1,6 @@
+<Step enable="True" id="134" name="Add Account">
+  <ChgPwdOnNextLogin value="False" />
+  <AddAccount>
+    <AccountType>FileMaker</AccountType>
+  </AddAccount>
+</Step>

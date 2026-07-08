@@ -1,0 +1,4 @@
+<Step enable="True" id="166" name="Show/Hide Menubar">
+  <Lock state="False" />
+  <ShowHide value="Hide" />
+</Step>

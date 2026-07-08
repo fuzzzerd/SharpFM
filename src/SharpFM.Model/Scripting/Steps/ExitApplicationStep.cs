@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -13,21 +14,19 @@ public sealed class ExitApplicationStep : ScriptStep, IStepFactory
     public const int XmlId = 44;
     public const string XmlName = "Exit Application";
 
+    private ExitApplicationStep() : base(false) { }
+
     public ExitApplicationStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() => XmlName;
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
     public static new ScriptStep FromXml(XElement step) =>
-        new ExitApplicationStep(step.Attribute("enable")?.Value != "False");
+        StepXmlParser.Parse<ExitApplicationStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] _) =>
-        new ExitApplicationStep(enabled);
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<ExitApplicationStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {

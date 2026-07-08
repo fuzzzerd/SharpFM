@@ -1,0 +1,5 @@
+<Step enable="True" id="167" name="Refresh Object">
+  <ObjectName>
+    <Calculation><![CDATA["object name"]]></Calculation>
+  </ObjectName>
+</Step>

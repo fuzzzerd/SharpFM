@@ -1,0 +1,12 @@
+<Step enable="True" id="126" name="Constrain Found Set">
+  <Option state="False" />
+  <Restore state="True" />
+  <Query>
+    <RequestRow operation="Include">
+      <Criteria>
+        <Field table="TableOccurrence" id="N" name="field_name" />
+        <Text>=</Text>
+      </Criteria>
+    </RequestRow>
+  </Query>
+</Step>

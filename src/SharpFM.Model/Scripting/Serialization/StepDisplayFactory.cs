@@ -21,11 +21,17 @@ public static class StepDisplayFactory
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Register a typed POCO's display-text factory delegate.
+    /// Register a typed POCO's display-text factory delegate. A canonical
+    /// name carrying FileMaker's trailing space ("Configure RAG Account ")
+    /// is additionally registered trimmed, because display-text parsing
+    /// trims step names.
     /// </summary>
     public static void Register(string stepName, Func<bool, string[], ScriptStep> creator)
     {
         _typed[stepName] = creator;
+        var trimmed = stepName.Trim();
+        if (trimmed != stepName)
+            _typed.TryAdd(trimmed, creator);
     }
 
     /// <summary>

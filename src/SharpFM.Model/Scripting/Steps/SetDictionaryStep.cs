@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -14,6 +16,8 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
     public string SpellingLanguage { get; set; }
     public string UserDictionary { get; set; }
 
+    private SetDictionaryStep() : base(false) { SpellingLanguage = "US English"; UserDictionary = ""; }
+
     public SetDictionaryStep(
         string spellingLanguage = "US English",
         string userDictionary = "",
@@ -24,34 +28,15 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
         UserDictionary = userDictionary;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("MainDictionary", new XAttribute("value", SpellingLanguage)),
-            new XElement("UniversalPathList", UserDictionary));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        "Set Dictionary [ " + "Spelling Language: " + SpellingLanguage + " ; " + "User Dictionary: " + UserDictionary + " ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var spellingLanguage_v = step.Element("MainDictionary")?.Attribute("value")?.Value ?? "US English";
-        var userDictionary_v = step.Element("UniversalPathList")?.Value ?? "";
-        return new SetDictionaryStep(spellingLanguage_v, userDictionary_v, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SetDictionaryStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var tokens = hrParams.Select(h => h.Trim()).ToArray();
-        string spellingLanguage_v = "US English";
-        foreach (var tok in tokens) { if (tok.StartsWith("Spelling Language:", StringComparison.OrdinalIgnoreCase)) { spellingLanguage_v = tok.Substring(18).Trim(); break; } }
-        string userDictionary_v = "";
-        foreach (var tok in tokens) { if (tok.StartsWith("User Dictionary:", StringComparison.OrdinalIgnoreCase)) { userDictionary_v = tok.Substring(16).Trim(); break; } }
-        return new SetDictionaryStep(spellingLanguage_v, userDictionary_v, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SetDictionaryStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -59,24 +44,11 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "spelling",
         HelpUrl = "https://help.claris.com/en/pro-help/content/set-dictionary.html",
-        Params =
+        // Canonical form carries MainDictionary; the optional user-dictionary path is omitted when blank.
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "MainDictionary",
-                XmlElement = "MainDictionary",
-                Type = "enum",
-                XmlAttr = "value",
-                HrLabel = "Spelling Language",
-                DefaultValue = "US English",
-            },
-            new ParamMetadata
-            {
-                Name = "UniversalPathList",
-                XmlElement = "UniversalPathList",
-                Type = "text",
-                HrLabel = "User Dictionary",
-            },
+            new EnumValueChild("MainDictionary") { PocoProperty = "SpellingLanguage", HrLabel = "Spelling Language", DefaultValue = "US English" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "UserDictionary", HrLabel = "User Dictionary", Optional = true, DisplayEmptyAs = "" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

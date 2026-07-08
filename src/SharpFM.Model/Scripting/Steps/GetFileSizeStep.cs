@@ -1,6 +1,7 @@
-using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +14,8 @@ public sealed class GetFileSizeStep : ScriptStep, IStepFactory
     public string Path { get; set; }
     public FieldRef? Target { get; set; }
 
+    private GetFileSizeStep() : base(false) { Path = ""; }
+
     public GetFileSizeStep(string path = "", FieldRef? target = null, bool enabled = true)
         : base(enabled)
     {
@@ -20,51 +23,15 @@ public sealed class GetFileSizeStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", Path));
-        if (Target is not null) step.Add(Target.ToXml("Field"));
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        Target is null
-            ? $"Get File Size [ {Path} ]"
-            : $"Get File Size [ {Path} ; Target: {Target.ToDisplayString()} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var path = step.Element("UniversalPathList")?.Value ?? "";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        return new GetFileSizeStep(path, target, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<GetFileSizeStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        string path = "";
-        FieldRef? target = null;
-        bool pathSeen = false;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
-            {
-                target = FieldRef.FromDisplayToken(t.Substring(7).Trim());
-            }
-            else if (!pathSeen && !string.IsNullOrWhiteSpace(t))
-            {
-                path = t;
-                pathSeen = true;
-            }
-        }
-        return new GetFileSizeStep(path, target, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<GetFileSizeStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -72,10 +39,11 @@ public sealed class GetFileSizeStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "files",
         HelpUrl = "https://help.claris.com/en/pro-help/content/get-file-size.html",
-        Params =
+        // Canonical unconfigured form is empty: path and target are omitted when absent.
+        Shape =
         [
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text", Required = true },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "field", HrLabel = "Target" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Required = true, Optional = true, DisplayEmptyAs = "" },
+            new FieldChild() { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

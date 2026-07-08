@@ -1,0 +1,11 @@
+<Step enable="True" id="211" name="Trigger Claris Connect Flow">
+  <NoInteract state="True" />
+  <DontEncodeURL state="False" />
+  <SelectAll state="True" />
+  <VerifySSLCertificates state="False" />
+  <Flow>flow identifier</Flow>
+  <CURLOptions>
+    <Calculation><![CDATA["--request POST --header \"Content-Type: application/json\" --data "]]></Calculation>
+  </CURLOptions>
+  <Text>payload</Text>
+</Step>

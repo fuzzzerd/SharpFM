@@ -1,0 +1,7 @@
+<Step enable="True" id="221" name="Perform Find by Natural Language">
+  <Option state="False" />
+  <SelectAll state="True" />
+  <LLMCreateFind>
+    <Action>Query</Action>
+  </LLMCreateFind>
+</Step>

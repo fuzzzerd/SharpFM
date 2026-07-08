@@ -1,0 +1,5 @@
+<Step enable="True" id="29" name="Show/Hide Toolbars">
+  <IncludeEditRecordToolbar state="True" />
+  <Lock state="False" />
+  <ShowHide value="Hide" />
+</Step>

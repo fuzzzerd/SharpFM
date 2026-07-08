@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -14,6 +16,8 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
     public string PathType { get; set; }
     public FieldRef? Target { get; set; }
     public InsertFileDialogOptions? DialogOptions { get; set; }
+
+    private InsertFileStep() : this(enabled: true) { }
 
     public InsertFileStep(
         string path = "",
@@ -29,22 +33,11 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         DialogOptions = dialogOptions;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("UniversalPathList", new XAttribute("type", PathType), Path));
-        if (Target is not null)
-        {
-            if (Target.IsVariable) step.Add(new XElement("Text"));
-            step.Add(Target.ToXml("Field"));
-        }
-        if (DialogOptions is not null) step.Add(DialogOptions.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
+    // Hand-written: the storage/compression/display-content tokens live inside
+    // the DialogOptions value type, which the shape-driven renderer cannot
+    // surface; token order also differs from shape order (Path renders last).
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();
@@ -72,34 +65,42 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         return parts.Count == 0 ? "Insert File" : $"Insert File [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var pathEl = step.Element("UniversalPathList");
-        var path = pathEl?.Value ?? "";
-        var pathType = pathEl?.Attribute("type")?.Value ?? "Embedded";
-        var fieldEl = step.Element("Field");
-        var target = fieldEl is not null ? FieldRef.FromXml(fieldEl) : null;
-        var dialogEl = step.Element("DialogOptions");
-        var dialog = dialogEl is not null ? InsertFileDialogOptions.FromXml(dialogEl) : null;
-        return new InsertFileStep(path, pathType, target, dialog, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<InsertFileStep>(step, Metadata);
+
+    /// <summary>
+    /// Display edits are anchor-preserved when dialog state the display line
+    /// cannot carry is present: a missing DialogOptions block, a custom
+    /// dialog title (or the enable flag for one), or a compression filter
+    /// list. Storage, compression, and display-content choices are carried
+    /// by the display grammar.
+    /// </summary>
+    public override bool IsFullyEditable =>
+        DialogOptions is { Enable: false, Title: null, FilterListXml: null };
 
     public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
     {
-        // Display is lossy for Insert File — DialogOptions attributes don't
-        // all round-trip. Best-effort: capture path and target.
         string path = "";
         FieldRef? target = null;
+        var asFile = true;
+        var storage = "UserChoice";
+        var compress = "UserChoice";
         foreach (var tok in hrParams)
         {
             var t = tok.Trim();
             if (t.StartsWith("Target:", StringComparison.OrdinalIgnoreCase))
                 target = FieldRef.FromDisplayToken(t.Substring(7).Trim());
-            else if (!string.IsNullOrWhiteSpace(t) && !t.Contains(':') && t != "Insert" && t != "Reference" && t != "Display content" && !t.Contains("ompress"))
+            else if (t == "Insert") storage = "InsertOnly";
+            else if (t == "Reference") storage = "ReferenceOnly";
+            else if (t == "Insert and Reference") storage = "InsertAndReference";
+            else if (t == "Display content") asFile = false;
+            else if (t == "Compress when possible") compress = "WhenPossible";
+            else if (t == "Never compress") compress = "Never";
+            else if (!string.IsNullOrWhiteSpace(t))
                 path = t;
         }
-        return new InsertFileStep(path, "Embedded", target, null, enabled);
+        var dialogOptions = new InsertFileDialogOptions(asFile, false, null, storage, compress, null);
+        return new InsertFileStep(path, "Embedded", target, dialogOptions, enabled);
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -108,11 +109,11 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "fields",
         HelpUrl = "https://help.claris.com/en/pro-help/content/insert-file.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata { Name = "UniversalPathList", XmlElement = "UniversalPathList", Type = "text" },
-            new ParamMetadata { Name = "Field", XmlElement = "Field", Type = "fieldOrVariable", HrLabel = "Target" },
-            new ParamMetadata { Name = "DialogOptions", XmlElement = "DialogOptions", Type = "complex" },
+            new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Attr = "type", AttrProperty = "PathType", AttrDefault = "Embedded" },
+            new FieldChild { PocoProperty = "Target", Optional = true, VariableTextMarker = true, HrLabel = "Target" },
+            new ValueTypeChild("DialogOptions"),
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

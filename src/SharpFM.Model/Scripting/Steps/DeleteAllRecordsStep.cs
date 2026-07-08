@@ -1,6 +1,8 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -17,39 +19,31 @@ public sealed class DeleteAllRecordsStep : ScriptStep, IStepFactory
     /// <summary>The <c>With dialog</c> flag on the step.</summary>
     public bool WithDialog { get; set; }
 
+    /// <summary>
+    /// XML-facing inverse of <see cref="WithDialog"/>: canonical
+    /// <c>&lt;NoInteract state="…"/&gt;</c> suppresses the dialog, so it is the
+    /// negation of the display-facing flag. The shape binds this so the raw
+    /// state round-trips without re-applying the inversion.
+    /// </summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+
+    private DeleteAllRecordsStep() : base(false) { }
+
     public DeleteAllRecordsStep(bool withdialog = false, bool enabled = true)
         : base(enabled)
     {
         WithDialog = withdialog;
     }
 
-    public override XElement ToXml() =>
-        new("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract",
-                new XAttribute("state", WithDialog ? "False" : "True")));
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Delete All Records [ With dialog: {(WithDialog ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var state = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        return new DeleteAllRecordsStep(state, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<DeleteAllRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        var token = hrParams.Length > 0 ? hrParams[0].Trim() : "";
-        const string Prefix = "With dialog:";
-        if (token.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
-            token = token.Substring(Prefix.Length).Trim();
-        var isOn = token.Equals("On", StringComparison.OrdinalIgnoreCase);
-        return new DeleteAllRecordsStep(!isOn, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<DeleteAllRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -57,18 +51,10 @@ public sealed class DeleteAllRecordsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/delete-all-records.html",
-        Params =
+        // Single always-emitted <NoInteract state="..."/> child (inverse of WithDialog).
+        Shape =
         [
-            new ParamMetadata
-            {
-                Name = "NoInteract",
-                XmlElement = "NoInteract",
-                Type = "boolean",
-                XmlAttr = "state",
-                HrLabel = "With dialog",
-                // invertedHr: display 'On' means XML state='False'.
-                ValidValues = ["On", "Off"],
-            },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

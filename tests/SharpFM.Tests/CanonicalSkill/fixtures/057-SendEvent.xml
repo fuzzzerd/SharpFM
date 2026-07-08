@@ -1,0 +1,4 @@
+<Step enable="True" id="57" name="Send Event">
+  <ContentType value="File" />
+  <Event CopyResultToClipboard="False" WaitForCompletion="False" BringTargetToForeground="False" />
+</Step>

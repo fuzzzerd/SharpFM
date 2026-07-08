@@ -1,5 +1,7 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,6 +15,18 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
     public bool RestoreStoredOrder { get; set; }
     public SortList? Sort { get; set; }
 
+    /// <summary>
+    /// Display edits are anchor-preserved when a stored sort order is
+    /// present — the display line carries only the dialog and Restore flags,
+    /// never the <c>&lt;SortList&gt;</c>.
+    /// </summary>
+    public override bool IsFullyEditable => Sort is null;
+
+    /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
+    public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
+
+    private SortRecordsStep() : base(false) { }
+
     public SortRecordsStep(
         bool withDialog = false,
         bool restoreStoredOrder = true,
@@ -25,44 +39,15 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
         Sort = sort;
     }
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName),
-            new XElement("NoInteract", new XAttribute("state", WithDialog ? "False" : "True")),
-            new XElement("Restore", new XAttribute("state", RestoreStoredOrder ? "True" : "False")));
-        if (Sort is not null) step.Add(Sort.ToXml());
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
-    public override string ToDisplayLine() =>
-        $"Sort Records [ With dialog: {(WithDialog ? "On" : "Off")} ; Restore: {(RestoreStoredOrder ? "On" : "Off")} ]";
+    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
 
-    public static new ScriptStep FromXml(XElement step)
-    {
-        var enabled = step.Attribute("enable")?.Value != "False";
-        var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
-        var restore = step.Element("Restore")?.Attribute("state")?.Value == "True";
-        var sortEl = step.Element("SortList");
-        var sort = sortEl is not null ? SortList.FromXml(sortEl) : null;
-        return new SortRecordsStep(withDialog, restore, sort, enabled);
-    }
+    public static new ScriptStep FromXml(XElement step) =>
+        StepXmlParser.Parse<SortRecordsStep>(step, Metadata);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
-    {
-        bool withDialog = false, restore = true;
-        foreach (var tok in hrParams)
-        {
-            var t = tok.Trim();
-            if (t.StartsWith("With dialog:", System.StringComparison.OrdinalIgnoreCase))
-                withDialog = t.Substring(12).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-            else if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
-                restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
-        }
-        return new SortRecordsStep(withDialog, restore, null, enabled);
-    }
+    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
+        StepDisplayParser.Parse<SortRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -70,11 +55,14 @@ public sealed class SortRecordsStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "found sets",
         HelpUrl = "https://help.claris.com/en/pro-help/content/sort-records.html",
-        Params =
+        // NoInteract (inverse of WithDialog), Restore, then the SortList only
+        // when a sort order is stored.
+        Shape =
         [
-            new ParamMetadata { Name = "NoInteract", XmlElement = "NoInteract", XmlAttr = "state", Type = "boolean", HrLabel = "With dialog" },
-            new ParamMetadata { Name = "Restore", XmlElement = "Restore", XmlAttr = "state", Type = "boolean" },
-            new ParamMetadata { Name = "SortList", XmlElement = "SortList", Type = "complex" },
+            new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
+            new BoolStateChild("Restore") { PocoProperty = "RestoreStoredOrder", HrLabel = "Restore" },
+            new HrOnly("Restore") { Boolean = true },
+            new ValueTypeChild("SortList") { PocoProperty = "Sort" },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,

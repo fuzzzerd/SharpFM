@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
+using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -39,6 +41,10 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
 
     // --- XML parse ---
 
+    // Hand-written rather than StepXmlParser: the reader is deliberately more
+    // tolerant than the canonical shape — it accepts legacy wire-value aliases
+    // and degrades a SelectedLayout with no named reference to Original
+    // instead of materializing an empty target.
     public static new ScriptStep FromXml(XElement step)
     {
         var enabled = step.Attribute("enable")?.Value != "False";
@@ -78,46 +84,12 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
 
     // --- XML emit ---
 
-    public override XElement ToXml()
-    {
-        var step = new XElement("Step",
-            new XAttribute("enable", Enabled ? "True" : "False"),
-            new XAttribute("id", XmlId),
-            new XAttribute("name", XmlName));
-
-        step.Add(new XElement("LayoutDestination",
-            new XAttribute("value", Target.WireValue)));
-
-        switch (Target)
-        {
-            case LayoutTarget.Original:
-                // No <Layout> element at all.
-                break;
-
-            case LayoutTarget.Named named:
-                // NamedRef.ToXml emits id+name attributes — the real id is
-                // carried from FromXml through the POCO, not silently
-                // replaced with zero.
-                step.Add(named.Layout.ToXml("Layout"));
-                break;
-
-            case LayoutTarget.ByNameCalc byName:
-                step.Add(new XElement("Layout", byName.Calc.ToXml()));
-                break;
-
-            case LayoutTarget.ByNumberCalc byNumber:
-                step.Add(new XElement("Layout", byNumber.Calc.ToXml()));
-                break;
-        }
-
-        if (Animation is not null)
-            step.Add(Animation.ToXml());
-
-        return step;
-    }
+    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // --- Display text render ---
 
+    // Hand-written: quoted "layout name" / original-layout variant grammar
+    // the shape renderer cannot produce.
     public override string ToDisplayLine()
     {
         var parts = new List<string>();
@@ -218,11 +190,35 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
         Id = XmlId,
         Category = "navigation",
         HelpUrl = "https://help.claris.com/en/pro-help/content/go-to-layout.html",
-        Params =
+        Shape =
         [
-            new ParamMetadata { Name = "LayoutDestination", XmlElement = "LayoutDestination", XmlAttr = "value", Type = "enum", ValidValues = ["OriginalLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc"], DefaultValue = "SelectedLayout" },
-            new ParamMetadata { Name = "Layout", XmlElement = "Layout", Type = "layout" },
-            new ParamMetadata { Name = "Animation", XmlElement = "Animation", Type = "enum" },
+            new VariantBlock(
+            [
+                new VariantCase(typeof(LayoutTarget.Original),
+                    [new EnumValueChild("LayoutDestination") { PocoProperty = "WireValue" }])
+                { MatchElement = "LayoutDestination", MatchValues = ["OriginalLayout"] },
+                new VariantCase(typeof(LayoutTarget.ByNameCalc),
+                    [
+                        new EnumValueChild("LayoutDestination") { PocoProperty = "WireValue" },
+                        new NamedCalcChild("Layout") { PocoProperty = "Calc" },
+                    ])
+                { MatchElement = "LayoutDestination", MatchValues = ["LayoutNameByCalc", "LayoutNameByCalculation"] },
+                new VariantCase(typeof(LayoutTarget.ByNumberCalc),
+                    [
+                        new EnumValueChild("LayoutDestination") { PocoProperty = "WireValue" },
+                        new NamedCalcChild("Layout") { PocoProperty = "Calc" },
+                    ])
+                { MatchElement = "LayoutDestination", MatchValues = ["LayoutNumberByCalc", "LayoutNumberByCalculation"] },
+                new VariantCase(typeof(LayoutTarget.Named),
+                    [
+                        new EnumValueChild("LayoutDestination") { PocoProperty = "WireValue" },
+                        new NamedRefChild("Layout"),
+                    ])
+                { MatchElement = "LayoutDestination" },
+            ]) { PocoProperty = "Target", Required = true, Display = DisplayMode.Hidden },
+            new HrOnly("LayoutDestination") { DisplayValues = ["OriginalLayout", "SelectedLayout", "LayoutNameByCalc", "LayoutNumberByCalc"] },
+            new HrOnly("Layout"),
+            new ValueTypeChild("Animation") { Display = DisplayMode.Augmented },
         ],
         FromXml = FromXml,
         FromDisplay = FromDisplayParams,
