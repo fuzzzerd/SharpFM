@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -56,9 +57,7 @@ public sealed class PerformScriptOnServerStep : ScriptStep<PerformScriptOnServer
         switch (Target)
         {
             case PerformScriptTarget.ByReference byRef:
-                parts.Add(byRef.Script.Id == 0
-                    ? $"\"{byRef.Script.Name}\""
-                    : $"\"{byRef.Script.Name}\" (#{byRef.Script.Id})");
+                parts.Add(DisplayQuoting.QuoteWithId(byRef.Script.Name, byRef.Script.Id));
                 break;
             case PerformScriptTarget.ByCalculation byCalc:
                 parts.Add($"By name: {byCalc.NameCalc.Text}");
@@ -103,14 +102,8 @@ public sealed class PerformScriptOnServerStep : ScriptStep<PerformScriptOnServer
                 parameter = new Calculation(t.Substring(10).Trim());
             else if (t.StartsWith("By name:", System.StringComparison.OrdinalIgnoreCase))
                 target = new PerformScriptTarget.ByCalculation(new Calculation(t.Substring(8).Trim()));
-            else if (t.StartsWith("\"") && t.Contains("(#"))
-            {
-                var idMatch = System.Text.RegularExpressions.Regex.Match(t, @"^""(?<name>.*)""\s*\(#(?<id>\d+)\)$");
-                if (idMatch.Success)
-                    target = new PerformScriptTarget.ByReference(new NamedRef(int.Parse(idMatch.Groups["id"].Value), idMatch.Groups["name"].Value));
-            }
-            else if (t.StartsWith("\"") && t.EndsWith("\"") && t.Length >= 2)
-                target = new PerformScriptTarget.ByReference(new NamedRef(0, t.Substring(1, t.Length - 2)));
+            else if (DisplayQuoting.TryParseNamedRef(t, out var namedRef))
+                target = new PerformScriptTarget.ByReference(namedRef);
         }
         WaitForCompletion = wait;
         Target = target;

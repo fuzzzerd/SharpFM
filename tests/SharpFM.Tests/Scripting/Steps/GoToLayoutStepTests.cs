@@ -50,6 +50,11 @@ public class GoToLayoutStepTests
         "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
         + "<LayoutDestination value=\"OriginalLayout\"></LayoutDestination></Step>";
 
+    private const string VerbatimSelectedLayoutWithQuoteInNameXml =
+        "<Step enable=\"True\" id=\"6\" name=\"Go to Layout\">"
+        + "<LayoutDestination value=\"SelectedLayout\"></LayoutDestination>"
+        + "<Layout id=\"81\" name=\"O&quot;Brien\"></Layout></Step>";
+
     // --- SelectedLayout (named) ---
 
     [Fact]
@@ -194,4 +199,30 @@ public class GoToLayoutStepTests
 
     private static FmScript ScriptFromDisplay(string display) =>
         SharpFM.Scripting.ScriptTextParser.FromDisplayText(display);
+
+    // --- Embedded quote in layout name ---
+
+    [Fact]
+    public void SelectedLayout_WithQuoteInName_Display_DoublesEmbeddedQuote()
+    {
+        var step = ScriptStep.FromXml(MakeStep(VerbatimSelectedLayoutWithQuoteInNameXml));
+
+        Assert.Equal("Go to Layout [ \"O\"\"Brien\" (#81) ]", step.ToDisplayLine());
+    }
+
+    [Fact]
+    public void SelectedLayout_WithQuoteInName_FullRoundTrip_PreservesName()
+    {
+        var step1 = ScriptStep.FromXml(MakeStep(VerbatimSelectedLayoutWithQuoteInNameXml));
+        var display = step1.ToDisplayLine();
+
+        var script = ScriptFromDisplay(display);
+        var rebuilt = script.ToXml();
+
+        var roundTripped = XElement.Parse(rebuilt).Element("Step")!;
+        var layout = roundTripped.Element("Layout");
+        Assert.NotNull(layout);
+        Assert.Equal("81", layout!.Attribute("id")!.Value);
+        Assert.Equal("O\"Brien", layout.Attribute("name")!.Value);
+    }
 }

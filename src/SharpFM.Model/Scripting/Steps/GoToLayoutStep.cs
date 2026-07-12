@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -105,9 +105,7 @@ public sealed class GoToLayoutStep : ScriptStep<GoToLayoutStep>, IStepFactory
                 // and dropped the suffix, or caller constructed without an
                 // id). Suppressing (#0) keeps the display clean when we
                 // don't actually have an id to preserve.
-                parts.Add(named.Layout.Id == 0
-                    ? $"\"{named.Layout.Name}\""
-                    : $"\"{named.Layout.Name}\" (#{named.Layout.Id})");
+                parts.Add(DisplayQuoting.QuoteWithId(named.Layout.Name, named.Layout.Id));
                 break;
 
             case LayoutTarget.ByNameCalc byName:
@@ -126,10 +124,6 @@ public sealed class GoToLayoutStep : ScriptStep<GoToLayoutStep>, IStepFactory
     }
 
     // --- Display text parse ---
-
-    private static readonly Regex NamedLayoutToken = new(
-        "^\"(?<name>.*)\"\\s*\\(#(?<id>\\d+)\\)$",
-        RegexOptions.Compiled);
 
     protected internal override void PopulateFromDisplay(string[] hrParams)
     {
@@ -160,24 +154,13 @@ public sealed class GoToLayoutStep : ScriptStep<GoToLayoutStep>, IStepFactory
                 var expr = token.Substring("Layout Number:".Length).Trim();
                 target = new LayoutTarget.ByNumberCalc(new Calculation(expr));
             }
-            else
+            // Named layout with (#id) suffix is the lossless form. Bare
+            // quoted names without an id degrade to a NamedRef with id 0 —
+            // the user edited the display text and dropped the id, there's
+            // nothing better we can do.
+            else if (DisplayQuoting.TryParseNamedRef(token, out var namedRef))
             {
-                // Named layout with (#id) suffix is the lossless form.
-                // Bare quoted names without an id degrade to a NamedRef
-                // with id 0 — the user edited the display text and
-                // dropped the id, there's nothing better we can do.
-                var match = NamedLayoutToken.Match(token);
-                if (match.Success)
-                {
-                    var name = match.Groups["name"].Value;
-                    var id = int.Parse(match.Groups["id"].Value);
-                    target = new LayoutTarget.Named(new NamedRef(id, name));
-                }
-                else if (token.StartsWith("\"") && token.EndsWith("\"") && token.Length >= 2)
-                {
-                    var name = token.Substring(1, token.Length - 2);
-                    target = new LayoutTarget.Named(new NamedRef(0, name));
-                }
+                target = new LayoutTarget.Named(namedRef);
             }
         }
 

@@ -11,6 +11,10 @@ public class PerformScriptOnServerWithCallbackStepTests
         <Step enable="True" id="210" name="Perform Script on Server with Callback"><CallbackScriptState value="Continue" /><Calculation><![CDATA[$optional_parameter]]></Calculation><Script id="5" name="Sync" /><CallbackScript><ScriptName id="6" name="OnDone" /><ScriptParameter><Calculation><![CDATA[$optional_parameter]]></Calculation></ScriptParameter></CallbackScript></Step>
         """;
 
+    private const string QuoteInNamesXml = """
+        <Step enable="True" id="210" name="Perform Script on Server with Callback"><CallbackScriptState value="Continue" /><Script id="5" name="O&quot;Brien Sync" /><CallbackScript><ScriptName id="6" name="On&quot;Done" /></CallbackScript></Step>
+        """;
+
     [Fact]
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
@@ -24,5 +28,14 @@ public class PerformScriptOnServerWithCallbackStepTests
     {
         Assert.True(StepRegistry.ByName.TryGetValue("Perform Script on Server with Callback", out var metadata));
         Assert.Equal(210, metadata!.Id);
+    }
+
+    [Fact]
+    public void Display_QuoteInNames_DoublesEmbeddedQuotes()
+    {
+        var step = PerformScriptOnServerWithCallbackStep.Parse(XElement.Parse(QuoteInNamesXml));
+        Assert.Equal(
+            "Perform Script on Server with Callback [ State: Continue ; \"O\"\"Brien Sync\" (#5) ; Callback: \"On\"\"Done\" ]",
+            step.ToDisplayLine());
     }
 }

@@ -52,6 +52,14 @@ Appended to a quoted or `Table::Field` name:
 Omitted when the id is zero or unknown — `(#0)` would be visual noise
 for unresolved references.
 
+A literal `"` inside the quoted name is doubled (`"O""Brien"`),
+FileMaker's own calculation-string escape convention. This keeps a
+hand-edited display line unambiguous about where the name ends, even
+when the name itself contains a quote or looks like an `(#id)` suffix.
+`DisplayQuoting` (`SharpFM.Model.Scripting.Serialization`) is the shared
+helper for emitting and parsing this form — steps with a quoted
+`NamedRef` should call it rather than hand-rolling quote handling.
+
 ### Form 2 — inline word tokens
 
 Parsed at a specific named prefix, matching FM Pro's own rendering of

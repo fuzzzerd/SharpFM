@@ -1,5 +1,6 @@
 using System;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -24,7 +25,7 @@ public sealed class InstallMenuSetStep : ScriptStep<InstallMenuSetStep>, IStepFa
 
     // Hand-written: quoted menu-set name token the shape renderer cannot produce.
     public override string ToDisplayLine() =>
-        $"Install Menu Set [ \"{MenuSet.Name}\" ; Use as file default: {(UseAsFileDefault ? "On" : "Off")} ]";
+        $"Install Menu Set [ {DisplayQuoting.Quote(MenuSet.Name)} ; Use as file default: {(UseAsFileDefault ? "On" : "Off")} ]";
 
     protected internal override void PopulateFromDisplay(string[] hrParams)
     {
@@ -40,9 +41,7 @@ public sealed class InstallMenuSetStep : ScriptStep<InstallMenuSetStep>, IStepFa
             }
             else if (!menuSeen && !string.IsNullOrWhiteSpace(t))
             {
-                var name = t;
-                if (name.StartsWith("\"") && name.EndsWith("\"") && name.Length >= 2)
-                    name = name.Substring(1, name.Length - 2);
+                var name = DisplayQuoting.TryParseQuoted(t, out var parsed) ? parsed : t;
                 // The built-in menu set has the fixed id 1; custom menu sets
                 // carry file-specific ids the canonical form wildcards.
                 menu = new NamedRef(name == "[Standard FileMaker Menus]" ? 1 : 0, name);
