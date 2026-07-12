@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Registry;
@@ -12,13 +10,11 @@ namespace SharpFM.Model.Scripting.Registry;
 /// discovers them via reflection at first access.
 ///
 /// <para>
-/// The factory delegates (<see cref="FromXml"/>,
-/// <see cref="FromDisplay"/>) live on the metadata so the registry can
-/// bridge them into the <c>StepXmlFactory</c> and
-/// <c>StepDisplayFactory</c> surfaces without touching the POCO's
-/// declaration site. Leaving a delegate <c>null</c> tells the registry to
-/// synthesize shape-driven parsing from <see cref="Shape"/> instead; a
-/// step assigns one explicitly only to opt out with a hand-written parser.
+/// Construction is not described here: <see cref="StepRegistry"/> always
+/// constructs a blank instance and calls its (possibly overridden)
+/// <see cref="ScriptStep.PopulateFromXml"/> / <see cref="ScriptStep.PopulateFromDisplay"/>.
+/// A step opts into hand-written parsing by overriding those methods, not
+/// by describing it on this record.
 /// </para>
 /// </summary>
 public sealed record StepMetadata
@@ -58,20 +54,4 @@ public sealed record StepMetadata
 
     /// <summary>Behavioural intelligence — tooltip / lint source.</summary>
     public StepNotes? Notes { get; init; }
-
-    /// <summary>
-    /// Delegate that constructs a POCO instance from a source
-    /// <c>&lt;Step&gt;</c> element. <c>null</c> (the default) means
-    /// <see cref="StepRegistry"/> synthesizes shape-driven parsing from
-    /// <see cref="Shape"/>; assign explicitly only for a hand-written parser.
-    /// </summary>
-    public Func<XElement, ScriptStep>? FromXml { get; init; }
-
-    /// <summary>
-    /// Delegate that constructs a POCO instance from parsed display-text
-    /// tokens. <c>null</c> (the default) means <see cref="StepRegistry"/>
-    /// synthesizes shape-driven parsing from <see cref="Shape"/>; assign
-    /// explicitly only for a hand-written parser.
-    /// </summary>
-    public Func<bool, string[], ScriptStep>? FromDisplay { get; init; }
 }
