@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
+public sealed class AVPlayerSetPlaybackStateStep : ScriptStep<AVPlayerSetPlaybackStateStep>, IStepFactory
 {
     public const int XmlId = 178;
     public const string XmlName = "AVPlayer Set Playback State";
@@ -29,16 +27,6 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
         PlaybackState = playbackState;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AVPlayerSetPlaybackStateStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<AVPlayerSetPlaybackStateStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -50,7 +38,5 @@ public sealed class AVPlayerSetPlaybackStateStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("PlaybackState") { PocoProperty = "PlaybackState", DefaultValue = "Stopped", ValidValues = ["Stopped", "Paused", "Playing"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

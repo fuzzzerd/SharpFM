@@ -14,7 +14,7 @@ public class InsertFromIndexStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertFromIndexStep.Metadata.FromXml!(source);
+        var step = InsertFromIndexStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

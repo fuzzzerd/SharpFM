@@ -15,7 +15,7 @@ public class GoToPortalRowStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GoToPortalRowStep.Metadata.FromXml!(source);
+        var step = GoToPortalRowStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

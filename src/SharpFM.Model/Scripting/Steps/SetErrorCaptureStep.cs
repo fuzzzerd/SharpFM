@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -16,7 +14,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>Set Error Capture [ On|Off ]</c>; our display mirrors that. No
 /// advanced-syntax extensions are required.</para>
 /// </summary>
-public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
+public sealed class SetErrorCaptureStep : ScriptStep<SetErrorCaptureStep>, IStepFactory
 {
     public const int XmlId = 86;
     public const string XmlName = "Set Error Capture";
@@ -35,16 +33,6 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
         CaptureErrors = captureErrors;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetErrorCaptureStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetErrorCaptureStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -62,7 +50,5 @@ public sealed class SetErrorCaptureStep : ScriptStep, IStepFactory
                     + "dialog boxes. \"False\" (Off) reenables the alert messages.",
             },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

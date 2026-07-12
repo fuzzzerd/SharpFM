@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -15,7 +13,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// exist in FM Pro's clipboard output. No advanced-syntax extensions are
 /// required; the step's display text is literally its name.</para>
 /// </summary>
-public sealed class BeepStep : ScriptStep, IStepFactory
+public sealed class BeepStep : ScriptStep<BeepStep>, IStepFactory
 {
     public const int XmlId = 93;
     public const string XmlName = "Beep";
@@ -24,23 +22,11 @@ public sealed class BeepStep : ScriptStep, IStepFactory
 
     public BeepStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<BeepStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<BeepStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
         Id = XmlId,
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/beep.html",
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

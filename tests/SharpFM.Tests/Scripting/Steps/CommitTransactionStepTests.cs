@@ -19,7 +19,7 @@ public class CommitTransactionStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = CommitTransactionStep.Metadata.FromXml!(source);
+        var step = CommitTransactionStep.Parse(source);
 
         Assert.IsType<CommitTransactionStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class CommitTransactionStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="206" name="Commit Transaction"/>""");
-        var step = CommitTransactionStep.Metadata.FromXml!(source);
+        var step = CommitTransactionStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

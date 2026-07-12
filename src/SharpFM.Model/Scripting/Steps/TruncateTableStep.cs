@@ -1,7 +1,6 @@
 using System;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -13,7 +12,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// named reference. The BaseTable can also have an optional <c>comment</c>
 /// attribute in FM Pro output which we preserve.
 /// </summary>
-public sealed class TruncateTableStep : ScriptStep, IStepFactory
+public sealed class TruncateTableStep : ScriptStep<TruncateTableStep>, IStepFactory
 {
     public const int XmlId = 182;
     public const string XmlName = "Truncate Table";
@@ -25,6 +24,12 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
     /// <summary><c>&lt;NoInteract&gt;</c> XML state — the inverse of <see cref="WithDialog"/>. Bound by the shape.</summary>
     public bool NoInteract { get => !WithDialog; set => WithDialog = !value; }
 
+    private TruncateTableStep() : base(false)
+    {
+        WithDialog = true;
+        Table = new NamedRef(-1, "<Current Table>");
+    }
+
     public TruncateTableStep(bool withDialog = true, NamedRef? table = null, string? tableComment = null, bool enabled = true)
         : base(enabled)
     {
@@ -33,6 +38,9 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         TableComment = tableComment;
     }
 
+    // Hand-written rather than StepXmlRenderer: preserves the optional
+    // BaseTable comment attribute (and its element position between id and
+    // name) that the shape engine does not model.
     public override XElement ToXml()
     {
         var baseTable = new XElement("BaseTable",
@@ -49,21 +57,20 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             baseTable);
     }
 
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step)
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
         var withDialog = step.Element("NoInteract")?.Attribute("state")?.Value != "True";
         var tableEl = step.Element("BaseTable");
         var table = tableEl is not null ? NamedRef.FromXml(tableEl) : new NamedRef(-1, "<Current Table>");
         var comment = tableEl?.Attribute("comment")?.Value;
-        return new TruncateTableStep(withDialog, table, comment, enabled);
+        WithDialog = withDialog;
+        Table = table;
+        TableComment = comment;
     }
 
     // Hand-written: the current-table placeholder must keep its fixed id -1,
     // which the shape parser's uniform NamedRef(0, name) binding cannot express.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool withDialog = true;
         NamedRef? table = null;
@@ -82,7 +89,9 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
                 table = new NamedRef(name == "<Current Table>" ? -1 : 0, name);
             }
         }
-        return new TruncateTableStep(withDialog, table, null, enabled);
+        WithDialog = withDialog;
+        Table = table ?? new NamedRef(-1, "<Current Table>");
+        TableComment = null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -92,8 +101,8 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
         Category = "records",
         HelpUrl = "https://help.claris.com/en/pro-help/content/truncate-table.html",
         // Shape backs the HR/display metadata and canonical-order lint only;
-        // ToXml/FromXml stay hand-written so the optional BaseTable comment
-        // attribute is preserved, and the shape renderer/parser never runs.
+        // ToXml/PopulateFromXml stay hand-written so the optional BaseTable
+        // comment attribute is preserved, and the shape renderer/parser never runs.
         Shape =
         [
             new BoolStateChild("NoInteract") { HrLabel = "With dialog", DisplayInverted = true },
@@ -104,7 +113,5 @@ public sealed class TruncateTableStep : ScriptStep, IStepFactory
             Behavioral = "Deletes all records in specified source table regardless of current found set. Cannot undo.",
             Gotchas = "Does NOT delete related records even if relationship is set up to do so.",
         },
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

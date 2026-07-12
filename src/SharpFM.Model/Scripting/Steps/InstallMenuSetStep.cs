@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
+public sealed class InstallMenuSetStep : ScriptStep<InstallMenuSetStep>, IStepFactory
 {
     public const int XmlId = 142;
     public const string XmlName = "Install Menu Set";
@@ -24,16 +22,11 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
         UseAsFileDefault = useAsFileDefault;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: quoted menu-set name token the shape renderer cannot produce.
     public override string ToDisplayLine() =>
         $"Install Menu Set [ \"{MenuSet.Name}\" ; Use as file default: {(UseAsFileDefault ? "On" : "Off")} ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InstallMenuSetStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         NamedRef menu = new(0, "");
         bool useDefault = false;
@@ -56,7 +49,8 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
                 menuSeen = true;
             }
         }
-        return new InstallMenuSetStep(menu, useDefault, enabled);
+        MenuSet = menu;
+        UseAsFileDefault = useDefault;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -71,7 +65,5 @@ public sealed class InstallMenuSetStep : ScriptStep, IStepFactory
             new BoolStateChild("UseAsFileDefault") { PocoProperty = "UseAsFileDefault", HrLabel = "Use as file default", Display = DisplayMode.Augmented },
             new NamedRefChild("CustomMenuSet") { PocoProperty = "MenuSet", Required = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

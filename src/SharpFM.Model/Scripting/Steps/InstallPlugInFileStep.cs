@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
+public sealed class InstallPlugInFileStep : ScriptStep<InstallPlugInFileStep>, IStepFactory
 {
     public const int XmlId = 157;
     public const string XmlName = "Install Plug-In File";
@@ -24,16 +22,6 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InstallPlugInFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<InstallPlugInFileStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -45,7 +33,5 @@ public sealed class InstallPlugInFileStep : ScriptStep, IStepFactory
         [
             new FieldChild("Field") { PocoProperty = "Target", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

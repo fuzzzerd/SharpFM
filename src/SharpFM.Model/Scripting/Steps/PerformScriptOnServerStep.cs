@@ -1,6 +1,5 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// (<c>&lt;Calculated&gt;&lt;Calculation/&gt;&lt;/Calculated&gt;</c>).
 /// Discriminated via <see cref="PerformScriptTarget"/>.
 /// </summary>
-public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
+public sealed class PerformScriptOnServerStep : ScriptStep<PerformScriptOnServerStep>, IStepFactory
 {
     public const int XmlId = 164;
     public const string XmlName = "Perform Script on Server";
@@ -29,6 +28,12 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
     public NamedRef? ScriptWire =>
         Target is PerformScriptTarget.ByReference byRef ? byRef.Script : null;
 
+    private PerformScriptOnServerStep() : base(false)
+    {
+        WaitForCompletion = true;
+        Target = new PerformScriptTarget.ByReference(new NamedRef(0, ""));
+    }
+
     public PerformScriptOnServerStep(
         bool waitForCompletion = true,
         PerformScriptTarget? target = null,
@@ -40,8 +45,6 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         Target = target ?? new PerformScriptTarget.ByReference(new NamedRef(0, ""));
         Parameter = parameter;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // Hand-written: the script target is a variant with a bare quoted-name token order the shape renderer cannot express.
     public override string ToDisplayLine()
@@ -65,12 +68,11 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         return $"Perform Script on Server [ {string.Join(" ; ", parts)} ]";
     }
 
-    // Hand-written rather than StepXmlParser: the Target union is spread
-    // across two emit-only projection slots, and the degenerate no-reference
-    // form defaults to an empty by-ref.
-    public static new ScriptStep FromXml(XElement step)
+    // Hand-written: the Target union is spread across two emit-only
+    // projection slots, and the degenerate no-reference form defaults to an
+    // empty by-ref.
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
         var wait = step.Element("WaitForCompletion")?.Attribute("state")?.Value == "True";
         var calcEl = step.Element("Calculated")?.Element("Calculation");
         var scriptEl = step.Element("Script");
@@ -82,10 +84,12 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
         // Parameter is the top-level <Calculation> (not inside Calculated)
         var paramEl = step.Element("Calculation");
         var parameter = paramEl is not null ? Calculation.FromXml(paramEl) : null;
-        return new PerformScriptOnServerStep(wait, target, parameter, enabled);
+        WaitForCompletion = wait;
+        Target = target;
+        Parameter = parameter;
     }
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool wait = true;
         PerformScriptTarget target = new PerformScriptTarget.ByReference(new NamedRef(0, ""));
@@ -108,7 +112,9 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
             else if (t.StartsWith("\"") && t.EndsWith("\"") && t.Length >= 2)
                 target = new PerformScriptTarget.ByReference(new NamedRef(0, t.Substring(1, t.Length - 2)));
         }
-        return new PerformScriptOnServerStep(wait, target, parameter, enabled);
+        WaitForCompletion = wait;
+        Target = target;
+        Parameter = parameter;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -128,7 +134,5 @@ public sealed class PerformScriptOnServerStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Parameter", Optional = true, HrLabel = "Parameter" },
             new NamedRefChild("Script") { PocoProperty = "ScriptWire", Optional = true, HrLabel = "Script" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

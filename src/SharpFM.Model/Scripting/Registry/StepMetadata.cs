@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Registry;
@@ -12,12 +10,11 @@ namespace SharpFM.Model.Scripting.Registry;
 /// discovers them via reflection at first access.
 ///
 /// <para>
-/// The factory delegates (<see cref="FromXml"/>,
-/// <see cref="FromDisplay"/>) live on the metadata so the registry can
-/// bridge them into the legacy <c>StepXmlFactory</c> and
-/// <c>StepDisplayFactory</c> surfaces without touching the POCO's
-/// declaration site. Once the legacy surfaces are retired the delegates
-/// become the sole construction path.
+/// Construction is not described here: <see cref="StepRegistry"/> always
+/// constructs a blank instance and calls its (possibly overridden)
+/// <see cref="ScriptStep.PopulateFromXml"/> / <see cref="ScriptStep.PopulateFromDisplay"/>.
+/// A step opts into hand-written parsing by overriding those methods, not
+/// by describing it on this record.
 /// </para>
 /// </summary>
 public sealed record StepMetadata
@@ -57,18 +54,4 @@ public sealed record StepMetadata
 
     /// <summary>Behavioural intelligence — tooltip / lint source.</summary>
     public StepNotes? Notes { get; init; }
-
-    /// <summary>
-    /// Delegate that constructs a POCO instance from a source
-    /// <c>&lt;Step&gt;</c> element. Usually assigned via method-group
-    /// reference to the POCO's static <c>FromXml</c> method.
-    /// </summary>
-    public Func<XElement, ScriptStep>? FromXml { get; init; }
-
-    /// <summary>
-    /// Delegate that constructs a POCO instance from parsed display-text
-    /// tokens. Usually assigned via method-group reference to the POCO's
-    /// static <c>FromDisplayParams</c> method.
-    /// </summary>
-    public Func<bool, string[], ScriptStep>? FromDisplay { get; init; }
 }

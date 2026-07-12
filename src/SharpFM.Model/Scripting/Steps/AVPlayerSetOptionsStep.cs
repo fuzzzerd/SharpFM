@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
+public sealed class AVPlayerSetOptionsStep : ScriptStep<AVPlayerSetOptionsStep>, IStepFactory
 {
     public const int XmlId = 179;
     public const string XmlName = "AVPlayer Set Options";
@@ -114,15 +112,10 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
     private static string SequenceHr(string x) => _SequenceToHr.TryGetValue(x, out var h) ? h : x;
     private static string SequenceXml(string h) => _SequenceFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: option toggles map the wire's "True"/absent values to
     // On/Off, a translation display metadata cannot express.
     public override string ToDisplayLine() =>
         "AVPlayer Set Options [ " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Disable Interaction: " + (DisableInteraction == "True" ? "On" : "Off") + " ; " + "Hide Controls: " + (HideControls == "True" ? "On" : "Off") + " ; " + "Disable External Controls: " + (DisableExternalControls == "True" ? "On" : "Off") + " ; " + "Pause in Background: " + (PauseInBackground == "True" ? "On" : "Off") + " ; " + "Position: " + (Position?.Text ?? "") + " ; " + "Start Offset: " + (StartOffset?.Text ?? "") + " ; " + "End Offset: " + (EndOffset?.Text ?? "") + " ; " + "Volume: " + (Volume?.Text ?? "") + " ; " + "Zoom: " + ZoomHr(Zoom) + " ; " + "Sequence: " + SequenceHr(Sequence) + " ]";
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AVPlayerSetOptionsStep>(step, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when a toggle is explicitly stored
@@ -133,7 +126,7 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
         DisableInteraction != "False" && HideControls != "False"
         && DisableExternalControls != "False" && PauseInBackground != "False";
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         string presentation_v = "Start Full Screen";
@@ -160,7 +153,17 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Zoom:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(5).Trim(); zoom_v = ZoomXml(v); break; } }
         string sequence_v = "None";
         foreach (var tok in tokens) { if (tok.StartsWith("Sequence:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(9).Trim(); sequence_v = SequenceXml(v); break; } }
-        return new AVPlayerSetOptionsStep(presentation_v, disableInteraction_v, hideControls_v, disableExternalControls_v, pauseInBackground_v, position_v, startOffset_v, endOffset_v, volume_v, zoom_v, sequence_v, enabled);
+        Presentation = presentation_v;
+        DisableInteraction = disableInteraction_v;
+        HideControls = hideControls_v;
+        DisableExternalControls = disableExternalControls_v;
+        PauseInBackground = pauseInBackground_v;
+        Position = position_v;
+        StartOffset = startOffset_v;
+        EndOffset = endOffset_v;
+        Volume = volume_v;
+        Zoom = zoom_v;
+        Sequence = sequence_v;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -186,7 +189,5 @@ public sealed class AVPlayerSetOptionsStep : ScriptStep, IStepFactory
             new EnumValueChild("Zoom") { PocoProperty = "Zoom", HrLabel = "Zoom", Optional = true, DisplayValues = ["Fit", "Fill", "Stretch", "Fit Only", "Fill Only", "Stretch Only"] },
             new EnumValueChild("Sequence") { PocoProperty = "Sequence", HrLabel = "Sequence", Optional = true, DisplayValues = ["None", "Next", "Previous"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

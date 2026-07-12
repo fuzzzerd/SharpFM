@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
+public sealed class ExportFieldContentsStep : ScriptStep<ExportFieldContentsStep>, IStepFactory
 {
     public const int XmlId = 132;
     public const string XmlName = "Export Field Contents";
@@ -36,8 +34,6 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         CreateDirectories = createDirectories;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: Field renders before Path (reverse of canonical XML order)
     // and AutoOpen/CreateEmail are conditional bare tokens a BoolStateChild
     // cannot produce.
@@ -52,10 +48,7 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
         return $"Export Field Contents [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ExportFieldContentsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         FieldRef? field = null;
         string path = "";
@@ -79,7 +72,11 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
                 positional++;
             }
         }
-        return new ExportFieldContentsStep(field, path, autoOpen, createEmail, createDirs, enabled);
+        Field = field;
+        Path = path;
+        AutoOpen = autoOpen;
+        CreateEmail = createEmail;
+        CreateDirectories = createDirs;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -98,7 +95,5 @@ public sealed class ExportFieldContentsStep : ScriptStep, IStepFactory
             new NamedTextChild("UniversalPathList") { PocoProperty = "Path", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

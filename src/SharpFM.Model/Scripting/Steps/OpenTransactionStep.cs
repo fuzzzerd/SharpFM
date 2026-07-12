@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -20,7 +18,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// worth round-tripping. See <c>docs/advanced-filemaker-scripting-syntax.md</c>.
 /// </para>
 /// </summary>
-public sealed class OpenTransactionStep : ScriptStep, IStepFactory
+public sealed class OpenTransactionStep : ScriptStep<OpenTransactionStep>, IStepFactory
 {
     public const int XmlId = 205;
     public const string XmlName = "Open Transaction";
@@ -46,16 +44,6 @@ public sealed class OpenTransactionStep : ScriptStep, IStepFactory
         RestoreState = restoreState;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<OpenTransactionStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<OpenTransactionStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -71,7 +59,5 @@ public sealed class OpenTransactionStep : ScriptStep, IStepFactory
             new BoolStateChild("SkipAutoEntry") { PocoProperty = "SkipAutoEnterOptions", HrLabel = "Skip auto-enter options", Display = DisplayMode.Native },
             new BoolStateChild("Restore") { PocoProperty = "RestoreState", Display = DisplayMode.Hidden },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

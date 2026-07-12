@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,10 +10,10 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <summary>
 /// Zero-loss audit for SetZoomLevelStep: the step's XML state is the three
 /// &lt;Step&gt; attributes plus one child element per metadata param.
-/// Display form uses labeled segments joined by ' ; '; FromDisplayParams
-/// scans tokens by label so segment order is free.
+/// Display form uses labeled segments joined by ' ; '; the shape-driven
+/// display parser scans tokens by label so segment order is free.
 /// </summary>
-public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
+public sealed class SetZoomLevelStep : ScriptStep<SetZoomLevelStep>, IStepFactory
 {
     public const int XmlId = 97;
     public const string XmlName = "Set Zoom Level";
@@ -45,16 +43,6 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
         ZoomCalculation = zoomCalculation;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetZoomLevelStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetZoomLevelStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -69,7 +57,5 @@ public sealed class SetZoomLevelStep : ScriptStep, IStepFactory
             new EnumValueChild("Zoom") { PocoProperty = "ZoomLevel", HrLabel = "Zoom level", DefaultValue = "100", ValidValues = ["25", "50", "75", "100", "150", "200", "300", "400", "ZoomIn", "ZoomOut", "ByCalculation"], DisplayValues = ["25%", "50%", "75%", "100%", "150%", "200%", "300%", "400%", "Zoom In", "Zoom Out", "ByCalculation"], Display = DisplayMode.Native },
             new BareCalcChild { PocoProperty = "ZoomCalculation", Optional = true, Display = DisplayMode.Hidden },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -19,7 +19,7 @@ public class SelectDictionariesStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SelectDictionariesStep.Metadata.FromXml!(source);
+        var step = SelectDictionariesStep.Parse(source);
 
         Assert.IsType<SelectDictionariesStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class SelectDictionariesStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="108" name="Select Dictionaries"/>""");
-        var step = SelectDictionariesStep.Metadata.FromXml!(source);
+        var step = SelectDictionariesStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

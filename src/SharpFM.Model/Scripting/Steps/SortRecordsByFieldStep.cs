@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SortRecordsByFieldStep : ScriptStep, IStepFactory
+public sealed class SortRecordsByFieldStep : ScriptStep<SortRecordsByFieldStep>, IStepFactory
 {
     public const int XmlId = 154;
     public const string XmlName = "Sort Records by Field";
@@ -27,16 +25,6 @@ public sealed class SortRecordsByFieldStep : ScriptStep, IStepFactory
         Field = field;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SortRecordsByFieldStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SortRecordsByFieldStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -48,7 +36,5 @@ public sealed class SortRecordsByFieldStep : ScriptStep, IStepFactory
             new EnumValueChild("SortRecordsByField") { PocoProperty = "SortOrder", DefaultValue = "SortAscending", ValidValues = ["SortAscending", "SortDescending", "SortValueList"], DisplayValues = ["Ascending", "Descending", "Associated value list"] },
             new FieldChild("Field") { PocoProperty = "Field", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

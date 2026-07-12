@@ -19,7 +19,7 @@ public class ClosePopoverStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ClosePopoverStep.Metadata.FromXml!(source);
+        var step = ClosePopoverStep.Parse(source);
 
         Assert.IsType<ClosePopoverStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class ClosePopoverStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="169" name="Close Popover"/>""");
-        var step = ClosePopoverStep.Metadata.FromXml!(source);
+        var step = ClosePopoverStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

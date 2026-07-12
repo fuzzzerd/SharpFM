@@ -15,7 +15,7 @@ public class ConfigureMachineLearningModelStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ConfigureMachineLearningModelStep.Metadata.FromXml!(source);
+        var step = ConfigureMachineLearningModelStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

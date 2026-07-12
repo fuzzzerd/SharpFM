@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +12,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// Table reference, and an optional Layout. The skill documents no
 /// <c>&lt;Animation&gt;</c> element for this step, so SharpFM no longer emits one.
 /// </summary>
-public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
+public sealed class GoToRelatedRecordStep : ScriptStep<GoToRelatedRecordStep>, IStepFactory
 {
     public const int XmlId = 74;
     public const string XmlName = "Go to Related Record";
@@ -61,8 +59,6 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         Layout = layout;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: quoted "From table:"/"Using layout:" grammar the shape
     // renderer cannot produce.
     public override string ToDisplayLine()
@@ -77,10 +73,7 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
         return $"Go to Related Record [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<GoToRelatedRecordStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Display form is lossy — NewWndStyles attrs and LayoutDestination calc
         // variants can't all round-trip.
@@ -101,7 +94,14 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
             else if (t.Equals("New window", StringComparison.OrdinalIgnoreCase))
                 newWindow = true;
         }
-        return new GoToRelatedRecordStep(showOnly, matchAll, newWindow, true, "SelectedLayout", null, table, layout, enabled);
+        ShowOnlyRelated = showOnly;
+        MatchAllRecords = matchAll;
+        ShowInNewWindow = newWindow;
+        RestoreWindowGeometry = true;
+        LayoutDestination = "SelectedLayout";
+        WindowStyles = NewWindowStyles.Default();
+        Table = table ?? new NamedRef(0, "");
+        Layout = layout;
     }
 
     private static string Unquote(string s)
@@ -133,7 +133,5 @@ public sealed class GoToRelatedRecordStep : ScriptStep, IStepFactory
             new NamedRefChild("Layout") { PocoProperty = "Layout", Optional = true, Display = DisplayMode.Native },
             new HrOnly("NewWndStyles"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -19,7 +19,7 @@ public class OpenFindReplaceStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenFindReplaceStep.Metadata.FromXml!(source);
+        var step = OpenFindReplaceStep.Parse(source);
 
         Assert.IsType<OpenFindReplaceStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenFindReplaceStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="129" name="Open Find/Replace"/>""");
-        var step = OpenFindReplaceStep.Metadata.FromXml!(source);
+        var step = OpenFindReplaceStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

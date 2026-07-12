@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,21 +16,21 @@ public class SendDDEExecuteStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SendDDEExecuteStep.Metadata.FromXml!(source);
+        var step = SendDDEExecuteStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsHrMappedValue()
     {
-        var step = SendDDEExecuteStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SendDDEExecuteStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Send DDE Execute [ File ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesHrValueBack()
     {
-        var step = SendDDEExecuteStep.Metadata.FromDisplay!(true, new[] { "File" });
+        var step = StepDisplayFactory.TryCreate(SendDDEExecuteStep.XmlName, true, new[] { "File" })!;
         Assert.True(XNode.DeepEquals(XElement.Parse(CanonicalXml), step.ToXml()));
     }
 

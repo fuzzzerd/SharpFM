@@ -19,7 +19,7 @@ public class SpellingOptionsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SpellingOptionsStep.Metadata.FromXml!(source);
+        var step = SpellingOptionsStep.Parse(source);
 
         Assert.IsType<SpellingOptionsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class SpellingOptionsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="107" name="Spelling Options"/>""");
-        var step = SpellingOptionsStep.Metadata.FromXml!(source);
+        var step = SpellingOptionsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

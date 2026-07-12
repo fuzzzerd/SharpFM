@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class CloseWindowStep : ScriptStep, IStepFactory
+public sealed class CloseWindowStep : ScriptStep<CloseWindowStep>, IStepFactory
 {
     public const int XmlId = 121;
     public const string XmlName = "Close Window";
@@ -45,17 +43,12 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
     private static string WindowHr(string x) => _WindowToHr.TryGetValue(x, out var h) ? h : x;
     private static string WindowXml(string h) => _WindowFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: variant window-target grammar (Current/ByName) the shape
     // renderer cannot produce.
     public override string ToDisplayLine() =>
         "Close Window [ " + (LimitToWindowsOfCurrentFile ? "On" : "Off") + " ; " + WindowHr(Window) + " ; " + Calculation.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<CloseWindowStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Positional display grammar: [ On/Off ; Window ; name-calc ]. A
         // trailing empty calc token is dropped by the param splitter.
@@ -66,7 +59,9 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
         Calculation? calculation_v = tokens.Length > 2 && tokens[2].Length > 0
             ? new Calculation(tokens[2])
             : null;
-        return new CloseWindowStep(limitToWindowsOfCurrentFile_v, window_v, calculation_v, enabled);
+        LimitToWindowsOfCurrentFile = limitToWindowsOfCurrentFile_v;
+        Window = window_v;
+        Calculation = calculation_v ?? new Calculation("");
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -83,7 +78,5 @@ public sealed class CloseWindowStep : ScriptStep, IStepFactory
             new EnumValueChild("Window") { PocoProperty = "Window", DefaultValue = "ByName", DisplayValues = ["ByName", "Current"], Display = DisplayMode.Native },
             new NamedCalcChild("Name") { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

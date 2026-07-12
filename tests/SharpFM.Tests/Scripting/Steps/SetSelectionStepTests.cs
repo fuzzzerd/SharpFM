@@ -15,14 +15,14 @@ public class SetSelectionStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SetSelectionStep.Metadata.FromXml!(source);
+        var step = SetSelectionStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsFieldAndPositions()
     {
-        var step = (SetSelectionStep)SetSelectionStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SetSelectionStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Set Selection [ Notes::body (#1) ; Start Position: 1 ; End Position: 10 ]", step.ToDisplayLine());
     }
 

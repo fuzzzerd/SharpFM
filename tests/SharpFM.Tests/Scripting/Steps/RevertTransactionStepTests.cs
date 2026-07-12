@@ -14,7 +14,7 @@ public class RevertTransactionStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = RevertTransactionStep.Metadata.FromXml!(source);
+        var step = RevertTransactionStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

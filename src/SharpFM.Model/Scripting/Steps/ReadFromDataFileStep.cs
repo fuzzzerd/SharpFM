@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
+public sealed class ReadFromDataFileStep : ScriptStep<ReadFromDataFileStep>, IStepFactory
 {
     public const int XmlId = 193;
     public const string XmlName = "Read from Data File";
@@ -33,8 +31,6 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
         DataSourceType = dataSourceType;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the amount label is per-mode conditional ("Amount" for
     // UTF-16, "Amount (bytes)" otherwise) — a form the shape renderer's static
     // HrLabel cannot express.
@@ -55,10 +51,7 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
         return $"Read from Data File [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ReadFromDataFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         Calculation fileId = new("");
         Calculation? count = null;
@@ -86,7 +79,10 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
                 };
             }
         }
-        return new ReadFromDataFileStep(fileId, count, target, type, enabled);
+        FileId = fileId;
+        Count = count;
+        Target = target;
+        DataSourceType = type;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -105,7 +101,5 @@ public sealed class ReadFromDataFileStep : ScriptStep, IStepFactory
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
             new NamedCalcChild("Count") { PocoProperty = "Count", HrLabel = "Amount (bytes)", Optional = true, Display = DisplayMode.Augmented },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

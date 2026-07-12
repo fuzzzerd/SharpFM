@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -15,7 +13,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// via the FieldRef's IsVariable flag and emitting the &lt;Text/&gt; sibling
 /// accordingly.
 /// </summary>
-public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
+public sealed class InsertCalculatedResultStep : ScriptStep<InsertCalculatedResultStep>, IStepFactory
 {
     public const int XmlId = 77;
     public const string XmlName = "Insert Calculated Result";
@@ -38,8 +36,6 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
         Calculation = calculation;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: bare "Select" presence token from a BoolStateChild, which
     // always renders labeled On/Off.
     public override string ToDisplayLine()
@@ -49,10 +45,7 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
         return $"Insert Calculated Result [ {selectPart}{targetPart}{Calculation?.Text ?? ""} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertCalculatedResultStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool selectAll = false;
         FieldRef? target = null;
@@ -71,7 +64,9 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
                 calcSeen = true;
             }
         }
-        return new InsertCalculatedResultStep(selectAll, target, calc, enabled);
+        SelectAll = selectAll;
+        Target = target;
+        Calculation = calc;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -89,7 +84,5 @@ public sealed class InsertCalculatedResultStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

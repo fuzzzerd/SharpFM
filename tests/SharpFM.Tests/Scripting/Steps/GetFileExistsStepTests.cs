@@ -15,14 +15,14 @@ public class GetFileExistsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GetFileExistsStep.Metadata.FromXml!(source);
+        var step = GetFileExistsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsPathAndTarget()
     {
-        var step = (GetFileExistsStep)GetFileExistsStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = GetFileExistsStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Get File Exists [ $path ; Target: Results::exists (#5) ]", step.ToDisplayLine());
     }
 

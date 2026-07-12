@@ -15,7 +15,7 @@ public class GoToListOfRecordsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GoToListOfRecordsStep.Metadata.FromXml!(source);
+        var step = GoToListOfRecordsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

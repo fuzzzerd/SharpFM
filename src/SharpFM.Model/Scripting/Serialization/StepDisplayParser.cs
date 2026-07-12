@@ -33,7 +33,17 @@ public static class StepDisplayParser
             throw new InvalidOperationException(
                 $"{pocoType.Name} needs a parameterless constructor for shape-driven display parsing.");
         instance.Enabled = enabled;
+        Populate(instance, hrParams, meta);
+        return instance;
+    }
 
+    /// <summary>
+    /// Populates an already-constructed instance's shape-bound properties
+    /// from parsed display-text tokens. <see cref="ScriptStep.Enabled"/> is
+    /// not touched here — callers set it before invoking this.
+    /// </summary>
+    public static void Populate(ScriptStep instance, string[] hrParams, StepMetadata meta)
+    {
         var slots = ShapeHrView.HrNodes(meta.Shape).Where(n => n is not HrOnly).ToList();
         var used = new bool[slots.Count];
 
@@ -75,8 +85,6 @@ public static class StepDisplayParser
                 bound = true;
             }
         }
-
-        return instance;
     }
 
     private static void Assign(object target, ShapeNode node, string value)

@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class RenameFileStep : ScriptStep, IStepFactory
+public sealed class RenameFileStep : ScriptStep<RenameFileStep>, IStepFactory
 {
     public const int XmlId = 199;
     public const string XmlName = "Rename File";
@@ -29,16 +27,6 @@ public sealed class RenameFileStep : ScriptStep, IStepFactory
         NewName = newName;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<RenameFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<RenameFileStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -51,7 +39,5 @@ public sealed class RenameFileStep : ScriptStep, IStepFactory
             new NamedTextChild("UniversalPathList") { PocoProperty = "SourceFile", HrLabel = "Source file", Optional = true, DisplayEmptyAs = "" },
             new BareCalcChild { PocoProperty = "NewName", HrLabel = "New name", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

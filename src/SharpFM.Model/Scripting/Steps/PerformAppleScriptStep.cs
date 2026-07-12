@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
+public sealed class PerformAppleScriptStep : ScriptStep<PerformAppleScriptStep>, IStepFactory
 {
     public const int XmlId = 67;
     public const string XmlName = "Perform AppleScript";
@@ -32,16 +30,6 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
         Text = text;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<PerformAppleScriptStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<PerformAppleScriptStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -57,7 +45,5 @@ public sealed class PerformAppleScriptStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, DisplayEmptyAs = "" },
             new NamedTextChild("Text") { PocoProperty = "Text", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

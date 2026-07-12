@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// Photo Library, Music Library, Barcode, Signature) — preserved
 /// verbatim via <see cref="StepChildBag"/> for round-trip fidelity.
 /// </summary>
-public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
+public sealed class InsertFromDeviceStep : ScriptStep<InsertFromDeviceStep>, IStepFactory
 {
     public const int XmlId = 161;
     public const string XmlName = "Insert from Device";
@@ -40,22 +38,12 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
         DeviceOptions = deviceOptions ?? new StepChildBag();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertFromDeviceStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when a device-specific options
     /// subtree is present — the display line shows only the source and
     /// target, never the DeviceOptions children.
     /// </summary>
     public override bool IsFullyEditable => DeviceOptions.Children.Count == 0;
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<InsertFromDeviceStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -76,7 +64,5 @@ public sealed class InsertFromDeviceStep : ScriptStep, IStepFactory
             ]),
             new HrOnly("DeviceOptions"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

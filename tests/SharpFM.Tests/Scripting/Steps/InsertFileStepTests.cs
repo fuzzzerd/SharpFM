@@ -15,7 +15,7 @@ public class InsertFileStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertFileStep.Metadata.FromXml!(source);
+        var step = InsertFileStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

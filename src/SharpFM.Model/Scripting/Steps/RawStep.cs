@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 
@@ -49,6 +50,14 @@ public sealed class RawStep : ScriptStep
         if (!string.IsNullOrEmpty(rawText)) return rawText;
         return Name;
     }
+
+    // Never constructed via the registry's Activator-based path — RawStep is
+    // built directly by StepXmlFactory.Create when no POCO is registered.
+    protected internal override void PopulateFromXml(XElement step) =>
+        throw new NotSupportedException($"{nameof(RawStep)} is constructed directly, not populated.");
+
+    protected internal override void PopulateFromDisplay(string[] hrParams) =>
+        throw new NotSupportedException($"{nameof(RawStep)} is constructed directly, not populated.");
 
     public override List<ScriptDiagnostic> Validate(int lineIndex) =>
         new()

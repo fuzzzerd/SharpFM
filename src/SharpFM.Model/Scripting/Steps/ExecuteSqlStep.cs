@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
+public sealed class ExecuteSqlStep : ScriptStep<ExecuteSqlStep>, IStepFactory
 {
     public const int XmlId = 117;
     public const string XmlName = "Execute SQL";
@@ -34,8 +32,6 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         Profile = profile;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the SQL Text / Calculated SQL Text token comes from the
     // hidden Profile value type, which the shape-driven renderer cannot surface.
     public override string ToDisplayLine()
@@ -47,10 +43,7 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
         return $"Execute SQL [ {dialog} ; SQL Text: {Profile.Query ?? ""} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ExecuteSqlStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Display is lossy for Execute SQL — ODBC connection fields aren't
         // expressible in display. Best-effort: capture dialog and SQL text.
@@ -82,7 +75,8 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
                 isCalc ? null : sql,
                 isCalc ? new Calculation(sql) : null)
             : null;
-        return new ExecuteSqlStep(withDialog, profile, enabled);
+        WithDialog = withDialog;
+        Profile = profile;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -99,7 +93,5 @@ public sealed class ExecuteSqlStep : ScriptStep, IStepFactory
             new ValueTypeChild("Profile") { PocoProperty = "Profile", Optional = true, Display = DisplayMode.Hidden },
             new HrOnly("Profile"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -39,7 +39,7 @@ public class IfStepTests
     public void RoundTrip_WithRestoreInSource_PreservesRestore()
     {
         var source = StepFromSnippet(CanonicalSnippet);
-        var step = IfStep.Metadata.FromXml!(source);
+        var step = IfStep.Parse(source);
         var output = step.ToXml();
 
         Assert.Equal("False", output.Element("Restore")!.Attribute("state")!.Value);
@@ -53,7 +53,7 @@ public class IfStepTests
     public void RoundTrip_NoRestoreInput_CanonicalizesByAddingRestore()
     {
         var source = XElement.Parse(NoRestoreStep);
-        var step = IfStep.Metadata.FromXml!(source);
+        var step = IfStep.Parse(source);
         var output = step.ToXml();
 
         Assert.Equal("False", output.Element("Restore")!.Attribute("state")!.Value);

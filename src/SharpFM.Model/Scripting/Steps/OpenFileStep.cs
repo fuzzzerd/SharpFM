@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class OpenFileStep : ScriptStep, IStepFactory
+public sealed class OpenFileStep : ScriptStep<OpenFileStep>, IStepFactory
 {
     public const int XmlId = 33;
     public const string XmlName = "Open File";
@@ -24,8 +22,6 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
         File = file;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     public override string ToDisplayLine()
     {
         var hidden = "Open hidden: " + (OpenHidden ? "On" : "Off");
@@ -34,10 +30,7 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
             : $"Open File [ {hidden} ; {File.ToDisplayString()} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<OpenFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool hidden = false;
         FileReference? file = null;
@@ -53,7 +46,8 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
                 file = FileReference.FromDisplayToken(t);
             }
         }
-        return new OpenFileStep(hidden, file, enabled);
+        OpenHidden = hidden;
+        File = file;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -79,7 +73,5 @@ public sealed class OpenFileStep : ScriptStep, IStepFactory
                 Server = "Not supported.",
             },
         },
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

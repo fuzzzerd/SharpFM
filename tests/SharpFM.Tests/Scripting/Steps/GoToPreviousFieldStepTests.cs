@@ -19,7 +19,7 @@ public class GoToPreviousFieldStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GoToPreviousFieldStep.Metadata.FromXml!(source);
+        var step = GoToPreviousFieldStep.Parse(source);
 
         Assert.IsType<GoToPreviousFieldStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class GoToPreviousFieldStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="5" name="Go to Previous Field"/>""");
-        var step = GoToPreviousFieldStep.Metadata.FromXml!(source);
+        var step = GoToPreviousFieldStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

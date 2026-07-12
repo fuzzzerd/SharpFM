@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// display as <c>[ Field ; Calculation ]</c>; this step honors both. An
 /// unconfigured Set Field carries neither child, so both are Optional.
 /// </summary>
-public sealed class SetFieldStep : ScriptStep, IStepFactory
+public sealed class SetFieldStep : ScriptStep<SetFieldStep>, IStepFactory
 {
     public const int XmlId = 76;
     public const string XmlName = "Set Field";
@@ -29,16 +27,11 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
         Expression = expression;
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetFieldStep>(step, Metadata);
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the display shows bare field-then-calculation tokens, the reverse of the canonical XML order; bare tokens cannot be reordered via Native/Augmented.
     public override string ToDisplayLine() =>
         $"Set Field [ {Target?.ToDisplayString() ?? ""} ; {Expression?.Text ?? ""} ]";
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         FieldRef? target = null;
         Calculation? expression = null;
@@ -49,7 +42,8 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
         if (hrParams.Length >= 2 && hrParams[1].Trim().Length > 0)
             expression = new Calculation(hrParams[1].Trim());
 
-        return new SetFieldStep(enabled, target, expression);
+        Target = target;
+        Expression = expression;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -65,7 +59,5 @@ public sealed class SetFieldStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Expression", Optional = true },
             new FieldChild("Field") { PocoProperty = "Target", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

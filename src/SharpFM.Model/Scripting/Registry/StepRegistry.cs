@@ -119,13 +119,26 @@ public static class StepRegistry
             if (metadata.Id != 0)
                 _byId[metadata.Id] = metadata;
 
-            // Bridge into legacy factories so callers that still use
-            // StepXmlFactory / StepDisplayFactory pick up POCO-backed
-            // construction without each POCO needing a ModuleInitializer.
-            if (metadata.FromXml is { } fromXml)
-                StepXmlFactory.Register(metadata.Name, fromXml);
-            if (metadata.FromDisplay is { } fromDisplay)
-                StepDisplayFactory.Register(metadata.Name, fromDisplay);
+            // Bridge into StepXmlFactory / StepDisplayFactory so dispatch finds
+            // the typed POCO without each POCO needing a ModuleInitializer.
+            // Every step is registered the same way — customization happens
+            // through virtual dispatch on the constructed instance
+            // (ScriptStep.PopulateFromXml / PopulateFromDisplay), not a
+            // per-step delegate lookup.
+            StepXmlFactory.Register(metadata.Name, el =>
+            {
+                var instance = (ScriptStep)Activator.CreateInstance(type, nonPublic: true)!;
+                instance.Enabled = el.Attribute("enable")?.Value != "False";
+                instance.PopulateFromXml(el);
+                return instance;
+            });
+            StepDisplayFactory.Register(metadata.Name, (enabled, hrParams) =>
+            {
+                var instance = (ScriptStep)Activator.CreateInstance(type, nonPublic: true)!;
+                instance.Enabled = enabled;
+                instance.PopulateFromDisplay(hrParams);
+                return instance;
+            });
         }
 
         // Sort for deterministic All iteration.

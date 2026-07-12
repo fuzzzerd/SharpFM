@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class PrintSetupStep : ScriptStep, IStepFactory
+public sealed class PrintSetupStep : ScriptStep<PrintSetupStep>, IStepFactory
 {
     public const int XmlId = 42;
     public const string XmlName = "Print Setup";
@@ -32,16 +30,6 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
         Format = format;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<PrintSetupStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<PrintSetupStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -58,7 +46,5 @@ public sealed class PrintSetupStep : ScriptStep, IStepFactory
             new HrOnly("Restore") { Boolean = true },
             new HrOnly("PageFormat"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -14,7 +14,7 @@ public class ConfigurePromptTemplateStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ConfigurePromptTemplateStep.Metadata.FromXml!(source);
+        var step = ConfigurePromptTemplateStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

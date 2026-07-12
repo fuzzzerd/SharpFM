@@ -15,14 +15,14 @@ public class OpenDataFileStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenDataFileStep.Metadata.FromXml!(source);
+        var step = OpenDataFileStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsPathAndTarget()
     {
-        var step = (OpenDataFileStep)OpenDataFileStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = OpenDataFileStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Open Data File [ $path ; Target: Data::handle (#1) ]", step.ToDisplayLine());
     }
 

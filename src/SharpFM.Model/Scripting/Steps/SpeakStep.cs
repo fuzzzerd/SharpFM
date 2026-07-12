@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;Calculation&gt;</c> followed by the <c>&lt;SpeechOptions&gt;</c>
 /// element; the text calc is omitted when the step is unconfigured.
 /// </summary>
-public sealed class SpeakStep : ScriptStep, IStepFactory
+public sealed class SpeakStep : ScriptStep<SpeakStep>, IStepFactory
 {
     public const int XmlId = 66;
     public const string XmlName = "Speak";
@@ -44,20 +42,14 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
         Options = options;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SpeakStep>(step, Metadata);
-
     // Hand-written: reconstructs the DefaultOptions SpeechOptions block the
     // wire form always carries, which the shape parser cannot synthesize.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         Calculation? text = null;
         if (hrParams.Length >= 1 && hrParams[0].Trim().Length > 0) text = new Calculation(hrParams[0].Trim());
-        return new SpeakStep(text, DefaultOptions, enabled);
+        Text = text;
+        Options = DefaultOptions;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -82,7 +74,5 @@ public sealed class SpeakStep : ScriptStep, IStepFactory
                 Go = "Not supported.",
             },
         },
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

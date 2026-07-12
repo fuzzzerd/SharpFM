@@ -14,7 +14,7 @@ public class DialPhoneStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = DialPhoneStep.Metadata.FromXml!(source);
+        var step = DialPhoneStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

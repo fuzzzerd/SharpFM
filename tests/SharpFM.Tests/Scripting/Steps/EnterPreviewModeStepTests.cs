@@ -16,7 +16,7 @@ public class EnterPreviewModeStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = EnterPreviewModeStep.Metadata.FromXml!(source);
+        var step = EnterPreviewModeStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class EnterPreviewModeStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = EnterPreviewModeStep.Metadata.FromXml!(source);
+        var step = EnterPreviewModeStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class EnterPreviewModeStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((EnterPreviewModeStep)EnterPreviewModeStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (EnterPreviewModeStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Enter Preview Mode [ Pause: On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((EnterPreviewModeStep)EnterPreviewModeStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (EnterPreviewModeStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Enter Preview Mode [ Pause: Off ]", stepFalse.ToDisplayLine());
     }
 

@@ -15,7 +15,7 @@ public class SaveRecordsAsJsonlStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SaveRecordsAsJsonlStep.Metadata.FromXml!(source);
+        var step = SaveRecordsAsJsonlStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

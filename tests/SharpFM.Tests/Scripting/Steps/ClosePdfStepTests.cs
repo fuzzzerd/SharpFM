@@ -19,7 +19,7 @@ public class ClosePdfStepTests
     public void RoundTrip_CanonicalXml_IsPreserved(string canonicalXml)
     {
         var source = XElement.Parse(canonicalXml);
-        var step = ClosePdfStep.Metadata.FromXml!(source);
+        var step = ClosePdfStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

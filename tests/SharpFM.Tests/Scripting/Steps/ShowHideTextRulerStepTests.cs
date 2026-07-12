@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,21 +16,21 @@ public class ShowHideTextRulerStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ShowHideTextRulerStep.Metadata.FromXml!(source);
+        var step = ShowHideTextRulerStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsHrMappedValue()
     {
-        var step = ShowHideTextRulerStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = ShowHideTextRulerStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Show/Hide Text Ruler [ Action: Show ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesHrValueBack()
     {
-        var step = ShowHideTextRulerStep.Metadata.FromDisplay!(true, new[] { "Action: Show" });
+        var step = StepDisplayFactory.TryCreate(ShowHideTextRulerStep.XmlName, true, new[] { "Action: Show" })!;
         Assert.True(XNode.DeepEquals(XElement.Parse(CanonicalXml), step.ToXml()));
     }
 

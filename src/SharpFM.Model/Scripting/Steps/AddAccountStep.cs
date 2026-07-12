@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;AddAccount&gt;</c> wrapper holding the text <c>&lt;AccountType&gt;</c>
 /// and the optional account name / password / privilege-set fields.
 /// </summary>
-public sealed class AddAccountStep : ScriptStep, IStepFactory
+public sealed class AddAccountStep : ScriptStep<AddAccountStep>, IStepFactory
 {
     public const int XmlId = 134;
     public const string XmlName = "Add Account";
@@ -41,16 +39,6 @@ public sealed class AddAccountStep : ScriptStep, IStepFactory
         ExpirePassword = expirePassword;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AddAccountStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<AddAccountStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -70,7 +58,5 @@ public sealed class AddAccountStep : ScriptStep, IStepFactory
                 new NamedTextChild("PrivilegeSet") { PocoProperty = "PrivilegeSet", HrLabel = "Privilege Set", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
             ]),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

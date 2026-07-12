@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name) plus a single
 /// &lt;NoInteract state="True|False"/&gt; child. All round-tripped.
 /// </summary>
-public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
+public sealed class RevertRecordRequestStep : ScriptStep<RevertRecordRequestStep>, IStepFactory
 {
     public const int XmlId = 51;
     public const string XmlName = "Revert Record/Request";
@@ -30,16 +28,6 @@ public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
         WithDialog = withdialog;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<RevertRecordRequestStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<RevertRecordRequestStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -51,7 +39,5 @@ public sealed class RevertRecordRequestStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented, DisplayInverted = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

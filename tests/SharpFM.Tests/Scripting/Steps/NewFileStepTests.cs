@@ -19,7 +19,7 @@ public class NewFileStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = NewFileStep.Metadata.FromXml!(source);
+        var step = NewFileStep.Parse(source);
 
         Assert.IsType<NewFileStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class NewFileStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="82" name="New File"/>""");
-        var step = NewFileStep.Metadata.FromXml!(source);
+        var step = NewFileStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

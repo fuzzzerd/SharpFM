@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// record with the full set of operation attributes, plus a find calc and
 /// an optional replace calc wrapped in FindCalc / ReplaceCalc elements.
 /// </summary>
-public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
+public sealed class PerformFindReplaceStep : ScriptStep<PerformFindReplaceStep>, IStepFactory
 {
     public const int XmlId = 128;
     public const string XmlName = "Perform Find/Replace";
@@ -42,8 +40,6 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         ReplaceText = replaceText;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the operation type lives inside a ValueTypeChild and the
     // replace calc is a conditional positional token — variant grammar the
     // shape renderer cannot express.
@@ -67,9 +63,6 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         return $"Perform Find/Replace [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<PerformFindReplaceStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when operation state the display
     /// line cannot carry is present: match flags, a non-forward direction,
@@ -79,7 +72,7 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
     public override bool IsFullyEditable =>
         Operation is { MatchWholeWords: false, MatchCase: false, Direction: "Forward", WithinOptions: "All", AcrossOptions: "All" };
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Display grammar: [ With dialog: On/Off ; find ; replace? ; operation ].
         // The last positional token is the operation type; earlier positional
@@ -113,7 +106,10 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
         Calculation? replace = positional.Count > 1 ? new(positional[1]) : null;
         // Canonical unconfigured operation flags; configured flags are sealed state.
         var operation = new FindReplaceOperation(opType, "Forward", false, false, "All", "All");
-        return new PerformFindReplaceStep(withDialog, operation, find, replace, enabled);
+        WithDialog = withDialog;
+        Operation = operation;
+        FindText = find;
+        ReplaceText = replace;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -131,7 +127,5 @@ public sealed class PerformFindReplaceStep : ScriptStep, IStepFactory
             new NamedCalcChild("FindCalc") { PocoProperty = "FindText", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("ReplaceCalc") { PocoProperty = "ReplaceText", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

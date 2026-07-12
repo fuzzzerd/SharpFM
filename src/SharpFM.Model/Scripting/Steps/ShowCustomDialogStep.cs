@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -27,7 +26,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// for hand-crafted fixtures that deviate from FM Pro's shape.
 /// </para>
 /// </summary>
-public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
+public sealed class ShowCustomDialogStep : ScriptStep<ShowCustomDialogStep>, IStepFactory
 {
     public const int XmlId = 87;
     public const string XmlName = "Show Custom Dialog";
@@ -96,11 +95,6 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         InputFields = inputFields;
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ShowCustomDialogStep>(step, Metadata);
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the buttons render as a nested quoted list with commit markers — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
@@ -116,7 +110,7 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         // Suppress the Buttons block when it exactly matches FM Pro's
         // default 3-slot shape (OK/commit + two empty/nocommit). This is
         // lossless because the default shape round-trips identically
-        // through FromDisplayParams's default construction below.
+        // through PopulateFromDisplay's default construction below.
         if (!IsDefaultButtonShape(Buttons))
             parts.Add($"Buttons: [ {string.Join(" ; ", Buttons.Select(FormatButtonSlot))} ]");
 
@@ -166,7 +160,7 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         return $"{labelText} {password} {target}";
     }
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var title = new Calculation("");
         var message = new Calculation("");
@@ -200,7 +194,10 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
         if (!buttonsSeen)
             buttons = DefaultButtons();
 
-        return new ShowCustomDialogStep(enabled, title, message, buttons, inputs);
+        Title = title;
+        Message = message;
+        Buttons = buttons;
+        InputFields = inputs;
     }
 
     private static List<ShowCustomDialogButton> ParseButtonBlock(string block)
@@ -393,7 +390,5 @@ public sealed class ShowCustomDialogStep : ScriptStep, IStepFactory
             new HrOnly("Buttons"),
             new HrOnly("InputFields"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

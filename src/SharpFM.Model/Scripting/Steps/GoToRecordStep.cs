@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -20,7 +19,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// (inverted from <c>NoInteract</c> state) and the target calculation.
 /// </para>
 /// </summary>
-public sealed class GoToRecordStep : ScriptStep, IStepFactory
+public sealed class GoToRecordStep : ScriptStep<GoToRecordStep>, IStepFactory
 {
     public const int XmlId = 16;
     public const string XmlName = "Go to Record/Request/Page";
@@ -31,13 +30,18 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
     public bool NoInteract { get; set; }
 
     // Emit-only wire projections for the shape renderer: get-only, so the
-    // shape parser skips them (FromXml stays hand-written for the typed enum).
-    // Null means "element not emitted for this location".
+    // shape parser skips them (PopulateFromXml stays hand-written for the
+    // typed enum). Null means "element not emitted for this location".
     public string LocationWire => LocationWireValue(Location);
     public bool? ExitWire =>
         Location is RowPageLocationKind.Next or RowPageLocationKind.Previous ? ExitAfterLast : null;
     public Calculation? LocationCalcWire =>
         Location == RowPageLocationKind.ByCalculation ? LocationCalc : null;
+
+    private GoToRecordStep() : base(false)
+    {
+        Location = RowPageLocationKind.First;
+    }
 
     public GoToRecordStep(
         bool enabled,
@@ -53,10 +57,8 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
         NoInteract = noInteract;
     }
 
-    public static new ScriptStep FromXml(XElement step)
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
-
         var locationWire = step.Element("RowPageLocation")?.Attribute("value")?.Value ?? "First";
         var location = ParseLocation(locationWire);
 
@@ -70,10 +72,11 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
         var exitAfterLast = step.Element("Exit")?.Attribute("state")?.Value == "True";
         var noInteract = step.Element("NoInteract")?.Attribute("state")?.Value == "True";
 
-        return new GoToRecordStep(enabled, location, locationCalc, exitAfterLast, noInteract);
+        Location = location;
+        LocationCalc = locationCalc;
+        ExitAfterLast = exitAfterLast;
+        NoInteract = noInteract;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // Hand-written: per-mode conditional token grammar (First/Last/Previous/
     // Next/ByCalculation) the shape renderer cannot produce.
@@ -106,7 +109,7 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
         return $"Go to Record/Request/Page [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var location = RowPageLocationKind.First;
         Calculation? locationCalc = null;
@@ -142,7 +145,10 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
                 location = RowPageLocationKind.Previous;
         }
 
-        return new GoToRecordStep(enabled, location, locationCalc, exitAfterLast, noInteract);
+        Location = location;
+        LocationCalc = locationCalc;
+        ExitAfterLast = exitAfterLast;
+        NoInteract = noInteract;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -161,8 +167,6 @@ public sealed class GoToRecordStep : ScriptStep, IStepFactory
             new EnumValueChild("RowPageLocation") { PocoProperty = "LocationWire", ValidValues = ["First", "Last", "Previous", "Next", "ByCalculation"], DefaultValue = "Next" },
             new BareCalcChild { PocoProperty = "LocationCalcWire", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 
     private static RowPageLocationKind ParseLocation(string wire) => wire switch

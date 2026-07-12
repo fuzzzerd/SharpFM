@@ -19,7 +19,7 @@ public class OpenRecordRequestStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenRecordRequestStep.Metadata.FromXml!(source);
+        var step = OpenRecordRequestStep.Parse(source);
 
         Assert.IsType<OpenRecordRequestStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenRecordRequestStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="133" name="Open Record/Request"/>""");
-        var step = OpenRecordRequestStep.Metadata.FromXml!(source);
+        var step = OpenRecordRequestStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

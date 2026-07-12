@@ -1,14 +1,12 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class CopyStep : ScriptStep, IStepFactory
+public sealed class CopyStep : ScriptStep<CopyStep>, IStepFactory
 {
     public const int XmlId = 47;
     public const string XmlName = "Copy";
@@ -28,16 +26,6 @@ public sealed class CopyStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<CopyStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<CopyStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -51,7 +39,5 @@ public sealed class CopyStep : ScriptStep, IStepFactory
             new BoolStateChild("SelectAll") { PocoProperty = "Select", HrLabel = "Select", ValidValues = ["On", "Off"], DefaultValue = "True" },
             new FieldChild("Field") { PocoProperty = "Target", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

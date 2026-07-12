@@ -3,6 +3,7 @@ using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -14,21 +15,21 @@ public class SetSessionIdentifierStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SetSessionIdentifierStep.Metadata.FromXml!(source);
+        var step = SetSessionIdentifierStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_RoundTripsThroughFromDisplayParams()
     {
-        var step1 = SetSessionIdentifierStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step1 = SetSessionIdentifierStep.Parse(XElement.Parse(CanonicalXml));
         var display = step1.ToDisplayLine();
         var open = display.IndexOf('[');
         var close = display.LastIndexOf(']');
         var inner = display.Substring(open + 1, close - open - 1).Trim();
         var tokens = inner.Split(';', System.StringSplitOptions.TrimEntries);
 
-        var step2 = SetSessionIdentifierStep.Metadata.FromDisplay!(true, tokens);
+        var step2 = StepDisplayFactory.TryCreate(SetSessionIdentifierStep.XmlName, true, tokens)!;
         Assert.True(XNode.DeepEquals(step1.ToXml(), step2.ToXml()));
     }
 

@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Model.Scripting.Steps;
 
@@ -9,7 +7,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name). All round-tripped exactly.
 /// No child elements in FM Pro's clipboard output; no hidden state.
 /// </summary>
-public sealed class OpenEditSavedFindsStep : ScriptStep, IStepFactory
+public sealed class OpenEditSavedFindsStep : ScriptStep<OpenEditSavedFindsStep>, IStepFactory
 {
     public const int XmlId = 149;
     public const string XmlName = "Open Edit Saved Finds";
@@ -18,23 +16,11 @@ public sealed class OpenEditSavedFindsStep : ScriptStep, IStepFactory
 
     public OpenEditSavedFindsStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<OpenEditSavedFindsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<OpenEditSavedFindsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
         Id = XmlId,
         Category = "open menu item",
         HelpUrl = "https://help.claris.com/en/pro-help/content/open-edit-saved-finds.html",
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

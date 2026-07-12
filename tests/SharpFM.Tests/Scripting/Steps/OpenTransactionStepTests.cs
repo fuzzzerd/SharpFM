@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -19,14 +20,14 @@ public class OpenTransactionStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenTransactionStep.Metadata.FromXml!(source);
+        var step = OpenTransactionStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_RoundTripsThroughFromDisplayParams()
     {
-        var step1 = OpenTransactionStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step1 = OpenTransactionStep.Parse(XElement.Parse(CanonicalXml));
         var display = step1.ToDisplayLine();
 
         var open = display.IndexOf('[');
@@ -34,7 +35,7 @@ public class OpenTransactionStepTests
         var inner = display.Substring(open + 1, close - open - 1).Trim();
         var tokens = inner.Split(';', System.StringSplitOptions.TrimEntries);
 
-        var step2 = OpenTransactionStep.Metadata.FromDisplay!(true, tokens);
+        var step2 = StepDisplayFactory.TryCreate(OpenTransactionStep.XmlName, true, tokens)!;
         Assert.True(XNode.DeepEquals(step1.ToXml(), step2.ToXml()));
     }
 
@@ -46,7 +47,7 @@ public class OpenTransactionStepTests
         var withRestore = XElement.Parse("""
             <Step enable="True" id="205" name="Open Transaction"><Option state="False"/><ESSForceCommit state="False"/><SkipAutoEntry state="False"/><Restore state="False"/></Step>
             """);
-        var step = OpenTransactionStep.Metadata.FromXml!(withRestore);
+        var step = OpenTransactionStep.Parse(withRestore);
         Assert.NotNull(step.ToXml().Element("Restore"));
         Assert.True(XNode.DeepEquals(withRestore, step.ToXml()));
     }

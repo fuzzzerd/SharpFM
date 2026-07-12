@@ -15,14 +15,14 @@ public class SortRecordsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SortRecordsStep.Metadata.FromXml!(source);
+        var step = SortRecordsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void SortList_IsTyped()
     {
-        var step = (SortRecordsStep)SortRecordsStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SortRecordsStep.Parse(XElement.Parse(CanonicalXml));
         Assert.NotNull(step.Sort);
         Assert.Single(step.Sort!.Fields);
         Assert.Equal("Ascending", step.Sort.Fields[0].Type);

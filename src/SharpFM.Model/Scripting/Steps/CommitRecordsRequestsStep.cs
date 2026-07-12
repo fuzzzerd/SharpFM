@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// to <c>state="False"</c>). Two additional flags skip data-entry
 /// validation and force-commit through external SQL lock conflicts.
 /// </summary>
-public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
+public sealed class CommitRecordsRequestsStep : ScriptStep<CommitRecordsRequestsStep>, IStepFactory
 {
     public const int XmlId = 75;
     public const string XmlName = "Commit Records/Requests";
@@ -40,16 +38,6 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
         ForceCommit = forceCommit;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<CommitRecordsRequestsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<CommitRecordsRequestsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -62,7 +50,5 @@ public sealed class CommitRecordsRequestsStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "SkipDataEntryValidation", HrLabel = "Skip data entry validation" },
             new BoolStateChild("ESSForceCommit") { PocoProperty = "ForceCommit", HrLabel = "Force commit" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

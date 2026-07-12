@@ -16,7 +16,7 @@ public class AllowFormattingBarStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = AllowFormattingBarStep.Metadata.FromXml!(source);
+        var step = AllowFormattingBarStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class AllowFormattingBarStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = AllowFormattingBarStep.Metadata.FromXml!(source);
+        var step = AllowFormattingBarStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class AllowFormattingBarStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((AllowFormattingBarStep)AllowFormattingBarStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (AllowFormattingBarStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Allow Formatting Bar [ On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((AllowFormattingBarStep)AllowFormattingBarStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (AllowFormattingBarStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Allow Formatting Bar [ Off ]", stepFalse.ToDisplayLine());
     }
 

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class AdjustWindowStep : ScriptStep, IStepFactory
+public sealed class AdjustWindowStep : ScriptStep<AdjustWindowStep>, IStepFactory
 {
     public const int XmlId = 31;
     public const string XmlName = "Adjust Window";
@@ -29,16 +27,6 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
         WindowState = windowState;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AdjustWindowStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<AdjustWindowStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -50,7 +38,5 @@ public sealed class AdjustWindowStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("WindowState") { PocoProperty = "WindowState", DefaultValue = "ResizeToFit", ValidValues = ["Resize to Fit", "Maximize", "Minimize", "Restore", "Hide"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
+public sealed class ConstrainFoundSetStep : ScriptStep<ConstrainFoundSetStep>, IStepFactory
 {
     public const int XmlId = 126;
     public const string XmlName = "Constrain Found Set";
@@ -29,13 +27,6 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
         Query = query;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ConstrainFoundSetStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when state the display line cannot
     /// carry is present: a stored <c>&lt;Query&gt;</c> request list, or an
@@ -43,9 +34,6 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
     /// Restore toggle).
     /// </summary>
     public override bool IsFullyEditable => !WithoutIndexes && Query is null;
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ConstrainFoundSetStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -61,7 +49,5 @@ public sealed class ConstrainFoundSetStep : ScriptStep, IStepFactory
             new BoolStateChild("Restore") { PocoProperty = "RestoreStoredRequests", HrLabel = "Restore" },
             new ValueTypeChild("Query") { PocoProperty = "Query", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

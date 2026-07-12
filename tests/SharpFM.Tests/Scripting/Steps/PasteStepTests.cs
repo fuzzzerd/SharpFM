@@ -15,7 +15,7 @@ public class PasteStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PasteStep.Metadata.FromXml!(source);
+        var step = PasteStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

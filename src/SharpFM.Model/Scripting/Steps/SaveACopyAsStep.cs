@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
+public sealed class SaveACopyAsStep : ScriptStep<SaveACopyAsStep>, IStepFactory
 {
     public const int XmlId = 37;
     public const string XmlName = "Save a Copy as";
@@ -37,16 +35,6 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
         OutputPath = outputPath;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SaveACopyAsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SaveACopyAsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -65,7 +53,5 @@ public sealed class SaveACopyAsStep : ScriptStep, IStepFactory
             new EnumValueChild("SaveAsType") { PocoProperty = "CopyType", HrLabel = "Copy type", DefaultValue = "Copy", ValidValues = ["Copy", "CompactedCopy", "Clone", "SelfContainedCopy"], DisplayValues = ["copy of current file", "compacted copy (smaller)", "clone (no records)", "self-contained copy (single file)"], Display = DisplayMode.Native },
             new NamedTextChild("UniversalPathList") { PocoProperty = "OutputPath", HrLabel = "Output path", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -29,11 +29,21 @@ public static class StepXmlParser
                 $"{pocoType.Name} needs a parameterless constructor for shape-driven parsing.");
 
         instance.Enabled = step.Attribute("enable")?.Value != "False";
+        Populate(instance, step, meta);
+        return instance;
+    }
+
+    /// <summary>
+    /// Populates an already-constructed instance's shape-bound properties
+    /// from a source <c>&lt;Step&gt;</c> element. <see cref="ScriptStep.Enabled"/>
+    /// is not touched here — callers set it before invoking this.
+    /// </summary>
+    public static void Populate(ScriptStep instance, XElement step, StepMetadata meta)
+    {
         foreach (var node in meta.Shape)
-            Populate(instance, step, node);
+            PopulateNode(instance, step, node);
 
         CapturePassthrough(instance, step, meta.Shape);
-        return instance;
     }
 
     /// <summary>
@@ -58,7 +68,7 @@ public static class StepXmlParser
                 : extras);
     }
 
-    private static void Populate(object target, XElement step, ShapeNode node)
+    private static void PopulateNode(object target, XElement step, ShapeNode node)
     {
         switch (node)
         {
@@ -177,7 +187,7 @@ public static class StepXmlParser
                 if (wrapper is not null)
                 {
                     foreach (var child in w.Children)
-                        Populate(target, wrapper, child);
+                        PopulateNode(target, wrapper, child);
                     CapturePassthrough(target, wrapper, w.Children);
                 }
                 return;
@@ -202,7 +212,7 @@ public static class StepXmlParser
                 // its init-only positional properties.
                 var value = CreateBlank(match.WhenType);
                 foreach (var child in match.Children)
-                    Populate(value, step, child);
+                    PopulateNode(value, step, child);
                 Set(target, prop, value);
                 return;
             }

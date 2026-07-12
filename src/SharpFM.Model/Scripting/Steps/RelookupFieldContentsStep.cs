@@ -1,14 +1,12 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
+public sealed class RelookupFieldContentsStep : ScriptStep<RelookupFieldContentsStep>, IStepFactory
 {
     public const int XmlId = 40;
     public const string XmlName = "Relookup Field Contents";
@@ -36,16 +34,6 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<RelookupFieldContentsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<RelookupFieldContentsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -60,7 +48,5 @@ public sealed class RelookupFieldContentsStep : ScriptStep, IStepFactory
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
             new FieldChild("Field") { PocoProperty = "Target", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

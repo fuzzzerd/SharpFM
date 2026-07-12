@@ -14,7 +14,7 @@ public class InsertCurrentUserNameStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertCurrentUserNameStep.Metadata.FromXml!(source);
+        var step = InsertCurrentUserNameStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

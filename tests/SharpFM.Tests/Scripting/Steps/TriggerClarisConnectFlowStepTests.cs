@@ -16,7 +16,7 @@ public class TriggerClarisConnectFlowStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = TriggerClarisConnectFlowStep.Metadata.FromXml!(source);
+        var step = TriggerClarisConnectFlowStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

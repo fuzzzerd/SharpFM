@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class ScrollWindowStep : ScriptStep, IStepFactory
+public sealed class ScrollWindowStep : ScriptStep<ScrollWindowStep>, IStepFactory
 {
     public const int XmlId = 81;
     public const string XmlName = "Scroll Window";
@@ -28,16 +26,6 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
     {
         Direction = direction;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ScrollWindowStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ScrollWindowStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -58,7 +46,5 @@ public sealed class ScrollWindowStep : ScriptStep, IStepFactory
                 Display = DisplayMode.Native,
             },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

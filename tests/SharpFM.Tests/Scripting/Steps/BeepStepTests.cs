@@ -30,7 +30,7 @@ public class BeepStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = CanonicalStepElement();
-        var step = BeepStep.Metadata.FromXml!(source);
+        var step = BeepStep.Parse(source);
 
         Assert.IsType<BeepStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -47,7 +47,7 @@ public class BeepStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="93" name="Beep"/>""");
-        var step = BeepStep.Metadata.FromXml!(source);
+        var step = BeepStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

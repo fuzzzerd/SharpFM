@@ -16,7 +16,7 @@ public class SetRevertTransactionOnErrorStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = SetRevertTransactionOnErrorStep.Metadata.FromXml!(source);
+        var step = SetRevertTransactionOnErrorStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class SetRevertTransactionOnErrorStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = SetRevertTransactionOnErrorStep.Metadata.FromXml!(source);
+        var step = SetRevertTransactionOnErrorStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class SetRevertTransactionOnErrorStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((SetRevertTransactionOnErrorStep)SetRevertTransactionOnErrorStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (SetRevertTransactionOnErrorStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Set Revert Transaction on Error [ Revert on error: On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((SetRevertTransactionOnErrorStep)SetRevertTransactionOnErrorStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (SetRevertTransactionOnErrorStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Set Revert Transaction on Error [ Revert on error: Off ]", stepFalse.ToDisplayLine());
     }
 

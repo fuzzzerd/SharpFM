@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -16,7 +14,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <item><c>Calculation</c> — the script text is computed from <c>&lt;Calculation&gt;</c>.</item>
 /// </list>
 /// </summary>
-public sealed class SendEventStep : ScriptStep, IStepFactory
+public sealed class SendEventStep : ScriptStep<SendEventStep>, IStepFactory
 {
     public const int XmlId = 57;
     public const string XmlName = "Send Event";
@@ -51,8 +49,6 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         Event = evt ?? SendEventTarget.Default();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: fixed empty-slot tokens plus the synthetic <file> placeholder — grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
@@ -66,10 +62,7 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
         return $"Send Event [ {Event.TargetName} ; {Event.Class} ; {Event.Id} ; {content} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SendEventStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Display shape is positional: [ targetName ; class ; id ; content ].
         // The event's behaviour flags and target type are not displayable —
@@ -99,7 +92,10 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
             contentType = "Text";
 
         var evt = new SendEventTarget(false, false, false, "", targetName, id, cls);
-        return new SendEventStep(contentType, calculation, text, evt, enabled);
+        ContentType = contentType;
+        Calculation = calculation;
+        Text = text;
+        Event = evt;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -118,7 +114,5 @@ public sealed class SendEventStep : ScriptStep, IStepFactory
             new ValueTypeChild("Event") { PocoProperty = "Event", Display = DisplayMode.Hidden },
             new HrOnly("Event"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

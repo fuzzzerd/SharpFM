@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// that carries BOTH the file path as text content AND a "type"
 /// attribute marking the payload as embedded or a reference.
 /// </summary>
-public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
+public sealed class InsertAudioVideoStep : ScriptStep<InsertAudioVideoStep>, IStepFactory
 {
     public const int XmlId = 159;
     public const string XmlName = "Insert Audio/Video";
@@ -33,17 +31,12 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
         Reference = reference;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the single wire element splits into two display tokens
     // (path text + type attribute), which the shape renderer cannot produce.
     public override string ToDisplayLine() =>
         $"Insert Audio/Video [ {Path} ; Reference: {Reference} ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertAudioVideoStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         string reference = "Embedded";
@@ -57,7 +50,8 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
         }
         var path = tokens.FirstOrDefault(t =>
             !t.StartsWith("Reference:", StringComparison.OrdinalIgnoreCase)) ?? "";
-        return new InsertAudioVideoStep(path, reference, enabled);
+        Path = path;
+        Reference = reference;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -79,7 +73,5 @@ public sealed class InsertAudioVideoStep : ScriptStep, IStepFactory
                 ValidValues = ["Embedded", "Reference"],
             },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

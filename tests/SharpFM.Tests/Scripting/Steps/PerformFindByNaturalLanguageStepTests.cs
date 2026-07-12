@@ -15,7 +15,7 @@ public class PerformFindByNaturalLanguageStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformFindByNaturalLanguageStep.Metadata.FromXml!(source);
+        var step = PerformFindByNaturalLanguageStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

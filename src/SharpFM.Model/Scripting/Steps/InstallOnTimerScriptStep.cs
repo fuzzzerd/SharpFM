@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// calculation wrapped in an <c>&lt;Interval&gt;</c> element. Omitting
 /// both cancels any running timer on the current window.
 /// </summary>
-public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
+public sealed class InstallOnTimerScriptStep : ScriptStep<InstallOnTimerScriptStep>, IStepFactory
 {
     public const int XmlId = 148;
     public const string XmlName = "Install OnTimer Script";
@@ -29,8 +27,6 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
         Interval = interval;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: quoted "script name" and <no script> placeholder grammar
     // the shape renderer cannot produce.
     public override string ToDisplayLine()
@@ -41,10 +37,7 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
             : $"Install OnTimer Script [ {script} ; Interval: {Interval.Text} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InstallOnTimerScriptStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         NamedRef? script = null;
         Calculation? interval = null;
@@ -65,7 +58,8 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
                 scriptSeen = true;
             }
         }
-        return new InstallOnTimerScriptStep(script, interval, enabled);
+        Script = script;
+        Interval = interval;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -82,7 +76,5 @@ public sealed class InstallOnTimerScriptStep : ScriptStep, IStepFactory
             new NamedCalcChild("Interval") { PocoProperty = "Interval", HrLabel = "Interval", Optional = true, Display = DisplayMode.Augmented },
             new NamedRefChild("Script") { PocoProperty = "Script", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

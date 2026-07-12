@@ -15,14 +15,14 @@ public class ExportRecordsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ExportRecordsStep.Metadata.FromXml!(source);
+        var step = ExportRecordsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void ExportEntries_AreTyped()
     {
-        var step = (ExportRecordsStep)ExportRecordsStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = ExportRecordsStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal(2, step.ExportEntries.Count);
         Assert.Equal("name", step.ExportEntries[0].Field.Name);
     }

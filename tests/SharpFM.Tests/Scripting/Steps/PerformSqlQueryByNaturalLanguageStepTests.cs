@@ -15,7 +15,7 @@ public class PerformSqlQueryByNaturalLanguageStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformSqlQueryByNaturalLanguageStep.Metadata.FromXml!(source);
+        var step = PerformSqlQueryByNaturalLanguageStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

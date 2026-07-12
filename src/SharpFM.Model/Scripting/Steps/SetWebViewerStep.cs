@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SetWebViewerStep : ScriptStep, IStepFactory
+public sealed class SetWebViewerStep : ScriptStep<SetWebViewerStep>, IStepFactory
 {
     public const int XmlId = 146;
     public const string XmlName = "Set Web Viewer";
@@ -70,18 +69,13 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
     private static string ActionHr(string x) => _ActionToHr.TryGetValue(x, out var h) ? h : x;
     private static string ActionXml(string h) => _ActionFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written (render and parse): the URL token's wire form lives inside
     // the UrlWire passthrough slot, which the shape display engine cannot read
     // or bind.
     public override string ToDisplayLine() =>
         "Set Web Viewer [ " + "Object Name: " + ObjectName.Text + " ; " + "Action: " + ActionHr(Action) + " ; " + "URL: " + URL.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetWebViewerStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         Calculation? objectName_v = null;
@@ -90,7 +84,9 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Action:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(7).Trim(); action_v = ActionXml(v); break; } }
         Calculation? uRL_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("URL:", StringComparison.OrdinalIgnoreCase)) { uRL_v = new Calculation(tok.Substring(4).Trim()); break; } }
-        return new SetWebViewerStep(objectName_v, action_v, uRL_v, enabled);
+        ObjectName = objectName_v ?? new Calculation("");
+        Action = action_v;
+        URL = uRL_v ?? new Calculation("");
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -107,7 +103,5 @@ public sealed class SetWebViewerStep : ScriptStep, IStepFactory
             new Passthrough { PocoProperty = "UrlWire" },
             new HrOnly("URL") { HrLabel = "URL" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

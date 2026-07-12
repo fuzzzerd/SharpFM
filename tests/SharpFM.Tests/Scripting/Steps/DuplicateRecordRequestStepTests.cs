@@ -19,7 +19,7 @@ public class DuplicateRecordRequestStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = DuplicateRecordRequestStep.Metadata.FromXml!(source);
+        var step = DuplicateRecordRequestStep.Parse(source);
 
         Assert.IsType<DuplicateRecordRequestStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class DuplicateRecordRequestStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="8" name="Duplicate Record/Request"/>""");
-        var step = DuplicateRecordRequestStep.Metadata.FromXml!(source);
+        var step = DuplicateRecordRequestStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

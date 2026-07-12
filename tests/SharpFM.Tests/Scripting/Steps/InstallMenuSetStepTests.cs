@@ -15,14 +15,14 @@ public class InstallMenuSetStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InstallMenuSetStep.Metadata.FromXml!(source);
+        var step = InstallMenuSetStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsMenuSetAndFlag()
     {
-        var step = (InstallMenuSetStep)InstallMenuSetStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = InstallMenuSetStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Install Menu Set [ \"[Standard FileMaker Menus]\" ; Use as file default: Off ]", step.ToDisplayLine());
     }
 

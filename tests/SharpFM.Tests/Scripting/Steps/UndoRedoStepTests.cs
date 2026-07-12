@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,21 +16,21 @@ public class UndoRedoStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = UndoRedoStep.Metadata.FromXml!(source);
+        var step = UndoRedoStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsHrMappedValue()
     {
-        var step = UndoRedoStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = UndoRedoStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Undo/Redo [ Action: Undo ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesHrValueBack()
     {
-        var step = UndoRedoStep.Metadata.FromDisplay!(true, new[] { "Action: Undo" });
+        var step = StepDisplayFactory.TryCreate(UndoRedoStep.XmlName, true, new[] { "Action: Undo" })!;
         Assert.True(XNode.DeepEquals(XElement.Parse(CanonicalXml), step.ToXml()));
     }
 

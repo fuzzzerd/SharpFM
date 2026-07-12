@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -25,7 +24,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// setting a new calc.
 /// </para>
 /// </summary>
-public sealed class SendMailStep : ScriptStep, IStepFactory
+public sealed class SendMailStep : ScriptStep<SendMailStep>, IStepFactory
 {
     public const int XmlId = 63;
     public const string XmlName = "Send Mail";
@@ -62,8 +61,6 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         Children = children ?? new StepChildBag();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the To/Subject annotations are conditional tokens read
     // from the passthrough child bag, which the shape renderer cannot surface.
     public override string ToDisplayLine()
@@ -74,12 +71,6 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
         if (Subject is { } subject) parts.Add($"Subject: {subject.Text}");
         return $"Send Mail [ {string.Join(" ; ", parts)} ]";
     }
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SendMailStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SendMailStep>(enabled, hrParams, Metadata);
 
     // --- Hot-field accessors (read through the bag) ---
 
@@ -114,7 +105,5 @@ public sealed class SendMailStep : ScriptStep, IStepFactory
             new HrOnly("Subject") { HrLabel = "Subject" },
             new HrOnly("Message") { HrLabel = "Message" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

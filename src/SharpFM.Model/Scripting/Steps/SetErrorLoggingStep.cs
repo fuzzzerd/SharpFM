@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
+public sealed class SetErrorLoggingStep : ScriptStep<SetErrorLoggingStep>, IStepFactory
 {
     public const int XmlId = 200;
     public const string XmlName = "Set Error Logging";
@@ -29,16 +27,6 @@ public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
         CustomDebugInfo = customDebugInfo ?? new Calculation("");
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetErrorLoggingStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetErrorLoggingStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class SetErrorLoggingStep : ScriptStep, IStepFactory
             new BoolStateChild("Option") { PocoProperty = "Logging", HrLabel = "Logging", Display = DisplayMode.Native },
             new BareCalcChild { PocoProperty = "CustomDebugInfo", HrLabel = "Custom debug info", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

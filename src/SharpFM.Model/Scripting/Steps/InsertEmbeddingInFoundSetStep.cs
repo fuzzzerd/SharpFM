@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +12,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// the presence-flag options (Overwrite / ContinueOnError / ShowSummary) and the
 /// optional parameters calc. Emitted as an empty wrapper when unconfigured.
 /// </summary>
-public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
+public sealed class InsertEmbeddingInFoundSetStep : ScriptStep<InsertEmbeddingInFoundSetStep>, IStepFactory
 {
     public const int XmlId = 216;
     public const string XmlName = "Insert Embedding in Found Set";
@@ -52,8 +50,6 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         Parameters = parameters;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: FileMaker's token order (account/model first, target
     // mid-line) diverges from the canonical XML order the shape must keep.
     public override string ToDisplayLine()
@@ -71,12 +67,6 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
         if (Parameters is not null) parts.Add($"Parameters: {Parameters.Text}");
         return $"Insert Embedding in Found Set [ {string.Join(" ; ", parts)} ]";
     }
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertEmbeddingInFoundSetStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<InsertEmbeddingInFoundSetStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -100,7 +90,5 @@ public sealed class InsertEmbeddingInFoundSetStep : ScriptStep, IStepFactory
                 new NamedCalcChild("Parameters") { PocoProperty = "Parameters", HrLabel = "Parameters", Optional = true, Display = DisplayMode.Augmented },
             ]),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

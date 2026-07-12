@@ -19,7 +19,7 @@ public class FreezeWindowStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = FreezeWindowStep.Metadata.FromXml!(source);
+        var step = FreezeWindowStep.Parse(source);
 
         Assert.IsType<FreezeWindowStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class FreezeWindowStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="79" name="Freeze Window"/>""");
-        var step = FreezeWindowStep.Metadata.FromXml!(source);
+        var step = FreezeWindowStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

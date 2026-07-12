@@ -5,6 +5,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -42,7 +43,7 @@ public class SetErrorCaptureStepTests
     public void RoundTrip_StateTrue()
     {
         var source = StepFrom(StateTrueSnippet);
-        var step = (SetErrorCaptureStep)SetErrorCaptureStep.Metadata.FromXml!(source);
+        var step = SetErrorCaptureStep.Parse(source);
 
         Assert.True(step.CaptureErrors);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -52,7 +53,7 @@ public class SetErrorCaptureStepTests
     public void RoundTrip_StateFalse()
     {
         var source = StepFrom(StateFalseSnippet);
-        var step = (SetErrorCaptureStep)SetErrorCaptureStep.Metadata.FromXml!(source);
+        var step = SetErrorCaptureStep.Parse(source);
 
         Assert.False(step.CaptureErrors);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -70,10 +71,10 @@ public class SetErrorCaptureStepTests
     [Fact]
     public void Display_RoundTripsThroughFromDisplayParams()
     {
-        var step = (SetErrorCaptureStep)SetErrorCaptureStep.Metadata.FromDisplay!(true, new[] { "On" });
+        var step = (SetErrorCaptureStep)StepDisplayFactory.TryCreate(SetErrorCaptureStep.XmlName, true, new[] { "On" })!;
         Assert.True(step.CaptureErrors);
 
-        var off = (SetErrorCaptureStep)SetErrorCaptureStep.Metadata.FromDisplay!(true, new[] { "Off" });
+        var off = (SetErrorCaptureStep)StepDisplayFactory.TryCreate(SetErrorCaptureStep.XmlName, true, new[] { "Off" })!;
         Assert.False(off.CaptureErrors);
     }
 

@@ -1,8 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -15,7 +13,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;Repetition&gt;</c> is a full Calculation (not an integer) and is
 /// always emitted in XML even when "1" — the round-trip invariant.
 /// </summary>
-public sealed class SetVariableStep : ScriptStep, IStepFactory
+public sealed class SetVariableStep : ScriptStep<SetVariableStep>, IStepFactory
 {
     public const int XmlId = 141;
     public const string XmlName = "Set Variable";
@@ -34,11 +32,6 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
         Repetition = repetition ?? new Calculation("1");
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetVariableStep>(step, Metadata);
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the name and repetition merge into one [rep] token the shape renderer cannot express.
     public override string ToDisplayLine()
     {
@@ -53,7 +46,7 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
         @"^(?<name>\$+[^\[]+)\[(?<rep>.*)\]$",
         RegexOptions.Compiled);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var name = "";
         var value = new Calculation("");
@@ -82,7 +75,9 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
             value = new Calculation(valueToken);
         }
 
-        return new SetVariableStep(enabled, name, value, repetition);
+        Name = name;
+        Value = value;
+        Repetition = repetition;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -101,10 +96,5 @@ public sealed class SetVariableStep : ScriptStep, IStepFactory
             new NamedCalcChild("Repetition") { PocoProperty = "Repetition", Display = DisplayMode.Augmented, DefaultValue = "1" },
             new NamedTextChild("Name") { PocoProperty = "Name", Required = true, Display = DisplayMode.Native },
         ],
-        // Params is retained alongside Shape only to feed the not-yet-migrated
-        // legacy consumers (FmScript.SynthesizeHrParams, ScriptValidator). It is
-        // deleted at the end of phase 6 once those read Shape directly.
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

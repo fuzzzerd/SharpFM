@@ -19,7 +19,7 @@ public class FlushCacheToDiskStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = FlushCacheToDiskStep.Metadata.FromXml!(source);
+        var step = FlushCacheToDiskStep.Parse(source);
 
         Assert.IsType<FlushCacheToDiskStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class FlushCacheToDiskStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="102" name="Flush Cache to Disk"/>""");
-        var step = FlushCacheToDiskStep.Metadata.FromXml!(source);
+        var step = FlushCacheToDiskStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

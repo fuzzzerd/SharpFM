@@ -15,14 +15,14 @@ public class PerformFindStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformFindStep.Metadata.FromXml!(source);
+        var step = PerformFindStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void MultipleRequests_ExcludeOperationIsPreserved()
     {
-        var step = (PerformFindStep)PerformFindStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = PerformFindStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal(2, step.Query!.Requests.Count);
         Assert.Equal("Include", step.Query.Requests[0].Operation);
         Assert.Equal("Exclude", step.Query.Requests[1].Operation);

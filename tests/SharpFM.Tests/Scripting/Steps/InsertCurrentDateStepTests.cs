@@ -14,7 +14,7 @@ public class InsertCurrentDateStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertCurrentDateStep.Metadata.FromXml!(source);
+        var step = InsertCurrentDateStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

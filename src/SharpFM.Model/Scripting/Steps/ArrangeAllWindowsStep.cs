@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class ArrangeAllWindowsStep : ScriptStep, IStepFactory
+public sealed class ArrangeAllWindowsStep : ScriptStep<ArrangeAllWindowsStep>, IStepFactory
 {
     public const int XmlId = 120;
     public const string XmlName = "Arrange All Windows";
@@ -29,16 +27,6 @@ public sealed class ArrangeAllWindowsStep : ScriptStep, IStepFactory
         WindowArrangement = windowArrangement;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ArrangeAllWindowsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ArrangeAllWindowsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -50,7 +38,5 @@ public sealed class ArrangeAllWindowsStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("WindowArrangement") { PocoProperty = "WindowArrangement", DefaultValue = "Cascade Window", ValidValues = ["Tile Horizontally", "Tile Vertically", "Cascade Window", "Bring All To Front"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

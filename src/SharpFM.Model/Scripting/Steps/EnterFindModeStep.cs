@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class EnterFindModeStep : ScriptStep, IStepFactory
+public sealed class EnterFindModeStep : ScriptStep<EnterFindModeStep>, IStepFactory
 {
     public const int XmlId = 22;
     public const string XmlName = "Enter Find Mode";
@@ -29,17 +27,10 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
         Query = query;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<EnterFindModeStep>(step, Metadata);
-
     // Hand-written: bare display text defaults Pause/Restore to On (FileMaker's
     // new-step defaults), which the shape parser's false-initialized POCO
     // cannot reproduce.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool pause = true, restore = true;
         foreach (var tok in hrParams)
@@ -50,7 +41,9 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
             else if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
                 restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
         }
-        return new EnterFindModeStep(pause, restore, null, enabled);
+        Pause = pause;
+        RestoreStoredRequests = restore;
+        Query = null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -70,7 +63,5 @@ public sealed class EnterFindModeStep : ScriptStep, IStepFactory
             new HrOnly("Restore") { Boolean = true },
             new HrOnly("Query"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

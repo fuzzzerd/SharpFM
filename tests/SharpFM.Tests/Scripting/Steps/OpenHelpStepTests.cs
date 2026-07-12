@@ -19,7 +19,7 @@ public class OpenHelpStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenHelpStep.Metadata.FromXml!(source);
+        var step = OpenHelpStep.Parse(source);
 
         Assert.IsType<OpenHelpStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenHelpStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="32" name="Open Help"/>""");
-        var step = OpenHelpStep.Metadata.FromXml!(source);
+        var step = OpenHelpStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

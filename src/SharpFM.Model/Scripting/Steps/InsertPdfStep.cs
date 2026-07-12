@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// prefix conventions. When Path is empty, the user is prompted to pick
 /// a file. Only works against an interactive container.
 /// </summary>
-public sealed class InsertPdfStep : ScriptStep, IStepFactory
+public sealed class InsertPdfStep : ScriptStep<InsertPdfStep>, IStepFactory
 {
     public const int XmlId = 158;
     public const string XmlName = "Insert PDF";
@@ -29,22 +27,18 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
         StorageType = storageType;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the single wire element splits into two display tokens
     // (path text + type attribute) via HrOnly slots the renderer cannot drive.
     public override string ToDisplayLine() =>
         string.IsNullOrEmpty(Path) ? XmlName : $"Insert PDF [ {Path} ; {StorageType} ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertPdfStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         string path = "", type = "Embedded";
         if (hrParams.Length >= 1) path = hrParams[0].Trim();
         if (hrParams.Length >= 2) type = hrParams[1].Trim();
-        return new InsertPdfStep(path, type, enabled);
+        Path = path;
+        StorageType = type;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -70,7 +64,5 @@ public sealed class InsertPdfStep : ScriptStep, IStepFactory
             new HrOnly("UniversalPathList"),
             new HrOnly("StorageType") { DisplayValues = ["Embedded", "Reference"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

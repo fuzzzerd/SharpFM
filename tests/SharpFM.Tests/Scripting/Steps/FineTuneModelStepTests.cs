@@ -15,7 +15,7 @@ public class FineTuneModelStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = FineTuneModelStep.Metadata.FromXml!(source);
+        var step = FineTuneModelStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

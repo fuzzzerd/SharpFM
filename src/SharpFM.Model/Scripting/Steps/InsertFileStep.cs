@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class InsertFileStep : ScriptStep, IStepFactory
+public sealed class InsertFileStep : ScriptStep<InsertFileStep>, IStepFactory
 {
     public const int XmlId = 131;
     public const string XmlName = "Insert File";
@@ -32,8 +30,6 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         Target = target;
         DialogOptions = dialogOptions;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // Hand-written: the storage/compression/display-content tokens live inside
     // the DialogOptions value type, which the shape-driven renderer cannot
@@ -65,9 +61,6 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
         return parts.Count == 0 ? "Insert File" : $"Insert File [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertFileStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when dialog state the display line
     /// cannot carry is present: a missing DialogOptions block, a custom
@@ -78,7 +71,7 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
     public override bool IsFullyEditable =>
         DialogOptions is { Enable: false, Title: null, FilterListXml: null };
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         string path = "";
         FieldRef? target = null;
@@ -100,7 +93,10 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
                 path = t;
         }
         var dialogOptions = new InsertFileDialogOptions(asFile, false, null, storage, compress, null);
-        return new InsertFileStep(path, "Embedded", target, dialogOptions, enabled);
+        Path = path;
+        PathType = "Embedded";
+        Target = target;
+        DialogOptions = dialogOptions;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -115,7 +111,5 @@ public sealed class InsertFileStep : ScriptStep, IStepFactory
             new FieldChild { PocoProperty = "Target", Optional = true, VariableTextMarker = true, HrLabel = "Target" },
             new ValueTypeChild("DialogOptions"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

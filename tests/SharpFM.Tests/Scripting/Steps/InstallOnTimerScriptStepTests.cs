@@ -16,14 +16,14 @@ public class InstallOnTimerScriptStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InstallOnTimerScriptStep.Metadata.FromXml!(source);
+        var step = InstallOnTimerScriptStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsScriptAndInterval()
     {
-        var step = (InstallOnTimerScriptStep)InstallOnTimerScriptStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = InstallOnTimerScriptStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Install OnTimer Script [ \"Refresh\" ; Interval: 30 ]", step.ToDisplayLine());
     }
 

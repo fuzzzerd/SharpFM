@@ -15,7 +15,7 @@ public class EnterFindModeStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = EnterFindModeStep.Metadata.FromXml!(source);
+        var step = EnterFindModeStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

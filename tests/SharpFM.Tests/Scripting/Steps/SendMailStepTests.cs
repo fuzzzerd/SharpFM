@@ -15,14 +15,14 @@ public class SendMailStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SendMailStep.Metadata.FromXml!(source);
+        var step = SendMailStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void HotFields_ReadThroughBag()
     {
-        var step = (SendMailStep)SendMailStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SendMailStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("$to", step.To!.Text);
         Assert.Equal("$subject", step.Subject!.Text);
         Assert.Equal("$message", step.Message!.Text);
@@ -32,7 +32,7 @@ public class SendMailStepTests
     public void RoundTrip_PreservesUseFoundSetAttribute()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SendMailStep.Metadata.FromXml!(source);
+        var step = SendMailStep.Parse(source);
         var output = step.ToXml();
         Assert.Equal("False", output.Element("To")!.Attribute("UseFoundSet")!.Value);
     }

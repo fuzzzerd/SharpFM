@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name) plus a single
 /// &lt;Set state="True|False"/&gt; child. All round-tripped.
 /// </summary>
-public sealed class AllowUserAbortStep : ScriptStep, IStepFactory
+public sealed class AllowUserAbortStep : ScriptStep<AllowUserAbortStep>, IStepFactory
 {
     public const int XmlId = 85;
     public const string XmlName = "Allow User Abort";
@@ -27,23 +25,11 @@ public sealed class AllowUserAbortStep : ScriptStep, IStepFactory
         Set = set;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AllowUserAbortStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<AllowUserAbortStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
         Id = XmlId,
         Category = "control",
         Shape = [new BoolStateChild("Set")],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

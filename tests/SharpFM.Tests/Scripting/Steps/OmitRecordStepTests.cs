@@ -19,7 +19,7 @@ public class OmitRecordStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OmitRecordStep.Metadata.FromXml!(source);
+        var step = OmitRecordStep.Parse(source);
 
         Assert.IsType<OmitRecordStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OmitRecordStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="25" name="Omit Record"/>""");
-        var step = OmitRecordStep.Metadata.FromXml!(source);
+        var step = OmitRecordStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

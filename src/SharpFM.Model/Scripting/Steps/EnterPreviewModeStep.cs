@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name) plus a single
 /// &lt;Pause state="True|False"/&gt; child. All round-tripped.
 /// </summary>
-public sealed class EnterPreviewModeStep : ScriptStep, IStepFactory
+public sealed class EnterPreviewModeStep : ScriptStep<EnterPreviewModeStep>, IStepFactory
 {
     public const int XmlId = 41;
     public const string XmlName = "Enter Preview Mode";
@@ -27,16 +25,6 @@ public sealed class EnterPreviewModeStep : ScriptStep, IStepFactory
         Pause = pause;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<EnterPreviewModeStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<EnterPreviewModeStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -48,7 +36,5 @@ public sealed class EnterPreviewModeStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Pause") { PocoProperty = "Pause", HrLabel = "Pause" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

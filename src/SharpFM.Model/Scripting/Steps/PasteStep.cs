@@ -1,14 +1,12 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class PasteStep : ScriptStep, IStepFactory
+public sealed class PasteStep : ScriptStep<PasteStep>, IStepFactory
 {
     public const int XmlId = 48;
     public const string XmlName = "Paste";
@@ -34,16 +32,6 @@ public sealed class PasteStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<PasteStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<PasteStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -61,7 +49,5 @@ public sealed class PasteStep : ScriptStep, IStepFactory
             new BoolStateChild("LinkAvail") { PocoProperty = "LinkIfAvailable", HrLabel = "Link if available", ValidValues = ["On", "Off"], DefaultValue = "False", Display = DisplayMode.Augmented },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Table::Field", Optional = true, Display = DisplayMode.Augmented, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

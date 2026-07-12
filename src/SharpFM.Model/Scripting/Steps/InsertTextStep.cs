@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// Text content and the Field target are omitted from the unconfigured
 /// canonical form, so each is Optional.
 /// </summary>
-public sealed class InsertTextStep : ScriptStep, IStepFactory
+public sealed class InsertTextStep : ScriptStep<InsertTextStep>, IStepFactory
 {
     public const int XmlId = 61;
     public const string XmlName = "Insert Text";
@@ -32,8 +30,6 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
         Text = text;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: bare "Select" presence token and quoted text literal the
     // shape renderer cannot produce.
     public override string ToDisplayLine()
@@ -43,10 +39,7 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
         return $"Insert Text [ {selectPart}{targetPart}\"{Text}\" ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertTextStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool selectAll = false;
         FieldRef? target = null;
@@ -67,7 +60,9 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
                 textSeen = true;
             }
         }
-        return new InsertTextStep(selectAll, target, text, enabled);
+        SelectAll = selectAll;
+        Target = target;
+        Text = text;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -84,7 +79,5 @@ public sealed class InsertTextStep : ScriptStep, IStepFactory
             new NamedTextChild("Text") { PocoProperty = "Text", Optional = true },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

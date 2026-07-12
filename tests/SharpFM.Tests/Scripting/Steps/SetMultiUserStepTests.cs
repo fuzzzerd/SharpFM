@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,21 +16,21 @@ public class SetMultiUserStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SetMultiUserStep.Metadata.FromXml!(source);
+        var step = SetMultiUserStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsHrMappedValue()
     {
-        var step = SetMultiUserStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SetMultiUserStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Set Multi-User [ Network access: On ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesHrValueBack()
     {
-        var step = SetMultiUserStep.Metadata.FromDisplay!(true, new[] { "Network access: On" });
+        var step = StepDisplayFactory.TryCreate(SetMultiUserStep.XmlName, true, new[] { "Network access: On" })!;
         Assert.True(XNode.DeepEquals(XElement.Parse(CanonicalXml), step.ToXml()));
     }
 

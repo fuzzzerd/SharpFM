@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class RecoverFileStep : ScriptStep, IStepFactory
+public sealed class RecoverFileStep : ScriptStep<RecoverFileStep>, IStepFactory
 {
     public const int XmlId = 95;
     public const string XmlName = "Recover File";
@@ -31,16 +29,6 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
         UniversalPathList = universalPathList;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<RecoverFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<RecoverFileStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -54,7 +42,5 @@ public sealed class RecoverFileStep : ScriptStep, IStepFactory
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteractState", HrLabel = "With dialog", Display = DisplayMode.Augmented, DisplayInverted = true },
             new NamedTextChild("UniversalPathList") { PocoProperty = "UniversalPathList", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

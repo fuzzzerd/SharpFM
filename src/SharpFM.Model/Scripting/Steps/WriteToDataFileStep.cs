@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
+public sealed class WriteToDataFileStep : ScriptStep<WriteToDataFileStep>, IStepFactory
 {
     public const int XmlId = 192;
     public const string XmlName = "Write to Data File";
@@ -33,8 +31,6 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
         AppendLineFeed = appendLineFeed;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: Append line feed is a wire boolean displayed as a bare presence token, and the token order differs from shape order.
     public override string ToDisplayLine()
     {
@@ -51,10 +47,7 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
         return $"Write to Data File [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<WriteToDataFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         Calculation fileId = new("");
         FieldRef? source = null;
@@ -79,7 +72,10 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
             else if (t.Equals("Append line feed", StringComparison.OrdinalIgnoreCase))
                 append = true;
         }
-        return new WriteToDataFileStep(fileId, source, type, append, enabled);
+        FileId = fileId;
+        DataSource = source;
+        DataSourceType = type;
+        AppendLineFeed = append;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -98,7 +94,5 @@ public sealed class WriteToDataFileStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "FileId", HrLabel = "File ID", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "DataSource", HrLabel = "Data source", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

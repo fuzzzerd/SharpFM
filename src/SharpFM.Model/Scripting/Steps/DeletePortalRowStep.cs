@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name) plus a single
 /// &lt;NoInteract state="True|False"/&gt; child. All round-tripped.
 /// </summary>
-public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
+public sealed class DeletePortalRowStep : ScriptStep<DeletePortalRowStep>, IStepFactory
 {
     public const int XmlId = 104;
     public const string XmlName = "Delete Portal Row";
@@ -35,16 +33,6 @@ public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
         WithDialog = withdialog;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<DeletePortalRowStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<DeletePortalRowStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -56,7 +44,5 @@ public sealed class DeletePortalRowStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("NoInteract") { PocoProperty = "NoInteract", HrLabel = "With dialog", DisplayInverted = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

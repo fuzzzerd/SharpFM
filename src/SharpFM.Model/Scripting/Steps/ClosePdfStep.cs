@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// an optional output path, and a <c>&lt;ClosePDFFile&gt;</c> wrapper holding
 /// the save type.
 /// </summary>
-public sealed class ClosePdfStep : ScriptStep, IStepFactory
+public sealed class ClosePdfStep : ScriptStep<ClosePdfStep>, IStepFactory
 {
     public const int XmlId = 245;
     public const string XmlName = "Close PDF";
@@ -41,8 +39,6 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
         SaveType = saveType;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: AutoOpen/CreateEmail render as conditional bare tokens,
     // a form a BoolStateChild cannot produce (it always renders On/Off).
     public override string ToDisplayLine()
@@ -56,10 +52,7 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
             : $"Close PDF [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ClosePdfStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool autoOpen = false, createEmail = false;
         string path = "";
@@ -71,7 +64,11 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
             else if (t.Equals("Create email", System.StringComparison.OrdinalIgnoreCase)) createEmail = true;
             else if (!pathSeen && !string.IsNullOrWhiteSpace(t)) { path = t; pathSeen = true; }
         }
-        return new ClosePdfStep(false, autoOpen, createEmail, path, "File", enabled);
+        CreateDirectories = false;
+        AutoOpen = autoOpen;
+        CreateEmail = createEmail;
+        Path = path;
+        SaveType = "File";
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -97,7 +94,5 @@ public sealed class ClosePdfStep : ScriptStep, IStepFactory
             // mirroring the legacy ClosePDFFile param.
             new HrOnly("ClosePDFFile"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

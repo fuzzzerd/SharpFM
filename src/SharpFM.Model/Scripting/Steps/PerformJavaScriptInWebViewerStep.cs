@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +12,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// list. Parameters are wrapped in <c>&lt;P&gt;&lt;Calculation/&gt;&lt;/P&gt;</c>
 /// children under a <c>&lt;Parameters Count="N"&gt;</c> element.
 /// </summary>
-public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
+public sealed class PerformJavaScriptInWebViewerStep : ScriptStep<PerformJavaScriptInWebViewerStep>, IStepFactory
 {
     public const int XmlId = 175;
     public const string XmlName = "Perform JavaScript in Web Viewer";
@@ -37,8 +35,6 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         Parameters = parameters ?? new List<Calculation>();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the unconfigured form renders empty brackets and the
     // parameter list joins as one comma-separated token — forms the shape
     // display engine cannot express.
@@ -52,10 +48,7 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
         return $"Perform JavaScript in Web Viewer [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<PerformJavaScriptInWebViewerStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         Calculation? obj = null;
         Calculation? fn = null;
@@ -74,7 +67,9 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
                     parameters.Add(new Calculation(p.Trim()));
             }
         }
-        return new PerformJavaScriptInWebViewerStep(obj, fn, parameters, enabled);
+        ObjectName = obj;
+        FunctionName = fn;
+        Parameters = parameters;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -92,7 +87,5 @@ public sealed class PerformJavaScriptInWebViewerStep : ScriptStep, IStepFactory
             new NamedCalcChild("FunctionName") { PocoProperty = "FunctionName", HrLabel = "Function Name", Optional = true, Display = DisplayMode.Augmented },
             new ParametersList() { PocoProperty = "Parameters", HrLabel = "Parameters", Optional = true, Display = DisplayMode.Augmented },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

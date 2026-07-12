@@ -19,7 +19,7 @@ public class OpenUploadToHostStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenUploadToHostStep.Metadata.FromXml!(source);
+        var step = OpenUploadToHostStep.Parse(source);
 
         Assert.IsType<OpenUploadToHostStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenUploadToHostStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="172" name="Open Upload to Host"/>""");
-        var step = OpenUploadToHostStep.Metadata.FromXml!(source);
+        var step = OpenUploadToHostStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

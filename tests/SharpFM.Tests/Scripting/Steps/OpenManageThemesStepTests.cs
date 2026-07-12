@@ -19,7 +19,7 @@ public class OpenManageThemesStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenManageThemesStep.Metadata.FromXml!(source);
+        var step = OpenManageThemesStep.Parse(source);
 
         Assert.IsType<OpenManageThemesStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenManageThemesStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="165" name="Open Manage Themes"/>""");
-        var step = OpenManageThemesStep.Metadata.FromXml!(source);
+        var step = OpenManageThemesStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

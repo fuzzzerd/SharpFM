@@ -19,7 +19,7 @@ public class ExitApplicationStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ExitApplicationStep.Metadata.FromXml!(source);
+        var step = ExitApplicationStep.Parse(source);
 
         Assert.IsType<ExitApplicationStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class ExitApplicationStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="44" name="Exit Application"/>""");
-        var step = ExitApplicationStep.Metadata.FromXml!(source);
+        var step = ExitApplicationStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -16,7 +14,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <see cref="NewWindowStyles"/> value type), then the optional target
 /// <c>Layout</c>. Unconfigured windows omit every optional child.
 /// </summary>
-public sealed class NewWindowStep : ScriptStep, IStepFactory
+public sealed class NewWindowStep : ScriptStep<NewWindowStep>, IStepFactory
 {
     public const int XmlId = 122;
     public const string XmlName = "New Window";
@@ -34,13 +32,6 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
 
     public NewWindowStep(bool enabled = true) : base(enabled) { }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<NewWindowStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when state the display line cannot
     /// carry is present: a target layout, window dimensions, a non-default
@@ -54,15 +45,14 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
         && DistanceFromTop is null && DistanceFromLeft is null
         && Styles == NewWindowStyles.Default();
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    // Hand-written: reconstructs the unconfigured LayoutDestination
+    // "CurrentLayout" wire form, which the shape parser cannot synthesize
+    // for a display-hidden slot; anything beyond a window name is sealed state.
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
-        // Hand-written: reconstructs the unconfigured LayoutDestination
-        // "CurrentLayout" wire form, which the shape parser cannot synthesize
-        // for a display-hidden slot; anything beyond a window name is sealed state.
-        var step = new NewWindowStep(enabled) { LayoutDestination = "CurrentLayout" };
+        LayoutDestination = "CurrentLayout";
         var name = hrParams.Select(h => h.Trim()).FirstOrDefault(t => t.Length > 0);
-        if (!string.IsNullOrEmpty(name)) step.Name = new Calculation(name);
-        return step;
+        Name = !string.IsNullOrEmpty(name) ? new Calculation(name) : null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -84,7 +74,5 @@ public sealed class NewWindowStep : ScriptStep, IStepFactory
             new ValueTypeChild("NewWndStyles") { PocoProperty = "Styles", Display = DisplayMode.Hidden },
             new NamedRefChild("Layout") { PocoProperty = "Layout", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;CreatePDFFile&gt;</c> wrapper whose <c>Document</c> / <c>Security</c>
 /// / <c>View</c> blocks reuse the same value types as Save Records as PDF.
 /// </summary>
-public sealed class CreatePdfStep : ScriptStep, IStepFactory
+public sealed class CreatePdfStep : ScriptStep<CreatePdfStep>, IStepFactory
 {
     public const int XmlId = 243;
     public const string XmlName = "Create PDF";
@@ -41,13 +39,6 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
         View = view ?? PdfView.Default();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<CreatePdfStep>(step, Metadata);
-
     /// <summary>
     /// The canonical Document block FileMaker writes for an unconfigured
     /// step: all pages numbered from 1 with a 1–1 page range.
@@ -70,7 +61,7 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
 
     // Hand-written: must materialize the canonical Document block
     // (DefaultDocument) that the shape parser's plain ctor cannot supply.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var restore = false;
         foreach (var tok in hrParams)
@@ -79,7 +70,11 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
             if (t.StartsWith("Restore:", System.StringComparison.OrdinalIgnoreCase))
                 restore = t.Substring(8).Trim().Equals("On", System.StringComparison.OrdinalIgnoreCase);
         }
-        return new CreatePdfStep(restore, null, DefaultDocument(), null, null, enabled);
+        RestoreStoredOptions = restore;
+        StoredLabel = null;
+        Document = DefaultDocument();
+        Security = PdfSecurity.Default();
+        View = PdfView.Default();
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -105,7 +100,5 @@ public sealed class CreatePdfStep : ScriptStep, IStepFactory
             // display slot, mirroring the legacy CreatePDFFile param.
             new HrOnly("CreatePDFFile"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

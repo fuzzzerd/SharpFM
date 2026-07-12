@@ -18,6 +18,8 @@ public class StepDisplayRendererTests
         public VarStep() : base(true) { }
         public override XElement ToXml() => throw new System.NotImplementedException();
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
     }
 
     // Name native; Value + Repetition augmented (labeled, after the natives);
@@ -167,5 +169,7 @@ public class StepDisplayRendererTests
         public FlagStep() : base(true) { }
         public override XElement ToXml() => throw new System.NotImplementedException();
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
     }
 }

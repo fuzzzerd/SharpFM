@@ -19,7 +19,7 @@ public class CorrectWordStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = CorrectWordStep.Metadata.FromXml!(source);
+        var step = CorrectWordStep.Parse(source);
 
         Assert.IsType<CorrectWordStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class CorrectWordStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="106" name="Correct Word"/>""");
-        var step = CorrectWordStep.Metadata.FromXml!(source);
+        var step = CorrectWordStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

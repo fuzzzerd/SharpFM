@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class UndoRedoStep : ScriptStep, IStepFactory
+public sealed class UndoRedoStep : ScriptStep<UndoRedoStep>, IStepFactory
 {
     public const int XmlId = 45;
     public const string XmlName = "Undo/Redo";
@@ -32,16 +30,6 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
         Action = action;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<UndoRedoStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<UndoRedoStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class UndoRedoStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("UndoRedo") { PocoProperty = "Action", HrLabel = "Action", DefaultValue = "Undo", ValidValues = ["Undo", "Redo", "Toggle"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

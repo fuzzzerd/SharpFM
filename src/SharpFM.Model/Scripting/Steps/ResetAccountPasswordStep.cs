@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ResetAccountPasswordStep : ScriptStep, IStepFactory
+public sealed class ResetAccountPasswordStep : ScriptStep<ResetAccountPasswordStep>, IStepFactory
 {
     public const int XmlId = 136;
     public const string XmlName = "Reset Account Password";
@@ -35,16 +33,6 @@ public sealed class ResetAccountPasswordStep : ScriptStep, IStepFactory
         ExpirePassword = expirePassword;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ResetAccountPasswordStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ResetAccountPasswordStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -61,7 +49,5 @@ public sealed class ResetAccountPasswordStep : ScriptStep, IStepFactory
             // when "False" (the POCO default matches the absent-element fallback).
             new EnumValueChild("ChgPwdOnNextLogin") { PocoProperty = "ExpirePasswordValue", HrLabel = "Expire password", ValidValues = ["True", "False"], DisplayValues = ["On", "Off"], Display = DisplayMode.Augmented },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -30,6 +30,18 @@ public abstract class ScriptStep
     public abstract XElement ToXml();
     public abstract string ToDisplayLine();
 
+    /// <summary>
+    /// Populates this instance from a source <c>&lt;Step&gt;</c> element.
+    /// <see cref="Enabled"/> is already set by the caller before this runs.
+    /// </summary>
+    protected internal abstract void PopulateFromXml(XElement step);
+
+    /// <summary>
+    /// Populates this instance from parsed display-text tokens.
+    /// <see cref="Enabled"/> is already set by the caller before this runs.
+    /// </summary>
+    protected internal abstract void PopulateFromDisplay(string[] hrParams);
+
     public virtual List<ScriptDiagnostic> Validate(int lineIndex) => new();
 
     /// <summary>

@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// booleans (three labeled, one inverted) and an unlabeled positional
 /// enum (<c>DataSourceType</c>) carrying "File" or "XMLSource".
 /// </summary>
-public sealed class ConvertFileStep : ScriptStep, IStepFactory
+public sealed class ConvertFileStep : ScriptStep<ConvertFileStep>, IStepFactory
 {
     public const int XmlId = 139;
     public const string XmlName = "Convert File";
@@ -48,8 +46,6 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
         VerifySSLCertificates = verifySSLCertificates;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: With dialog renders mid-line between same-mode groups, an
     // order the Native-then-Augmented display projection cannot produce.
     public override string ToDisplayLine() =>
@@ -61,10 +57,7 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
         + " ; Verify SSL Certificates: " + (VerifySSLCertificates ? "On" : "Off")
         + " ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ConvertFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         var openFile = ParseOn(tokens, "Open File:", defaultValue: false);
@@ -79,7 +72,11 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
             !t.StartsWith("With dialog:", StringComparison.OrdinalIgnoreCase) &&
             !t.StartsWith("Verify SSL Certificates:", StringComparison.OrdinalIgnoreCase))
             ?? "File";
-        return new ConvertFileStep(openFile, skipIdx, withDialog, dataType, sslVerify, enabled);
+        OpenFile = openFile;
+        SkipIndexes = skipIdx;
+        WithDialog = withDialog;
+        DataSourceType = dataType;
+        VerifySSLCertificates = sslVerify;
     }
 
     private static bool ParseOn(string[] tokens, string prefix, bool defaultValue)
@@ -111,7 +108,5 @@ public sealed class ConvertFileStep : ScriptStep, IStepFactory
             new BoolStateChild("VerifySSLCertificates") { PocoProperty = "VerifySSLCertificates", HrLabel = "Verify SSL Certificates", Display = DisplayMode.Augmented },
             new EnumValueChild("DataSourceType") { PocoProperty = "DataSourceType", Optional = true, DisplayValues = ["File", "XMLSource"], Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }
