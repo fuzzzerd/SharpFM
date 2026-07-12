@@ -20,7 +20,7 @@ ever reads our own extended output.
 
 ## Core invariant
 
-> `ToDisplayLine()` and `FromDisplayParams()` together are lossless for
+> `ToDisplayLine()` and `PopulateFromDisplay()` together are lossless for
 > every piece of state the POCO carries. XML state that is dropped is
 > dropped because it carries no information, not because the display
 > can't express it.
@@ -177,6 +177,6 @@ per-step extension. Covered here for completeness.
 - `ScriptLineParser.ParseLine`
   (`src/SharpFM.Model/Scripting/ScriptLineParser.cs`) — disabled-step
   prefix and bracket tokenization.
-- `PerformScriptStep.FromDisplayParams`,
-  `GoToLayoutStep.FromDisplayParams` — Form 1 regex parsers for named
+- `PerformScriptStep.PopulateFromDisplay`,
+  `GoToLayoutStep.PopulateFromDisplay` — Form 1 regex parsers for named
   refs with `(#id)` suffixes.
