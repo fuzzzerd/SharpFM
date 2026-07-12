@@ -1,6 +1,5 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// optional CallbackScript block carrying the callback's script ref and
 /// parameter.
 /// </summary>
-public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFactory
+public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep<PerformScriptOnServerWithCallbackStep>, IStepFactory
 {
     public const int XmlId = 210;
     public const string XmlName = "Perform Script on Server with Callback";
@@ -36,6 +35,12 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
             ? byRef.Script
             : null;
 
+    private PerformScriptOnServerWithCallbackStep() : base(false)
+    {
+        State = "Continue";
+        Target = new PerformScriptTarget.ByReference(new NamedRef(0, ""));
+    }
+
     public PerformScriptOnServerWithCallbackStep(
         string state = "Continue",
         PerformScriptTarget? target = null,
@@ -51,8 +56,6 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
         CallbackScript = callbackScript;
         CallbackParameter = callbackParameter;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // Hand-written: the script target renders as a bare quoted-name variant token the shape renderer cannot express.
     public override string ToDisplayLine()
@@ -72,12 +75,11 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
         return $"Perform Script on Server with Callback [ {string.Join(" ; ", parts)} ]";
     }
 
-    // Hand-written rather than StepXmlParser: the Target union is spread
-    // across two emit-only projection slots, and the degenerate no-reference
-    // form defaults to an empty by-ref.
-    public static new ScriptStep FromXml(XElement step)
+    // Hand-written: the Target union is spread across two emit-only
+    // projection slots, and the degenerate no-reference form defaults to an
+    // empty by-ref.
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
         var state = step.Element("CallbackScriptState")?.Attribute("value")?.Value ?? "Continue";
         var calcEl = step.Element("Calculated")?.Element("Calculation");
         var scriptEl = step.Element("Script");
@@ -91,12 +93,18 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
         var cbEl = step.Element("CallbackScript");
         var cbScript = cbEl?.Element("ScriptName") is { } sn ? NamedRef.FromXml(sn) : null;
         var cbParam = cbEl?.Element("ScriptParameter")?.Element("Calculation") is { } cp ? Calculation.FromXml(cp) : null;
-        return new PerformScriptOnServerWithCallbackStep(state, target, parameter, cbScript, cbParam, enabled);
+        State = state;
+        Target = target;
+        Parameter = parameter;
+        CallbackScript = cbScript;
+        CallbackParameter = cbParam;
     }
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    // Display is lossy for the callback details. Best-effort parse of state
+    // + target; Parameter/CallbackScript/CallbackParameter are cleared since
+    // the display form carries no round-trippable representation for them.
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
-        // Display is lossy for the callback details. Best-effort parse of state + target.
         string state = "Continue";
         PerformScriptTarget target = new PerformScriptTarget.ByReference(new NamedRef(0, ""));
         foreach (var tok in hrParams)
@@ -105,7 +113,11 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
             if (t.StartsWith("State:", System.StringComparison.OrdinalIgnoreCase))
                 state = t.Substring(6).Trim();
         }
-        return new PerformScriptOnServerWithCallbackStep(state, target, null, null, null, enabled);
+        State = state;
+        Target = target;
+        Parameter = null;
+        CallbackScript = null;
+        CallbackParameter = null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -131,7 +143,5 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep, IStepFac
                 new NamedCalcChild("ScriptParameter") { PocoProperty = "CallbackParameter", Optional = true },
             ]),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

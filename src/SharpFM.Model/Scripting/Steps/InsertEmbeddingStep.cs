@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// account/model/input calculations; the wrapper is emitted empty when the step
 /// is unconfigured.
 /// </summary>
-public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
+public sealed class InsertEmbeddingStep : ScriptStep<InsertEmbeddingStep>, IStepFactory
 {
     public const int XmlId = 215;
     public const string XmlName = "Insert Embedding";
@@ -39,8 +37,6 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: FileMaker shows the Target last, but the shape must keep
     // the canonical XML order (Field before the LLMEmbedding wrapper).
     public override string ToDisplayLine()
@@ -54,12 +50,6 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
         if (Target is not null) parts.Add($"Target: {Target.ToDisplayString()}");
         return $"Insert Embedding [ {string.Join(" ; ", parts)} ]";
     }
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertEmbeddingStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<InsertEmbeddingStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -78,7 +68,5 @@ public sealed class InsertEmbeddingStep : ScriptStep, IStepFactory
                 new NamedCalcChild("InputText") { PocoProperty = "InputText", HrLabel = "Input", Optional = true, Display = DisplayMode.Augmented },
             ]),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

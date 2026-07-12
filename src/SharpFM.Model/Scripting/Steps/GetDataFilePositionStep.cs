@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class GetDataFilePositionStep : ScriptStep, IStepFactory
+public sealed class GetDataFilePositionStep : ScriptStep<GetDataFilePositionStep>, IStepFactory
 {
     public const int XmlId = 194;
     public const string XmlName = "Get Data File Position";
@@ -23,16 +21,6 @@ public sealed class GetDataFilePositionStep : ScriptStep, IStepFactory
         Target = target;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<GetDataFilePositionStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<GetDataFilePositionStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -45,7 +33,5 @@ public sealed class GetDataFilePositionStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "FileId", HrLabel = "File ID", Required = true, Optional = true, DisplayEmptyAs = "" },
             new FieldChild() { PocoProperty = "Target", HrLabel = "Target", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

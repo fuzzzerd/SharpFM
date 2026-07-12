@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
+public sealed class ExecuteFileMakerDataApiStep : ScriptStep<ExecuteFileMakerDataApiStep>, IStepFactory
 {
     public const int XmlId = 203;
     public const string XmlName = "Execute FileMaker Data API";
@@ -30,8 +28,6 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
         Query = query;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: FileMaker shows Target before the query calculation, the
     // reverse of the canonical XML order the shape must keep.
     public override string ToDisplayLine()
@@ -43,10 +39,7 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
         return $"Execute FileMaker Data API [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ExecuteFileMakerDataApiStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool select = true;
         FieldRef? target = null;
@@ -65,7 +58,9 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
                 querySeen = true;
             }
         }
-        return new ExecuteFileMakerDataApiStep(select, target, query, enabled);
+        Select = select;
+        Target = target;
+        Query = query;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -82,7 +77,5 @@ public sealed class ExecuteFileMakerDataApiStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "Query", Optional = true, Display = DisplayMode.Native },
             new FieldChild("Field") { PocoProperty = "Target", HrLabel = "Target", Optional = true, VariableTextMarker = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

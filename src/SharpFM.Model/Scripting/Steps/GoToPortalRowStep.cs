@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
+public sealed class GoToPortalRowStep : ScriptStep<GoToPortalRowStep>, IStepFactory
 {
     public const int XmlId = 99;
     public const string XmlName = "Go to Portal Row";
@@ -59,8 +57,6 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
         Calculation = calculation;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: per-mode conditional token grammar (First/Last/Previous/
     // Next/ByCalculation) the shape renderer cannot produce.
     public override string ToDisplayLine()
@@ -72,10 +68,7 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
         return $"Go to Portal Row [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<GoToPortalRowStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         string location = "Next";
         bool selectAll = false, exit = false;
@@ -94,7 +87,11 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
                 locSeen = true;
             }
         }
-        return new GoToPortalRowStep(true, selectAll, location, exit, calc, enabled);
+        WithDialog = true;
+        SelectAll = selectAll;
+        Location = location;
+        ExitAfterLast = exit;
+        Calculation = calc;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -111,7 +108,5 @@ public sealed class GoToPortalRowStep : ScriptStep, IStepFactory
             new BoolStateChild("Exit") { PocoProperty = "ExitWire", Optional = true, HrLabel = "Exit after last" },
             new BareCalcChild { PocoProperty = "CalculationWire", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

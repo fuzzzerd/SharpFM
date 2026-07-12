@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
+public sealed class ShowHideTextRulerStep : ScriptStep<ShowHideTextRulerStep>, IStepFactory
 {
     public const int XmlId = 92;
     public const string XmlName = "Show/Hide Text Ruler";
@@ -32,16 +30,6 @@ public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
         Action = action;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ShowHideTextRulerStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ShowHideTextRulerStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class ShowHideTextRulerStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("ShowHide") { PocoProperty = "Action", HrLabel = "Action", DefaultValue = "Show", ValidValues = ["Show", "Hide", "Toggle"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

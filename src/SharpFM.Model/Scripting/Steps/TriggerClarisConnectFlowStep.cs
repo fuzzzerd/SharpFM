@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -16,7 +14,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// The canonical step id is 211 (vendored FileMaker XML skill, control reference).
 /// </para>
 /// </summary>
-public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
+public sealed class TriggerClarisConnectFlowStep : ScriptStep<TriggerClarisConnectFlowStep>, IStepFactory
 {
     public const int XmlId = 211;
     public const string XmlName = "Trigger Claris Connect Flow";
@@ -64,13 +62,6 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
         TargetVariable = targetVariable;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<TriggerClarisConnectFlowStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when state the display line cannot
     /// carry is present: a target variable, or the encode/select/SSL flags
@@ -82,7 +73,7 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
 
     // Hand-written: reconstructs the unconfigured SelectAll=true wire default,
     // which the shape parser cannot synthesize for a display-hidden slot.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool withDialog = true;
         string flowUrl = "";
@@ -97,7 +88,13 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
             else if (t.StartsWith("cURL options:", StringComparison.OrdinalIgnoreCase))
                 curl = new Calculation(t.Substring(13).Trim());
         }
-        return new TriggerClarisConnectFlowStep(withDialog, false, true, false, flowUrl, curl, "", enabled);
+        WithDialog = withDialog;
+        DontEncodeUrl = false;
+        SelectAll = true;
+        VerifySslCertificates = false;
+        FlowUrl = flowUrl;
+        CurlOptions = curl;
+        TargetVariable = "";
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -117,7 +114,5 @@ public sealed class TriggerClarisConnectFlowStep : ScriptStep, IStepFactory
             new NamedCalcChild("CURLOptions") { PocoProperty = "CurlOptions", Optional = true, HrLabel = "cURL options" },
             new NamedTextChild("Text") { PocoProperty = "TargetVariable", HrLabel = "Target variable", Display = DisplayMode.Hidden },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

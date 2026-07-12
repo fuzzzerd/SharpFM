@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class ViewAsStep : ScriptStep, IStepFactory
+public sealed class ViewAsStep : ScriptStep<ViewAsStep>, IStepFactory
 {
     public const int XmlId = 30;
     public const string XmlName = "View As";
@@ -32,16 +30,6 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
         View = view;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ViewAsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ViewAsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class ViewAsStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("View") { HrLabel = "View", DefaultValue = "Cycle", ValidValues = ["Cycle", "Form", "List", "Table"], DisplayValues = ["Cycle", "View as Form", "View as List", "View as Table"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

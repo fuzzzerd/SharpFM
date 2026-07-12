@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +12,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;SerialNumbers/&gt;</c> block) and an optional target <c>&lt;Field&gt;</c>.
 /// (Earlier revisions dropped <c>&lt;Restore&gt;</c>; the skill round-trips it.)
 /// </summary>
-public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
+public sealed class ReplaceFieldContentsStep : ScriptStep<ReplaceFieldContentsStep>, IStepFactory
 {
     public const int XmlId = 91;
     public const string XmlName = "Replace Field Contents";
@@ -55,8 +53,6 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         SerialOptions = serialOptions;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the mode token is per-mode conditional (Calculation mode
     // shows the calc text, not the enum value) and the skip-auto-enter marker
     // reads SerialOptions content — grammar the shape renderer cannot express.
@@ -79,10 +75,7 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
         return $"Replace Field Contents [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ReplaceFieldContentsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool withDialog = true;
         FieldRef? field = null;
@@ -116,7 +109,11 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
                 calc = new Calculation(t);
             }
         }
-        return new ReplaceFieldContentsStep(withDialog, field, mode, calc, null, enabled);
+        WithDialog = withDialog;
+        Field = field;
+        Mode = mode;
+        Calculation = calc;
+        SerialOptions = null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -138,7 +135,5 @@ public sealed class ReplaceFieldContentsStep : ScriptStep, IStepFactory
             new HrOnly("SerialNumbers"),
             new FieldChild("Field") { Optional = true, HrLabel = "Field" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

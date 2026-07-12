@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class ExitScriptStep : ScriptStep, IStepFactory
+public sealed class ExitScriptStep : ScriptStep<ExitScriptStep>, IStepFactory
 {
     public const int XmlId = 103;
     public const string XmlName = "Exit Script";
@@ -23,16 +21,6 @@ public sealed class ExitScriptStep : ScriptStep, IStepFactory
         Calculation = calculation ?? new Calculation("");
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ExitScriptStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ExitScriptStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -44,7 +32,5 @@ public sealed class ExitScriptStep : ScriptStep, IStepFactory
         [
             new BareCalcChild { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

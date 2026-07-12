@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
+public sealed class AVPlayerPlayStep : ScriptStep<AVPlayerPlayStep>, IStepFactory
 {
     public const int XmlId = 177;
     public const string XmlName = "AVPlayer Play";
@@ -84,16 +82,11 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
     private static string PresentationHr(string x) => _PresentationToHr.TryGetValue(x, out var h) ? h : x;
     private static string PresentationXml(string h) => _PresentationFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: Hide Controls / Disable Interaction map the wire's
     // "True"/absent values to On/Off, a translation display metadata cannot
     // express without widening the nodes' wire ValidValues.
     public override string ToDisplayLine() =>
         "AVPlayer Play [ " + SourceHr(Source) + " ; " + "Repetition: " + (Repetition?.Text ?? "") + " ; " + "Presentation: " + PresentationHr(Presentation) + " ; " + "Position: " + (Position?.Text ?? "") + " ; " + "Start Offset: " + (StartOffset?.Text ?? "") + " ; " + "End Offset: " + (EndOffset?.Text ?? "") + " ; " + "Hide Controls: " + (HideControls == "True" ? "On" : "Off") + " ; " + "Disable Interaction: " + (DisableInteraction == "True" ? "On" : "Off") + " ]";
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AVPlayerPlayStep>(step, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when a toggle is explicitly stored
@@ -103,7 +96,7 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
     public override bool IsFullyEditable =>
         HideControls != "False" && DisableInteraction != "False";
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         // The leading unlabeled token is the source enum.
@@ -126,7 +119,14 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Hide Controls:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(14).Trim(); hideControls_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
         string disableInteraction_v = "";
         foreach (var tok in tokens) { if (tok.StartsWith("Disable Interaction:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(20).Trim(); disableInteraction_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? "True" : ""; break; } }
-        return new AVPlayerPlayStep(source_v, repetition_v, presentation_v, position_v, startOffset_v, endOffset_v, hideControls_v, disableInteraction_v, enabled);
+        Source = source_v;
+        Repetition = repetition_v;
+        Presentation = presentation_v;
+        Position = position_v;
+        StartOffset = startOffset_v;
+        EndOffset = endOffset_v;
+        HideControls = hideControls_v;
+        DisableInteraction = disableInteraction_v;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -150,7 +150,5 @@ public sealed class AVPlayerPlayStep : ScriptStep, IStepFactory
             new EnumValueChild("HideControls") { PocoProperty = "HideControls", HrLabel = "Hide Controls", Optional = true, DisplayValues = ["On", "Off"] },
             new EnumValueChild("DisableInteraction") { PocoProperty = "DisableInteraction", HrLabel = "Disable Interaction", Optional = true, DisplayValues = ["On", "Off"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

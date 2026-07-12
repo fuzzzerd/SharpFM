@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// file path as text. Display form uses the HR-label prefix
 /// "Target file:" followed by the raw path string.
 /// </summary>
-public sealed class DeleteFileStep : ScriptStep, IStepFactory
+public sealed class DeleteFileStep : ScriptStep<DeleteFileStep>, IStepFactory
 {
     public const int XmlId = 197;
     public const string XmlName = "Delete File";
@@ -27,22 +25,15 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
         TargetFile = targetFile;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<DeleteFileStep>(step, Metadata);
-
     // Hand-written: also accepts a bare unlabeled path token, which the
     // shape parser would ignore (labeled slots never bind positionally).
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tok = hrParams.Length > 0 ? hrParams[0].Trim() : "";
         const string Prefix = "Target file:";
         if (tok.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
             tok = tok.Substring(Prefix.Length).Trim();
-        return new DeleteFileStep(tok, enabled);
+        TargetFile = tok;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -54,7 +45,5 @@ public sealed class DeleteFileStep : ScriptStep, IStepFactory
         [
             new NamedTextChild("UniversalPathList") { PocoProperty = "TargetFile", HrLabel = "Target file", Required = true, Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

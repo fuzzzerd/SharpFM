@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SetDictionaryStep : ScriptStep, IStepFactory
+public sealed class SetDictionaryStep : ScriptStep<SetDictionaryStep>, IStepFactory
 {
     public const int XmlId = 209;
     public const string XmlName = "Set Dictionary";
@@ -28,16 +26,6 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
         UserDictionary = userDictionary;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetDictionaryStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetDictionaryStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -50,7 +38,5 @@ public sealed class SetDictionaryStep : ScriptStep, IStepFactory
             new EnumValueChild("MainDictionary") { PocoProperty = "SpellingLanguage", HrLabel = "Spelling Language", DefaultValue = "US English" },
             new NamedTextChild("UniversalPathList") { PocoProperty = "UserDictionary", HrLabel = "User Dictionary", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

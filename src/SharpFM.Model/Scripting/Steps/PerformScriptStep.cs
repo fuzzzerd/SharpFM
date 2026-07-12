@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -15,7 +14,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// (ByReference / ByCalculation) and an optional parameter Calculation.
 /// Display uses the <c>(#id)</c> lossless-id convention for static refs.
 /// </summary>
-public sealed class PerformScriptStep : ScriptStep, IStepFactory
+public sealed class PerformScriptStep : ScriptStep<PerformScriptStep>, IStepFactory
 {
     public const int XmlId = 1;
     public const string XmlName = "Perform Script";
@@ -31,6 +30,11 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
     public Calculation? ParameterAfterCalculated =>
         Target is PerformScriptTarget.ByCalculation ? Parameter : null;
 
+    private PerformScriptStep() : base(false)
+    {
+        Target = new PerformScriptTarget.ByReference(new NamedRef(0, ""));
+    }
+
     public PerformScriptStep(bool enabled, PerformScriptTarget target, Calculation? parameter = null)
         : base(enabled)
     {
@@ -38,13 +42,11 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
         Parameter = parameter;
     }
 
-    // Hand-written rather than StepXmlParser: tolerates the degenerate
-    // no-reference form and binds the step-level Parameter regardless of
-    // which side of the variant it appeared on.
-    public static new ScriptStep FromXml(XElement step)
+    // Hand-written: tolerates the degenerate no-reference form and binds
+    // the step-level Parameter regardless of which side of the variant it
+    // appeared on.
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
-
         var calculatedEl = step.Element("Calculated");
         var scriptEl = step.Element("Script");
         var paramCalcEl = step.Element("Calculation");
@@ -68,10 +70,9 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
 
         var parameter = paramCalcEl is not null ? Calculation.FromXml(paramCalcEl) : null;
 
-        return new PerformScriptStep(enabled, target, parameter);
+        Target = target;
+        Parameter = parameter;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // Hand-written: the script target is a variant (by-name renders the quoted name, by-calculation the expression) the shape renderer cannot express.
     public override string ToDisplayLine()
@@ -103,7 +104,7 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
         "^\"(?<name>.*)\"\\s*\\(#(?<id>\\d+)\\)$",
         RegexOptions.Compiled);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         PerformScriptTarget target = new PerformScriptTarget.ByReference(new NamedRef(0, ""));
         Calculation? parameter = null;
@@ -140,7 +141,8 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
             }
         }
 
-        return new PerformScriptStep(enabled, target, parameter);
+        Target = target;
+        Parameter = parameter;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -162,7 +164,5 @@ public sealed class PerformScriptStep : ScriptStep, IStepFactory
             ]) { PocoProperty = "Target", Required = true },
             new BareCalcChild { PocoProperty = "ParameterAfterCalculated", Optional = true, Display = DisplayMode.Hidden },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

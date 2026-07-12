@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -16,7 +14,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// endpoint and API key. <see cref="VerifySSLCertificates"/> is nullable so an
 /// absent flag stays distinct from a present "False".
 /// </summary>
-public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
+public sealed class ConfigureAIAccountStep : ScriptStep<ConfigureAIAccountStep>, IStepFactory
 {
     public const int XmlId = 212;
     public const string XmlName = "Configure AI Account";
@@ -62,16 +60,11 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
     private static string ModelProviderHr(string x) => _ModelProviderToHr.TryGetValue(x, out var h) ? h : x;
     private static string ModelProviderXml(string h) => _ModelProviderFromHr.TryGetValue(h, out var x) ? x : h;
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: FileMaker's token order (Account Name before Model
     // Provider, SSL flag fourth) diverges from the canonical XML order, and
     // the nullable SSL flag renders absent and explicit-False identically.
     public override string ToDisplayLine() =>
         "Configure AI Account [ " + "Account Name: " + AccountName.Text + " ; " + "Model Provider: " + ModelProviderHr(ModelProvider) + " ; " + "Endpoint: " + Endpoint.Text + " ; " + "Verify SSL Certificates: " + (VerifySSLCertificates == true ? "On" : "Off") + " ; " + "API key: " + APIKey.Text + " ]";
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ConfigureAIAccountStep>(step, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when the SSL flag is explicitly
@@ -80,7 +73,7 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
     /// </summary>
     public override bool IsFullyEditable => VerifySSLCertificates != false;
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         Calculation? accountName_v = null;
@@ -95,7 +88,11 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
         foreach (var tok in tokens) { if (tok.StartsWith("Verify SSL Certificates:", StringComparison.OrdinalIgnoreCase)) { var v = tok.Substring(24).Trim(); verifySSLCertificates_v = v.Equals("On", StringComparison.OrdinalIgnoreCase) ? true : null; break; } }
         Calculation? aPIKey_v = null;
         foreach (var tok in tokens) { if (tok.StartsWith("API key:", StringComparison.OrdinalIgnoreCase)) { aPIKey_v = new Calculation(tok.Substring(8).Trim()); break; } }
-        return new ConfigureAIAccountStep(accountName_v, modelProvider_v, endpoint_v, verifySSLCertificates_v, aPIKey_v, enabled);
+        AccountName = accountName_v ?? new Calculation("");
+        ModelProvider = modelProvider_v;
+        Endpoint = endpoint_v ?? new Calculation("");
+        VerifySSLCertificates = verifySSLCertificates_v;
+        APIKey = aPIKey_v ?? new Calculation("");
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -116,7 +113,5 @@ public sealed class ConfigureAIAccountStep : ScriptStep, IStepFactory
                 new NamedCalcChild("AccessAPIKey") { PocoProperty = "APIKey", HrLabel = "API key", Optional = true, Display = DisplayMode.Augmented },
             ]),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

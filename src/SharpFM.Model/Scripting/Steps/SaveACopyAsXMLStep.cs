@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -18,7 +16,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// The FM 26 flags are nullable so an absent flag stays distinct from "present
 /// and False".
 /// </summary>
-public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
+public sealed class SaveACopyAsXMLStep : ScriptStep<SaveACopyAsXMLStep>, IStepFactory
 {
     public const int XmlId = 3;
     public const string XmlName = "Save a Copy as XML";
@@ -52,16 +50,6 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
         JsonOptions = jsonOptions;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SaveACopyAsXMLStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SaveACopyAsXMLStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -83,7 +71,5 @@ public sealed class SaveACopyAsXMLStep : ScriptStep, IStepFactory
                 ]),
             ]) { PocoProperty = "JsonOptions", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

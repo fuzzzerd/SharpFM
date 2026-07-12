@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name) plus a single
 /// &lt;Set state="True|False"/&gt; child. All round-tripped.
 /// </summary>
-public sealed class AllowFormattingBarStep : ScriptStep, IStepFactory
+public sealed class AllowFormattingBarStep : ScriptStep<AllowFormattingBarStep>, IStepFactory
 {
     public const int XmlId = 115;
     public const string XmlName = "Allow Formatting Bar";
@@ -27,16 +25,6 @@ public sealed class AllowFormattingBarStep : ScriptStep, IStepFactory
         Set = set;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<AllowFormattingBarStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<AllowFormattingBarStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -44,7 +32,5 @@ public sealed class AllowFormattingBarStep : ScriptStep, IStepFactory
         Category = "miscellaneous",
         HelpUrl = "https://help.claris.com/en/pro-help/content/allow-formatting-bar.html",
         Shape = [new BoolStateChild("Set")],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

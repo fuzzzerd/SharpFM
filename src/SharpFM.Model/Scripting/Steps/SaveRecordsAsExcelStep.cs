@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +13,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// doc-metadata calcs (WorkSheet, Title, Subject, Author) wrap
 /// Calculation children and are optional.
 /// </summary>
-public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
+public sealed class SaveRecordsAsExcelStep : ScriptStep<SaveRecordsAsExcelStep>, IStepFactory
 {
     public const int XmlId = 143;
     public const string XmlName = "Save Records as Excel";
@@ -102,14 +101,9 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
         UseFieldNames = useFieldNames;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the display line hides the option flags and shows only the dialog toggle and conditional file token — sealed state the shape renderer would surface.
     public override string ToDisplayLine() =>
         $"Save Records as Excel [ With dialog: {(WithDialog ? "On" : "Off")} ; {Path} ]";
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SaveRecordsAsExcelStep>(step, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when state the display line cannot
@@ -124,7 +118,7 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
         && WorkSheet is null && Title is null && Subject is null && Author is null
         && SaveType == "BrowsedRecords" && !UseFieldNames;
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Display grammar: [ With dialog: On/Off ; path ]. Everything else
         // takes its canonical unconfigured value.
@@ -138,7 +132,22 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
             else if (!string.IsNullOrWhiteSpace(t))
                 path = t;
         }
-        return new SaveRecordsAsExcelStep(withDialog, restoreStoredOptions: false, path: path, enabled: enabled);
+        WithDialog = withDialog;
+        CreateDirectories = true;
+        RestoreStoredOptions = false;
+        AutoOpen = false;
+        CreateEmail = false;
+        FieldDelimiter = "\t";
+        IsPredefined = "-1";
+        FieldNameRow = "-1";
+        DataType = "XLXE";
+        Path = path;
+        WorkSheet = null;
+        Title = null;
+        Subject = null;
+        Author = null;
+        SaveType = "BrowsedRecords";
+        UseFieldNames = false;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -167,7 +176,5 @@ public sealed class SaveRecordsAsExcelStep : ScriptStep, IStepFactory
             new EnumValueChild("SaveType") { ValidValues = ["BrowsedRecords", "CurrentRecord"], DefaultValue = "BrowsedRecords" },
             new BoolStateChild("UseFieldNames"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
+public sealed class PauseResumeScriptStep : ScriptStep<PauseResumeScriptStep>, IStepFactory
 {
     public const int XmlId = 62;
     public const string XmlName = "Pause/Resume Script";
@@ -29,16 +27,6 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
         DurationSeconds = durationSeconds;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<PauseResumeScriptStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<PauseResumeScriptStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class PauseResumeScriptStep : ScriptStep, IStepFactory
             new EnumValueChild("PauseTime") { PocoProperty = "PauseTime", DefaultValue = "ForDuration", ValidValues = ["Indefinitely", "ForDuration"], DisplayValues = ["Indefinitely", "Duration (seconds)"] },
             new BareCalcChild { PocoProperty = "DurationSeconds", HrLabel = "Duration (seconds)", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// &lt;Step&gt; attributes (enable/id/name) plus a single
 /// &lt;Set state="True|False"/&gt; child. All round-tripped.
 /// </summary>
-public sealed class SetRevertTransactionOnErrorStep : ScriptStep, IStepFactory
+public sealed class SetRevertTransactionOnErrorStep : ScriptStep<SetRevertTransactionOnErrorStep>, IStepFactory
 {
     public const int XmlId = 223;
     public const string XmlName = "Set Revert Transaction on Error";
@@ -27,16 +25,6 @@ public sealed class SetRevertTransactionOnErrorStep : ScriptStep, IStepFactory
         RevertOnError = revertonerror;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetRevertTransactionOnErrorStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetRevertTransactionOnErrorStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -47,7 +35,5 @@ public sealed class SetRevertTransactionOnErrorStep : ScriptStep, IStepFactory
         [
             new BoolStateChild("Set") { PocoProperty = "RevertOnError", HrLabel = "Revert on error" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

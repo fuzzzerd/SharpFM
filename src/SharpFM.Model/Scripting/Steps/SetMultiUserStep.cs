@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class SetMultiUserStep : ScriptStep, IStepFactory
+public sealed class SetMultiUserStep : ScriptStep<SetMultiUserStep>, IStepFactory
 {
     public const int XmlId = 84;
     public const string XmlName = "Set Multi-User";
@@ -32,16 +30,6 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
         NetworkAccess = networkAccess;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetMultiUserStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetMultiUserStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class SetMultiUserStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("MultiUser") { PocoProperty = "NetworkAccess", HrLabel = "Network access", DefaultValue = "True", ValidValues = ["True", "OnHidden", "False"], DisplayValues = ["On", "On (Hidden)", "Off"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

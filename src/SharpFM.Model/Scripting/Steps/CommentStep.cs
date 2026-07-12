@@ -1,6 +1,5 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -11,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// visible <c>⏎</c> (U+23CE) return glyph so the comment stays on a
 /// single editor line. The glyph is reversed to a real newline on parse.
 /// </summary>
-public sealed class CommentStep : ScriptStep, IStepFactory
+public sealed class CommentStep : ScriptStep<CommentStep>, IStepFactory
 {
     public const int XmlId = 89;
     public const string XmlName = "# (comment)";
@@ -23,29 +22,26 @@ public sealed class CommentStep : ScriptStep, IStepFactory
 
     public string Text { get; set; }
 
+    private CommentStep() : base(false) { Text = ""; }
+
     public CommentStep(bool enabled, string text)
         : base(enabled)
     {
         Text = text;
     }
 
-    // Hand-written rather than StepXmlParser: the reader must normalize the
-    // clipboard's CR/CRLF newlines to LF, a text transform the shape engine
-    // does not express.
-    public static new ScriptStep FromXml(XElement step)
+    // Hand-written: normalizes the clipboard's CR/CRLF newlines to LF, a
+    // text transform the shape engine does not express.
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
         // Normalize all line endings to \n. FM Pro's clipboard XML uses
         // &#13; (CR) as its canonical newline; those must not leak into
         // the display document because AvaloniaEdit would treat them as
         // visual line breaks, desynchronizing the editor's line numbers
         // from MultiLineStatementRanges (which splits on \n only).
         var raw = step.Element("Text")?.Value ?? "";
-        var text = NormalizeNewlines(raw);
-        return new CommentStep(enabled, text);
+        Text = NormalizeNewlines(raw);
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // Hand-written: the comment grammar (# prefix, no brackets) is outside
     // the shared "Name [ tokens ]" display form.
@@ -57,14 +53,13 @@ public sealed class CommentStep : ScriptStep, IStepFactory
             ? string.Empty
             : "# " + Text.Replace("\n", ReturnGlyph.ToString());
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // ScriptLineParser routes a comment through as a single hrParam
         // containing everything after the '#' (TrimStart'd). Restore any
         // ⏎ glyphs back to real newlines before storing.
         var raw = hrParams.Length > 0 ? hrParams[0] : "";
-        var text = raw.Replace(ReturnGlyph.ToString(), "\n");
-        return new CommentStep(enabled, text);
+        Text = raw.Replace(ReturnGlyph.ToString(), "\n");
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -78,8 +73,6 @@ public sealed class CommentStep : ScriptStep, IStepFactory
         [
             new NamedTextChild("Text") { Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 
     // CR/LF/CRLF → LF. Critical because any raw CR leaking into the

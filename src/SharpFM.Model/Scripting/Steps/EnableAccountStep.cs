@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class EnableAccountStep : ScriptStep, IStepFactory
+public sealed class EnableAccountStep : ScriptStep<EnableAccountStep>, IStepFactory
 {
     public const int XmlId = 137;
     public const string XmlName = "Enable Account";
@@ -26,16 +24,6 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
         AccountOperation = accountOperation;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<EnableAccountStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<EnableAccountStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -49,7 +37,5 @@ public sealed class EnableAccountStep : ScriptStep, IStepFactory
             new NamedCalcChild("AccountName") { PocoProperty = "AccountName", HrLabel = "Account Name", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
             new EnumValueChild("AccountOperation") { PocoProperty = "AccountOperation", DefaultValue = "Activate", DisplayValues = ["Activate", "Deactivate"], Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

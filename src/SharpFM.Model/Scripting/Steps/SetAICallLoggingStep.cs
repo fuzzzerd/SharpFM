@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;LLMDebugLog&gt;</c> parent element. Each flag is a
 /// "flagElement" — presence = On, absence = Off.
 /// </summary>
-public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
+public sealed class SetAICallLoggingStep : ScriptStep<SetAICallLoggingStep>, IStepFactory
 {
     public const int XmlId = 217;
     public const string XmlName = "Set AI Call Logging";
@@ -39,8 +37,6 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
         TruncateMessages = truncateMessages;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: Verbose/Truncate are wire flag elements (presence = On)
     // but display as always-present "Label: On/Off" tokens — a form the shape
     // renderer's bare-label FlagChild convention cannot express.
@@ -53,10 +49,7 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
         return $"Set AI Call Logging [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetAICallLoggingStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool logging = false;
         Calculation? fileName = null;
@@ -78,7 +71,10 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
                 loggingSeen = true;
             }
         }
-        return new SetAICallLoggingStep(logging, fileName, verbose, truncate, enabled);
+        Logging = logging;
+        FileName = fileName;
+        Verbose = verbose;
+        TruncateMessages = truncate;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -98,7 +94,5 @@ public sealed class SetAICallLoggingStep : ScriptStep, IStepFactory
                 new FlagChild("TruncateEmbeddingVectorsMode") { PocoProperty = "TruncateMessages", HrLabel = "Truncate Messages" },
             ]),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

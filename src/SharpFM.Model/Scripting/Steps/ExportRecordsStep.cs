@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +13,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// fields to export; SummaryFields is an optional list of summary fields
 /// that drives grouping.
 /// </summary>
-public sealed class ExportRecordsStep : ScriptStep, IStepFactory
+public sealed class ExportRecordsStep : ScriptStep<ExportRecordsStep>, IStepFactory
 {
     public const int XmlId = 36;
     public const string XmlName = "Export Records";
@@ -117,16 +116,6 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
         SummaryFields = summaryFields ?? new List<SummaryFieldEntry>();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<ExportRecordsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<ExportRecordsStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -150,7 +139,5 @@ public sealed class ExportRecordsStep : ScriptStep, IStepFactory
             new HrOnly("ExportEntries"),
             new HrOnly("SummaryFields"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

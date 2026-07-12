@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -24,13 +23,18 @@ namespace SharpFM.Model.Scripting.Steps;
 /// schema access.
 /// </para>
 /// </summary>
-public sealed class GoToLayoutStep : ScriptStep, IStepFactory
+public sealed class GoToLayoutStep : ScriptStep<GoToLayoutStep>, IStepFactory
 {
     public const int XmlId = 6;
     public const string XmlName = "Go to Layout";
 
     public LayoutTarget Target { get; set; }
     public Animation? Animation { get; set; }
+
+    private GoToLayoutStep() : base(false)
+    {
+        Target = new LayoutTarget.Original();
+    }
 
     public GoToLayoutStep(bool enabled, LayoutTarget target, Animation? animation = null)
         : base(enabled)
@@ -41,13 +45,12 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
 
     // --- XML parse ---
 
-    // Hand-written rather than StepXmlParser: the reader is deliberately more
-    // tolerant than the canonical shape — it accepts legacy wire-value aliases
-    // and degrades a SelectedLayout with no named reference to Original
-    // instead of materializing an empty target.
-    public static new ScriptStep FromXml(XElement step)
+    // Hand-written: the reader is deliberately more tolerant than the
+    // canonical shape — it accepts legacy wire-value aliases and degrades a
+    // SelectedLayout with no named reference to Original instead of
+    // materializing an empty target.
+    protected internal override void PopulateFromXml(XElement step)
     {
-        var enabled = step.Attribute("enable")?.Value != "False";
         var destWire = step.Element("LayoutDestination")?.Attribute("value")?.Value ?? "SelectedLayout";
         var layoutEl = step.Element("Layout");
 
@@ -73,7 +76,8 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
         var animationEl = step.Element("Animation");
         var animation = animationEl is not null ? Values.Animation.FromXml(animationEl) : null;
 
-        return new GoToLayoutStep(enabled, target, animation);
+        Target = target;
+        Animation = animation;
     }
 
     private static Calculation ReadCalculationFromLayout(XElement? layoutEl)
@@ -81,10 +85,6 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
         var calcEl = layoutEl?.Element("Calculation");
         return calcEl is not null ? Calculation.FromXml(calcEl) : new Calculation("");
     }
-
-    // --- XML emit ---
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
 
     // --- Display text render ---
 
@@ -131,7 +131,7 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
         "^\"(?<name>.*)\"\\s*\\(#(?<id>\\d+)\\)$",
         RegexOptions.Compiled);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         LayoutTarget target = new LayoutTarget.Original();
         Animation? animation = null;
@@ -181,7 +181,8 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
             }
         }
 
-        return new GoToLayoutStep(enabled, target, animation);
+        Target = target;
+        Animation = animation;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -220,7 +221,5 @@ public sealed class GoToLayoutStep : ScriptStep, IStepFactory
             new HrOnly("Layout"),
             new ValueTypeChild("Animation") { Display = DisplayMode.Augmented },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

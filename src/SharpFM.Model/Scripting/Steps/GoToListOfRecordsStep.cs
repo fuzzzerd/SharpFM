@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -11,7 +9,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// IDs (list of values, JSON array, or array of <c>{recordId}</c> objects),
 /// a layout destination enum, and window geometry for the new-window mode.
 /// </summary>
-public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
+public sealed class GoToListOfRecordsStep : ScriptStep<GoToListOfRecordsStep>, IStepFactory
 {
     public const int XmlId = 228;
     public const string XmlName = "Go to List of Records";
@@ -37,8 +35,6 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
         WindowStyles = windowStyles ?? NewWindowStyles.Default();
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: shows RowList/Layout in the reverse of canonical XML order
     // and "New window" as a conditional bare token a BoolStateChild cannot render.
     public override string ToDisplayLine()
@@ -52,12 +48,9 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
         return $"Go to List of Records [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<GoToListOfRecordsStep>(step, Metadata);
-
     // Hand-written: display is lossy (RowList is the only parseable field) and
     // an unlabeled shape parse would mis-bind the labeled Records/Layout tokens.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         Calculation rowList = new("");
         foreach (var tok in hrParams)
@@ -66,7 +59,10 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
             if (t.StartsWith("Records:", System.StringComparison.OrdinalIgnoreCase))
                 rowList = new Calculation(t.Substring(8).Trim());
         }
-        return new GoToListOfRecordsStep(false, "CurrentLayout", rowList, null, enabled);
+        ShowInNewWindow = false;
+        LayoutDestination = "CurrentLayout";
+        RowList = rowList;
+        WindowStyles = NewWindowStyles.Default();
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -84,7 +80,5 @@ public sealed class GoToListOfRecordsStep : ScriptStep, IStepFactory
             new NamedCalcChild("RowList") { PocoProperty = "RowList", Optional = true, Display = DisplayMode.Native },
             new ValueTypeChild("NewWndStyles") { PocoProperty = "WindowStyles", Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

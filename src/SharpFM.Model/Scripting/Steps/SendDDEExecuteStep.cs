@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 
 namespace SharpFM.Model.Scripting.Steps;
@@ -13,7 +11,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// enum child. XML values and human-readable display values are mapped
 /// through the static HR tables; round-trip preserves the XML value.
 /// </summary>
-public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
+public sealed class SendDDEExecuteStep : ScriptStep<SendDDEExecuteStep>, IStepFactory
 {
     public const int XmlId = 64;
     public const string XmlName = "Send DDE Execute";
@@ -32,16 +30,6 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
         ContentType = contentType;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SendDDEExecuteStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SendDDEExecuteStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -52,7 +40,5 @@ public sealed class SendDDEExecuteStep : ScriptStep, IStepFactory
         [
             new EnumValueChild("ContentType") { PocoProperty = "ContentType", DefaultValue = "File", ValidValues = ["File"] },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

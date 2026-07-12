@@ -1,13 +1,11 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
+public sealed class InsertFromUrlStep : ScriptStep<InsertFromUrlStep>, IStepFactory
 {
     public const int XmlId = 160;
     public const string XmlName = "Insert from URL";
@@ -54,8 +52,6 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         CurlOptions = curlOptions;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: bare "Select" presence token and conditional per-flag
     // grammar the shape renderer cannot produce.
     public override string ToDisplayLine()
@@ -71,10 +67,7 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
         return $"Insert from URL [ {string.Join(" ; ", parts)} ]";
     }
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<InsertFromUrlStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool selectAll = false;
         bool withDialog = true;
@@ -105,7 +98,13 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
                 urlSeen = true;
             }
         }
-        return new InsertFromUrlStep(selectAll, withDialog, verify, dontEncode, target, url, curl, enabled);
+        SelectAll = selectAll;
+        WithDialog = withDialog;
+        VerifySslCertificates = verify;
+        DontEncodeUrl = dontEncode;
+        Target = target;
+        Url = url;
+        CurlOptions = curl;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -125,7 +124,5 @@ public sealed class InsertFromUrlStep : ScriptStep, IStepFactory
             new FlagChild("Text") { PocoProperty = "TargetIsVariable", Display = DisplayMode.Hidden },
             new FieldChild { PocoProperty = "Target", Optional = true, HrLabel = "Target" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class DialPhoneStep : ScriptStep, IStepFactory
+public sealed class DialPhoneStep : ScriptStep<DialPhoneStep>, IStepFactory
 {
     public const int XmlId = 65;
     public const string XmlName = "Dial Phone";
@@ -51,18 +49,13 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
         Calculation = calculation;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the bare On/Off token maps the wire's "True"/absent
     // UseDialPreferences value, a translation the display metadata cannot
     // express without widening the node's wire ValidValues.
     public override string ToDisplayLine() =>
         "Dial Phone [ " + "With dialog: " + (WithDialog ? "On" : "Off") + " ; " + (UseDialPreferences ? "On" : "Off") + " ; " + (Calculation?.Text ?? "") + " ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<DialPhoneStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var tokens = hrParams.Select(h => h.Trim()).ToArray();
         bool withDialog_v = true;
@@ -70,7 +63,9 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
         // Display shape is positional after the dialog flag: [ With dialog ; use-dial-prefs On/Off ; phone calc ].
         bool useDialPreferences_v = tokens.Length >= 2 && tokens[1].Equals("On", StringComparison.OrdinalIgnoreCase);
         Calculation? calculation_v = tokens.Length >= 3 && tokens[2].Length > 0 ? new Calculation(tokens[2]) : null;
-        return new DialPhoneStep(withDialog_v, useDialPreferences_v, calculation_v, enabled);
+        WithDialog = withDialog_v;
+        UseDialPreferences = useDialPreferences_v;
+        Calculation = calculation_v;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -88,7 +83,5 @@ public sealed class DialPhoneStep : ScriptStep, IStepFactory
             new EnumValueChild("UseDialPreferences") { PocoProperty = "UseDialPreferencesValue", Optional = true, DisplayValues = ["On", "Off"] },
             new BareCalcChild { PocoProperty = "Calculation", Optional = true },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

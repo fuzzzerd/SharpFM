@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class GoToObjectStep : ScriptStep, IStepFactory
+public sealed class GoToObjectStep : ScriptStep<GoToObjectStep>, IStepFactory
 {
     public const int XmlId = 145;
     public const string XmlName = "Go to Object";
@@ -29,17 +27,12 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
         Calculation2 = calculation2 ?? new Calculation("");
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: quoted "object name" token form the shape renderer
     // cannot produce.
     public override string ToDisplayLine() =>
         "Go to Object [ " + Calculation.Text + " ; " + Calculation2.Text + " ]";
 
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<GoToObjectStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Positional display grammar: [ object-name ; repetition ]. Trailing
         // empty tokens are dropped by the param splitter.
@@ -50,7 +43,8 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
         Calculation? calculation2_v = tokens.Length > 1 && tokens[1].Length > 0
             ? new Calculation(tokens[1])
             : null;
-        return new GoToObjectStep(calculation_v, calculation2_v, enabled);
+        Calculation = calculation_v ?? new Calculation("");
+        Calculation2 = calculation2_v ?? new Calculation("");
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -66,7 +60,5 @@ public sealed class GoToObjectStep : ScriptStep, IStepFactory
             new NamedCalcChild("ObjectName") { PocoProperty = "Calculation", Optional = true, Display = DisplayMode.Native },
             new NamedCalcChild("Repetition") { PocoProperty = "Calculation2", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

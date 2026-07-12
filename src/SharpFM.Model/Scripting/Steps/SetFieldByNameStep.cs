@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
+public sealed class SetFieldByNameStep : ScriptStep<SetFieldByNameStep>, IStepFactory
 {
     public const int XmlId = 147;
     public const string XmlName = "Set Field By Name";
@@ -29,16 +27,6 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
         CalculatedResult = calculatedResult ?? new Calculation("");
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetFieldByNameStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetFieldByNameStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -51,7 +39,5 @@ public sealed class SetFieldByNameStep : ScriptStep, IStepFactory
             new NamedCalcChild("TargetName") { PocoProperty = "TargetFieldName", HrLabel = "Target field name", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
             new NamedCalcChild("Result") { PocoProperty = "CalculatedResult", HrLabel = "Calculated result", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

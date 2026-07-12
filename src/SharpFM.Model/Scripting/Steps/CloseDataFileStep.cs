@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class CloseDataFileStep : ScriptStep, IStepFactory
+public sealed class CloseDataFileStep : ScriptStep<CloseDataFileStep>, IStepFactory
 {
     public const int XmlId = 196;
     public const string XmlName = "Close Data File";
@@ -23,16 +21,6 @@ public sealed class CloseDataFileStep : ScriptStep, IStepFactory
         FileID = fileID;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<CloseDataFileStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<CloseDataFileStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -44,7 +32,5 @@ public sealed class CloseDataFileStep : ScriptStep, IStepFactory
         [
             new BareCalcChild { PocoProperty = "FileID", HrLabel = "File ID", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

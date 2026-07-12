@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// <c>&lt;UniversalPathList&gt;</c>, and the <c>&lt;OpenPDFFile&gt;</c>
 /// wrapper carries the save type plus an optional open-password calculation.
 /// </summary>
-public sealed class OpenPdfStep : ScriptStep, IStepFactory
+public sealed class OpenPdfStep : ScriptStep<OpenPdfStep>, IStepFactory
 {
     public const int XmlId = 246;
     public const string XmlName = "Open PDF";
@@ -38,13 +36,6 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
         OpenPassword = openPassword;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<OpenPdfStep>(step, Metadata);
-
     /// <summary>
     /// Display edits are anchor-preserved when state the display line cannot
     /// carry is present: an open-password calculation or a non-default save
@@ -54,7 +45,7 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
 
     // Hand-written: derives the SpecifyFile toggle from the path's presence,
     // a coupling the shape parser cannot express for a display-hidden slot.
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         string path = "";
         foreach (var tok in hrParams)
@@ -62,7 +53,10 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
             var t = tok.Trim();
             if (!string.IsNullOrWhiteSpace(t)) { path = t; break; }
         }
-        return new OpenPdfStep(!string.IsNullOrEmpty(path), path, "File", null, enabled);
+        SpecifyFile = !string.IsNullOrEmpty(path);
+        Path = path;
+        SaveType = "File";
+        OpenPassword = null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -89,7 +83,5 @@ public sealed class OpenPdfStep : ScriptStep, IStepFactory
             // slot, mirroring the legacy OpenPDFFile param.
             new HrOnly("OpenPDFFile"),
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

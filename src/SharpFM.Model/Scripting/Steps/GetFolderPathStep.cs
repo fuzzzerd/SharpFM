@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class GetFolderPathStep : ScriptStep, IStepFactory
+public sealed class GetFolderPathStep : ScriptStep<GetFolderPathStep>, IStepFactory
 {
     public const int XmlId = 181;
     public const string XmlName = "Get Folder Path";
@@ -35,16 +33,6 @@ public sealed class GetFolderPathStep : ScriptStep, IStepFactory
         Calculation3 = calculation3;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<GetFolderPathStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<GetFolderPathStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -61,7 +49,5 @@ public sealed class GetFolderPathStep : ScriptStep, IStepFactory
             new NamedCalcChild("DefaultLocation") { PocoProperty = "Calculation2", Optional = true, DisplayEmptyAs = "" },
             new NamedCalcChild("Repetition") { PocoProperty = "Calculation3", Optional = true, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

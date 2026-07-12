@@ -1,6 +1,4 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -14,7 +12,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// </list>
 /// We preserve whichever children are present.
 /// </summary>
-public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
+public sealed class SaveRecordsAsJsonlStep : ScriptStep<SaveRecordsAsJsonlStep>, IStepFactory
 {
     public const int XmlId = 225;
     public const string XmlName = "Save Records as JSONL";
@@ -57,14 +55,9 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
         Table = table;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: the display line shows only the conditional file and format tokens, hiding the option flags the shape renderer would surface.
     public override string ToDisplayLine() =>
         $"Save Records as JSONL [ {Path} ; Format: {(FineTuneFormat ? "Fine-Tune" : "Completion")} ]";
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SaveRecordsAsJsonlStep>(step, Metadata);
 
     /// <summary>
     /// Display edits are anchor-preserved when state the display line cannot
@@ -77,7 +70,7 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
         && SystemPrompt is null && UserPrompt is null && AssistantPrompt is null
         && CompletionField is null && SourceField is null && Table is null;
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         // Display grammar: [ path ; Format: Fine-Tune/Completion ].
         string path = "";
@@ -90,7 +83,18 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
             else if (!string.IsNullOrWhiteSpace(t))
                 path = t;
         }
-        return new SaveRecordsAsJsonlStep(fineTuneFormat: fineTuneFormat, path: path, enabled: enabled);
+        OptionEnableTable = false;
+        CreateDirectories = false;
+        FineTuneFormat = fineTuneFormat;
+        AutoOpen = false;
+        CreateEmail = false;
+        Path = path;
+        SystemPrompt = null;
+        UserPrompt = null;
+        AssistantPrompt = null;
+        CompletionField = null;
+        SourceField = null;
+        Table = null;
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -124,7 +128,5 @@ public sealed class SaveRecordsAsJsonlStep : ScriptStep, IStepFactory
             new HrOnly("SaveAsJSONL"),
             new NamedRefChild("Table") { PocoProperty = "Table", Optional = true, Display = DisplayMode.Hidden },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

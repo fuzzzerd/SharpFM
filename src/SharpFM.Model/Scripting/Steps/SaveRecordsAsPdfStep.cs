@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
+public sealed class SaveRecordsAsPdfStep : ScriptStep<SaveRecordsAsPdfStep>, IStepFactory
 {
     public const int XmlId = 144;
     public const string XmlName = "Save Records as PDF";
@@ -50,8 +48,6 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         Options = options;
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
     // Hand-written: conditional file and Append tokens plus hidden option flags are grammar the shape renderer cannot express.
     public override string ToDisplayLine()
     {
@@ -65,9 +61,6 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         if (CreateEmail) parts.Add("Create email");
         return $"Save Records as PDF [ {string.Join(" ; ", parts)} ]";
     }
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SaveRecordsAsPdfStep>(step, Metadata);
 
     /// <summary>
     /// The canonical PDFOptions block FileMaker writes for an unconfigured
@@ -92,7 +85,7 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
         !RestoreStoredOptions && StoredLabel is null && CreateDirectories
         && DefaultOptions().Equals(Options);
 
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams)
+    protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         bool withDialog = false, append = false, autoOpen = false, createEmail = false;
         string path = "";
@@ -107,7 +100,15 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
             else if (t.Equals("Create email", System.StringComparison.OrdinalIgnoreCase)) createEmail = true;
             else if (!pathSeen && !string.IsNullOrWhiteSpace(t)) { path = t; pathSeen = true; }
         }
-        return new SaveRecordsAsPdfStep(withDialog, append, true, false, autoOpen, createEmail, path, null, DefaultOptions(), enabled);
+        WithDialog = withDialog;
+        Append = append;
+        CreateDirectories = true;
+        RestoreStoredOptions = false;
+        AutoOpen = autoOpen;
+        CreateEmail = createEmail;
+        Path = path;
+        StoredLabel = null;
+        Options = DefaultOptions();
     }
 
     public static StepMetadata Metadata { get; } = new()
@@ -130,7 +131,5 @@ public sealed class SaveRecordsAsPdfStep : ScriptStep, IStepFactory
             new BareCalcChild { PocoProperty = "StoredLabel", Optional = true },
             new ValueTypeChild("PDFOptions") { PocoProperty = "Options", Optional = true, Display = DisplayMode.Hidden },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

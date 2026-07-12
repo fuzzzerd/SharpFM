@@ -1,7 +1,5 @@
 using System;
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -12,7 +10,7 @@ namespace SharpFM.Model.Scripting.Steps;
 /// The two position calcs are wrapped in <c>&lt;StartPosition&gt;</c> and
 /// <c>&lt;EndPosition&gt;</c> elements containing a <c>&lt;Calculation&gt;</c>.
 /// </summary>
-public sealed class SetSelectionStep : ScriptStep, IStepFactory
+public sealed class SetSelectionStep : ScriptStep<SetSelectionStep>, IStepFactory
 {
     public const int XmlId = 130;
     public const string XmlName = "Set Selection";
@@ -31,16 +29,6 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
         EndPosition = endPosition ?? new Calculation("");
     }
 
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<SetSelectionStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<SetSelectionStep>(enabled, hrParams, Metadata);
-
     public static StepMetadata Metadata { get; } = new()
     {
         Name = XmlName,
@@ -55,7 +43,5 @@ public sealed class SetSelectionStep : ScriptStep, IStepFactory
             new NamedCalcChild("StartPosition") { PocoProperty = "StartPosition", HrLabel = "Start Position", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
             new NamedCalcChild("EndPosition") { PocoProperty = "EndPosition", HrLabel = "End Position", Optional = true, Display = DisplayMode.Native, DisplayEmptyAs = "" },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }

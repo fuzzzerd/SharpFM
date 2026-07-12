@@ -1,12 +1,10 @@
-using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
-using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
 namespace SharpFM.Model.Scripting.Steps;
 
-public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
+public sealed class FindMatchingRecordsStep : ScriptStep<FindMatchingRecordsStep>, IStepFactory
 {
     public const int XmlId = 155;
     public const string XmlName = "Find Matching Records";
@@ -22,16 +20,6 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
         Mode = mode;
         Field = field;
     }
-
-    public override XElement ToXml() => StepXmlRenderer.Render(this, Metadata);
-
-    public override string ToDisplayLine() => StepDisplayRenderer.Render(this, Metadata);
-
-    public static new ScriptStep FromXml(XElement step) =>
-        StepXmlParser.Parse<FindMatchingRecordsStep>(step, Metadata);
-
-    public static ScriptStep FromDisplayParams(bool enabled, string[] hrParams) =>
-        StepDisplayParser.Parse<FindMatchingRecordsStep>(enabled, hrParams, Metadata);
 
     public static StepMetadata Metadata { get; } = new()
     {
@@ -52,7 +40,5 @@ public sealed class FindMatchingRecordsStep : ScriptStep, IStepFactory
             },
             new FieldChild("Field") { PocoProperty = "Field", Optional = true, Display = DisplayMode.Native },
         ],
-        FromXml = FromXml,
-        FromDisplay = FromDisplayParams,
     };
 }
