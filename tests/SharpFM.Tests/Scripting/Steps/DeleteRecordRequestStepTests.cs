@@ -16,7 +16,7 @@ public class DeleteRecordRequestStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = DeleteRecordRequestStep.Metadata.FromXml!(source);
+        var step = DeleteRecordRequestStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class DeleteRecordRequestStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = DeleteRecordRequestStep.Metadata.FromXml!(source);
+        var step = DeleteRecordRequestStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class DeleteRecordRequestStepTests
     {
         // Setting underlying prop=true renders as "Off"
         // (invertedHr: XML True displays as Off).
-        var stepTrue = ((DeleteRecordRequestStep)DeleteRecordRequestStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (DeleteRecordRequestStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Delete Record/Request [ With dialog: Off ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((DeleteRecordRequestStep)DeleteRecordRequestStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (DeleteRecordRequestStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Delete Record/Request [ With dialog: On ]", stepFalse.ToDisplayLine());
     }
 

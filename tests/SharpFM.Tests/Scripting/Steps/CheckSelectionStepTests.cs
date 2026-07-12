@@ -14,7 +14,7 @@ public class CheckSelectionStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = CheckSelectionStep.Metadata.FromXml!(source);
+        var step = CheckSelectionStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

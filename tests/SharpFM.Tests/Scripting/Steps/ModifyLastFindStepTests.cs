@@ -19,7 +19,7 @@ public class ModifyLastFindStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ModifyLastFindStep.Metadata.FromXml!(source);
+        var step = ModifyLastFindStep.Parse(source);
 
         Assert.IsType<ModifyLastFindStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class ModifyLastFindStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="24" name="Modify Last Find"/>""");
-        var step = ModifyLastFindStep.Metadata.FromXml!(source);
+        var step = ModifyLastFindStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

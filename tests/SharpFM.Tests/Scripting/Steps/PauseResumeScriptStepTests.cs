@@ -14,7 +14,7 @@ public class PauseResumeScriptStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PauseResumeScriptStep.Metadata.FromXml!(source);
+        var step = PauseResumeScriptStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

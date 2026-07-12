@@ -15,14 +15,14 @@ public class SetNextSerialValueStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SetNextSerialValueStep.Metadata.FromXml!(source);
+        var step = SetNextSerialValueStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsFieldAndNextValue()
     {
-        var step = (SetNextSerialValueStep)SetNextSerialValueStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SetNextSerialValueStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Set Next Serial Value [ Customer::id (#3) ; Max ( id ) + 1 ]", step.ToDisplayLine());
     }
 

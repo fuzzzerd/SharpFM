@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,14 +16,14 @@ public class SetZoomLevelStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SetZoomLevelStep.Metadata.FromXml!(source);
+        var step = SetZoomLevelStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_RoundTripsThroughFromDisplayParams()
     {
-        var step1 = SetZoomLevelStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step1 = SetZoomLevelStep.Parse(XElement.Parse(CanonicalXml));
         var display = step1.ToDisplayLine();
 
         // Extract the tokens inside [ ... ] and feed through FromDisplay.
@@ -31,7 +32,7 @@ public class SetZoomLevelStepTests
         var inner = display.Substring(open + 1, close - open - 1).Trim();
         var tokens = inner.Split(';', System.StringSplitOptions.TrimEntries);
 
-        var step2 = SetZoomLevelStep.Metadata.FromDisplay!(true, tokens);
+        var step2 = StepDisplayFactory.TryCreate(SetZoomLevelStep.XmlName, true, tokens)!;
         Assert.True(XNode.DeepEquals(step1.ToXml(), step2.ToXml()));
     }
 

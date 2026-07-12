@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,21 +16,21 @@ public class ViewAsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ViewAsStep.Metadata.FromXml!(source);
+        var step = ViewAsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsHrMappedValue()
     {
-        var step = ViewAsStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = ViewAsStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("View As [ View: Cycle ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesHrValueBack()
     {
-        var step = ViewAsStep.Metadata.FromDisplay!(true, new[] { "View: Cycle" });
+        var step = StepDisplayFactory.TryCreate(ViewAsStep.XmlName, true, new[] { "View: Cycle" })!;
         Assert.True(XNode.DeepEquals(XElement.Parse(CanonicalXml), step.ToXml()));
     }
 

@@ -15,14 +15,14 @@ public class ConstrainFoundSetStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ConstrainFoundSetStep.Metadata.FromXml!(source);
+        var step = ConstrainFoundSetStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Query_IsTyped()
     {
-        var step = (ConstrainFoundSetStep)ConstrainFoundSetStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = ConstrainFoundSetStep.Parse(XElement.Parse(CanonicalXml));
         Assert.NotNull(step.Query);
         Assert.Single(step.Query!.Requests);
         Assert.Equal("Include", step.Query.Requests[0].Operation);

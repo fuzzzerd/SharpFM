@@ -15,14 +15,14 @@ public class InsertTextStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertTextStep.Metadata.FromXml!(source);
+        var step = InsertTextStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsSelectTargetAndText()
     {
-        var step = (InsertTextStep)InsertTextStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = InsertTextStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Insert Text [ Select ; Target: $variable ; \"text content\" ]", step.ToDisplayLine());
     }
 

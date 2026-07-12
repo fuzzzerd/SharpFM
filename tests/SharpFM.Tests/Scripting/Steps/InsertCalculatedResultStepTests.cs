@@ -15,14 +15,14 @@ public class InsertCalculatedResultStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertCalculatedResultStep.Metadata.FromXml!(source);
+        var step = InsertCalculatedResultStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsSelectTargetAndCalc()
     {
-        var step = (InsertCalculatedResultStep)InsertCalculatedResultStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = InsertCalculatedResultStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Insert Calculated Result [ Select ; Target: $variable ; \"calculation\" ]", step.ToDisplayLine());
     }
 

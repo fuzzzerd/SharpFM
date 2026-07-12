@@ -19,14 +19,14 @@ public class SetAICallLoggingStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SetAICallLoggingStep.Metadata.FromXml!(source);
+        var step = SetAICallLoggingStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void FlagElements_PresenceMeansOn()
     {
-        var step = (SetAICallLoggingStep)SetAICallLoggingStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SetAICallLoggingStep.Parse(XElement.Parse(CanonicalXml));
         Assert.True(step.Logging);
         Assert.True(step.Verbose);
         Assert.True(step.TruncateMessages);
@@ -35,7 +35,7 @@ public class SetAICallLoggingStepTests
     [Fact]
     public void FlagElements_AbsenceMeansOff()
     {
-        var step = (SetAICallLoggingStep)SetAICallLoggingStep.Metadata.FromXml!(XElement.Parse(OffXml));
+        var step = SetAICallLoggingStep.Parse(XElement.Parse(OffXml));
         Assert.False(step.Logging);
         Assert.False(step.Verbose);
         Assert.False(step.TruncateMessages);
@@ -44,7 +44,7 @@ public class SetAICallLoggingStepTests
     [Fact]
     public void Display_EmitsAllFlags()
     {
-        var step = (SetAICallLoggingStep)SetAICallLoggingStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SetAICallLoggingStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Set AI Call Logging [ On ; Filename: \"ai_log.txt\" ; Verbose: On ; Truncate Messages: On ]", step.ToDisplayLine());
     }
 

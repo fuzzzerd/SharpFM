@@ -16,7 +16,7 @@ public class SetLayoutObjectAnimationStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = SetLayoutObjectAnimationStep.Metadata.FromXml!(source);
+        var step = SetLayoutObjectAnimationStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class SetLayoutObjectAnimationStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = SetLayoutObjectAnimationStep.Metadata.FromXml!(source);
+        var step = SetLayoutObjectAnimationStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class SetLayoutObjectAnimationStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((SetLayoutObjectAnimationStep)SetLayoutObjectAnimationStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (SetLayoutObjectAnimationStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Set Layout Object Animation [ Animation: On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((SetLayoutObjectAnimationStep)SetLayoutObjectAnimationStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (SetLayoutObjectAnimationStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Set Layout Object Animation [ Animation: Off ]", stepFalse.ToDisplayLine());
     }
 

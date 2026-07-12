@@ -14,7 +14,7 @@ public class AVPlayerSetOptionsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = AVPlayerSetOptionsStep.Metadata.FromXml!(source);
+        var step = AVPlayerSetOptionsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

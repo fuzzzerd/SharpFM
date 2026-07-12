@@ -15,7 +15,7 @@ public class ExecuteFileMakerDataApiStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ExecuteFileMakerDataApiStep.Metadata.FromXml!(source);
+        var step = ExecuteFileMakerDataApiStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

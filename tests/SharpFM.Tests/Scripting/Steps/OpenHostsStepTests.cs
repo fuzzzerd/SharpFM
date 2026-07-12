@@ -19,7 +19,7 @@ public class OpenHostsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenHostsStep.Metadata.FromXml!(source);
+        var step = OpenHostsStep.Parse(source);
 
         Assert.IsType<OpenHostsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenHostsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="118" name="Open Hosts"/>""");
-        var step = OpenHostsStep.Metadata.FromXml!(source);
+        var step = OpenHostsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

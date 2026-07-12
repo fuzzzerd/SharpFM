@@ -18,7 +18,7 @@ public class SaveRecordsAsExcelStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SaveRecordsAsExcelStep.Metadata.FromXml!(source);
+        var step = SaveRecordsAsExcelStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

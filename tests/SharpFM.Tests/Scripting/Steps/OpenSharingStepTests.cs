@@ -19,7 +19,7 @@ public class OpenSharingStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenSharingStep.Metadata.FromXml!(source);
+        var step = OpenSharingStep.Parse(source);
 
         Assert.IsType<OpenSharingStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenSharingStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="113" name="Open Sharing"/>""");
-        var step = OpenSharingStep.Metadata.FromXml!(source);
+        var step = OpenSharingStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

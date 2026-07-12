@@ -16,7 +16,7 @@ public class DeleteAllRecordsStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = DeleteAllRecordsStep.Metadata.FromXml!(source);
+        var step = DeleteAllRecordsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class DeleteAllRecordsStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = DeleteAllRecordsStep.Metadata.FromXml!(source);
+        var step = DeleteAllRecordsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class DeleteAllRecordsStepTests
     {
         // Setting underlying prop=true renders as "Off"
         // (invertedHr: XML True displays as Off).
-        var stepTrue = ((DeleteAllRecordsStep)DeleteAllRecordsStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (DeleteAllRecordsStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Delete All Records [ With dialog: Off ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((DeleteAllRecordsStep)DeleteAllRecordsStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (DeleteAllRecordsStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Delete All Records [ With dialog: On ]", stepFalse.ToDisplayLine());
     }
 

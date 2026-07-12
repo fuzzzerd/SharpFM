@@ -15,7 +15,7 @@ public class PrintSetupStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PrintSetupStep.Metadata.FromXml!(source);
+        var step = PrintSetupStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using Xunit;
 
 namespace SharpFM.Tests.Scripting.Steps;
@@ -143,7 +144,7 @@ public class NoInteractSemanticTests
             new XAttribute("id", id),
             new XAttribute("name", name),
             new XElement("NoInteract", new XAttribute("state", state)));
-        return StepRegistry.ByName[name].FromXml!(xml);
+        return StepXmlFactory.Create(xml);
     }
 
     // Helper used inside the discovery LINQ: construct the POCO from a
@@ -155,12 +156,11 @@ public class NoInteractSemanticTests
     private static SharpFM.Model.Scripting.ScriptStep? m(string stepName)
     {
         if (!StepRegistry.ByName.TryGetValue(stepName, out var meta)) return null;
-        if (meta.FromXml is null) return null;
         var xml = new XElement("Step",
             new XAttribute("enable", "True"),
             new XAttribute("id", meta.Id),
             new XAttribute("name", stepName));
-        try { return meta.FromXml(xml); }
+        try { return StepXmlFactory.Create(xml); }
         catch { return null; }
     }
 }

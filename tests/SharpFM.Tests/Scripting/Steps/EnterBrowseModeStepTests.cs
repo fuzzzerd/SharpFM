@@ -16,7 +16,7 @@ public class EnterBrowseModeStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = EnterBrowseModeStep.Metadata.FromXml!(source);
+        var step = EnterBrowseModeStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class EnterBrowseModeStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = EnterBrowseModeStep.Metadata.FromXml!(source);
+        var step = EnterBrowseModeStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class EnterBrowseModeStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((EnterBrowseModeStep)EnterBrowseModeStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (EnterBrowseModeStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Enter Browse Mode [ Pause: On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((EnterBrowseModeStep)EnterBrowseModeStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (EnterBrowseModeStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Enter Browse Mode [ Pause: Off ]", stepFalse.ToDisplayLine());
     }
 

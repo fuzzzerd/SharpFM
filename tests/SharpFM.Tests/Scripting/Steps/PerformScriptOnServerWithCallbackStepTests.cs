@@ -15,7 +15,7 @@ public class PerformScriptOnServerWithCallbackStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformScriptOnServerWithCallbackStep.Metadata.FromXml!(source);
+        var step = PerformScriptOnServerWithCallbackStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

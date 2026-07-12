@@ -15,14 +15,14 @@ public class SortRecordsByFieldStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SortRecordsByFieldStep.Metadata.FromXml!(source);
+        var step = SortRecordsByFieldStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsOrderAndField()
     {
-        var step = (SortRecordsByFieldStep)SortRecordsByFieldStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SortRecordsByFieldStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Sort Records by Field [ Descending ; Customer::name (#2) ]", step.ToDisplayLine());
     }
 

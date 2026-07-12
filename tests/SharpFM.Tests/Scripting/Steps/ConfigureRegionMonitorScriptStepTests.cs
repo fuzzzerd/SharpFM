@@ -15,7 +15,7 @@ public class ConfigureRegionMonitorScriptStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ConfigureRegionMonitorScriptStep.Metadata.FromXml!(source);
+        var step = ConfigureRegionMonitorScriptStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

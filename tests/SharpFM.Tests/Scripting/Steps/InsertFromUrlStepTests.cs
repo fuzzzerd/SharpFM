@@ -15,7 +15,7 @@ public class InsertFromUrlStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertFromUrlStep.Metadata.FromXml!(source);
+        var step = InsertFromUrlStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -58,7 +58,7 @@ public class InsertFromUrlStepTests
         xml.Append("</Step>");
 
         var source = XElement.Parse(xml.ToString());
-        var step = InsertFromUrlStep.Metadata.FromXml!(source);
+        var step = InsertFromUrlStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()),
             $"Round-trip mismatch.\nSource:\n{source}\n\nOutput:\n{step.ToXml()}");
     }
@@ -73,7 +73,7 @@ public class InsertFromUrlStepTests
             + "<NoInteract state=\"True\" /><DontEncodeURL state=\"False\" />"
             + "<SelectAll state=\"True\" /><VerifySSLCertificates state=\"False\" />"
             + "</Step>");
-        var step = (InsertFromUrlStep)InsertFromUrlStep.Metadata.FromXml!(source);
+        var step = InsertFromUrlStep.Parse(source);
         Assert.False(step.WithDialog);
         Assert.Contains("With dialog: Off", step.ToDisplayLine());
     }
@@ -86,7 +86,7 @@ public class InsertFromUrlStepTests
             + "<NoInteract state=\"False\" /><DontEncodeURL state=\"False\" />"
             + "<SelectAll state=\"True\" /><VerifySSLCertificates state=\"False\" />"
             + "</Step>");
-        var step = (InsertFromUrlStep)InsertFromUrlStep.Metadata.FromXml!(source);
+        var step = InsertFromUrlStep.Parse(source);
         Assert.True(step.WithDialog);
         Assert.Contains("With dialog: On", step.ToDisplayLine());
     }
@@ -101,7 +101,7 @@ public class InsertFromUrlStepTests
             + "<NoInteract state=\"False\" /><DontEncodeURL state=\"False\" />"
             + "<SelectAll state=\"True\" /><VerifySSLCertificates state=\"False\" />"
             + "</Step>");
-        var step = InsertFromUrlStep.Metadata.FromXml!(source);
+        var step = InsertFromUrlStep.Parse(source);
         var display = step.ToDisplayLine();
         var diagnostics = SharpFM.Model.Scripting.ScriptValidator.Validate(display);
         Assert.Empty(diagnostics);

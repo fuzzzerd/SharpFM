@@ -15,14 +15,14 @@ public class GetFileSizeStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GetFileSizeStep.Metadata.FromXml!(source);
+        var step = GetFileSizeStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsPathAndTarget()
     {
-        var step = (GetFileSizeStep)GetFileSizeStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = GetFileSizeStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Get File Size [ $path ; Target: Results::size (#6) ]", step.ToDisplayLine());
     }
 

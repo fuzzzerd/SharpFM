@@ -19,7 +19,7 @@ public class OpenSettingsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenSettingsStep.Metadata.FromXml!(source);
+        var step = OpenSettingsStep.Parse(source);
 
         Assert.IsType<OpenSettingsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenSettingsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="105" name="Open Settings"/>""");
-        var step = OpenSettingsStep.Metadata.FromXml!(source);
+        var step = OpenSettingsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

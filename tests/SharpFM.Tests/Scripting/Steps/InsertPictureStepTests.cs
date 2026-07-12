@@ -15,7 +15,7 @@ public class InsertPictureStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertPictureStep.Metadata.FromXml!(source);
+        var step = InsertPictureStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

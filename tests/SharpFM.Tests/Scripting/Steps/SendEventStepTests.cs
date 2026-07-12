@@ -17,7 +17,7 @@ public class SendEventStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SendEventStep.Metadata.FromXml!(source);
+        var step = SendEventStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

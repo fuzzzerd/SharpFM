@@ -3,6 +3,7 @@ using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -14,21 +15,21 @@ public class RefreshObjectStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = RefreshObjectStep.Metadata.FromXml!(source);
+        var step = RefreshObjectStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_RoundTripsThroughFromDisplayParams()
     {
-        var step1 = RefreshObjectStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step1 = RefreshObjectStep.Parse(XElement.Parse(CanonicalXml));
         var display = step1.ToDisplayLine();
         var open = display.IndexOf('[');
         var close = display.LastIndexOf(']');
         var inner = display.Substring(open + 1, close - open - 1).Trim();
         var tokens = inner.Split(';', System.StringSplitOptions.TrimEntries);
 
-        var step2 = RefreshObjectStep.Metadata.FromDisplay!(true, tokens);
+        var step2 = StepDisplayFactory.TryCreate(RefreshObjectStep.XmlName, true, tokens)!;
         Assert.True(XNode.DeepEquals(step1.ToXml(), step2.ToXml()));
     }
 

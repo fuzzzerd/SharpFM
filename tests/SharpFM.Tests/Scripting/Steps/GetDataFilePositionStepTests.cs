@@ -15,14 +15,14 @@ public class GetDataFilePositionStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GetDataFilePositionStep.Metadata.FromXml!(source);
+        var step = GetDataFilePositionStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsFileIdAndTarget()
     {
-        var step = (GetDataFilePositionStep)GetDataFilePositionStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = GetDataFilePositionStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Get Data File Position [ File ID: $handle ; Target: Data::pos (#1) ]", step.ToDisplayLine());
     }
 

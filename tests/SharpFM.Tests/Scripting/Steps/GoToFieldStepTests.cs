@@ -14,7 +14,7 @@ public class GoToFieldStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GoToFieldStep.Metadata.FromXml!(source);
+        var step = GoToFieldStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

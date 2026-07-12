@@ -19,7 +19,7 @@ public class HaltScriptStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = HaltScriptStep.Metadata.FromXml!(source);
+        var step = HaltScriptStep.Parse(source);
 
         Assert.IsType<HaltScriptStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class HaltScriptStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="90" name="Halt Script"/>""");
-        var step = HaltScriptStep.Metadata.FromXml!(source);
+        var step = HaltScriptStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

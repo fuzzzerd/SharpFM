@@ -19,7 +19,7 @@ public class ShowOmittedOnlyStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ShowOmittedOnlyStep.Metadata.FromXml!(source);
+        var step = ShowOmittedOnlyStep.Parse(source);
 
         Assert.IsType<ShowOmittedOnlyStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class ShowOmittedOnlyStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="27" name="Show Omitted Only"/>""");
-        var step = ShowOmittedOnlyStep.Metadata.FromXml!(source);
+        var step = ShowOmittedOnlyStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

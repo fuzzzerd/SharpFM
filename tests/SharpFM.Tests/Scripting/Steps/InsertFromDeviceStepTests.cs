@@ -15,7 +15,7 @@ public class InsertFromDeviceStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertFromDeviceStep.Metadata.FromXml!(source);
+        var step = InsertFromDeviceStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

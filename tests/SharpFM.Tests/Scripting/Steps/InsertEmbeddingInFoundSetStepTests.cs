@@ -15,14 +15,14 @@ public class InsertEmbeddingInFoundSetStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertEmbeddingInFoundSetStep.Metadata.FromXml!(source);
+        var step = InsertEmbeddingInFoundSetStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void FlagElements_PresenceMeansOn()
     {
-        var step = (InsertEmbeddingInFoundSetStep)InsertEmbeddingInFoundSetStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = InsertEmbeddingInFoundSetStep.Parse(XElement.Parse(CanonicalXml));
         Assert.True(step.Overwrite);
         Assert.True(step.ContinueOnError);
         Assert.True(step.ShowSummary);

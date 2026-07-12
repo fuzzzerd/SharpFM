@@ -21,6 +21,8 @@ public class StepXmlParserTests
         public VarLikeStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {
@@ -79,6 +81,8 @@ public class StepXmlParserTests
         public LayoutLikeStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {
@@ -182,6 +186,8 @@ public class StepXmlParserTests
         public PerformLikeStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {
@@ -234,6 +240,8 @@ public class StepXmlParserTests
         public JsLikeStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {
@@ -253,6 +261,8 @@ public class StepXmlParserTests
         public PathLikeStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {
@@ -303,6 +313,8 @@ public class StepXmlParserTests
         public GatedWrapperStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {
@@ -340,6 +352,8 @@ public class StepXmlParserTests
         public BagLikeStep() : base(true) { }
         public override XElement ToXml() => StepXmlRenderer.Render(this, Meta);
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
 
         public static StepMetadata Meta { get; } = new()
         {

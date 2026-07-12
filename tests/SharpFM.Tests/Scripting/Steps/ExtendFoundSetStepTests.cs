@@ -15,7 +15,7 @@ public class ExtendFoundSetStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ExtendFoundSetStep.Metadata.FromXml!(source);
+        var step = ExtendFoundSetStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

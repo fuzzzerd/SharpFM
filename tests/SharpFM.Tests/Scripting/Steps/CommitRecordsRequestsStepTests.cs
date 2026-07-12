@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -23,7 +24,7 @@ public class CommitRecordsRequestsStepTests
     public void RoundTrip_NoDialog_IsPreserved()
     {
         var source = XElement.Parse(NoDialogXml);
-        var step = CommitRecordsRequestsStep.Metadata.FromXml!(source);
+        var step = CommitRecordsRequestsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -31,7 +32,7 @@ public class CommitRecordsRequestsStepTests
     public void RoundTrip_WithDialog_IsPreserved()
     {
         var source = XElement.Parse(WithDialogXml);
-        var step = CommitRecordsRequestsStep.Metadata.FromXml!(source);
+        var step = CommitRecordsRequestsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -39,7 +40,7 @@ public class CommitRecordsRequestsStepTests
     public void InvertedHr_Display_Correct()
     {
         // NoInteract=True (XML) -> "With dialog: Off" (display).
-        var step = (CommitRecordsRequestsStep)CommitRecordsRequestsStep.Metadata.FromXml!(XElement.Parse(NoDialogXml));
+        var step = CommitRecordsRequestsStep.Parse(XElement.Parse(NoDialogXml));
         Assert.False(step.WithDialog);
         Assert.StartsWith("Commit Records/Requests [ With dialog: Off", step.ToDisplayLine());
     }
@@ -47,14 +48,14 @@ public class CommitRecordsRequestsStepTests
     [Fact]
     public void Display_RoundTripsThroughFromDisplayParams()
     {
-        var step1 = CommitRecordsRequestsStep.Metadata.FromXml!(XElement.Parse(NoDialogXml));
+        var step1 = CommitRecordsRequestsStep.Parse(XElement.Parse(NoDialogXml));
         var display = step1.ToDisplayLine();
         var open = display.IndexOf('[');
         var close = display.LastIndexOf(']');
         var inner = display.Substring(open + 1, close - open - 1).Trim();
         var tokens = inner.Split(';', System.StringSplitOptions.TrimEntries);
 
-        var step2 = CommitRecordsRequestsStep.Metadata.FromDisplay!(true, tokens);
+        var step2 = StepDisplayFactory.TryCreate(CommitRecordsRequestsStep.XmlName, true, tokens)!;
         Assert.True(XNode.DeepEquals(step1.ToXml(), step2.ToXml()));
     }
 

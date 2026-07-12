@@ -19,7 +19,7 @@ public class OpenEditSavedFindsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenEditSavedFindsStep.Metadata.FromXml!(source);
+        var step = OpenEditSavedFindsStep.Parse(source);
 
         Assert.IsType<OpenEditSavedFindsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenEditSavedFindsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="149" name="Open Edit Saved Finds"/>""");
-        var step = OpenEditSavedFindsStep.Metadata.FromXml!(source);
+        var step = OpenEditSavedFindsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

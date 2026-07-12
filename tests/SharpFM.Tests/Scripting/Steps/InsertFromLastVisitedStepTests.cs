@@ -14,7 +14,7 @@ public class InsertFromLastVisitedStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InsertFromLastVisitedStep.Metadata.FromXml!(source);
+        var step = InsertFromLastVisitedStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

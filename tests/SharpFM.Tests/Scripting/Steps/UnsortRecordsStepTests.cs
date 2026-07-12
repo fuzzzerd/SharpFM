@@ -19,7 +19,7 @@ public class UnsortRecordsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = UnsortRecordsStep.Metadata.FromXml!(source);
+        var step = UnsortRecordsStep.Parse(source);
 
         Assert.IsType<UnsortRecordsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class UnsortRecordsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="21" name="Unsort Records"/>""");
-        var step = UnsortRecordsStep.Metadata.FromXml!(source);
+        var step = UnsortRecordsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

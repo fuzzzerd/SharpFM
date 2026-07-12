@@ -4,6 +4,7 @@ using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -15,21 +16,21 @@ public class AdjustWindowStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = AdjustWindowStep.Metadata.FromXml!(source);
+        var step = AdjustWindowStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsHrMappedValue()
     {
-        var step = AdjustWindowStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = AdjustWindowStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Adjust Window [ Resize to Fit ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesHrValueBack()
     {
-        var step = AdjustWindowStep.Metadata.FromDisplay!(true, new[] { "Resize to Fit" });
+        var step = StepDisplayFactory.TryCreate(AdjustWindowStep.XmlName, true, new[] { "Resize to Fit" })!;
         Assert.True(XNode.DeepEquals(XElement.Parse(CanonicalXml), step.ToXml()));
     }
 

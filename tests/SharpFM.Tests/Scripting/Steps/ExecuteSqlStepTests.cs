@@ -15,7 +15,7 @@ public class ExecuteSqlStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ExecuteSqlStep.Metadata.FromXml!(source);
+        var step = ExecuteSqlStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

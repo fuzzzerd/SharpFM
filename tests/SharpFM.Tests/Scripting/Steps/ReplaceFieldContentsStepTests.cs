@@ -21,7 +21,7 @@ public class ReplaceFieldContentsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ReplaceFieldContentsStep.Metadata.FromXml!(source);
+        var step = ReplaceFieldContentsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -30,7 +30,7 @@ public class ReplaceFieldContentsStepTests
     {
         // Canonical form emits <Restore> (skill); earlier revisions dropped it.
         var source = XElement.Parse(WithRestoreXml);
-        var step = ReplaceFieldContentsStep.Metadata.FromXml!(source);
+        var step = ReplaceFieldContentsStep.Parse(source);
         var output = step.ToXml();
         Assert.Equal("True", output.Element("Restore")!.Attribute("state")!.Value);
     }
@@ -38,7 +38,7 @@ public class ReplaceFieldContentsStepTests
     [Fact]
     public void Display_EmitsDialogFieldAndCalculation()
     {
-        var step = (ReplaceFieldContentsStep)ReplaceFieldContentsStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = ReplaceFieldContentsStep.Parse(XElement.Parse(CanonicalXml));
         // NoInteract state="True" in the canonical XML ⇒ dialog suppressed ⇒ "With dialog: Off".
         Assert.Equal("Replace Field Contents [ With dialog: Off ; Customer::id (#3) ; \"value\" ]", step.ToDisplayLine());
     }

@@ -19,7 +19,7 @@ public class OpenScriptWorkspaceStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenScriptWorkspaceStep.Metadata.FromXml!(source);
+        var step = OpenScriptWorkspaceStep.Parse(source);
 
         Assert.IsType<OpenScriptWorkspaceStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenScriptWorkspaceStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="88" name="Open Script Workspace"/>""");
-        var step = OpenScriptWorkspaceStep.Metadata.FromXml!(source);
+        var step = OpenScriptWorkspaceStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

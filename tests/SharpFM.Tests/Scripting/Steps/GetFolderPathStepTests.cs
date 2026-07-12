@@ -14,7 +14,7 @@ public class GetFolderPathStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = GetFolderPathStep.Metadata.FromXml!(source);
+        var step = GetFolderPathStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

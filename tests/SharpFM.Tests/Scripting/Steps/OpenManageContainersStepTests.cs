@@ -19,7 +19,7 @@ public class OpenManageContainersStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenManageContainersStep.Metadata.FromXml!(source);
+        var step = OpenManageContainersStep.Parse(source);
 
         Assert.IsType<OpenManageContainersStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenManageContainersStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="156" name="Open Manage Containers"/>""");
-        var step = OpenManageContainersStep.Metadata.FromXml!(source);
+        var step = OpenManageContainersStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

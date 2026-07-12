@@ -15,7 +15,7 @@ public class ConfigureRegressionModelStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ConfigureRegressionModelStep.Metadata.FromXml!(source);
+        var step = ConfigureRegressionModelStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

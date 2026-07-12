@@ -19,7 +19,7 @@ public class OpenManageDatabaseStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenManageDatabaseStep.Metadata.FromXml!(source);
+        var step = OpenManageDatabaseStep.Parse(source);
 
         Assert.IsType<OpenManageDatabaseStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenManageDatabaseStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="38" name="Open Manage Database"/>""");
-        var step = OpenManageDatabaseStep.Metadata.FromXml!(source);
+        var step = OpenManageDatabaseStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

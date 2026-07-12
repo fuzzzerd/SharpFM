@@ -14,7 +14,7 @@ public class InstallPlugInFileStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = InstallPlugInFileStep.Metadata.FromXml!(source);
+        var step = InstallPlugInFileStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

@@ -15,7 +15,7 @@ public class PerformSemanticFindStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformSemanticFindStep.Metadata.FromXml!(source);
+        var step = PerformSemanticFindStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

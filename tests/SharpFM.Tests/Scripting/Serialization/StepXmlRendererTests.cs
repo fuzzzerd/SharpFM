@@ -41,6 +41,8 @@ public class StepXmlRendererTests
         public SampleStep() : base(true) { }
         public override XElement ToXml() => throw new System.NotImplementedException();
         public override string ToDisplayLine() => "";
+        protected internal override void PopulateFromXml(XElement step) => throw new System.NotImplementedException();
+        protected internal override void PopulateFromDisplay(string[] hrParams) => throw new System.NotImplementedException();
     }
 
     private static StepMetadata Meta(params ShapeNode[] shape) =>

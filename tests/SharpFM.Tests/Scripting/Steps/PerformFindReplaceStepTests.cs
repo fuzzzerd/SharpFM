@@ -15,7 +15,7 @@ public class PerformFindReplaceStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformFindReplaceStep.Metadata.FromXml!(source);
+        var step = PerformFindReplaceStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

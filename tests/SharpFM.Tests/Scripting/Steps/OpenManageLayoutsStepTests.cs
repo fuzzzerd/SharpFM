@@ -19,7 +19,7 @@ public class OpenManageLayoutsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenManageLayoutsStep.Metadata.FromXml!(source);
+        var step = OpenManageLayoutsStep.Parse(source);
 
         Assert.IsType<OpenManageLayoutsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenManageLayoutsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="151" name="Open Manage Layouts"/>""");
-        var step = OpenManageLayoutsStep.Metadata.FromXml!(source);
+        var step = OpenManageLayoutsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

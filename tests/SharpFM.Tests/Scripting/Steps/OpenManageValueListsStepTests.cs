@@ -19,7 +19,7 @@ public class OpenManageValueListsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = OpenManageValueListsStep.Metadata.FromXml!(source);
+        var step = OpenManageValueListsStep.Parse(source);
 
         Assert.IsType<OpenManageValueListsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class OpenManageValueListsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="112" name="Open Manage Value Lists"/>""");
-        var step = OpenManageValueListsStep.Metadata.FromXml!(source);
+        var step = OpenManageValueListsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

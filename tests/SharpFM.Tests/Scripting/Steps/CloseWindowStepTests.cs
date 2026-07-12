@@ -14,7 +14,7 @@ public class CloseWindowStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = CloseWindowStep.Metadata.FromXml!(source);
+        var step = CloseWindowStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

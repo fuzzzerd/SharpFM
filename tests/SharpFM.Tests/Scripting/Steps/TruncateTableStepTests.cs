@@ -15,14 +15,14 @@ public class TruncateTableStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = TruncateTableStep.Metadata.FromXml!(source);
+        var step = TruncateTableStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsDialogAndTable()
     {
-        var step = (TruncateTableStep)TruncateTableStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = TruncateTableStep.Parse(XElement.Parse(CanonicalXml));
         // NoInteract state="True" in the canonical XML ⇒ dialog suppressed ⇒ "With dialog: Off".
         Assert.Equal("Truncate Table [ With dialog: Off ; Table: Clients ]", step.ToDisplayLine());
     }

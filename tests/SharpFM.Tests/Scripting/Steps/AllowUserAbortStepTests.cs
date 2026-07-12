@@ -16,7 +16,7 @@ public class AllowUserAbortStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = AllowUserAbortStep.Metadata.FromXml!(source);
+        var step = AllowUserAbortStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class AllowUserAbortStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = AllowUserAbortStep.Metadata.FromXml!(source);
+        var step = AllowUserAbortStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class AllowUserAbortStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((AllowUserAbortStep)AllowUserAbortStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (AllowUserAbortStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Allow User Abort [ On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((AllowUserAbortStep)AllowUserAbortStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (AllowUserAbortStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Allow User Abort [ Off ]", stepFalse.ToDisplayLine());
     }
 

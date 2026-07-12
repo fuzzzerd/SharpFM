@@ -16,7 +16,7 @@ public class SetUseSystemFormatsStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = SetUseSystemFormatsStep.Metadata.FromXml!(source);
+        var step = SetUseSystemFormatsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class SetUseSystemFormatsStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = SetUseSystemFormatsStep.Metadata.FromXml!(source);
+        var step = SetUseSystemFormatsStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class SetUseSystemFormatsStepTests
     {
         // Setting underlying prop=true renders as "On"
         // (boolean: XML True displays as On).
-        var stepTrue = ((SetUseSystemFormatsStep)SetUseSystemFormatsStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (SetUseSystemFormatsStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Set Use System Formats [ Use system formats: On ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((SetUseSystemFormatsStep)SetUseSystemFormatsStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (SetUseSystemFormatsStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Set Use System Formats [ Use system formats: Off ]", stepFalse.ToDisplayLine());
     }
 

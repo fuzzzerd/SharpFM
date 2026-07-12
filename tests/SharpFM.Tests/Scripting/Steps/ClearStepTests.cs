@@ -14,7 +14,7 @@ public class ClearStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ClearStep.Metadata.FromXml!(source);
+        var step = ClearStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

@@ -15,14 +15,14 @@ public class PerformJavaScriptInWebViewerStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = PerformJavaScriptInWebViewerStep.Metadata.FromXml!(source);
+        var step = PerformJavaScriptInWebViewerStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Parameters_AreTyped()
     {
-        var step = (PerformJavaScriptInWebViewerStep)PerformJavaScriptInWebViewerStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = PerformJavaScriptInWebViewerStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Single(step.Parameters);
         Assert.Equal("$parameter1", step.Parameters[0].Text);
     }

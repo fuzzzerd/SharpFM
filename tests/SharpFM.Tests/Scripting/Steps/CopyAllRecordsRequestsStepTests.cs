@@ -19,7 +19,7 @@ public class CopyAllRecordsRequestsStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = CopyAllRecordsRequestsStep.Metadata.FromXml!(source);
+        var step = CopyAllRecordsRequestsStep.Parse(source);
 
         Assert.IsType<CopyAllRecordsRequestsStep>(step);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
@@ -36,7 +36,7 @@ public class CopyAllRecordsRequestsStepTests
     public void Disabled_RoundTrips()
     {
         var source = XElement.Parse("""<Step enable="False" id="98" name="Copy All Records/Requests"/>""");
-        var step = CopyAllRecordsRequestsStep.Metadata.FromXml!(source);
+        var step = CopyAllRecordsRequestsStep.Parse(source);
 
         Assert.False(step.Enabled);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));

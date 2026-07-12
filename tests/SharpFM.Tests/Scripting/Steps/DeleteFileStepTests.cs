@@ -3,6 +3,7 @@ using SharpFM.Model.Scripting;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Steps;
 using Xunit;
+using SharpFM.Model.Scripting.Serialization;
 
 namespace SharpFM.Tests.Scripting.Steps;
 
@@ -14,21 +15,21 @@ public class DeleteFileStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = DeleteFileStep.Metadata.FromXml!(source);
+        var step = DeleteFileStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsLabeledPath()
     {
-        var step = (DeleteFileStep)DeleteFileStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = DeleteFileStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Delete File [ Target file: $path ]", step.ToDisplayLine());
     }
 
     [Fact]
     public void FromDisplay_ParsesLabeledPath()
     {
-        var step = (DeleteFileStep)DeleteFileStep.Metadata.FromDisplay!(true, new[] { "Target file: $path" });
+        var step = (DeleteFileStep)StepDisplayFactory.TryCreate(DeleteFileStep.XmlName, true, new[] { "Target file: $path" })!;
         Assert.Equal("$path", step.TargetFile);
     }
 

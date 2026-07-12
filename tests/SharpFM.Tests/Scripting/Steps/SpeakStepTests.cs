@@ -19,7 +19,7 @@ public class SpeakStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = SpeakStep.Metadata.FromXml!(source);
+        var step = SpeakStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -27,14 +27,14 @@ public class SpeakStepTests
     public void RoundTrip_WithoutOptions_IsPreserved()
     {
         var source = XElement.Parse(WithoutOptionsXml);
-        var step = SpeakStep.Metadata.FromXml!(source);
+        var step = SpeakStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
     [Fact]
     public void Display_EmitsTextOnly()
     {
-        var step = (SpeakStep)SpeakStep.Metadata.FromXml!(XElement.Parse(CanonicalXml));
+        var step = SpeakStep.Parse(XElement.Parse(CanonicalXml));
         Assert.Equal("Speak [ \"text_to_speak\" ]", step.ToDisplayLine());
     }
 

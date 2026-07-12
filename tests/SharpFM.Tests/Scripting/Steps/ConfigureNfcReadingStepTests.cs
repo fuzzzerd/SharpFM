@@ -15,7 +15,7 @@ public class ConfigureNfcReadingStepTests
     public void RoundTrip_CanonicalXml_IsPreserved()
     {
         var source = XElement.Parse(CanonicalXml);
-        var step = ConfigureNfcReadingStep.Metadata.FromXml!(source);
+        var step = ConfigureNfcReadingStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 

@@ -16,7 +16,7 @@ public class RevertRecordRequestStepTests
     public void RoundTrip_True_IsPreserved()
     {
         var source = XElement.Parse(TrueStateXml);
-        var step = RevertRecordRequestStep.Metadata.FromXml!(source);
+        var step = RevertRecordRequestStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -24,7 +24,7 @@ public class RevertRecordRequestStepTests
     public void RoundTrip_False_IsPreserved()
     {
         var source = XElement.Parse(FalseStateXml);
-        var step = RevertRecordRequestStep.Metadata.FromXml!(source);
+        var step = RevertRecordRequestStep.Parse(source);
         Assert.True(XNode.DeepEquals(source, step.ToXml()));
     }
 
@@ -33,10 +33,10 @@ public class RevertRecordRequestStepTests
     {
         // Setting underlying prop=true renders as "Off"
         // (invertedHr: XML True displays as Off).
-        var stepTrue = ((RevertRecordRequestStep)RevertRecordRequestStep.Metadata.FromXml!(XElement.Parse(TrueStateXml)));
+        var stepTrue = (RevertRecordRequestStep.Parse(XElement.Parse(TrueStateXml)));
         Assert.Equal("Revert Record/Request [ With dialog: Off ]", stepTrue.ToDisplayLine());
 
-        var stepFalse = ((RevertRecordRequestStep)RevertRecordRequestStep.Metadata.FromXml!(XElement.Parse(FalseStateXml)));
+        var stepFalse = (RevertRecordRequestStep.Parse(XElement.Parse(FalseStateXml)));
         Assert.Equal("Revert Record/Request [ With dialog: On ]", stepFalse.ToDisplayLine());
     }
 
