@@ -1,5 +1,6 @@
 using System;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -31,7 +32,7 @@ public sealed class InstallOnTimerScriptStep : ScriptStep<InstallOnTimerScriptSt
     // the shape renderer cannot produce.
     public override string ToDisplayLine()
     {
-        var script = Script is null ? "<no script>" : $"\"{Script.Name}\"";
+        var script = Script is null ? "<no script>" : DisplayQuoting.Quote(Script.Name);
         return Interval is null
             ? $"Install OnTimer Script [ {script} ]"
             : $"Install OnTimer Script [ {script} ; Interval: {Interval.Text} ]";
@@ -51,9 +52,7 @@ public sealed class InstallOnTimerScriptStep : ScriptStep<InstallOnTimerScriptSt
             }
             else if (!scriptSeen && !string.IsNullOrWhiteSpace(t) && t != "<no script>")
             {
-                var name = t;
-                if (name.StartsWith("\"") && name.EndsWith("\"") && name.Length >= 2)
-                    name = name.Substring(1, name.Length - 2);
+                var name = DisplayQuoting.TryParseQuoted(t, out var parsed) ? parsed : t;
                 script = new NamedRef(0, name);
                 scriptSeen = true;
             }

@@ -30,6 +30,11 @@ public class PerformScriptStepTests
         + "<Calculated><Calculation><![CDATA[$$globalVar & \" literal-string\"]]></Calculation></Calculated>"
         + "</Step>";
 
+    private const string ByRefWithQuoteInNameXml =
+        "<Step enable=\"True\" id=\"1\" name=\"Perform Script\">"
+        + "<Script id=\"9\" name=\"O&quot;Brien\"></Script>"
+        + "</Step>";
+
     [Fact]
     public void ByRefWithParam_Display_IncludesIdSuffixAndParameterLabel()
     {
@@ -128,5 +133,28 @@ public class PerformScriptStepTests
         Assert.NotNull(script);
         Assert.Equal("4", script!.Attribute("id")!.Value);
         Assert.Equal("Dummy-Script-For-Reference", script.Attribute("name")!.Value);
+    }
+
+    [Fact]
+    public void ByRefWithQuoteInName_Display_DoublesEmbeddedQuote()
+    {
+        var step = ScriptStep.FromXml(MakeStep(ByRefWithQuoteInNameXml));
+        Assert.Equal(
+            "Perform Script [ \"O\"\"Brien\" (#9) ]",
+            step.ToDisplayLine());
+    }
+
+    [Fact]
+    public void ByRefWithQuoteInName_FullRoundTrip_PreservesNameAndId()
+    {
+        var step1 = ScriptStep.FromXml(MakeStep(ByRefWithQuoteInNameXml));
+        var display = step1.ToDisplayLine();
+        var step2 = SharpFM.Scripting.ScriptTextParser.FromDisplayLine(display);
+        var xml = step2.ToXml();
+
+        var script = xml.Element("Script");
+        Assert.NotNull(script);
+        Assert.Equal("9", script!.Attribute("id")!.Value);
+        Assert.Equal("O\"Brien", script.Attribute("name")!.Value);
     }
 }

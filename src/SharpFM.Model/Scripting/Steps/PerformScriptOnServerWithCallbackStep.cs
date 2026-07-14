@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -64,14 +65,14 @@ public sealed class PerformScriptOnServerWithCallbackStep : ScriptStep<PerformSc
         switch (Target)
         {
             case PerformScriptTarget.ByReference byRef:
-                parts.Add(byRef.Script.Id == 0 ? $"\"{byRef.Script.Name}\"" : $"\"{byRef.Script.Name}\" (#{byRef.Script.Id})");
+                parts.Add(DisplayQuoting.QuoteWithId(byRef.Script.Name, byRef.Script.Id));
                 break;
             case PerformScriptTarget.ByCalculation byCalc:
                 parts.Add($"By name: {byCalc.NameCalc.Text}");
                 break;
         }
         if (Parameter is not null) parts.Add($"Parameter: {Parameter.Text}");
-        if (CallbackScript is not null) parts.Add($"Callback: \"{CallbackScript.Name}\"");
+        if (CallbackScript is not null) parts.Add($"Callback: {DisplayQuoting.Quote(CallbackScript.Name)}");
         return $"Perform Script on Server with Callback [ {string.Join(" ; ", parts)} ]";
     }
 

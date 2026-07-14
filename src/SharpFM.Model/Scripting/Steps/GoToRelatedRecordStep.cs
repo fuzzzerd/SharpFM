@@ -1,5 +1,6 @@
 using System;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -64,9 +65,9 @@ public sealed class GoToRelatedRecordStep : ScriptStep<GoToRelatedRecordStep>, I
     public override string ToDisplayLine()
     {
         var parts = new System.Collections.Generic.List<string>();
-        parts.Add($"From table: \"{Table.Name}\"");
+        parts.Add($"From table: {DisplayQuoting.Quote(Table.Name)}");
         if (Layout is not null && (Layout.Id != 0 || !string.IsNullOrEmpty(Layout.Name)))
-            parts.Add($"Using layout: \"{Layout.Name}\"");
+            parts.Add($"Using layout: {DisplayQuoting.Quote(Layout.Name)}");
         if (ShowOnlyRelated) parts.Add("Show only related records");
         if (MatchAllRecords) parts.Add("Match found set");
         if (ShowInNewWindow) parts.Add("New window");
@@ -84,9 +85,15 @@ public sealed class GoToRelatedRecordStep : ScriptStep<GoToRelatedRecordStep>, I
         {
             var t = tok.Trim();
             if (t.StartsWith("From table:", StringComparison.OrdinalIgnoreCase))
-                table = new NamedRef(0, Unquote(t.Substring(11).Trim()));
+            {
+                var name = t.Substring(11).Trim();
+                table = new NamedRef(0, DisplayQuoting.TryParseQuoted(name, out var parsed) ? parsed : name);
+            }
             else if (t.StartsWith("Using layout:", StringComparison.OrdinalIgnoreCase))
-                layout = new NamedRef(0, Unquote(t.Substring(13).Trim()));
+            {
+                var name = t.Substring(13).Trim();
+                layout = new NamedRef(0, DisplayQuoting.TryParseQuoted(name, out var parsed) ? parsed : name);
+            }
             else if (t.Equals("Show only related records", StringComparison.OrdinalIgnoreCase))
                 showOnly = true;
             else if (t.Equals("Match found set", StringComparison.OrdinalIgnoreCase))
@@ -102,12 +109,6 @@ public sealed class GoToRelatedRecordStep : ScriptStep<GoToRelatedRecordStep>, I
         WindowStyles = NewWindowStyles.Default();
         Table = table ?? new NamedRef(0, "");
         Layout = layout;
-    }
-
-    private static string Unquote(string s)
-    {
-        if (s.StartsWith("\"") && s.EndsWith("\"") && s.Length >= 2) return s.Substring(1, s.Length - 2);
-        return s;
     }
 
     public static StepMetadata Metadata { get; } = new()

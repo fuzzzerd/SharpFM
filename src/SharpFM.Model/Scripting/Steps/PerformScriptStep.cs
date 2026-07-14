@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
+using SharpFM.Model.Scripting.Serialization;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
 
@@ -84,9 +84,7 @@ public sealed class PerformScriptStep : ScriptStep<PerformScriptStep>, IStepFact
             case PerformScriptTarget.ByReference byRef:
                 // Suppress (#0) when we don't actually have a script id to
                 // preserve — same convention as GoToLayoutStep.
-                parts.Add(byRef.Script.Id == 0
-                    ? $"\"{byRef.Script.Name}\""
-                    : $"\"{byRef.Script.Name}\" (#{byRef.Script.Id})");
+                parts.Add(DisplayQuoting.QuoteWithId(byRef.Script.Name, byRef.Script.Id));
                 break;
 
             case PerformScriptTarget.ByCalculation byCalc:
@@ -99,10 +97,6 @@ public sealed class PerformScriptStep : ScriptStep<PerformScriptStep>, IStepFact
 
         return $"Perform Script [ {string.Join(" ; ", parts)} ]";
     }
-
-    private static readonly Regex NamedScriptToken = new(
-        "^\"(?<name>.*)\"\\s*\\(#(?<id>\\d+)\\)$",
-        RegexOptions.Compiled);
 
     protected internal override void PopulateFromDisplay(string[] hrParams)
     {
@@ -124,20 +118,9 @@ public sealed class PerformScriptStep : ScriptStep<PerformScriptStep>, IStepFact
                 var expr = token.Substring("By name:".Length).Trim();
                 target = new PerformScriptTarget.ByCalculation(new Calculation(expr));
             }
-            else
+            else if (DisplayQuoting.TryParseNamedRef(token, out var namedRef))
             {
-                var match = NamedScriptToken.Match(token);
-                if (match.Success)
-                {
-                    var name = match.Groups["name"].Value;
-                    var id = int.Parse(match.Groups["id"].Value);
-                    target = new PerformScriptTarget.ByReference(new NamedRef(id, name));
-                }
-                else if (token.StartsWith("\"") && token.EndsWith("\"") && token.Length >= 2)
-                {
-                    var name = token.Substring(1, token.Length - 2);
-                    target = new PerformScriptTarget.ByReference(new NamedRef(0, name));
-                }
+                target = new PerformScriptTarget.ByReference(namedRef);
             }
         }
 
