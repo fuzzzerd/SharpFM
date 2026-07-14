@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using SharpFM.Dialogs;
@@ -58,8 +59,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
 
         NotifyPropertyChanged(nameof(ParseFidelityVisible));
+        NotifyParseFidelityChanged();
+    }
+
+    private void NotifyParseFidelityChanged()
+    {
         NotifyPropertyChanged(nameof(ParseFidelityIsLossless));
         NotifyPropertyChanged(nameof(ParseFidelitySummary));
+        NotifyPropertyChanged(nameof(ParseFidelityGlyph));
+        NotifyPropertyChanged(nameof(ParseFidelityBrush));
+        ProblemsPanel.RefreshFrom(SelectedClip);
     }
 
     private void OnSelectedClipPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -68,8 +77,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             || e.PropertyName == nameof(ClipViewModel.IsLossless)
             || e.PropertyName == nameof(ClipViewModel.Clip))
         {
-            NotifyPropertyChanged(nameof(ParseFidelityIsLossless));
-            NotifyPropertyChanged(nameof(ParseFidelitySummary));
+            NotifyParseFidelityChanged();
         }
     }
 
@@ -863,11 +871,23 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         SelectedFolderPath = folderPath;
     }
 
+    /// <summary>Backs the bottom-docked Problems panel listing every parse diagnostic for the selected clip.</summary>
+    public ProblemsPanelViewModel ProblemsPanel { get; } = new();
+
+    /// <summary>Shows or hides the Problems panel.</summary>
+    public void ToggleProblemsPanel() => ProblemsPanel.IsPanelVisible = !ProblemsPanel.IsPanelVisible;
+
     /// <summary>True when the status bar should display a parse-fidelity summary for the selected clip.</summary>
     public bool ParseFidelityVisible => SelectedClip is not null;
 
     /// <summary>True when the selected clip parsed losslessly. Drives the warning glyph in the status bar.</summary>
     public bool ParseFidelityIsLossless => SelectedClip?.IsLossless ?? true;
+
+    /// <summary>Severity-appropriate glyph for the status bar (empty when lossless).</summary>
+    public string ParseFidelityGlyph => SelectedClip?.FidelityGlyph ?? "";
+
+    /// <summary>Severity-appropriate color for <see cref="ParseFidelityGlyph"/>.</summary>
+    public IBrush? ParseFidelityBrush => SelectedClip?.FidelityBrush;
 
     /// <summary>
     /// Human-readable summary of the selected clip's parse report, e.g.

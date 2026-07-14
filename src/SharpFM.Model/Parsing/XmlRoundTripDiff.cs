@@ -14,7 +14,7 @@ namespace SharpFM.Model.Parsing;
 /// The comparison is name-based and order-insensitive within a parent (an
 /// out-of-order rewrite of children is not flagged as a loss); attribute order
 /// is ignored; element-text is compared trimmed (whitespace-only differences
-/// are noise from pretty-printing). Differences are categorised by parent
+/// are noise from pretty-printing). Differences are categorized by parent
 /// element so consumers see <see cref="ParseDiagnosticKind.UnknownStepElement"/>
 /// vs. <see cref="ParseDiagnosticKind.UnknownClipElement"/> rather than a flat
 /// "something differs" stream.
@@ -170,6 +170,5 @@ public static class XmlRoundTripDiff
 
     private const int TruncateLength = 60;
 
-    private static string Truncate(string s) =>
-        s.Length <= TruncateLength ? s : s[..TruncateLength] + "…";
+    private static string Truncate(string s) => s.Truncate(TruncateLength);
 }

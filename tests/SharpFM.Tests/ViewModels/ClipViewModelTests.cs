@@ -1,4 +1,6 @@
+using Avalonia.Media;
 using SharpFM.Model;
+using SharpFM.Model.Parsing;
 using SharpFM.ViewModels;
 using Xunit;
 
@@ -182,5 +184,35 @@ public class ClipViewModelTests
     {
         var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>"));
         Assert.True(vm.IsLossless);
+    }
+
+    [Fact]
+    public void LosslessClip_HasNoFidelityGlyph()
+    {
+        var vm = CreateScriptClip(WrapXml("<Step enable=\"True\" id=\"93\" name=\"Beep\"/>"));
+
+        Assert.Null(vm.HighestSeverity);
+        Assert.Equal("", vm.FidelityGlyph);
+        Assert.Null(vm.FidelityBrush);
+    }
+
+    [Fact]
+    public void InfoOnlyClip_HasGrayGlyph()
+    {
+        var vm = CreateScriptClip(ParseFidelityTestXml.InfoOnlyStepXml);
+
+        Assert.Equal(ParseDiagnosticSeverity.Info, vm.HighestSeverity);
+        Assert.Equal("i", vm.FidelityGlyph);
+        Assert.Equal(Brushes.Gray, vm.FidelityBrush);
+    }
+
+    [Fact]
+    public void WarningClip_HasOrangeGlyph()
+    {
+        var vm = CreateScriptClip(ParseFidelityTestXml.WarningStepXml);
+
+        Assert.Equal(ParseDiagnosticSeverity.Warning, vm.HighestSeverity);
+        Assert.Equal("!", vm.FidelityGlyph);
+        Assert.Equal(Brushes.DarkOrange, vm.FidelityBrush);
     }
 }

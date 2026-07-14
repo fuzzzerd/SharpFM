@@ -96,4 +96,83 @@ public class ClipParseReportTests
         Assert.False(report.IsSemanticallyValid);
         Assert.True(report.IsLossless);
     }
+
+    [Fact]
+    public void HighestSeverity_NullWhenNoDiagnostics()
+    {
+        Assert.Null(ClipParseReport.Empty.HighestSeverity);
+    }
+
+    [Fact]
+    public void HighestSeverity_InfoOnly_IsInfo()
+    {
+        var report = new ClipParseReport(
+        [
+            new ClipParseDiagnostic(
+                ParseDiagnosticKind.RoundTripValueMismatch,
+                ParseDiagnosticSeverity.Info,
+                "/fmxmlsnippet/Step[1]/Restore",
+                "output emitted a default"),
+        ]);
+
+        Assert.Equal(ParseDiagnosticSeverity.Info, report.HighestSeverity);
+    }
+
+    [Fact]
+    public void HighestSeverity_MixedInfoAndWarning_IsWarning()
+    {
+        var report = new ClipParseReport(
+        [
+            new ClipParseDiagnostic(
+                ParseDiagnosticKind.RoundTripValueMismatch,
+                ParseDiagnosticSeverity.Info,
+                "/fmxmlsnippet/Step[1]/Restore",
+                "output emitted a default"),
+            new ClipParseDiagnostic(
+                ParseDiagnosticKind.UnknownStepElement,
+                ParseDiagnosticSeverity.Warning,
+                "/fmxmlsnippet/Step[2]/Mystery",
+                "unmodeled child element"),
+        ]);
+
+        Assert.Equal(ParseDiagnosticSeverity.Warning, report.HighestSeverity);
+    }
+
+    [Fact]
+    public void HighestSeverity_WithError_IsError()
+    {
+        var report = new ClipParseReport(
+        [
+            new ClipParseDiagnostic(
+                ParseDiagnosticKind.RoundTripValueMismatch,
+                ParseDiagnosticSeverity.Info,
+                "/fmxmlsnippet/Step[1]/Restore",
+                "output emitted a default"),
+            new ClipParseDiagnostic(
+                ParseDiagnosticKind.XmlMalformed,
+                ParseDiagnosticSeverity.Error,
+                "/",
+                "not well-formed"),
+        ]);
+
+        Assert.Equal(ParseDiagnosticSeverity.Error, report.HighestSeverity);
+    }
+
+    [Fact]
+    public void HighestSeverity_ConsidersSemanticDiagnosticsToo()
+    {
+        var report = new ClipParseReport([])
+        {
+            SemanticDiagnostics =
+            [
+                new ClipParseDiagnostic(
+                    ParseDiagnosticKind.UnknownStep,
+                    ParseDiagnosticSeverity.Info,
+                    "/fmxmlsnippet/Step[1]/Name",
+                    "informational note"),
+            ],
+        };
+
+        Assert.Equal(ParseDiagnosticSeverity.Info, report.HighestSeverity);
+    }
 }

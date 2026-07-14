@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia.Controls;
+using Avalonia.Media;
 using AvaloniaEdit.Document;
 using SharpFM.Editors;
 using SharpFM.Model;
@@ -104,13 +105,27 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         NotifyPropertyChanged(nameof(ScriptDocument));
         NotifyPropertyChanged(nameof(TableEditor));
         NotifyPropertyChanged(nameof(XmlDocument));
+        NotifyFidelityChanged();
+    }
+
+    private void NotifyFidelityChanged()
+    {
         NotifyPropertyChanged(nameof(ParseReport));
         NotifyPropertyChanged(nameof(IsLossless));
+        NotifyPropertyChanged(nameof(HighestSeverity));
+        NotifyPropertyChanged(nameof(FidelityGlyph));
+        NotifyPropertyChanged(nameof(FidelityBrush));
     }
 
     public ClipParseReport ParseReport => _clip.Parsed.Report;
 
     public bool IsLossless => ParseReport.IsLossless;
+
+    public ParseDiagnosticSeverity? HighestSeverity => ParseReport.HighestSeverity;
+
+    public string FidelityGlyph => HighestSeverity?.Glyph() ?? "";
+
+    public IBrush? FidelityBrush => HighestSeverity?.Brush();
 
     /// <summary>Captures the current XML as the saved baseline; clears the dirty indicator.</summary>
     public void MarkSaved()
@@ -139,8 +154,7 @@ public partial class ClipViewModel : INotifyPropertyChanged, IDisposable
         var model = Editor.GetModel();
         Clip = Clip.FromEditor(_clip.Name, _clip.FormatId, xml, model);
         NotifyPropertyChanged(nameof(IsDirty));
-        NotifyPropertyChanged(nameof(ParseReport));
-        NotifyPropertyChanged(nameof(IsLossless));
+        NotifyFidelityChanged();
         EditorContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
