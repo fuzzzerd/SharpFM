@@ -23,6 +23,13 @@ public interface IClipSemanticValidator
     /// </summary>
     IReadOnlyCollection<string> FormatIds { get; }
 
-    /// <summary>Return any domain-rule violations found in <paramref name="model"/>.</summary>
+    /// <summary>
+    /// Return any domain-rule violations found in <paramref name="model"/>.
+    /// Each diagnostic's <see cref="ClipParseDiagnostic.Location"/> must use
+    /// the same XPath-style grammar <see cref="Parsing.XmlRoundTripDiff"/>
+    /// emits (<c>/Root/Child[n]/@Attr</c>) — the Problems panel resolves it
+    /// back to XML via <see cref="Parsing.ClipParseLocationResolver"/>, which
+    /// only understands that grammar.
+    /// </summary>
     IReadOnlyList<ClipParseDiagnostic> Validate(ClipModel model);
 }

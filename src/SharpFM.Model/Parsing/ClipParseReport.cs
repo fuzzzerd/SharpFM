@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpFM.Model.Parsing;
 
@@ -27,4 +28,15 @@ public sealed record ClipParseReport(IReadOnlyList<ClipParseDiagnostic> Diagnost
 
     /// <summary>True if no semantic validators flagged the parsed model.</summary>
     public bool IsSemanticallyValid => SemanticDiagnostics.Count == 0;
+
+    /// <summary>
+    /// Most severe diagnostic across both <see cref="Diagnostics"/> and
+    /// <see cref="SemanticDiagnostics"/>, or null when there are none. Relies
+    /// on <see cref="ParseDiagnosticSeverity"/>'s declared order (see that
+    /// enum's doc comment) so the numerically smallest value is the worst;
+    /// <see cref="Enumerable.Min{T}(IEnumerable{T})"/> on a nullable sequence
+    /// returns null for an empty sequence, so no separate empty-check is needed.
+    /// </summary>
+    public ParseDiagnosticSeverity? HighestSeverity =>
+        Diagnostics.Concat(SemanticDiagnostics).Select(d => (ParseDiagnosticSeverity?)d.Severity).Min();
 }

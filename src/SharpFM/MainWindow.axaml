@@ -22,6 +22,7 @@
         <KeyBinding Command="{Binding NewScriptCommand}" Gesture="Ctrl+N" />
         <KeyBinding Command="{Binding NewTableCommand}" Gesture="Ctrl+Shift+N" />
         <KeyBinding Command="{Binding CopySelectedToClip}" Gesture="Ctrl+Shift+C" />
+        <KeyBinding Command="{Binding ToggleProblemsPanel}" Gesture="Ctrl+Shift+M" />
         <!--
             Ctrl+V is wired in code-behind via a tunnel-phase preview
             handler so it can defer to the focused text editor (TextBox /
@@ -69,6 +70,12 @@
                 <MenuItem Command="{Binding RenameSelectedClip}" Header="Rename..." />
                 <MenuItem Command="{Binding DeleteSelectedClip}" Header="Delete Clip" />
             </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem
+                    Command="{Binding ToggleProblemsPanel}"
+                    Header="Problems"
+                    InputGesture="Ctrl+Shift+M" />
+            </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem x:Name="rawClipboardMenuItem" Header="Raw Clipboard Viewer..." />
             </MenuItem>
@@ -92,26 +99,107 @@
                     Classes="Fluent2Caption"
                     IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                     Text="{Binding StatusMessage}" />
-                <StackPanel
+                <Button
                     HorizontalAlignment="Center"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding ToggleProblemsPanel}"
                     IsVisible="{Binding ParseFidelityVisible}"
-                    Orientation="Horizontal"
-                    Spacing="6">
-                    <TextBlock
-                        Classes="Fluent2Caption"
-                        Foreground="DarkOrange"
-                        IsVisible="{Binding !ParseFidelityIsLossless}"
-                        Text="!" />
-                    <TextBlock
-                        Classes="Fluent2Caption"
-                        Opacity="0.7"
-                        Text="{Binding ParseFidelitySummary}" />
-                </StackPanel>
+                    ToolTip.Tip="Show the Problems panel (Ctrl+Shift+M)">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock
+                            Classes="Fluent2Caption"
+                            Foreground="{Binding ParseFidelityBrush}"
+                            IsVisible="{Binding !ParseFidelityIsLossless}"
+                            Text="{Binding ParseFidelityGlyph}" />
+                        <TextBlock
+                            Classes="Fluent2Caption"
+                            Opacity="0.7"
+                            Text="{Binding ParseFidelitySummary}" />
+                    </StackPanel>
+                </Button>
                 <TextBlock
                     HorizontalAlignment="Right"
                     Classes="Fluent2Caption"
                     Opacity="0.5"
                     Text="{Binding Version}" />
+            </Grid>
+        </Border>
+
+        <!--  Problems panel: VS Code-style bottom dock listing every parse diagnostic for the selected clip.  -->
+        <Border
+            x:Name="problemsPanelBorder"
+            Height="220"
+            Padding="16,8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+            BorderBrush="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+            BorderThickness="0,1,0,0"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding ProblemsPanel.IsPanelVisible}">
+            <Grid RowDefinitions="Auto,*,Auto">
+                <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                    <Button
+                        DockPanel.Dock="Right"
+                        Padding="6,2"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{Binding ToggleProblemsPanel}"
+                        Content="✕" />
+                    <TextBlock Classes="Fluent2Subtitle" Text="{Binding ProblemsPanel.HeaderText}" />
+                </DockPanel>
+
+                <ListBox
+                    Grid.Row="1"
+                    ItemsSource="{Binding ProblemsPanel.Diagnostics}"
+                    SelectedItem="{Binding ProblemsPanel.SelectedDiagnostic, Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="vm:ProblemRow">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock
+                                    Width="16"
+                                    FontWeight="Bold"
+                                    Foreground="{Binding SeverityBrush}"
+                                    Text="{Binding SeverityGlyph}" />
+                                <TextBlock VerticalAlignment="Center" Text="{Binding KindLabel}" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Classes="Fluent2Caption"
+                                    IsVisible="{Binding IsSemantic}"
+                                    Opacity="0.6"
+                                    Text="(semantic)" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{Binding Message}"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Classes="Fluent2Caption"
+                                    Opacity="0.6"
+                                    Text="{Binding Location}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Border
+                    Grid.Row="2"
+                    Margin="0,8,0,0"
+                    Padding="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                    IsVisible="{Binding ProblemsPanel.SelectedDiagnostic, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="Fluent2Caption" Text="{Binding ProblemsPanel.SelectedDiagnostic.Message}" TextWrapping="Wrap" />
+                        <TextBlock
+                            Classes="Fluent2Caption"
+                            Opacity="0.7"
+                            Text="{Binding ProblemsPanel.SelectedDiagnostic.Location}" />
+                        <TextBlock
+                            FontFamily="Consolas,monospace"
+                            Text="{Binding ProblemsPanel.SelectedXmlSnippet}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
@@ -246,9 +334,9 @@
                                                 Text="{Binding Clip.ClipTypeDisplay}" />
                                             <TextBlock
                                                 Classes="Fluent2Caption"
-                                                Foreground="DarkOrange"
+                                                Foreground="{Binding Clip.FidelityBrush}"
                                                 IsVisible="{Binding !Clip.IsLossless}"
-                                                Text="!"
+                                                Text="{Binding Clip.FidelityGlyph}"
                                                 ToolTip.Tip="This clip's XML did not round-trip cleanly through the domain model. See the status bar for details when selected." />
                                         </StackPanel>
                                     </StackPanel>
