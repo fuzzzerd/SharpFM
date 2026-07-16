@@ -140,80 +140,32 @@ public sealed class GoToLayoutStep : ScriptStep<GoToLayoutStep>, IStepFactory
                 if (!string.IsNullOrEmpty(wire))
                     animation = new Animation(wire);
             }
-            else if (TryParseTargetToken(token, out var parsed))
+            else if (token.Equals("original layout", StringComparison.OrdinalIgnoreCase))
             {
-                target = parsed;
+                target = new LayoutTarget.Original();
+            }
+            else if (token.StartsWith("Layout Name:", StringComparison.OrdinalIgnoreCase))
+            {
+                var expr = token.Substring("Layout Name:".Length).Trim();
+                target = new LayoutTarget.ByNameCalc(new Calculation(expr));
+            }
+            else if (token.StartsWith("Layout Number:", StringComparison.OrdinalIgnoreCase))
+            {
+                var expr = token.Substring("Layout Number:".Length).Trim();
+                target = new LayoutTarget.ByNumberCalc(new Calculation(expr));
+            }
+            // Named layout with (#id) suffix is the lossless form. Bare
+            // quoted names without an id degrade to a NamedRef with id 0 —
+            // the user edited the display text and dropped the id, there's
+            // nothing better we can do.
+            else if (DisplayQuoting.TryParseNamedRef(token, out var namedRef))
+            {
+                target = new LayoutTarget.Named(namedRef);
             }
         }
 
         Target = target;
         Animation = animation;
-    }
-
-    /// <summary>
-    /// Recognizes the four display forms of a layout target:
-    /// <c>original layout</c>, a quoted name with optional <c>(#id)</c>
-    /// suffix, <c>Layout Name: &lt;calc&gt;</c>, and
-    /// <c>Layout Number: &lt;calc&gt;</c>.
-    /// </summary>
-    private static bool TryParseTargetToken(string token, out LayoutTarget target)
-    {
-        if (token.Equals("original layout", StringComparison.OrdinalIgnoreCase))
-        {
-            target = new LayoutTarget.Original();
-            return true;
-        }
-
-        if (token.StartsWith("Layout Name:", StringComparison.OrdinalIgnoreCase))
-        {
-            var expr = token.Substring("Layout Name:".Length).Trim();
-            target = new LayoutTarget.ByNameCalc(new Calculation(expr));
-            return true;
-        }
-
-        if (token.StartsWith("Layout Number:", StringComparison.OrdinalIgnoreCase))
-        {
-            var expr = token.Substring("Layout Number:".Length).Trim();
-            target = new LayoutTarget.ByNumberCalc(new Calculation(expr));
-            return true;
-        }
-
-        // Named layout with (#id) suffix is the lossless form. Bare quoted
-        // names without an id degrade to a NamedRef with id 0 — the caller
-        // didn't supply an id, there's nothing better we can do.
-        if (DisplayQuoting.TryParseNamedRef(token, out var namedRef))
-        {
-            target = new LayoutTarget.Named(namedRef);
-            return true;
-        }
-
-        target = new LayoutTarget.Original();
-        return false;
-    }
-
-    // Hand-written: the target is a discriminated union selected by the
-    // value's display form, which the shape applier cannot convert.
-    protected internal override string? ApplyParam(string name, string value)
-    {
-        if (name.Equals("Layout", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("LayoutDestination", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("Target", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!TryParseTargetToken(value.Trim(), out var target))
-                return $"Param '{name}' of step '{XmlName}' must be 'original layout', a quoted " +
-                    "layout name (optionally with a (#id) suffix), 'Layout Name: <calc>', or " +
-                    $"'Layout Number: <calc>'. Got '{value}'.";
-            Target = target;
-            return null;
-        }
-
-        if (name.Equals("Animation", StringComparison.OrdinalIgnoreCase))
-        {
-            Animation = string.IsNullOrWhiteSpace(value) ? null : new Animation(value.Trim());
-            return null;
-        }
-
-        return base.ApplyParam(name, value);
     }
 
     public static StepMetadata Metadata { get; } = new()

@@ -336,6 +336,150 @@ public class FmScriptApplyTests
     }
 
     [Fact]
+    public void ApplyUpdate_ShowCustomDialog_InputsParam_SetsInputFields()
+    {
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(
+            Action: "add",
+            StepName: "Show Custom Dialog",
+            Params: new Dictionary<string, string?> { ["Title"] = "\"T\"" }));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["Inputs"] = "[ \"Age\" plain $age ]" });
+
+        Assert.Empty(script.Apply(update));
+
+        var step = Assert.IsType<ShowCustomDialogStep>(script.Steps[0]);
+        Assert.Equal("\"T\"", step.Title.Text);
+        var input = Assert.Single(step.InputFields!);
+        Assert.Equal("Age", input.Label?.Text);
+        Assert.Equal("$age", input.Target.ToDisplayString());
+    }
+
+    [Fact]
+    public void ApplyAdd_PerformScript_ScriptParam_SetsByReferenceTarget()
+    {
+        var script = EmptyScript();
+
+        var op = new ScriptStepOperation(
+            Action: "add",
+            StepName: "Perform Script",
+            Params: new Dictionary<string, string?> { ["Script"] = "\"Subroutine\" (#12)" });
+
+        Assert.Empty(script.Apply(op));
+
+        var step = Assert.IsType<PerformScriptStep>(script.Steps.Single());
+        var byRef = Assert.IsType<PerformScriptTarget.ByReference>(step.Target);
+        Assert.Equal("Subroutine", byRef.Script.Name);
+        Assert.Equal(12, byRef.Script.Id);
+    }
+
+    [Fact]
+    public void ApplyAdd_PerformScript_ByNameCalcParam_SetsCalculationTarget()
+    {
+        var script = EmptyScript();
+
+        var op = new ScriptStepOperation(
+            Action: "add",
+            StepName: "Perform Script",
+            Params: new Dictionary<string, string?> { ["Target"] = "By name: Get ( ScriptName )" });
+
+        Assert.Empty(script.Apply(op));
+
+        var step = Assert.IsType<PerformScriptStep>(script.Steps.Single());
+        var byCalc = Assert.IsType<PerformScriptTarget.ByCalculation>(step.Target);
+        Assert.Equal("Get ( ScriptName )", byCalc.NameCalc.Text);
+    }
+
+    [Fact]
+    public void ApplyUpdate_PerformScript_ParameterParam_SetsAndPreservesTarget()
+    {
+        // The Parameter slot binds to an emit-only wire projection; the
+        // display-grammar route must reach the real Parameter property
+        // without disturbing the script target.
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(
+            Action: "add",
+            StepName: "Perform Script",
+            Params: new Dictionary<string, string?> { ["Script"] = "\"Subroutine\" (#12)" }));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["Parameter"] = "42" });
+
+        Assert.Empty(script.Apply(update));
+
+        var step = Assert.IsType<PerformScriptStep>(script.Steps[0]);
+        Assert.Equal("42", step.Parameter?.Text);
+        var byRef = Assert.IsType<PerformScriptTarget.ByReference>(step.Target);
+        Assert.Equal("Subroutine", byRef.Script.Name);
+        Assert.Equal(12, byRef.Script.Id);
+    }
+
+    [Fact]
+    public void ApplyUpdate_ConvertFile_PositionalEnumParam_SetsValue()
+    {
+        // Convert File's data source renders as an unlabeled positional token
+        // and its parser takes the first match, so the applier must place the
+        // new token ahead of the step's current display tokens.
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(Action: "add", StepName: "Convert File"));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["DataSourceType"] = "XMLSource" });
+
+        Assert.Empty(script.Apply(update));
+
+        var step = Assert.IsType<ConvertFileStep>(script.Steps[0]);
+        Assert.Equal("XMLSource", step.DataSourceType);
+    }
+
+    [Fact]
+    public void ApplyUpdate_SameValueAgain_SucceedsWithoutChange()
+    {
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(
+            Action: "add",
+            StepName: "Go to Layout",
+            Params: new Dictionary<string, string?> { ["Layout"] = "\"Detail\" (#7)" }));
+        var xmlBefore = script.Steps[0].ToXml().ToString();
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["Layout"] = "\"Detail\" (#7)" });
+
+        Assert.Empty(script.Apply(update));
+        Assert.Equal(xmlBefore, script.Steps[0].ToXml().ToString());
+    }
+
+    [Fact]
+    public void ApplyUpdate_ValueTheStepCannotExpress_ReturnsErrorWithoutChange()
+    {
+        // Dial Phone's use-dial-preferences flag has no addressable display
+        // token; the applier must reject it rather than write the raw display
+        // value into the wire-facing property.
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(Action: "add", StepName: "Dial Phone"));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["UseDialPreferences"] = "On" });
+
+        var errors = script.Apply(update);
+
+        Assert.NotEmpty(errors);
+        var step = Assert.IsType<DialPhoneStep>(script.Steps[0]);
+        Assert.False(step.UseDialPreferences);
+    }
+
+    [Fact]
     public void ApplyAdd_GoToLayout_NamedLayoutParam_SetsTarget()
     {
         var script = EmptyScript();

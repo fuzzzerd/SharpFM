@@ -160,26 +160,6 @@ public sealed class ShowCustomDialogStep : ScriptStep<ShowCustomDialogStep>, ISt
         return $"{labelText} {password} {target}";
     }
 
-    // Hand-written: the button/input blocks use the nested display grammar
-    // ToDisplayLine renders, which the shape applier cannot convert.
-    protected internal override string? ApplyParam(string name, string value)
-    {
-        if (name.Equals("Buttons", StringComparison.OrdinalIgnoreCase))
-        {
-            Buttons = ParseButtonBlock(value);
-            return null;
-        }
-
-        if (name.Equals("InputFields", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("Inputs", StringComparison.OrdinalIgnoreCase))
-        {
-            InputFields = ParseInputBlock(value);
-            return null;
-        }
-
-        return base.ApplyParam(name, value);
-    }
-
     protected internal override void PopulateFromDisplay(string[] hrParams)
     {
         var title = new Calculation("");
@@ -408,7 +388,10 @@ public sealed class ShowCustomDialogStep : ScriptStep<ShowCustomDialogStep>, ISt
             new NamedCalcChild("DistanceFromLeft") { Optional = true, Display = DisplayMode.Hidden },
             new Passthrough { PocoProperty = "ButtonsAndInputsWire" },
             new HrOnly("Buttons"),
-            new HrOnly("InputFields"),
+            // HrLabel matches the display grammar's "Inputs:" prefix so
+            // label-addressed lookups resolve to the token form the parser
+            // actually recognizes.
+            new HrOnly("InputFields") { HrLabel = "Inputs" },
         ],
     };
 }
