@@ -42,6 +42,17 @@ public abstract class ScriptStep
     /// </summary>
     protected internal abstract void PopulateFromDisplay(string[] hrParams);
 
+    /// <summary>
+    /// Sets one shape-bound public property from an HR-friendly text value,
+    /// mutating this instance in place; properties not named are untouched.
+    /// Returns null on success, or a human-readable error message. Steps
+    /// whose slots need hand grammar (button blocks, variant targets)
+    /// override this and fall back to base for everything else. The base
+    /// rejects everything — <c>RawStep</c> has no param surface.
+    /// </summary>
+    protected internal virtual string? ApplyParam(string name, string value) =>
+        $"Step '{GetType().Name}' does not support param updates.";
+
     public virtual List<ScriptDiagnostic> Validate(int lineIndex) => new();
 
     /// <summary>

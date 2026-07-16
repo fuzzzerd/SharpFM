@@ -30,6 +30,9 @@ public abstract class ScriptStep<TSelf> : ScriptStep
     protected internal override void PopulateFromDisplay(string[] hrParams) =>
         StepDisplayParser.Populate(this, hrParams, TSelf.Metadata);
 
+    protected internal override string? ApplyParam(string name, string value) =>
+        StepParamApplier.Apply(this, TSelf.Metadata, name, value);
+
     /// <summary>Typed counterpart of the <see cref="ScriptStep.FromXml"/> dispatch
     /// for callers that already know the step kind.</summary>
     public static TSelf Parse(XElement step)

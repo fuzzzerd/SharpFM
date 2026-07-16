@@ -131,7 +131,7 @@ public static class StepDisplayParser
     }
 
     /// <summary>Inverse of the renderer's wire→display translation.</summary>
-    private static string ToWireValue(ShapeNode node, string display)
+    internal static string ToWireValue(ShapeNode node, string display)
     {
         if (node.DisplayValues is null || node.ValidValues is null) return display;
         var i = node.DisplayValues.ToList().FindIndex(v => v.Equals(display, StringComparison.OrdinalIgnoreCase));
