@@ -192,14 +192,14 @@ public class FmScript
         if (!Registry.StepRegistry.ByName.TryGetValue(op.StepName, out var metadata))
             return [$"Unknown step name '{op.StepName}'."];
 
-        // Route through each POCO's FromDisplay factory with the caller's
-        // param map synthesized into HR tokens. The synthesizer consults the
-        // step's metadata so positional params (no HrLabel) pass as raw
-        // values and labeled params get the canonical "Label: value" form.
-        var hrParams = SynthesizeHrParams(op.Params, metadata);
-        var step = StepDisplayFactory.TryCreate(op.StepName, op.Enabled ?? true, hrParams);
+        // Construct a blank instance through the registry factory, then set
+        // each caller param directly onto the POCO's shape-bound properties.
+        var step = StepDisplayFactory.TryCreate(metadata.Name, op.Enabled ?? true, []);
         if (step is null)
             return [$"No typed POCO factory registered for '{op.StepName}'."];
+
+        var errors = ApplyParams(step, op.Params);
+        if (errors.Count > 0) return errors;
 
         var index = op.Index < 0 || op.Index >= Steps.Count ? Steps.Count : op.Index;
         Steps.Insert(index, step);
@@ -211,74 +211,42 @@ public class FmScript
         if (ValidateStepIndex(op.Index) is { } err) return [err];
 
         var step = Steps[op.Index];
+        if (op.Params is not null && op.Params.Count > 0
+            && Registry.StepRegistry.MetadataFor(step) is null)
+        {
+            return [$"Apply/update is not supported for step kind '{step.GetType().Name}'."];
+        }
+
         if (op.Enabled is not null) step.Enabled = op.Enabled.Value;
 
-        if (op.Params is null) return [];
-
-        // Param updates are rebuilt by re-parsing the display form with the
-        // new param map overlaid onto the old. This uses the POCO's own
-        // FromDisplay factory — the same path ApplyAdd takes — so the
-        // update never leaves the typed-POCO world.
-        var metadata = Registry.StepRegistry.MetadataFor(step);
-        if (metadata is null)
-            return [$"Apply/update is not supported for step kind '{step.GetType().Name}'."];
-
-        var hrParams = SynthesizeHrParams(op.Params, metadata);
-        var updated = StepDisplayFactory.TryCreate(metadata.Name, step.Enabled, hrParams);
-        if (updated is null)
-            return [$"No typed POCO factory registered for '{metadata.Name}'."];
-
-        Steps[op.Index] = updated;
-        return [];
+        return ApplyParams(step, op.Params);
     }
 
     /// <summary>
-    /// Convert a caller's param map into the ordered HR-token form each step's
-    /// FromDisplay factory expects. Iterates the shape's display slots in
-    /// display order, formatting each match as <c>"HrLabel: value"</c> when the
-    /// slot has a label and as a raw positional value when it doesn't (e.g.
-    /// <c>SetVariableStep.Name</c>, <c>IfStep.Condition</c> — these go straight
-    /// into <c>&lt;Name&gt;</c> / <c>&lt;Calculation&gt;</c> without prefix).
-    /// Keys may address a slot by its bound property, its XML element, or its
-    /// display label, so pre-cutover param names keep working.
+    /// Sets each param onto the step's shape-bound public properties in
+    /// place, through <see cref="ScriptStep.ApplyParam"/>'s virtual dispatch.
+    /// Properties the map does not name keep their current values. Params
+    /// apply in map order and application is not atomic: on error, params
+    /// earlier in the map have already been set.
     /// </summary>
-    /// <remarks>
-    /// An earlier implementation labeled every non-empty key, which caused
-    /// positional params to receive a <c>"Name: $foo"</c> string verbatim into
-    /// XML — structurally valid but semantically broken under FileMaker.
-    /// </remarks>
-    private static string[] SynthesizeHrParams(
-        IReadOnlyDictionary<string, string>? map,
-        Registry.StepMetadata metadata)
+    private static List<string> ApplyParams(ScriptStep step, IReadOnlyDictionary<string, string?>? map)
     {
         if (map is null || map.Count == 0) return [];
 
-        var consumedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var result = new List<string>(map.Count);
-
-        foreach (var node in Shapes.ShapeHrView.HrNodes(metadata.Shape))
+        var errors = new List<string>();
+        foreach (var (name, value) in map)
         {
-            var matchedKey = map.Keys.FirstOrDefault(k =>
-                !consumedKeys.Contains(k) && Shapes.ShapeHrView.MatchesName(node, k));
-            if (matchedKey is null) continue;
+            if (value is null)
+            {
+                errors.Add($"Param '{name}' has no value.");
+                continue;
+            }
 
-            consumedKeys.Add(matchedKey);
-            var value = map[matchedKey];
-            result.Add(node.HrLabel is not null
-                ? $"{node.HrLabel}: {value}"
-                : value);
+            if (step.ApplyParam(name, value) is { } error)
+                errors.Add(error);
         }
 
-        // Forward-compat: any keys we don't recognise pass through with the
-        // old formatting so newly-introduced params keep working until their
-        // metadata catches up.
-        foreach (var (k, v) in map)
-        {
-            if (consumedKeys.Contains(k)) continue;
-            result.Add(string.IsNullOrEmpty(k) ? v : $"{k}: {v}");
-        }
-
-        return result.ToArray();
+        return errors;
     }
 
     private List<string> ApplyRemove(ScriptStepOperation op)

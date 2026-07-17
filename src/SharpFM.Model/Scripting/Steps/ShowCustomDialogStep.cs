@@ -388,7 +388,10 @@ public sealed class ShowCustomDialogStep : ScriptStep<ShowCustomDialogStep>, ISt
             new NamedCalcChild("DistanceFromLeft") { Optional = true, Display = DisplayMode.Hidden },
             new Passthrough { PocoProperty = "ButtonsAndInputsWire" },
             new HrOnly("Buttons"),
-            new HrOnly("InputFields"),
+            // HrLabel matches the display grammar's "Inputs:" prefix so
+            // label-addressed lookups resolve to the token form the parser
+            // actually recognizes.
+            new HrOnly("InputFields") { HrLabel = "Inputs" },
         ],
     };
 }

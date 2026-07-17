@@ -38,4 +38,12 @@ internal static class ShapeReflection
     /// <summary>Declared type of a shape-bound property (for typed list parsing).</summary>
     public static Type PropertyType(object source, string name) =>
         Prop(source.GetType(), name).PropertyType;
+
+    /// <summary>
+    /// True when the shape-bound property has a setter. False marks an
+    /// emit-only projection (e.g. a wire-order alias of another property),
+    /// which callers that need the write to actually land must route around.
+    /// </summary>
+    public static bool CanWrite(object target, string name) =>
+        Prop(target.GetType(), name).CanWrite;
 }
