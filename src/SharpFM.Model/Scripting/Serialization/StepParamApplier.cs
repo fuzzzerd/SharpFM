@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Linq;
 using SharpFM.Model.Scripting.Registry;
 using SharpFM.Model.Scripting.Shapes;
 using SharpFM.Model.Scripting.Values;
@@ -74,7 +75,11 @@ internal static class StepParamApplier
     private static string? Assign(ScriptStep target, StepMetadata meta, ShapeNode node, string name, string value)
     {
         if (!IsTypedAssignable(target, node))
-            return ApplyViaDisplayGrammar(target, meta, node, name, value);
+        {
+            return value.TrimStart().StartsWith('<')
+                ? ApplyXmlFragment(target, meta, node, name, value)
+                : ApplyViaDisplayGrammar(target, meta, node, name, value);
+        }
 
         switch (node)
         {
@@ -174,8 +179,66 @@ internal static class StepParamApplier
             if (target.ToXml().ToString() != before) return null;
         }
 
+        var elements = WireElementsOf(node);
+        var hint = elements.Count > 0
+            ? $" This param also accepts a <{elements[0]}> XML fragment."
+            : " Edit the step XML for exact control.";
         return $"Param '{name}' of step '{meta.Name}' did not accept value '{value}'; " +
-            "it may match the step's default. Edit the step XML for exact control.";
+            $"it may match the step's default.{hint}";
+    }
+
+    /// <summary>
+    /// Grafts an XML fragment into the step's wire form: the fragment
+    /// replaces the step element's existing children of the same name and
+    /// the merged element is re-read in place through
+    /// <see cref="ScriptStep.PopulateFromXml"/>. The fragment's root must be
+    /// one of the slot's wire elements (an <see cref="HrOnly"/> slot names
+    /// its wire element), and the re-emitted step must retain it — a reader
+    /// that drops the element would silently discard the caller's data, so
+    /// the original state is restored and an error returned instead.
+    /// </summary>
+    private static string? ApplyXmlFragment(ScriptStep target, StepMetadata meta, ShapeNode node, string name, string value)
+    {
+        XElement fragment;
+        try
+        {
+            fragment = XElement.Parse(value);
+        }
+        catch (System.Xml.XmlException ex)
+        {
+            return $"Param '{name}' of step '{meta.Name}' looks like an XML fragment but does not parse: {ex.Message}";
+        }
+
+        var elements = WireElementsOf(node);
+        if (elements.Count == 0)
+            return $"Param '{name}' of step '{meta.Name}' has no wire element to set from an XML fragment; " +
+                "edit the full step XML instead.";
+        if (!elements.Contains(fragment.Name.LocalName, StringComparer.OrdinalIgnoreCase))
+            return $"Param '{name}' of step '{meta.Name}' takes " +
+                $"{string.Join(" or ", elements.Select(e => $"<{e}>"))} as an XML fragment; got <{fragment.Name.LocalName}>.";
+
+        var merged = target.ToXml();
+        var before = merged.ToString();
+        merged.Elements()
+            .Where(e => string.Equals(e.Name.LocalName, fragment.Name.LocalName, StringComparison.OrdinalIgnoreCase))
+            .Remove();
+        merged.Add(fragment);
+        target.PopulateFromXml(merged);
+
+        var after = target.ToXml();
+        if (after.Elements().Any(e => string.Equals(e.Name.LocalName, fragment.Name.LocalName, StringComparison.OrdinalIgnoreCase)))
+            return null;
+
+        target.PopulateFromXml(XElement.Parse(before));
+        return $"Step '{meta.Name}' did not retain the <{fragment.Name.LocalName}> element; " +
+            "edit the full step XML instead.";
+    }
+
+    private static List<string> WireElementsOf(ShapeNode node)
+    {
+        var elements = StepXmlValidator.ElementNamesOf(node).ToList();
+        if (node is HrOnly h) elements.Add(h.Name);
+        return elements;
     }
 
     // A raw (unlabeled) token is only meaningful to a hand-written display

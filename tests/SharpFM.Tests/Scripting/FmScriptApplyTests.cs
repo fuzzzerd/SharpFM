@@ -480,6 +480,90 @@ public class FmScriptApplyTests
     }
 
     [Fact]
+    public void ApplyUpdate_SortRecords_SortListXmlFragment_SetsSortOrder()
+    {
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(Action: "add", StepName: "Sort Records"));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?>
+            {
+                ["Sort"] = """<SortList Maintain="True" value="True"><Sort type="Ascending"><PrimaryField><Field table="Customer" id="1" name="name" /></PrimaryField></Sort></SortList>""",
+            });
+
+        Assert.Empty(script.Apply(update));
+
+        var step = Assert.IsType<SortRecordsStep>(script.Steps[0]);
+        Assert.NotNull(step.Sort);
+        Assert.Contains("PrimaryField", step.ToXml().ToString());
+    }
+
+    [Fact]
+    public void ApplyUpdate_PerformFind_QueryXmlFragment_ReplacesQuery()
+    {
+        // Perform Find's query lives in the passthrough bag behind an HrOnly
+        // slot; a second fragment must replace the first, not accumulate.
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(Action: "add", StepName: "Perform Find"));
+
+        var first = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?>
+            {
+                ["Query"] = """<Query><RequestRow operation="Include"><Criteria><Field table="Customer" id="1" name="state" /><Text>==CA</Text></Criteria></RequestRow></Query>""",
+            });
+        Assert.Empty(script.Apply(first));
+
+        var second = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?>
+            {
+                ["Query"] = """<Query><RequestRow operation="Include"><Criteria><Field table="Customer" id="1" name="state" /><Text>==NY</Text></Criteria></RequestRow></Query>""",
+            });
+        Assert.Empty(script.Apply(second));
+
+        var xml = script.Steps[0].ToXml().ToString();
+        Assert.Contains("==NY", xml);
+        Assert.DoesNotContain("==CA", xml);
+    }
+
+    [Fact]
+    public void ApplyUpdate_XmlFragmentWithWrongRootElement_ReturnsError()
+    {
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(Action: "add", StepName: "Sort Records"));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["Sort"] = "<Query />" });
+
+        var errors = script.Apply(update);
+
+        Assert.Contains(errors, e => e.Contains("SortList"));
+    }
+
+    [Fact]
+    public void ApplyUpdate_MalformedXmlFragment_ReturnsError()
+    {
+        var script = EmptyScript();
+        script.Apply(new ScriptStepOperation(Action: "add", StepName: "Sort Records"));
+
+        var update = new ScriptStepOperation(
+            Action: "update",
+            Index: 0,
+            Params: new Dictionary<string, string?> { ["Sort"] = "<SortList><Sort></SortList>" });
+
+        var errors = script.Apply(update);
+
+        Assert.NotEmpty(errors);
+    }
+
+    [Fact]
     public void ApplyAdd_GoToLayout_NamedLayoutParam_SetsTarget()
     {
         var script = EmptyScript();
