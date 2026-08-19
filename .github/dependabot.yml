@@ -5,9 +5,8 @@ updates:
   schedule:
     interval: "daily"
   commit-message:
-    prefix: "chore"
-    prefix-development: "chore"
-    include: "scope"
+    prefix: "chore(deps)"
+    prefix-development: "chore(deps-dev)"
   groups:
     NLog:
       patterns:
@@ -23,9 +22,8 @@ updates:
   schedule:
     interval: "daily"
   commit-message:
-    prefix: "chore"
-    prefix-development: "chore"
-    include: "scope"
+    prefix: "chore(deps)"
+    prefix-development: "chore(deps-dev)"
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
@@ -33,6 +31,5 @@ updates:
     interval: "daily"
     timezone: America/Chicago
   commit-message:
-    prefix: "chore"
-    prefix-development: "chore"
-    include: "scope"
+    prefix: "chore(deps)"
+    prefix-development: "chore(deps-dev)"
