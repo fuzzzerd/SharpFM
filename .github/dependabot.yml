@@ -4,6 +4,10 @@ updates:
   directory: "/"
   schedule:
     interval: "daily"
+  commit-message:
+    prefix: "chore"
+    prefix-development: "chore"
+    include: "scope"
   groups:
     NLog:
       patterns:
@@ -18,9 +22,17 @@ updates:
   directory: "/.config"
   schedule:
     interval: "daily"
+  commit-message:
+    prefix: "chore"
+    prefix-development: "chore"
+    include: "scope"
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     # Check for updates to GitHub Actions every weekday
     interval: "daily"
     timezone: America/Chicago
+  commit-message:
+    prefix: "chore"
+    prefix-development: "chore"
+    include: "scope"
