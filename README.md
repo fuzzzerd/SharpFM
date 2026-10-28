@@ -20,12 +20,27 @@ That middle step unlocks a few things:
 
 ## How It Works
 
-1. **Copy from FileMaker.** Select a script, table, field set, or layout in FileMaker and copy it.
+1. **Copy from FileMaker.** Select a script, script steps, table, field set, or layout in FileMaker and copy it.
 2. **Paste into SharpFM** (`Ctrl+V` / `Edit > Paste from FileMaker`). The clip appears in the tree on the left; the matching editor opens on the right.
 3. **Edit or save.** Modify the script text, tweak field definitions, or save the clip as an XML file to share or commit.
 4. **Copy back to FileMaker** (`Ctrl+Shift+C` / `Edit > Copy to FileMaker`), then paste into the Script Workspace, Database Manager, or Layout mode.
 
 SharpFM and FileMaker need to run on the same machine for clipboard hand-off. To move clips between machines, share the XML files directly.
+
+### Updating an Existing Script
+
+SharpFM uses FileMaker's clipboard; it does not update existing scripts automatically. Whole scripts paste into the Script Workspace's script list, creating a new script rather than replacing the original. Script steps paste inside an existing script. **Copy to FileMaker** preserves the clip's type; it does not automatically convert a whole script into steps.
+
+To edit an existing script:
+
+1. In FileMaker, copy the steps from inside the script—not its name in the script list.
+2. Paste them into SharpFM and make your changes.
+3. Choose **Edit > Copy as Script Steps (lines only)**.
+4. In FileMaker, remove the steps being replaced and paste the edited steps into the same script.
+
+If you already copied a whole script into SharpFM, **Copy as Script Steps (lines only)** also lets you paste its steps into the existing script. A whole-script clip cannot be pasted directly into the script's editor pane; FileMaker may disable Paste there.
+
+Keep the original script and replace its steps rather than deleting it and renaming a newly pasted script. Matching the original name does not preserve the original script's identity or guarantee that existing references will point to the replacement.
 
 ## Getting Started
 
