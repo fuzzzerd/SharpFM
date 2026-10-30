@@ -77,7 +77,7 @@
                     InputGesture="Ctrl+Shift+M" />
             </MenuItem>
             <MenuItem Header="_Tools">
-                <MenuItem x:Name="rawClipboardMenuItem" Header="Raw Clipboard Viewer..." />
+                <MenuItem x:Name="rawClipboardMenuItem" Header="FileMaker Clipboard Diagnostics..." />
             </MenuItem>
             <MenuItem x:Name="pluginsMenu" Header="_Plugins">
                 <!--  Plugin menu items are added dynamically in code-behind  -->

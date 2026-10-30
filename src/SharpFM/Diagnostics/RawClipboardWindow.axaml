@@ -1,42 +1,44 @@
 <Window
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
     x:Class="SharpFM.Diagnostics.RawClipboardWindow"
-    Title="Raw Clipboard Viewer"
-    Width="800"
-    Height="600"
+    Title="FileMaker Clipboard Diagnostics"
+    Width="900" Height="800" MinWidth="640" MinHeight="600"
     WindowStartupLocation="CenterOwner">
 
-    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto">
-
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-            <Button x:Name="pasteButton" Classes="Fluent2Primary" Content="Paste from Clipboard" />
-            <Button x:Name="copyButton" Classes="Fluent2" Content="Copy XML" />
+    <Grid Margin="16" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="12">
+        <StackPanel Grid.Row="0" Spacing="6">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Copy a small, non-sensitive example in FileMaker, then capture here. Capture and save do not change the clipboard or use SharpFM's normal FileMaker decoder." />
+            <TextBlock TextWrapping="Wrap" Foreground="#C08000"
+                       Text="Privacy: snapshots contain full clipboard payloads, including accompanying text. Scripts, credentials, and other private data may be included. Review what you copy before capturing or sharing. Nothing is uploaded automatically." />
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
-            <TextBlock Classes="Fluent2Body" VerticalAlignment="Center" Text="Format:" />
-            <TextBlock x:Name="formatLabel" Classes="Fluent2Body" FontWeight="SemiBold"
-                       VerticalAlignment="Center" Text="(none)" />
-            <TextBlock x:Name="warningLabel" Classes="Fluent2Caption"
-                       VerticalAlignment="Center" Foreground="#C08000" Text="" />
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+            <TextBlock VerticalAlignment="Center" Text="FileMaker version:" />
+            <TextBox Grid.Column="1" x:Name="fileMakerVersion" PlaceholderText="Optional" MaxLength="100" />
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Copied content:" />
+            <TextBox Grid.Column="3" x:Name="captureDescription" PlaceholderText="Optional description (saved in snapshot)" MaxLength="2000" />
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+            <Button x:Name="captureButton" Classes="Fluent2Primary" Content="Capture FileMaker Clipboard" />
+            <Button x:Name="saveButton" Classes="Fluent2" Content="Save Snapshot…" IsEnabled="False" />
         </StackPanel>
 
-        <Border Grid.Row="2" Classes="Fluent2SurfaceElevated">
-            <AvaloniaEdit:TextEditor
-                x:Name="xmlEditor"
-                FontFamily="Cascadia Code,Consolas,Menlo,Monospace"
-                ShowLineNumbers="True"
-                SyntaxHighlighting="Xml"
-                WordWrap="False" />
-        </Border>
+        <TextBox Grid.Row="3" x:Name="captureSummary" IsReadOnly="True" AcceptsReturn="True"
+                 TextWrapping="Wrap" MaxHeight="150"
+                 Text="No capture yet. All discovered formats will be listed, even if no FileMaker format is recognized." />
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
-            <TextBlock x:Name="statusLabel" Classes="Fluent2Caption" VerticalAlignment="Center" Opacity="0.7" />
-            <Button x:Name="closeButton" Classes="Fluent2" Content="Close" />
-        </StackPanel>
+        <Grid Grid.Row="4" RowDefinitions="*,*" RowSpacing="8">
+            <ListBox x:Name="formatList" MinHeight="80" />
+            <TextBox Grid.Row="1" x:Name="interpretationSummary" IsReadOnly="True" AcceptsReturn="True"
+                     TextWrapping="Wrap" Text="Select a captured format to see retrieval details and interpretation hypotheses. Original bytes are retained separately for export." />
+        </Grid>
 
+        <Grid Grid.Row="5" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock x:Name="statusLabel" Classes="Fluent2Caption" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <Button Grid.Column="1" x:Name="closeButton" Classes="Fluent2" Content="Close" />
+        </Grid>
     </Grid>
-
 </Window>
