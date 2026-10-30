@@ -69,6 +69,8 @@ Grab the latest build for your platform from [Releases](https://github.com/fuzzz
 
 ## Troubleshooting
 
+For FileMaker clipboard problems, use **Tools > FileMaker Clipboard Diagnostics…** to capture untouched payloads and save a ZIP snapshot for an issue report. Copy a small, non-sensitive example first: snapshots include full clipboard data, including accompanying text. Nothing is uploaded automatically. See [capture instructions and privacy details](docs/filemaker-clipboard-diagnostics.md).
+
 Logs are stored in `${specialfolder:folder=CommonApplicationData}\SharpFM` and rotate after thirty days.
 
 ## Similar Tools

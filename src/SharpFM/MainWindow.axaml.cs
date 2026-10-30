@@ -35,7 +35,7 @@ public partial class MainWindow : Window
         if (managePlugins != null)
             managePlugins.Click += (_, _) => ShowPluginManager();
 
-        // "Raw Clipboard Viewer..." menu item
+        // "FileMaker Clipboard Diagnostics..." menu item
         var rawClipboard = this.FindControl<MenuItem>("rawClipboardMenuItem");
         if (rawClipboard != null)
             rawClipboard.Click += (_, _) => new RawClipboardWindow().Show(this);
