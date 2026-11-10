@@ -91,7 +91,10 @@ public class ClipboardSnapshotExporterTests : IDisposable
         var marker = Path.Combine(occupied, "existing.txt");
         await File.WriteAllTextAsync(marker, "keep me");
 
-        await Assert.ThrowsAnyAsync<IOException>(() => ClipboardSnapshotExporter.SaveAsync(snapshot, occupied));
+        // Moving a file over a directory throws IOException on Unix, but UnauthorizedAccessException on Windows.
+        var exception = await Record.ExceptionAsync(() => ClipboardSnapshotExporter.SaveAsync(snapshot, occupied));
+        Assert.True(exception is IOException or UnauthorizedAccessException,
+            $"Expected a filesystem failure, got {exception?.GetType().FullName ?? "no exception"}.");
         Assert.Empty(Directory.GetFiles(_directory));
         Assert.Equal("keep me", await File.ReadAllTextAsync(marker));
 
