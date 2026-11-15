@@ -1,0 +1,1 @@
+<fmxmlsnippet type="FMObjectList"><ValueList id="4" name="Location"><Source value="Field"></Source><PrimaryField show="True" sort="True"><Field table="Products" id="10" name="Location"></Field></PrimaryField><ShowRelated value="False"></ShowRelated></ValueList></fmxmlsnippet>

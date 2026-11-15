@@ -1,0 +1,1 @@
+<fmxmlsnippet type="FMObjectList"><CustomFunction id="1" functionArity="0" visible="True" parameters="" name="Test Function"><Calculation><![CDATA[Get ( FileName )]]></Calculation></CustomFunction></fmxmlsnippet>

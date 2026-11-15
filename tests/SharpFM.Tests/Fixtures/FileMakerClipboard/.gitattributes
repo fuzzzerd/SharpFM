@@ -1,0 +1,2 @@
+# These are exact UTF-8 exports; preserve embedded CR and LF on every platform.
+*.xml -text
