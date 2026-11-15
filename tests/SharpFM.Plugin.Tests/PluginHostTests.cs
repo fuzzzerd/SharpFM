@@ -11,6 +11,8 @@ namespace SharpFM.Plugin.Tests;
 
 public class MockClipboardService : IClipboardService
 {
+    public Task<IReadOnlyList<Clip>> ReadFileMakerAsync() => Task.FromResult<IReadOnlyList<Clip>>([]);
+    public Task WriteFileMakerAsync(Clip clip) => Task.CompletedTask;
     public Task SetTextAsync(string text) => Task.CompletedTask;
     public Task SetDataAsync(string format, byte[] data) => Task.CompletedTask;
     public Task<string[]> GetFormatsAsync() => Task.FromResult(Array.Empty<string>());

@@ -491,7 +491,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
     {
         try
         {
-            var formats = await _clipboard.GetFormatsAsync();
+            var clips = await _clipboard.ReadFileMakerAsync();
             int count = 0;
             ClipViewModel? lastAdded = null;
 
@@ -500,20 +500,14 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             // that's a selected clip's folder or an explicitly tapped empty one.
             var pasteRoot = TargetFolderPath;
 
-            var recognized = new List<string>();
-            var unrecognized = new List<string>();
-            foreach (var format in formats.Distinct())
-            {
-                if (string.IsNullOrEmpty(format)) continue;
-                if (!format.StartsWith("Mac-", StringComparison.CurrentCultureIgnoreCase)) continue;
-                (ClipTypeRegistry.IsRegistered(format) ? recognized : unrecognized).Add(format);
-            }
+            var recognized = clips.Where(c => ClipTypeRegistry.IsRegistered(c.FormatId));
+            var unrecognized = clips.Where(c => !ClipTypeRegistry.IsRegistered(c.FormatId));
 
             var batch = new PasteBatchState();
 
-            foreach (var format in recognized)
+            foreach (var clip in recognized)
             {
-                var (added, last) = await PasteOneFormat(format, pasteRoot, batch);
+                var (added, last) = await PasteOneClip(clip, pasteRoot, batch);
                 lastAdded = last ?? lastAdded;
                 count += added;
                 if (batch.Cancelled) break;
@@ -525,16 +519,16 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
             string? unknownFormatPasted = null;
             if (count == 0 && !batch.Cancelled)
             {
-                foreach (var format in unrecognized)
+                foreach (var clip in unrecognized)
                 {
-                    var (added, last) = await PasteOneFormat(format, pasteRoot, batch);
+                    var (added, last) = await PasteOneClip(clip, pasteRoot, batch);
                     if (added == 0) continue;
                     lastAdded = last ?? lastAdded;
                     count += added;
-                    unknownFormatPasted = format;
+                    unknownFormatPasted = clip.FormatId;
                     _logger.LogInformation(
                         "Pasted unknown format {Format}; will round-trip as raw XML.",
-                        format);
+                        clip.FormatId);
                     break;
                 }
             }
@@ -564,15 +558,12 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private async Task<(int added, ClipViewModel? last)> PasteOneFormat(
-        string format,
+    private async Task<(int added, ClipViewModel? last)> PasteOneClip(
+        Clip rawClip,
         IReadOnlyList<string> pasteRoot,
         PasteBatchState batch)
     {
-        object? clipData = await _clipboard.GetDataAsync(format);
-        if (clipData is not byte[] dataObj) return (0, null);
-
-        var rawClip = Clip.FromWireBytes("new-clip", format, dataObj);
+        var format = rawClip.FormatId;
         int added = 0;
         ClipViewModel? last = null;
 
@@ -668,7 +659,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
         try
         {
             data.HandleEditorContentChanged();
-            await _clipboard.SetDataAsync(data.ClipType, data.Clip.WireBytes);
+            await _clipboard.WriteFileMakerAsync(data.Clip);
             ShowStatus("Copied to FileMaker clipboard");
         }
         catch (Exception e)
@@ -708,7 +699,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
             var xmlWithWrapper = script.ToXml();
             var clip = Clip.FromXml(data.Clip.Name, "Mac-XMSC", xmlWithWrapper);
-            await _clipboard.SetDataAsync("Mac-XMSC", clip.WireBytes);
+            await _clipboard.WriteFileMakerAsync(clip);
             ShowStatus("Copied as Script to FileMaker clipboard");
         }
         catch (Exception e)
@@ -745,7 +736,7 @@ public partial class MainWindowViewModel : INotifyPropertyChanged
 
             var xmlNoWrapper = script.ToXml();
             var clip = Clip.FromXml(data.Clip.Name, "Mac-XMSS", xmlNoWrapper);
-            await _clipboard.SetDataAsync("Mac-XMSS", clip.WireBytes);
+            await _clipboard.WriteFileMakerAsync(clip);
             ShowStatus("Copied as Script Steps to FileMaker clipboard");
         }
         catch (Exception e)
