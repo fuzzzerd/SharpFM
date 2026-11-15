@@ -22,6 +22,19 @@ public class MockClipboardService : IClipboardService
     public string? LastFormat { get; private set; }
     public byte[]? LastData { get; private set; }
     public Dictionary<string, object> ClipboardData { get; } = new();
+    public Clip? LastClip { get; private set; }
+
+    public Task<IReadOnlyList<Clip>> ReadFileMakerAsync() => Task.FromResult<IReadOnlyList<Clip>>(
+        ClipboardData.Where(pair => pair.Key.StartsWith("Mac-", StringComparison.Ordinal))
+            .Select(pair => pair.Value is byte[] bytes
+                ? Clip.FromWireBytes("new-clip", pair.Key, bytes)
+                : Clip.FromXml("new-clip", pair.Key, (string)pair.Value)).ToArray());
+
+    public Task WriteFileMakerAsync(Clip clip)
+    {
+        LastClip = clip;
+        return Task.CompletedTask;
+    }
 
     public Task SetTextAsync(string text) { LastText = text; return Task.CompletedTask; }
     public Task SetDataAsync(string format, byte[] data) { LastFormat = format; LastData = data; return Task.CompletedTask; }
@@ -648,7 +661,7 @@ public class MainWindowViewModelTests
         var vm = CreateVm(clipboard, collisionPrompt: prompt);
         vm.FileMakerClips.Clear();
         vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("FizzBuzz", "Mac-XMSC", existingXml))
-            { FolderPath = new[] { "Drop" } });
+        { FolderPath = new[] { "Drop" } });
 
         await vm.PasteFileMakerClipData();
 
@@ -674,9 +687,9 @@ public class MainWindowViewModelTests
         var vm = CreateVm(clipboard, collisionPrompt: prompt);
         vm.FileMakerClips.Clear();
         vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("A", "Mac-XMSC", existingA))
-            { FolderPath = new[] { "Drop" } });
+        { FolderPath = new[] { "Drop" } });
         vm.FileMakerClips.Add(new ClipViewModel(Clip.FromXml("B", "Mac-XMSC", existingB))
-            { FolderPath = new[] { "Drop" } });
+        { FolderPath = new[] { "Drop" } });
 
         await vm.PasteFileMakerClipData();
 
